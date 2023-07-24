@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<cloud id="sztaki-elkh"
+	scheduler="hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.RoundRobinScheduler"
+	pmcontroller="hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines">
+
+	<!-- https://ark.intel.com/content/www/us/en/ark/products/199346/intel-xeon-gold-6230r-processor-35-75m-cache-2-10-ghz.html -->
+	<!-- https://www.tomshardware.com/reviews/intel-cascade-lake-xeon-platinum-8280-8268-gold-6230-amd-epyc,6058-6.html -->
+	<!-- 52 CPU, 12 x 64 GB memory -->
+	<machine id="intelPM-1" cores="52" processing="0.001" memory="824633720832">
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="143.5" max="535.6" inState="default" /> 	
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		
+		<statedelays startup="59000" shutdown="29000" />
+		
+		<!-- https://ark.intel.com/content/www/us/en/ark/products/134919/intel-ssd-d3s4610-series-480gb-2-5in-sata-6gbs-3d2-tlc.html -->
+		<!-- 2 x 480 GB, 10Gbps Ethernet, 510 MBps Disk -->
+		<repository id="intel-1" capacity="1030792151040" inBW="1250000" outBW="1250000" diskBW="510000">
+			<powerstates kind="storage">
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="1.0" max="3.1" inState="default" />
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			
+			<!-- https://www.mellanox.com/files/doc-2020/pb-connectx-5-en-card.pdf-->
+			<!-- https://gzhls.at/blob/ldb/9/a/3/2/073d2b59ddaec6a5a00744e21c93a3459529.pdf -->
+			<powerstates kind="network">
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="14.7" max="17.2" inState="default" />
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+
+			<latency towards="ceph-1" value="5" />
+
+		</repository>
+	</machine>
+
+	<!-- https://semiconductor.samsung.com/resources/data-sheet/Product_Brief_Samsung_PM983_NF1_NVMe_SSD_1806.pdf -->
+	<!-- 24 x 4 TB SSD, 10 Gbps Ethernet, 2000 MBps Disk -->
+	<repository id="ceph-1" capacity="105553116266496" inBW="1250000" outBW="1250000" diskBW="2000000">
+		<powerstates kind="storage">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="3.6" max="11.5" inState="default" />
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		
+		<!-- https://www.mellanox.com/files/doc-2020/pb-connectx-5-en-card.pdf-->
+		<!-- https://gzhls.at/blob/ldb/9/a/3/2/073d2b59ddaec6a5a00744e21c93a3459529.pdf -->
+		<powerstates kind="network">
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="14.7" max="17.2" inState="default" />
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+
+		<latency towards="intel-1" value="5" />
+
+	</repository>
+
+</cloud>

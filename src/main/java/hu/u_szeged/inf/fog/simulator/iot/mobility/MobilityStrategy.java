@@ -1,10 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.iot.mobility;
 
-public abstract class MobilityStrategy {
-	
-	public GeoLocation startPosition;
+import hu.u_szeged.inf.fog.simulator.iot.Device;
 
-	public GeoLocation currentPosition;
-	
-	public abstract GeoLocation move(long freq);
+public abstract class MobilityStrategy {
+
+    public GeoLocation startPosition;
+
+    public GeoLocation currentPosition;
+
+    public double speed;
+
+    public abstract GeoLocation move(Device device, long freq);
 }

@@ -16,9 +16,11 @@ for i in nodeInfo:
     node = i.split(",")
 
     if node[3] == "null":  # if cloud node
+        popup = folium.Popup(node[0], show=True, sticky=True)
         folium.Marker(
             location=[node[1], node[2]],
-            popup=node[0],
+            #popup=node[0],
+            popup=popup,
             icon=folium.Icon(icon="cloud", color="blue"),
         ).add_to(map)
 
@@ -30,9 +32,10 @@ for i in nodeInfo:
             fill_color="blue",
         ).add_to(map)
     else:  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
         folium.Marker(
             location=[node[1], node[2]],
-            popup=node[0],
+            popup=popup,
             icon=folium.Icon(icon="cloud", color="gray"),
         ).add_to(map)
 
@@ -89,6 +92,7 @@ for i in range(int(sys.argv[4])):
                 fill_color="gray",
             ).add_to(map)
 
+            #popup = folium.Popup("device" + str(i), show=True, sticky=False)
             folium.Marker(
                 location=[coord[1], coord[2]],
                 popup="device" + str(i),

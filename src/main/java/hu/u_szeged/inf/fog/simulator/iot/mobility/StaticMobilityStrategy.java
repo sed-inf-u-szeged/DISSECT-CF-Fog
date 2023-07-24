@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot.mobility;
 
+import hu.u_szeged.inf.fog.simulator.iot.Device;
+
 public class StaticMobilityStrategy extends MobilityStrategy {
 
     public StaticMobilityStrategy(GeoLocation startPosition) {
@@ -8,7 +10,7 @@ public class StaticMobilityStrategy extends MobilityStrategy {
     }
 
     @Override
-    public GeoLocation move(long freq) {
+    public GeoLocation move(Device device, long freq) {
         return this.startPosition;
     }
 }
