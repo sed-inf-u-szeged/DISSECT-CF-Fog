@@ -1,0 +1,91 @@
+<div class="elements" [formGroup]="form">
+    <app-input-container>
+        <label>Model name <app-required-symbol></app-required-symbol></label>
+        <input type="text" formControlName="modelName" [readonly]="trainingStarted"
+            [attr.disabled]="trainingStarted ? '' : null">
+    </app-input-container>
+
+    <app-group name="Datasets">
+        <app-input-container>
+            <label>Dataset input directory <app-required-symbol></app-required-symbol></label>
+            <input readonly type="text" readonly type="text" formControlName="datasetsDirectory"
+                [attr.disabled]="trainingStarted ? '' : null">
+        </app-input-container>
+        <app-button class="w-100" [disabled]="trainingStarted" (click)="openDatasetsDirectory()">Open...</app-button>
+    </app-group>
+
+    <app-group name="Output">
+        <app-input-container>
+            <label>Model output directory <app-required-symbol></app-required-symbol></label>
+            <input readonly type="text" readonly type="text" readonly type="text" formControlName="modelOutputLocation"
+                [attr.disabled]="trainingStarted ? '' : null">
+        </app-input-container>
+        <app-button class="w-100" [disabled]="trainingStarted" (click)="openModelOutputLocation()">Open...</app-button>
+    </app-group>
+
+    <app-group name="Smoothing" formGroupName="smoothing">
+        <app-input-container>
+            <label>Window size <app-required-symbol></app-required-symbol></label>
+            <select formControlName="windowSize" [attr.disabled]="trainingStarted ? '' : null">
+                <option [value]="smoothingWindowSize" *ngFor="let smoothingWindowSize of smoothingWindowSizes">{{
+                    smoothingWindowSize }}
+                </option>
+            </select>
+        </app-input-container>
+        <app-input-container>
+            <label>Polynomial degree <app-required-symbol></app-required-symbol></label>
+            <select formControlName="polynomialDegree" [attr.disabled]="trainingStarted ? '' : null">
+                <option [value]="smoothingPolynomialDegree"
+                    *ngFor="let smoothingPolynomialDegree of smoothingPolynomialDegrees">{{
+                    smoothingPolynomialDegree }}</option>
+            </select>
+        </app-input-container>
+    </app-group>
+
+    <app-checkbox-container>
+        <label>Scaling</label>
+        <input type="checkbox" formControlName="scale" [attr.disabled]="trainingStarted ? '' : null">
+    </app-checkbox-container>
+
+    <app-input-container>
+        <label>Input size <app-required-symbol></app-required-symbol></label>
+        <select formControlName="inputSize" [attr.disabled]="trainingStarted ? '' : null">
+            <option [value]="inputSize" *ngFor="let inputSize of inputSizes">{{ inputSize }}
+            </option>
+        </select>
+    </app-input-container>
+
+    <app-input-container>
+        <label>Output size <app-required-symbol></app-required-symbol></label>
+        <select formControlName="outputSize" [attr.disabled]="trainingStarted ? '' : null">
+            <option [value]="outputSize" *ngFor="let outputSize of outputSizes">{{ outputSize }}
+            </option>
+        </select>
+    </app-input-container>
+
+    <app-input-container>
+        <label>Loss function <app-required-symbol></app-required-symbol></label>
+        <select formControlName="lossFunction" [attr.disabled]="trainingStarted ? '' : null">
+            <option [value]="lossFunction.id" *ngFor="let lossFunction of lossFunctions">{{ lossFunction.label }}
+            </option>
+        </select>
+    </app-input-container>
+
+    <app-input-container>
+        <label>Optimizer <app-required-symbol></app-required-symbol></label>
+        <select formControlName="optimizer" [attr.disabled]="trainingStarted ? '' : null">
+            <option [value]="optimizer.id" *ngFor="let optimizer of optimizers">{{ optimizer.label }}
+            </option>
+        </select>
+    </app-input-container>
+    <app-input-container>
+        <label>Epochs <app-required-symbol></app-required-symbol></label>
+        <input type="text" formControlName="epochs" [readonly]="trainingStarted"
+            [attr.disabled]="trainingStarted ? '' : null">
+    </app-input-container>
+
+    <app-progress-bar [max]="maxTrainingNumber" [current]="trainingProgress" *ngIf="trainingStarted"></app-progress-bar>
+
+    <app-button class="w-100" (click)="startTraining()" [disabled]="form.invalid || trainingStarted">Start
+        training</app-button>
+</div>

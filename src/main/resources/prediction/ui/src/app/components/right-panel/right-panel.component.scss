@@ -1,0 +1,45 @@
+.backdrop {
+    background-color: #00000088;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    overflow-x: hidden;
+    backdrop-filter: blur(10px);
+
+    .panel {
+        width: 300px;
+        background-color: var(--color-background);
+        transition: 500ms;
+        margin-right: -400px;
+        box-shadow: -10px 0px 20px 0px rgba(0, 0, 0, 0.15);
+        
+        &.open {
+            margin-right: 0px;
+        }
+
+        &.close {
+            margin-right: -400px;
+        }
+        
+    }
+}
+
+::ng-deep {
+    .panel {
+        .elements {
+            padding: 16px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            height: calc(100vh - 49px);
+            
+        }
+    }
+}

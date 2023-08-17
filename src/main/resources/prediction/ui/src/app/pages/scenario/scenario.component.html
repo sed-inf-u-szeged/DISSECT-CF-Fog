@@ -1,0 +1,287 @@
+<div class="main-content">
+    <app-toolbar class="border-bottom">
+        <div start style="display: flex; gap: 8px; align-items: center; padding-left: 16px;">
+            <span class="title">DISSECT-CF-FOG Predictor</span>
+        </div>
+        <div end style="height: 100%;">
+            <app-button-fab style="position: relative; top: 24px; right: 16px"
+                [disabled]="form.invalid || isExportEnabledAndOutputEmpty() || predictors.length < 1"
+                (click)="onToggleSimulation()" [color]="simulationStarted ? 'error' : 'primary'">
+                <i [class]="simulationStarted ? 'fa fa-stop' : 'fa fa-play'"></i>
+            </app-button-fab>
+        </div>
+    </app-toolbar>
+
+    <form [formGroup]="form" class="page-content">
+        <div class="panels">
+            <div class="panel">
+                <div formGroupName="prediction">
+                    <app-group name="Predicton settings">
+                        <div style="position: absolute; top: 8px; right: 16px;">
+                            <app-button-icon color="normal-light" (click)="onOpenPredictionSettings()" *ngIf="predictors.length > 0 && !simulationStarted" icon="fa fa-file-upload"></app-button-icon>
+                        </div>
+                        <app-input-container>
+                            <label>Prediction length <app-required-symbol></app-required-symbol></label>
+                            <input type="text" formControlName="length" [readonly]="simulationStarted"
+                                [attr.disabled]="simulationStarted ? '' : null">
+                        </app-input-container>
+                        <app-input-container>
+                            <label>Test size <app-required-symbol></app-required-symbol></label>
+                            <input type="text" formControlName="testSize" [readonly]="simulationStarted"
+                                [attr.disabled]="simulationStarted ? '' : null">
+                        </app-input-container>
+                        <app-input-container>
+                            <label>Batch size <app-required-symbol></app-required-symbol></label>
+                            <select formControlName="batchSize" [attr.disabled]="simulationStarted ? '' : null">
+                                <option [value]="batchSize" *ngFor="let batchSize of batchSizes">{{ batchSize }}
+                                </option>
+                            </select>
+                        </app-input-container>
+
+                        <app-input-container>
+                            <label>Minimum prediction time <app-required-symbol></app-required-symbol></label>
+                            <input type="text" formControlName="minPredictionTime" [readonly]="simulationStarted"
+                                [attr.disabled]="simulationStarted ? '' : null">
+                        </app-input-container>
+
+                        <app-checkbox-container>
+                            <label>Scaling</label>
+                            <input type="checkbox" formControlName="scale"
+                                [attr.disabled]="simulationStarted ? '' : null">
+                        </app-checkbox-container>
+                    </app-group>
+
+                    <app-group name="Smoothing" formGroupName="smoothing" style="margin-top: 16px;">
+                        <app-input-container>
+                            <label>Window size <app-required-symbol></app-required-symbol></label>
+                            <select formControlName="windowSize" [attr.disabled]="simulationStarted ? '' : null">
+                                <option [value]="smoothingWindowSize"
+                                    *ngFor="let smoothingWindowSize of smoothingWindowSizes">{{ smoothingWindowSize }}
+                                </option>
+                            </select>
+                        </app-input-container>
+                        <app-input-container>
+                            <label>Polynomial degree <app-required-symbol></app-required-symbol></label>
+                            <select formControlName="polynomialDegree" [attr.disabled]="simulationStarted ? '' : null">
+                                <option [value]="smoothingPolynomialDegree"
+                                    *ngFor="let smoothingPolynomialDegree of smoothingPolynomialDegrees">{{
+                                    smoothingPolynomialDegree }}</option>
+                            </select>
+                        </app-input-container>
+                    </app-group>
+                </div>
+
+                <app-group name="Export settings" formGroupName="export">
+                    <app-checkbox-container>
+                        <label>Enable export</label>
+                        <input type="checkbox" formControlName="enabled"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-checkbox-container>
+
+                    <app-input-container *ngIf="showExportSettings()">
+                        <label>Output location <app-required-symbol></app-required-symbol></label>
+                        <input readonly type="text" formControlName="location"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-input-container>
+                    <app-button class="w-100" (click)="onOpenOutputDirectory()" *ngIf="showExportSettings()"
+                        [disabled]="simulationStarted">Open...</app-button>
+
+                    <app-checkbox-container *ngIf="showExportSettings()">
+                        <label>Save dataset</label>
+                        <input type="checkbox" formControlName="saveDataset"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-checkbox-container>
+
+                    <app-checkbox-container *ngIf="showExportSettings()">
+                        <label>Save prediction settings</label>
+                        <input type="checkbox" formControlName="savePredictionSettings"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-checkbox-container>
+
+                    <app-checkbox-container *ngIf="showExportSettings()">
+                        <label>Save predictions</label>
+                        <input type="checkbox" formControlName="savePredictions"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-checkbox-container>
+
+                    <app-checkbox-container *ngIf="showExportSettings()">
+                        <label>Save error metrics</label>
+                        <input type="checkbox" formControlName="saveMetrics"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                    </app-checkbox-container>
+                </app-group>
+            </div>
+
+            <div class="panel" formGroupName="predictor">
+                <app-group name="Predictor settings">
+                    <app-input-container>
+                        <label>Predictor</label>
+                        <select formControlName="predictor" (change)="onPredictorChange($event)"
+                            [attr.disabled]="simulationStarted ? '' : null">
+                            <option [value]="predictor.id" *ngFor="let predictor of predictors">{{ predictor.label }}
+                            </option>
+                        </select>
+                    </app-input-container>
+                </app-group>
+                <app-group name="Hyperparameters" formGroupName="hyperparameters"
+                    *ngIf="hyperparameters && hyperparameters.length > 0">
+                    <div *ngFor="let hyperparameter of hyperparameters">
+                        <div [ngSwitch]="hyperparameter.type">
+                            <div *ngSwitchCase="'text'">
+                                <app-input-container>
+                                    <label>{{ hyperparameter.label }} <app-required-symbol
+                                            *ngIf="hyperparameter.required"></app-required-symbol></label>
+                                    <input type="text" [formControlName]="hyperparameter.id"
+                                        [readonly]="simulationStarted" [attr.disabled]="simulationStarted ? '' : null">
+                                </app-input-container>
+                            </div>
+                            <div *ngSwitchCase="'boolean'">
+                                <app-checkbox-container>
+                                    <label>{{ hyperparameter.label }} <app-required-symbol
+                                            *ngIf="hyperparameter.required"></app-required-symbol></label>
+                                    <input type="checkbox" [formControlName]="hyperparameter.id"
+                                        [attr.disabled]="simulationStarted ? '' : null">
+                                </app-checkbox-container>
+                            </div>
+                            <div *ngSwitchCase="'select'">
+                                <app-input-container>
+                                    <label>{{ hyperparameter.label }} <app-required-symbol
+                                            *ngIf="hyperparameter.required"></app-required-symbol></label>
+                                    <select [formControlName]="hyperparameter.id"
+                                        [attr.disabled]="simulationStarted ? '' : null">
+                                        <option [value]="hOption.id" *ngFor="let hOption of hyperparameter.options">{{
+                                            hOption.label }}</option>
+                                    </select>
+                                </app-input-container>
+                            </div>
+                            <div *ngSwitchCase="'openFile'">
+                                <app-input-container>
+                                    <label>{{ hyperparameter.label }} <app-required-symbol
+                                            *ngIf="hyperparameter.required"></app-required-symbol></label>
+                                    <input type="text" readonly [formControlName]="hyperparameter.id"
+                                        style="margin-bottom: 16px">
+                                </app-input-container>
+                                <app-button class="w-100"
+                                    (click)="onOpenFile(hyperparameter.id, hyperparameter.options)"
+                                    [disabled]="simulationStarted">Open...</app-button>
+                            </div>
+                        </div>
+                    </div>
+                </app-group>
+                <app-group name="Options" formGroupName="options" *ngIf="options && options.length > 0">
+                    <div *ngFor="let option of options">
+                        <div [ngSwitch]="option.type">
+                            <div *ngSwitchCase="'text'">
+                                <app-input-container>
+                                    <label>{{ option.label }} <app-required-symbol
+                                            *ngIf="option.required"></app-required-symbol></label>
+                                    <input type="text" [formControlName]="option.id" [readonly]="simulationStarted"
+                                        [attr.disabled]="simulationStarted ? '' : null">
+                                </app-input-container>
+                            </div>
+                            <div *ngSwitchCase="'boolean'">
+                                <app-checkbox-container>
+                                    <label>{{ option.label }} <app-required-symbol
+                                            *ngIf="option.required"></app-required-symbol></label>
+                                    <input type="checkbox" [formControlName]="option.id"
+                                        [attr.disabled]="simulationStarted ? '' : null">
+                                </app-checkbox-container>
+                            </div>
+                            <div *ngSwitchCase="'select'">
+                                <app-input-container>
+                                    <label>{{ option.label }} <app-required-symbol
+                                            *ngIf="option.required"></app-required-symbol></label>
+                                    <select [formControlName]="option.id"
+                                        [attr.disabled]="simulationStarted ? '' : null">
+                                        <option [value]="oOption.id" *ngFor="let oOption of option.options">{{
+                                            oOption.label }}</option>
+                                    </select>
+                                </app-input-container>
+                            </div>
+                            <div *ngSwitchCase="'button'">
+                                <app-button class="w-100" (click)="onGeneralButton(option)" [disabled]="simulationStarted">{{ option.label }}</app-button>
+                            </div>
+                        </div>
+                    </div>
+                </app-group>
+            </div>
+        </div>
+        <div class="output">
+            <app-toolbar class="border-bottom">
+                <div start
+                    style="display: flex; gap: 8px; align-items: center; justify-content: center; padding-left: 8px;">
+                    <app-button-icon color="normal" icon="fa fa-chevron-left" (click)="onPrevPrediction()"></app-button-icon>
+                    <app-button-icon color="normal" icon="fa fa-chevron-right" (click)="onNextPrediction()"></app-button-icon>
+                    <span>{{ currentPredictionIndex + 1 }} / {{ predictions.size }} prediction</span>
+                    <div *ngIf="predictionIndexMoved" style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 8px;">
+                        <div style="transform: scale(0.5)">●</div>
+                        <app-button color="normal" (click)="onCurrentPrediction()"
+                        >Show current</app-button>
+                    </div>
+                    <div style="transform: scale(0.5)">●</div>
+                    <div>
+                        <i class="fa fa-clock" style="margin-right: 8px;"></i>
+                        <span>{{ this.stopWatch.getFormatedTime() }}</span>
+                    </div>
+                </div>
+                <div end style="padding-right: 16px;">
+
+                </div>
+            </app-toolbar>
+            <app-toolbar class="border-bottom">
+                <div start style="width: 100%;">
+                    <form
+                        style="display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; padding-right: 16px; gap: 16px;"
+                        [formGroup]="formChartFilters">
+                        <app-checkbox-container>
+                            <label style="margin-right: 8px; font-size: 10px;">Original data</label>
+                            <input type="checkbox" formControlName="original">
+                        </app-checkbox-container>
+                        <app-checkbox-container>
+                            <label style="margin-right: 8px; font-size: 10px">Preprocessed start</label>
+                            <input type="checkbox" formControlName="preprocessedBeginning">
+                        </app-checkbox-container>
+                        <app-checkbox-container>
+                            <label style="margin-right: 8px; font-size: 10px">Prepocessed end</label>
+                            <input type="checkbox" formControlName="preprocessedEnd">
+                        </app-checkbox-container>
+                        <app-checkbox-container>
+                            <label style="margin-right: 8px; font-size: 10px">Test prediction</label>
+                            <input type="checkbox" formControlName="predictionTest">
+                        </app-checkbox-container>
+                        <app-checkbox-container>
+                            <label style="margin-right: 8px; font-size: 10px">Future prediction</label>
+                            <input type="checkbox" formControlName="predictionFuture">
+                        </app-checkbox-container>
+                    </form>
+                </div>
+                <div end style="display: flex; align-items: center; justify-content: flex-end; padding-left: 16px; padding-right: 16px; gap: 8px; min-width: 200px;" *ngIf="!simulationStarted && predictions.size > 0">
+                    <span style="font-size: 10px;">View simulation</span>
+                    <app-button-icon icon="fa fa-chart-line" color="normal" (click)="onViewSimulation()"></app-button-icon>
+                </div>
+            </app-toolbar>
+            <div class="output-container" *ngIf="predictions.size > 0">
+                <div class="item" *ngFor="let prediction of predictions.get(currentPredictionIndex)">
+                    <app-prediction-chart [prediction]="prediction" [chartFilters]="formChartFilters.value">
+                    </app-prediction-chart>
+                </div>
+            </div>
+            <div *ngIf="predictions.size < 1 && !simulationStarted"
+                style="height: calc(100% - 49px - 49px); display: flex; justify-content: center; align-items: center; color: #555555">
+                No predictions.
+            </div>
+
+            <div *ngIf="predictions.size < 1 && simulationStarted"
+                style="height: calc(100% - 49px - 49px); display: flex; justify-content: center; align-items: center; color: #555555">
+                <app-loading-circle></app-loading-circle>
+            </div>
+        </div>
+    </form>
+
+    <app-toolbar class="border-top">
+        <div start style="display: flex; gap: 8px; align-items: center; padding-left: 16px;">
+            <i class="fa fa-circle-info"></i>
+            <span>{{ statusText }}</span>
+        </div>
+    </app-toolbar>
+</div>

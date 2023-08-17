@@ -1,0 +1,46 @@
+.input-container {
+    display: flex;
+    
+    &.vertical {
+        flex-direction: column;
+    }
+
+    &.horizontal {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+::ng-deep {
+    .input-container {
+        &.vertical {
+            label {
+                margin-bottom: 8px;
+            }
+        }
+
+        &.horizontal {
+            label {
+                margin-right: 8px;
+            }
+        }
+    }
+    
+
+    input, select {
+        border: none;
+        background-color: var(--color-foreground-light);
+        padding: 8px 8px;
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+        outline: none;
+
+        &:focus {
+            box-shadow: 0px 0px 0px 2px var(--color-primary);
+        }
+
+        &:hover {
+            background-color: var(--color-foreground-lighter);
+        }
+    }
+}

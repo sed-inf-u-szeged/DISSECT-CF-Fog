@@ -3,39 +3,32 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.PliantApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.RandomApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.IApplication;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.CostAwareDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.PliantDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyChartVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.*;
 
 public class IoTSimulation {
 
     public static void main(String[] args) throws Exception {
-        
         SimLogger.setLogging(22, true);
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
@@ -75,6 +68,7 @@ public class IoTSimulation {
                 new PliantApplicationStrategy(0.9, 2.0), appInstance2);
         Application application3 = new Application("App-3", 1 * 60 * 1000, 250, 2500, true,
                 new PliantApplicationStrategy(0.9, 2.0), appInstance3);
+
 
         /*
          * Application application2 = new Application("App-2", 1 * 60 * 60 * 1000, 2500,
@@ -153,7 +147,6 @@ public class IoTSimulation {
         EnergyChartVisualiser.generateApplicationEnergyChart(ScenarioBase.resultDirectory);
         EnergyChartVisualiser.generateDeviceEnergyChart(ScenarioBase.resultDirectory);
         MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, smartDevice2);
-
     }
 
 }

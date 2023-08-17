@@ -1,0 +1,25 @@
+<app-toolbar class="border-bottom">
+    <div start style="display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; padding-right: 16px; gap: 8px;" [formGroup]="form">
+        <app-input-container orientation="horizontal">
+            <label>Feature</label>
+            <select formControlName="feature" (change)="onChangeFeature($event)" [attr.disabled]="playing ? '' : null">
+                <option [value]="featureName" *ngFor="let featureName of getFeatureNames()">{{ featureName }}
+                </option>
+            </select>
+        </app-input-container>
+
+        <app-input-container orientation="horizontal">
+            <label>Speed (ms)<app-required-symbol></app-required-symbol></label>
+            <input type="text" formControlName="speed" [readonly]="playing"
+                [attr.disabled]="playing ? '' : null">
+        </app-input-container>
+    </div>
+    <div end style="display: flex; align-items: center; justify-content: flex-end; padding-left: 16px; padding-right: 16px; gap: 8px;">
+        <span>{{ currentPredictionIndex + 1 }} / {{ getPredictions().length }}</span>
+        <div style="transform: scale(0.5)">●</div>
+        <app-button-icon [icon]="playing ? 'fa fa-stop' : 'fa fa-play'" [color]="playing ? 'error' : 'primary'" [disabled]="form.invalid" (click)="togglePlay()"></app-button-icon>
+    </div>
+</app-toolbar>
+<div class="elements">
+    <app-prediction-chart [prediction]="currentPrediction" *ngIf="currentPrediction"></app-prediction-chart>
+</div>

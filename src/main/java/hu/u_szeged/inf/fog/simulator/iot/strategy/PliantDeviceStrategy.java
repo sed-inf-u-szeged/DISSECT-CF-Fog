@@ -159,7 +159,7 @@ public class PliantDeviceStrategy extends DeviceStrategy {
             }
         }
 
-        Collections.shuffle(finaldecision);
+        Collections.shuffle(finaldecision, SeedSyncer.centralRnd);
         int temp = SeedSyncer.centralRnd.nextInt(finaldecision.size());
 
         return finaldecision.elementAt(temp);

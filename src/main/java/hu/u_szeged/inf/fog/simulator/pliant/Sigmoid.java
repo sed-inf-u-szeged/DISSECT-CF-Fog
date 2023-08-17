@@ -47,6 +47,6 @@ public class Sigmoid implements Normalizer {
     }
 
     public Double getAt(Double x) {
-        return 1 / (1 + Math.pow(Math.E, (-1) * lambda * (x - shift)));
+        return 1.0 / (1.0 + Math.pow(Math.E, (-1.0) * lambda * (x - shift)));
     }
 }

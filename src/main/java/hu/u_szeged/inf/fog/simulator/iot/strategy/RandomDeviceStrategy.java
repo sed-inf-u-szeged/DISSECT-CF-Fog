@@ -12,7 +12,7 @@ public class RandomDeviceStrategy extends DeviceStrategy {
     public void findApplication() {
         this.chosenApplication = null;
         ArrayList<Application> availableApplications = this.getAvailableApplications();
-
+     
         if (availableApplications.size() > 0) {
             int rnd = SeedSyncer.centralRnd.nextInt(availableApplications.size());
             this.chosenApplication = availableApplications.get(rnd);

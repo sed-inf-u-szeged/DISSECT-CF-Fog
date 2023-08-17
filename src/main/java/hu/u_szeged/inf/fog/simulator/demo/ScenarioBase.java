@@ -14,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.AWSProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
 import hu.u_szeged.inf.fog.simulator.provider.IBMProvider;
@@ -32,11 +33,11 @@ import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
     
-    protected static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
+    public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
             .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
 
-    protected static final  String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
+    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
             .append("src").append(File.separator).append("main").append(File.separator).append("resources")
             .append(File.separator).append("script").append(File.separator).toString();
 
@@ -133,16 +134,18 @@ public class ScenarioBase {
         }
         SimLogger.logRes("Total amount of generated / received / processed / locally processed / stuck data (bytes): "
                 + totalGeneratedData + " / " + totalReceivedData + " / " + totalProcessedData + " / "
-                + totalLocallyProcessedData + " / " + SmartDevice.stuckData);
+                + totalLocallyProcessedData + " / " + SmartDevice.stuckData + " ~" + totalGeneratedData / 1024 / 1024 + " MB");
         SimLogger.logRes("Total message count (pc.): " + totalMessageCount);
         SimLogger.logRes("Total time on network (seconds): "
                 + TimeUnit.SECONDS.convert(Application.totalTimeOnNetwork, TimeUnit.MILLISECONDS));
-        SimLogger.logRes("Total bytes on network: " + Application.totalBytesOnNetwork);
+        SimLogger.logRes("Total bytes on network (MB): " + Application.totalBytesOnNetwork / 1024 / 1024);
         SimLogger.logRes("Number of VMs (pc.): " + numberOfVms + " Number of tasks (pc.): " + numberOfTasks);
         SimLogger.logRes("Number of events (pc.)" + "\n\tChange position: " + MobilityEvent.changePositionEventCounter
                 + "\n\tChange node: " + MobilityEvent.changeNodeEventCounter + "\n\tConnect to node: "
                 + MobilityEvent.connectToNodeEventCounter + "\n\tDisconnect from node: "
                 + MobilityEvent.disconnectFromNodeEventCounter);
+        
+        SimLogger.logRes("Total number of predictions: " + FeatureManager.getInstance().getTotalNumOfPredictions());
 
         final var actuatorEvents = ActuatorEvents.builder().changePosition(MobilityEvent.changePositionEventCounter)
                 .changeNode(MobilityEvent.changeNodeEventCounter).connectToNode(MobilityEvent.connectToNodeEventCounter)

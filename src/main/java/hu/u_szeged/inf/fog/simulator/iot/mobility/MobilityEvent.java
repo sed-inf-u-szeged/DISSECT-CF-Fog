@@ -15,8 +15,10 @@ public class MobilityEvent {
     public static long changeNodeEventCounter = 0;
 
     public static void changePositionEvent(Device device, GeoLocation geoLocation) {
-        device.geoLocation = geoLocation;
-        changePositionEventCounter++;
+    	if(geoLocation != null) {
+    		device.geoLocation = geoLocation;
+            changePositionEventCounter++;
+    	}
     }
 
     public static void connectToNodeEvent(Device device, Application application) {

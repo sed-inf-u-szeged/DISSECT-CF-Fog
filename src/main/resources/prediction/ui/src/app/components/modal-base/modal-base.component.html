@@ -1,0 +1,12 @@
+<div class="backdrop">
+    <div class="modal">
+        <app-toolbar class="border-bottom">
+            <div start style="display: flex; gap: 8px; align-items: center; padding-left: 16px;">
+                <span class="title">{{ modalService.data?.title || '' }}</span>
+            </div>
+            <div end style="display: flex; gap: 8px; align-items: center; padding-right: 8px;">
+                <app-button-icon color="normal" icon="fa fa-close" (click)="close()"></app-button-icon>
+            </div>
+        </app-toolbar>
+    </div>
+</div>

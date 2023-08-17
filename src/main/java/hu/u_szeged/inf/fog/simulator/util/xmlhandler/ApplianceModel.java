@@ -10,6 +10,7 @@ import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicatio
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
@@ -145,6 +146,15 @@ public class ApplianceModel {
 
     private static ApplicationStrategy findApplicationStrategy(String strategy, double activationRatio,
             double TransferDevider) {
+
+        /*try {
+            FeatureManager.getInstance().sendFeaturesForPrediction();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }*/
+
         if (strategy.equals("HoldDownApplicationStrategy")) {
             return new HoldDownApplicationStrategy(activationRatio, TransferDevider);
         } else if (strategy.equals("PliantApplicationStrategy")) {

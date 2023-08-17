@@ -1,0 +1,5 @@
+<div class="input-container" [class.vertical]="orientation === 'vertical'" [class.horizontal]="orientation === 'horizontal'">
+    <ng-content select="label"></ng-content>
+    <ng-content select="input"></ng-content>
+    <ng-content select="select"></ng-content>
+</div>

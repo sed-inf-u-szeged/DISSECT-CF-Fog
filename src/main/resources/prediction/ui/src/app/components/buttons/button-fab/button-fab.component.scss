@@ -1,0 +1,40 @@
+button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--color-background);
+
+    &.primary {
+      background-color: var(--color-primary);
+
+      &:hover {
+        background-color: var(--color-primary-darker);
+      }
+    }
+
+    &.error {
+      background-color: var(--color-error);
+
+      &:hover {
+        background-color: var(--color-error-darker);
+      }
+    }
+
+    &:disabled {
+      background-color: var(--color-foreground-light);
+      cursor: auto;
+    }
+}
+
+::ng-deep {
+  button {
+    &.primary {
+      i {
+        color: var(--color-background);
+      }
+    }
+  }
+}

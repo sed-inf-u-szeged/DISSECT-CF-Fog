@@ -129,21 +129,24 @@ public abstract class Device extends Timed {
         return temp;
     }
     
+    private void realTransfer() {
+        this.localMachine.localDisk.contents().stream()
+        .filter(storageObject -> !(storageObject instanceof VirtualAppliance)).forEach(storageObject -> {
+            DeviceDataEvent soe = new DeviceDataEvent(this, storageObject);
+            // this.localRepo.requestContentDelivery(so.id, this.caRepository, soe);
+            try {
+                NetworkNode.initTransfer(storageObject.size, ResourceConsumption.unlimitedProcessing,
+                        this.localMachine.localDisk, this.caRepository, soe);
+            } catch (NetworkException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+    
     protected void startDataTransfer() throws NetworkException {
         if (this.deviceStrategy.chosenApplication.computingAppliance.gateway.vm.getState()
                 .equals(VirtualMachine.State.RUNNING)) {
-            this.localMachine.localDisk.contents().stream()
-                    .filter(storageObject -> !(storageObject instanceof VirtualAppliance)).forEach(storageObject -> {
-                        DeviceDataEvent soe = new DeviceDataEvent(this, storageObject);
-                        // this.localRepo.requestContentDelivery(so.id, this.caRepository, soe);
-                        try {
-                            NetworkNode.initTransfer(storageObject.size, ResourceConsumption.unlimitedProcessing,
-                                    this.localMachine.localDisk, this.caRepository, soe);
-                        } catch (NetworkException e) {
-                            e.printStackTrace();
-                        }
-                    });
-
+        	this.realTransfer();
         } else if (!this.deviceStrategy.chosenApplication.isSubscribed()) {
             this.deviceStrategy.chosenApplication.subscribeApplication();
         }

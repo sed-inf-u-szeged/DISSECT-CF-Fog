@@ -1,0 +1,21 @@
+.group {
+    position: relative;
+    background-color: var(--color-foreground);
+    padding: 16px;
+    border-radius: var(--border-radius);
+
+    .name {
+        color: var(--color-primary);
+    }
+
+    .content {
+        gap: 16px;
+        display: flex;
+        flex-direction: column;
+        margin-top: 16px;
+    }
+}
+
+:host {
+    display: block;
+}

@@ -1,0 +1,49 @@
+.backdrop {
+    background-color: #00000088;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px);
+
+    .modal {
+        width: 75%;
+        height: 75%;
+        background-color: var(--color-background);
+        transition: 500ms;
+        margin-top: -400px;
+        box-shadow: -10px 0px 20px 0px rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        border-radius: var(--border-radius);
+        
+        &.open {
+            margin-top: 0px;
+            opacity: 1;
+        }
+
+        &.close {
+            margin-top: -400px;
+            opacity: 0;
+        }
+        
+    }
+}
+
+::ng-deep {
+    .modal {
+        .elements {
+            padding: 16px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            height: calc(100% - 49px);
+        }
+    }
+}

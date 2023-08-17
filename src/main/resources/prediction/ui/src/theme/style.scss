@@ -1,0 +1,32 @@
+@font-face {
+    font-family: 'Inter';
+    src: url('../assets/fonts/inter/Inter-Regular.ttf');
+}
+
+* {
+    font-family: Inter, Helvetica, sans-serif;
+    font-size: 12px;
+}
+
+:root {
+    --color-primary: #ffd174;
+    --color-primary-darker: #e4b659;
+    --color-error: #ff5479;
+    --color-error-darker: #dd4c6c;
+    --color-background: #1c1c1f;
+    --color-foreground: #27272c;
+    --color-foreground-light: #45454e;
+    --color-foreground-lighter: #595966;
+    --color-text: #EBEBEB;
+    --border-radius: 2px;
+    --transition: 150ms;
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-foreground);
+    border-radius: var(--border-radius);
+}

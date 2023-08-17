@@ -1,0 +1,51 @@
+.checkbox-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+::ng-deep {
+    input[type="checkbox"] {
+        width: 20px; 
+        height: 20px;
+        border-radius: var(--border-radius);
+        background: var(--color-foreground-light);
+        cursor: pointer;
+        appearance: none; 
+        -webkit-appearance: none; 
+        transition: var(--transition);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &:hover {
+            background-color: var(--color-foreground-lighter);
+        }
+    }
+
+    input[type="checkbox"]::after {
+        content: '';
+        display: block;
+        min-width: 10px;
+        min-height: 10px;
+        border-radius: 50%;
+        background-color: var(--color-primary);
+        opacity: 0;
+        transform: scale(0);
+        transition: var(--transition);
+    }
+    
+    input[type="checkbox"]:checked { 
+        &::after {
+            opacity: 1;
+            transform: scale(1);
+            border-radius: var(--border-radius);
+        }
+    }
+    
+    input:disabled, #textarea-config:disabled {
+        opacity: 0.75;
+        cursor: auto;
+    }
+}

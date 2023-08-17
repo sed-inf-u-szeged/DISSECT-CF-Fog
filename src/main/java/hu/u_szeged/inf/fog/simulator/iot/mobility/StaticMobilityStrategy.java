@@ -11,6 +11,6 @@ public class StaticMobilityStrategy extends MobilityStrategy {
 
     @Override
     public GeoLocation move(Device device, long freq) {
-        return this.startPosition;
+        return null;
     }
 }

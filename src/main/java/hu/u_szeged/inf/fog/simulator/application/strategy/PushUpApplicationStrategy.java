@@ -13,7 +13,7 @@ public class PushUpApplicationStrategy extends ApplicationStrategy {
     @Override
     public void findApplication(long dataForTransfer) {
         if (this.application.computingAppliance.parent != null) {
-            Application chosenApplication = this.application.computingAppliance.applications
+            Application chosenApplication = this.application.computingAppliance.parent.applications
                     .get(SeedSyncer.centralRnd.nextInt(this.application.computingAppliance.parent.applications.size()));
             this.startDataTranfer(chosenApplication, dataForTransfer);
         }

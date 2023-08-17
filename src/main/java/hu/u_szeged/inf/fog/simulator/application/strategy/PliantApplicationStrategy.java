@@ -5,9 +5,14 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.pliant.FuzzyIndicators;
 import hu.u_szeged.inf.fog.simulator.pliant.Sigmoid;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Vector;
+import hu.u_szeged.inf.fog.simulator.prediction.Feature;
+import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
+import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.PredictorSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
+
+import java.util.*;
 
 public class PliantApplicationStrategy extends ApplicationStrategy {
 
@@ -25,8 +30,23 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
     }
 
     private Application decisionMaker(ArrayList<ComputingAppliance> availableCompAppliances) {
-
         ComputingAppliance currentCa = this.application.computingAppliance;
+        List<Prediction> predictions = new ArrayList<>();
+        if (PredictionSimulation.PREDICTION_ENABLED) {
+            List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
+                    SimulationSettings.get().getPrediction().getBatchSize()
+            );
+            if (features.size() > 0) {
+                try {
+                    predictions = FeatureManager.getInstance().predict(
+                            features,
+                            SimulationSettings.get().getPrediction().getBatchSize()
+                    );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
         double minLoadOfResource = currentCa.getLoadOfResource();
         double maxLoadOfResource = currentCa.getLoadOfResource();
@@ -79,7 +99,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                 maxLatency = latency;
             }
 
-            double unprocesseddata = (ca.applications.get(0).receivedData - ca.applications.get(0).receivedData)
+            double unprocesseddata = (ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
                     / ca.applications.get(0).tasksize;
             if (unprocesseddata < minUnprocessedData) {
                 minUnprocessedData = unprocesseddata;
@@ -92,6 +112,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         Vector<Double> loadOfResource = new Vector<Double>();
         Vector<Double> price = new Vector<Double>();
         Vector<Double> unprocesseddata = new Vector<Double>();
+        Map<String, Double> pred_unprocesseddata = new HashMap<>();
 
         for (int i = 0; i < availableCompAppliances.size(); i++) {
 
@@ -116,6 +137,35 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             unprocesseddata.add(
                     sig.getAt((double) ((ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
                             / ca.applications.get(0).tasksize)));
+
+            //if we have prediction
+            //find the element from prediction.
+            if (predictions.size() > 0) {
+                for (Prediction prediction: predictions) {
+                    String[] name = prediction.getFeatureName().split("::");
+
+                    //Find the relevant compuerappliant
+                    if (name[0].equals(ca.name)) {
+                        double tmpavg = 0.0;
+                        int num = 0;
+                        for (int k = 0; k < 10; k++) {
+                            if (prediction.getPredictionFuture() == null) {
+                                continue;
+                            }
+                            tmpavg += prediction.getPredictionFuture().getData().get(k);
+                            num++;
+                        }
+                        tmpavg /= num;
+                        double act_ud = (double) ((ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
+                                / ca.applications.get(0).tasksize);
+                        //pred_unprocesseddata.add(p.getData().get(0));
+                        sig = new Sigmoid(Double.valueOf(-1.0 /32768.0), Double.valueOf(act_ud));
+                        //unprocesseddata.add(sig.getAt((double) tmpavg));
+                        pred_unprocesseddata.put(name[0], sig.getAt((double) tmpavg));
+
+                    }
+                }
+            }
         }
 
         Vector<Integer> score = new Vector<Integer>();
@@ -126,6 +176,9 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             temp.add(price.get(i));
 
             temp.add(unprocesseddata.get(i));
+            if (pred_unprocesseddata.containsKey(availableCompAppliances.get(i).name)) {
+                temp.add(pred_unprocesseddata.get(availableCompAppliances.get(i).name));
+            }
             score.add((int) (FuzzyIndicators.getAggregation(temp) * 100));
         }
         // System.out.println("Pontozás: " + score);
@@ -175,7 +228,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         }
           
 
-        Collections.shuffle(finaldecision);
+        Collections.shuffle(finaldecision, SeedSyncer.centralRnd);
         int chooseIdx = SeedSyncer.centralRnd.nextInt(finaldecision.size());
 
         if (finaldecision.get(chooseIdx) != -1) {

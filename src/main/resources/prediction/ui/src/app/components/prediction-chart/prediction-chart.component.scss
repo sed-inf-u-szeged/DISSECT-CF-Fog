@@ -1,0 +1,33 @@
+#predictionCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+#errorCanvas {
+    width: 140px;
+    height: 140px;
+}
+
+:host {
+    width: 100%;
+    height: 100%;
+    gap: 16px;
+    display: flex;
+    flex-direction: row;
+}
+
+.chart-prediction {
+    width: calc(100% - 140px - 16px);
+    height: 100%;
+    border-radius: var(--border-radius);
+    background-color: var(--color-foreground);
+}
+
+.chart-error {
+    width: 140px;
+    height: 140px;
+    position: relative;
+    top: 25%;
+    border-radius: var(--border-radius);
+    background-color: var(--color-foreground);
+}
