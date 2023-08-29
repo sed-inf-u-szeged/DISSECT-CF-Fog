@@ -1,3 +1,7 @@
+<p align="center">
+<img width="222" src="https://www.inf.u-szeged.hu/~markusa/dcf-logo-min.png"/>
+</p>
+
 # DISSECT-CF-Fog simulator for modelling IoT-Fog-Cloud systems
 
 [![CodeFactor](https://www.codefactor.io/repository/github/andrasmarkus/dissect-cf/badge)](https://www.codefactor.io/repository/github/andrasmarkus/dissect-cf) [![Maintainability](https://api.codeclimate.com/v1/badges/26b5b9604c501e3d7dde/maintainability)](https://codeclimate.com/github/andrasmarkus/dissect-cf/maintainability) [![Build Status](https://app.travis-ci.com/andrasmarkus/dissect-cf.svg?branch=master)](https://app.travis-ci.com/andrasmarkus/dissect-cf) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) ![lastcommit](https://img.shields.io/github/last-commit/andrasmarkus/dissect-cf) ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/andrasmarkus/dissect-cf)
