@@ -6,18 +6,29 @@
 
 ## About
 
+The DISSECT-CF-Fog simulator has been evolving since 2016 in the [IoT Cloud Research Group] at the University of Szeged, Hungary. It is built upon [DISSECT-CF] infrastructure cloud simulator. The stable version is able to investigate the trade-offs of offloading algorithms and the scheduling of IoT workflow jobs. 
 
 The project currently consists of five modules, as follows.
 
 ### 1. Simulator
 
+The descrete-event, core [simulator module] focusing on the interoperation and analysis of IoT-Fog-Cloud systems.
+
 ### 2. Web Application
+
+An Angular-based [web application module] that can be used to set up a simulation and its parameters without programming.
 
 ### 3. Executor
 
+A Spring Boot-based [executor module] that is able to load and execute configurations stored in a MongoDB, created by the [web application module]. 
+
 ### 4. Predictor UI
 
+An Electron.js-based [desktop application module] that helps configure and manage scenarios utilising the time series analysis functionality of the core simulator.
+
 ### 5. Converter
+
+Initial version of a [converter module] that is able to transform simple CloudSim and iFogSim scenarios to simulation in DISSECT-CF-Fog, and vice versa.
 
 ## Relevant Publications
 
@@ -30,6 +41,15 @@ The project currently consists of five modules, as follows.
 ## Contact
 
 For any inquiries please contact by email to: markusa@inf.u-szeged.hu
+
+[DISSECT-CF]: <https://github.com/kecskemeti/dissect-cf>
+[IoT Cloud Research Group]: <https://www.sed.inf.u-szeged.hu/iotcloud>
+
+[simulator module]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/simulator
+[web application module]: <https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/webapp>
+[executor module]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/executor
+[desktop application module]: <https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/predictor-ui>
+[converter module]: <https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/converter>
 
 [Simulating IoT Workflows in DISSECT-CF-Fog]: <https://doi.org/10.3390/s23031294>
 [Location-aware Task Allocation Strategies for IoT-Fog-Cloud Environments]: <https://doi.org/10.1109/PDP52278.2021.00037>
