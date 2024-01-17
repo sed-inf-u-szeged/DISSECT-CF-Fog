@@ -5,10 +5,9 @@
 </p>
 
 ## About
+The evolution of the DISSECT-CF-Fog simulator has been underway since 2016 within the [IoT Cloud Research Group] at the University of Szeged, Hungary. It is built upon the [DISSECT-CF] infrastructure cloud simulator. The stable version is able to investigate the trade-offs of offloading algorithms as well as execute the scheduling of IoT workflow jobs. 
 
-The DISSECT-CF-Fog simulator has been evolving since 2016 in the [IoT Cloud Research Group] at the University of Szeged, Hungary. It is built upon the [DISSECT-CF] infrastructure cloud simulator. The stable version is able to investigate the trade-offs of offloading algorithms as well as execute the scheduling of IoT workflow jobs. 
-
-The project currently consists of five modules, as follows.
+The project currently consists of five modules; for further details please follow the links provided below:
 
 ### 1. Simulator
 
