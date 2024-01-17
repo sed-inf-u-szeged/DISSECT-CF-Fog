@@ -12,7 +12,7 @@ The project currently consists of five modules, as follows.
 
 ### 1. Simulator
 
-The descrete-event, core [simulator module] focusing on the interoperation and analysis of IoT-Fog-Cloud systems.
+The discrete-event, core [simulator module] focusing on the interoperation and analysis of IoT-Fog-Cloud systems.
 
 ### 2. Web Application
 
