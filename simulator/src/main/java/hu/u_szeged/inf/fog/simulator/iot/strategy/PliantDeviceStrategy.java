@@ -8,6 +8,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.pliant.FuzzyIndicators;
 import hu.u_szeged.inf.fog.simulator.pliant.Kappa;
 import hu.u_szeged.inf.fog.simulator.pliant.Sigmoid;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;

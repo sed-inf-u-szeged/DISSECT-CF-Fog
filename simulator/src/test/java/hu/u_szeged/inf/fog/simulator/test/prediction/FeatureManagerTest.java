@@ -1,8 +1,12 @@
-package hu.u_szeged.inf.fog.simulator.prediction;
+package hu.u_szeged.inf.fog.simulator.test.prediction;
 
 import org.json.JSONException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import hu.u_szeged.inf.fog.simulator.prediction.Feature;
+import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
+import hu.u_szeged.inf.fog.simulator.prediction.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

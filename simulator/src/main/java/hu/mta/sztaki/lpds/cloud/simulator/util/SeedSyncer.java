@@ -42,11 +42,11 @@ public class SeedSyncer {
 	/**
 	 * The random seed for the central random generator.
 	 * 
-	 * To set this seed, you must define the system property of
+	 * To set this seed, you can define the system property of
 	 * "hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer.seed" before running
 	 * any simulations.
 	 */
-	public static final int seed;
+	public static int seed;
 
 	static {
 		String seedText = System.getProperty("hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer.seed");
@@ -63,5 +63,12 @@ public class SeedSyncer {
 	 */
 	public static void resetCentral() {
 		centralRnd.setSeed(seed);
+	}
+	
+	/**
+     * To modify the simulator's random generator based on the given seed
+     */
+	public static void modifySeed(long seed) {
+	    centralRnd.setSeed(seed);
 	}
 }

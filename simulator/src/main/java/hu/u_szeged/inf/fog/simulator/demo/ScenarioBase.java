@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.result.ActuatorEvents;
@@ -32,7 +33,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
-    
+        
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
             .append(File.separator).append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
@@ -42,6 +43,8 @@ public class ScenarioBase {
             .append(File.separator).append("script").append(File.separator).toString();
 
     public static String resultDirectory;
+    
+    public static boolean reproducibleRandom;
 
     static {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");

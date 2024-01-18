@@ -4,6 +4,7 @@ package hu.u_szeged.inf.fog.simulator.iot.strategy;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
+
 import java.util.ArrayList;
 
 public class RandomDeviceStrategy extends DeviceStrategy {
