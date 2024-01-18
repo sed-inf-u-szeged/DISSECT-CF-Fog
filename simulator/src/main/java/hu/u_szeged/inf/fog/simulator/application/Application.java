@@ -92,14 +92,14 @@ public class Application extends Timed {
     public void subscribeApplication() {
         subscribe(this.freq);
 
-        if (this.computingAppliance.gateway.vm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
+        if (this.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
             try {
-                ResourceAllocation ra = this.computingAppliance.gateway.pm
-                        .allocateResources(ComputingAppliance.gatewayArc, false, PhysicalMachine.defaultAllocLen);
-                this.computingAppliance.gateway.vm.switchOn(ra, null);
-                this.computingAppliance.gateway.restartCounter++;
-                this.computingAppliance.gateway.runningPeriod = Timed.getFireCount();
-                SimLogger.logRun(this.computingAppliance.name + " gateway is turned on at: " + Timed.getFireCount());
+                ResourceAllocation ra = this.computingAppliance.broker.pm
+                        .allocateResources(ComputingAppliance.brokerArc, false, PhysicalMachine.defaultAllocLen);
+                this.computingAppliance.broker.vm.switchOn(ra, null);
+                this.computingAppliance.broker.restartCounter++;
+                this.computingAppliance.broker.runningPeriod = Timed.getFireCount();
+                SimLogger.logRun(this.computingAppliance.name + " broker is turned on at: " + Timed.getFireCount());
             } catch (VMManagementException | NetworkException e) {
                 e.printStackTrace();
             }
@@ -204,7 +204,8 @@ public class Application extends Timed {
     @Override
     public void tick(long fires) {
         long unprocessedData = (this.receivedData - this.processedData);
-        FeatureManager.getInstance().getFeatureByName(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")).computeValue();
+        // TODO: only needed when prediction is active
+        //FeatureManager.getInstance().getFeatureByName(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")).computeValue();
         if (unprocessedData > 0) {
             long alreadyProcessedData = 0;
             while (unprocessedData != alreadyProcessedData) {
@@ -275,16 +276,16 @@ public class Application extends Timed {
             unsubscribe();
 
             try {
-                if (this.computingAppliance.gateway.vm.getState().equals(VirtualMachine.State.RUNNING)) {
-                    this.computingAppliance.gateway.pm = this.computingAppliance.gateway.vm.getResourceAllocation()
+                if (this.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.RUNNING)) {
+                    this.computingAppliance.broker.pm = this.computingAppliance.broker.vm.getResourceAllocation()
                             .getHost();
-                    this.computingAppliance.gateway.vm.switchoff(false);
-                    this.computingAppliance.gateway.workTime += (Timed.getFireCount()
-                            - this.computingAppliance.gateway.runningPeriod);
-                    timelineEntries.add(new TimelineEntry(this.computingAppliance.gateway.runningPeriod,
-                            Timed.getFireCount(), this.computingAppliance.name + "-gateway"));
-                    //System.out.println(this.computingAppliance.name + " gateway is turned off at: " + Timed.getFireCount() + " ");
-                    SimLogger.logRun(this.computingAppliance.name + " gateway is turned off at: " + Timed.getFireCount() + " ");
+                    this.computingAppliance.broker.vm.switchoff(false);
+                    this.computingAppliance.broker.workTime += (Timed.getFireCount()
+                            - this.computingAppliance.broker.runningPeriod);
+                    timelineEntries.add(new TimelineEntry(this.computingAppliance.broker.runningPeriod,
+                            Timed.getFireCount(), this.computingAppliance.name + "-broker"));
+                    //System.out.println(this.computingAppliance.name + " broker is turned off at: " + Timed.getFireCount() + " ");
+                    SimLogger.logRun(this.computingAppliance.name + " broker is turned off at: " + Timed.getFireCount() + " ");
                 }
             } catch (StateChangeException e) {
                 e.printStackTrace();

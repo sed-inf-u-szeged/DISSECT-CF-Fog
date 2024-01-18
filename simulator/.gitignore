@@ -396,5 +396,6 @@ poetry.toml
 
 # Additional 
 .checkstyle
-res_*/
+*sim_res*
 *out.xml
+/target/

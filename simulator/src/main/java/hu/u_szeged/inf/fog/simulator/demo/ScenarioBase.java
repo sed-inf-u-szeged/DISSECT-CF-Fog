@@ -34,10 +34,10 @@ import java.util.concurrent.TimeUnit;
 public class ScenarioBase {
     
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
-            .append(File.separator).append("simulator").append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
+            .append(File.separator).append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
 
-    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator).append("simulator").append(File.separator)
+    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator).append(File.separator)
             .append("src").append(File.separator).append("main").append(File.separator).append("resources")
             .append(File.separator).append("script").append(File.separator).toString();
 
@@ -69,7 +69,7 @@ public class ScenarioBase {
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes("Computing Appliance: " + ca.name);
             SimLogger.logRes("\tEnergy consumption (kWh): " + ca.energyConsumption / 1000 / 3_600_000);
-            SimLogger.logRes("\tGateway: " + ca.gateway);
+            SimLogger.logRes("\tBroker: " + ca.broker);
             totalEnergyConsumption += ca.energyConsumption;
 
             for (PhysicalMachine pm : ca.iaas.machines) {

@@ -22,7 +22,7 @@ public class MobilityEvent {
     }
 
     public static void connectToNodeEvent(Device device, Application application) {
-        if (application.computingAppliance.gateway.vm.getState().equals(VirtualMachine.State.RUNNING)) {
+        if (application.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.RUNNING)) {
             device.application = application;
             application.deviceList.add(device);
             device.caRepository = application.computingAppliance.iaas.repositories.get(0);

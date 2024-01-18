@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.mobility.prediction;
+package hu.u_szeged.inf.fog.simulator.iot.mobility.forecasting;
 
 /**
  * This class helps to calculate different type of coefficients.

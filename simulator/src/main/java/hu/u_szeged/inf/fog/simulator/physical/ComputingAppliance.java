@@ -20,9 +20,9 @@ import java.util.PriorityQueue;
 
 public class ComputingAppliance {
 
-    public static VirtualAppliance gatewayVa = new VirtualAppliance("gatewayVa", 1, 0, false, 1073741824L); // 1 GB
+    public static VirtualAppliance brokerVa = new VirtualAppliance("brokerVa", 1, 0, false, 1073741824L); // 1 GB
 
-    public static AlterableResourceConstraints gatewayArc = new AlterableResourceConstraints(1, 0.001, 1294967296L);
+    public static AlterableResourceConstraints brokerArc = new AlterableResourceConstraints(1, 0.001, 1294967296L);
 
     public static ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>();
 
@@ -40,7 +40,7 @@ public class ComputingAppliance {
 
     public ArrayList<Application> applications;
 
-    public AppVm gateway;
+    public AppVm broker;
 
     public double energyConsumption;
 
@@ -127,8 +127,8 @@ public class ComputingAppliance {
             app.setComputingAppliance(this);
             this.applications.add(app);
         }
-        if (this.gateway == null) {
-            this.startGateway();
+        if (this.broker == null) {
+            this.startBroker();
         }
     }
 
@@ -155,13 +155,13 @@ public class ComputingAppliance {
         return allComputingAppliances;
     }
 
-    private void startGateway() {
+    private void startBroker() {
         try {
-            this.iaas.repositories.get(0).registerObject(ComputingAppliance.gatewayVa);
-            VirtualMachine vm = this.iaas.requestVM(ComputingAppliance.gatewayVa, ComputingAppliance.gatewayArc,
+            this.iaas.repositories.get(0).registerObject(ComputingAppliance.brokerVa);
+            VirtualMachine vm = this.iaas.requestVM(ComputingAppliance.brokerVa, ComputingAppliance.brokerArc,
                     this.iaas.repositories.get(0), 1)[0];
-            this.gateway = new AppVm(vm);
-            SimLogger.logRun(name + " gateway is turned on at: " + Timed.getFireCount());
+            this.broker = new AppVm(vm);
+            SimLogger.logRun(name + " broker is turned on at: " + Timed.getFireCount());
         } catch (Exception e) {
             e.printStackTrace();
         }

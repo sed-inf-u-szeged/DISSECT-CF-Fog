@@ -144,7 +144,7 @@ public abstract class Device extends Timed {
     }
     
     protected void startDataTransfer() throws NetworkException {
-        if (this.deviceStrategy.chosenApplication.computingAppliance.gateway.vm.getState()
+        if (this.deviceStrategy.chosenApplication.computingAppliance.broker.vm.getState()
                 .equals(VirtualMachine.State.RUNNING)) {
         	this.realTransfer();
         } else if (!this.deviceStrategy.chosenApplication.isSubscribed()) {

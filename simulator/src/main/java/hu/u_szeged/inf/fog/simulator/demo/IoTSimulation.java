@@ -32,6 +32,7 @@ public class IoTSimulation {
         SimLogger.setLogging(22, true);
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+        System.out.println(ScenarioBase.resourcePath);
 
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
         AlterableResourceConstraints arc = new AlterableResourceConstraints(2, 0.001, 4294967296L);
