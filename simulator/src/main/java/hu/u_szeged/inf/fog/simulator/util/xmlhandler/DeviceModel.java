@@ -181,7 +181,7 @@ public class DeviceModel {
                     0, 0, cpuTransitions);
             GeoLocation gl = new GeoLocation(dm.latitude, dm.longitude);
             // TODO:
-            new SmartDevice(dm.startTime, dm.stopTime, dm.fileSize, dm.sensorCount, dm.freq,
+            new SmartDevice(dm.startTime, dm.stopTime, dm.fileSize, dm.freq,
                     new RandomWalkMobilityStrategy(gl, dm.speed, 2 * dm.speed, dm.radius),
                     findDeviceStrategy(dm.strategy), localMachine, dm.latency, true);
 

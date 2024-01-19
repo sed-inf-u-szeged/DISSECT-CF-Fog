@@ -207,7 +207,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
 
             double[] pos = generatePosition();
 
-            new SmartDevice(0, 1 * 60 * 60 * 1000, 50, 3, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(0, 1 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -231,7 +231,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
 
             double[] pos = generatePosition();
 
-            new SmartDevice(1 * 60 * 60 *1000, 2 * 60 * 60 * 1000, 50, 3, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(1 * 60 * 60 *1000, 2 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -255,7 +255,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
 
             double[] pos = generatePosition();
 
-            new SmartDevice(2 * 60 * 60 *1000, 3 * 60 * 60 * 1000, 50, 3, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(2 * 60 * 60 *1000, 3 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -279,7 +279,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
 
             double[] pos = generatePosition();
 
-            new SmartDevice(3 * 60 * 60 *1000, 4 * 60 * 60 * 1000, 50, 3, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(3 * 60 * 60 *1000, 4 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -303,7 +303,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
 
             double[] pos = generatePosition();
 
-            new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 50, 3, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
         }
     }

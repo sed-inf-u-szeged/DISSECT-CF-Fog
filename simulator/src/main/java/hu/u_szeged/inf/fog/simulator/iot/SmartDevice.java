@@ -21,29 +21,30 @@ public class SmartDevice extends Device {
     
     public static long stuckData = 0;
 
-    public SmartDevice(long startTime, long stopTime, long fileSize, int sensorCount, long freq,
+    public SmartDevice(long startTime, long stopTime, long fileSize, long freq,
             MobilityStrategy mobilityStrategy, DeviceStrategy deviceStrategy, PhysicalMachine localMachine, int latency,
             boolean pathLogging) {
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 1) * 60 * 1000; // TODO: fix this delay value
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
-        this.fileSize = fileSize * sensorCount;
-        this.sensorCount = sensorCount;
+        this.fileSize = fileSize;
         this.geoLocation = mobilityStrategy.startPosition;
         this.freq = freq;
         this.localMachine = localMachine;
         this.mobilityStrategy = mobilityStrategy;
         Device.allDevices.add(this);
-        this.pathLogging = pathLogging;
+        this.isPathLogged = pathLogging;
         this.devicePath = new ArrayList<GeoLocation>();
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
         this.latency = latency;
         this.iteractionCounter = 0;
         this.startMeter();
+        /*
         if (Device.longestRunningDevice < this.stopTime) {
             Device.longestRunningDevice = this.stopTime;
         }
+        */
     }
 
     @Override
@@ -53,7 +54,7 @@ public class SmartDevice extends Device {
         }
 
         GeoLocation newLocation = this.mobilityStrategy.move(this, freq);
-        if (this.pathLogging) {
+        if (this.isPathLogged) {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);
@@ -81,7 +82,7 @@ public class SmartDevice extends Device {
                         + "IoT data are still stuck in " +this.localMachine.localDisk.getName()+ "'s local storage because "
                         + "the device's actual position are not covered by any node.");
                 this.stopMeter();
-                SmartDevice.stuckData+=calculateCurrentStuckData();
+                SmartDevice.stuckData+=calculateStuckData();
             }            
         }
     }

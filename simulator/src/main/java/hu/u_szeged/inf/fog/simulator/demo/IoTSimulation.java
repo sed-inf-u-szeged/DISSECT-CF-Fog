@@ -33,7 +33,6 @@ public class IoTSimulation {
         SimLogger.setLogging(22, true);
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
-        System.out.println(ScenarioBase.resourcePath);
 
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
         AlterableResourceConstraints arc = new AlterableResourceConstraints(2, 0.001, 4294967296L);
@@ -133,7 +132,7 @@ public class IoTSimulation {
             //        new NomadicMobilityStrategy(new GeoLocation(47, 20), 0.00035, geoList), 2,
             //        new PliantDeviceStrategy(), localMachine, 1, 50, true);
 
-             smartDevice2 = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 1, 60 * 1000, new
+             smartDevice2 = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, new
              NomadicMobilityStrategy(new GeoLocation (47, 20), 0.00035, geoList), new
             PliantDeviceStrategy(), localMachine, 50, true);
 

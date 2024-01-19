@@ -39,21 +39,20 @@ public class EdgeDevice extends Device {
 
     public ArrayList<TimelineEntry> timelineEntries = new ArrayList<TimelineEntry>();
 
-    public EdgeDevice(long startTime, long stopTime, long fileSize, int sensorCount, long freq,
+    public EdgeDevice(long startTime, long stopTime, long fileSize, long freq,
             MobilityStrategy mobilityStrategy, int kOrder, DeviceStrategy deviceStrategy, PhysicalMachine localMachine,
             double instructionPerByte, int latency, boolean pathLogging) {
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 1) * 60 * 1000; // TODO: fix this delay value
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
-        this.fileSize = fileSize * sensorCount;
-        this.sensorCount = sensorCount;
+        this.fileSize = fileSize;
         this.geoLocation = mobilityStrategy.startPosition;
         this.freq = freq;
         this.localMachine = localMachine;
         this.mobilityStrategy = mobilityStrategy;
         Device.allDevices.add(this);
         this.instructionPerByte = instructionPerByte;
-        this.pathLogging = pathLogging;
+        this.isPathLogged = pathLogging;
         this.devicePath = new ArrayList<GeoLocation>();
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
@@ -64,9 +63,10 @@ public class EdgeDevice extends Device {
                 localMachine.getCapacities().getRequiredMemory());
         this.startMeter();
         this.localMachine.turnon();
+        /*
         if (Device.longestRunningDevice < this.stopTime) {
             Device.longestRunningDevice = this.stopTime;
-        }
+        }*/
 
     }
 
@@ -125,7 +125,7 @@ public class EdgeDevice extends Device {
          * } }
          */
         GeoLocation newLocation = this.mobilityStrategy.move(this, freq);
-        if (this.pathLogging) {
+        if (this.isPathLogged) {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);

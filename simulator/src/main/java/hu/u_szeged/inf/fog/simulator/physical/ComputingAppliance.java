@@ -89,7 +89,7 @@ public class ComputingAppliance {
             @Override
             public void tick(final long fires) {
                 energyConsumption = iaasEnergyMeter.getTotalConsumption();
-                if (checkApplicationStatus() && Timed.getFireCount() > Device.longestRunningDevice) {
+                if (checkApplicationStatus() /* && Timed.getFireCount() > Device.longestRunningDevice*/) {
                     this.stop();
                     iaasEnergyMeter.stopMeter();
                 }
