@@ -168,22 +168,6 @@ public abstract class Device extends Timed {
         unsubscribe();
         Device.lastAction = Timed.getFireCount();
     }
-
-    /**
-     * The method calculates how much data remains unprocessed due to the position
-     * of the device.
-     * 
-     * @return the amount of unprocessed data in the local storage.
-     */
-    public long calculateStuckData() {
-        long temp = 0;
-        for (StorageObject so : this.localMachine.localDisk.contents()) {
-            if (!(so instanceof VirtualAppliance)) {
-                temp += so.size;
-            }
-        }
-        return temp;
-    }
     
     /**
      * If the broker VM for the selected IoT application is running, 
@@ -216,6 +200,22 @@ public abstract class Device extends Timed {
                 }
             }
         );
+    }
+    
+    /**
+     * The method calculates how much data remains unprocessed due to the position
+     * of the device.
+     * 
+     * @return the amount of unprocessed data in the local storage.
+     */
+    public long calculateStuckData() {
+        long temp = 0;
+        for (StorageObject so : this.localMachine.localDisk.contents()) {
+            if (!(so instanceof VirtualAppliance)) {
+                temp += so.size;
+            }
+        }
+        return temp;
     }
     
     /**
