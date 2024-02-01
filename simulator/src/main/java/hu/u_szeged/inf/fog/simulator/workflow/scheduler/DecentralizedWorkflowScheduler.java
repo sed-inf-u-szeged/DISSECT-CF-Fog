@@ -57,8 +57,6 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
         }
 
     }
-
-    @Override
     public void schedule() {
         for(WorkflowJob workflowJob : workflowJobs){
             if (workflowJob.id.contains("service")) {

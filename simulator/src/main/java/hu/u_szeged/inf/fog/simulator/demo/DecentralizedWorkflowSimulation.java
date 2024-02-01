@@ -42,8 +42,8 @@ public class DecentralizedWorkflowSimulation {
         DecentralizedWorkflowScheduler deSchedule2 = new DecentralizedWorkflowScheduler(workflowArchitecture2, actuatorArchitecture, 1000);
 
         //WorkflowJobModel.loadWorkflowXML(workflowFile);
-        WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule1);
-        WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule2);
+        //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule1);
+        //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule2);
 
         ArrayList<DecentralizedWorkflowScheduler> WorkflowSchedulers = new ArrayList<>();
         WorkflowSchedulers.add(deSchedule1);

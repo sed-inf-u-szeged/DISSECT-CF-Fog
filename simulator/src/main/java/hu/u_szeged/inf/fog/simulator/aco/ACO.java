@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.aco;
 import java.util.Arrays;
-import java.util.Random;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 
 public class ACO {
 
