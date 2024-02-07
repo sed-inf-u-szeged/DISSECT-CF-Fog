@@ -1,4 +1,4 @@
-package hu.executor.util;
+package hu.u_szeged.inf.fog.simulator.executor.util;
 
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import java.io.File;

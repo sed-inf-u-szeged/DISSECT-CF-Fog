@@ -1,4 +1,4 @@
-package hu.executor;
+package hu.u_szeged.inf.fog.simulator.executor;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

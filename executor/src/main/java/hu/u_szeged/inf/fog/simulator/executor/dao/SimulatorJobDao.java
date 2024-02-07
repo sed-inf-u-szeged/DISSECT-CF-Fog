@@ -1,8 +1,9 @@
-package hu.executor.dao;
+package hu.u_szeged.inf.fog.simulator.executor.dao;
 
-import hu.executor.dao.model.SimulatorJobDataObject;
-import hu.executor.model.SimulatorJob;
-import hu.executor.model.filetype.ResultFileType;
+import hu.u_szeged.inf.fog.simulator.executor.dao.model.SimulatorJobDataObject;
+import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJob;
+import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJobStatus;
+import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
 import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
 import java.io.File;
 import java.util.HashMap;
@@ -16,7 +17,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
-import hu.executor.model.SimulatorJobStatus;
 
 
 @Component

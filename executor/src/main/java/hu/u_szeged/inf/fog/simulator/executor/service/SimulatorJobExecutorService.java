@@ -1,17 +1,12 @@
-package hu.executor.service;
-
-import static hu.executor.model.filetype.ConfigFileType.APPLIANCES_FILE;
-import static hu.executor.model.filetype.ConfigFileType.DEVICES_FILE;
-import static hu.executor.model.filetype.ConfigFileType.IAAS_FILE;
-import static hu.executor.model.filetype.ConfigFileType.INSTANCES_FILE;
+package hu.u_szeged.inf.fog.simulator.executor.service;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-import hu.executor.dao.SimulatorJobDao;
-import hu.executor.model.filetype.ResultFileType;
-import hu.executor.util.SimulatorJobFileUtil;
-import hu.executor.model.SimulatorJob;
+import hu.u_szeged.inf.fog.simulator.executor.dao.SimulatorJobDao;
+import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJob;
+import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
+import hu.u_szeged.inf.fog.simulator.executor.util.SimulatorJobFileUtil;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
@@ -21,6 +16,12 @@ import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.xmlhandler.ApplianceModel;
 import hu.u_szeged.inf.fog.simulator.util.xmlhandler.DeviceModel;
 import hu.u_szeged.inf.fog.simulator.util.xmlhandler.InstanceModel;
+
+import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.APPLIANCES_FILE;
+import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.DEVICES_FILE;
+import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.IAAS_FILE;
+import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.INSTANCES_FILE;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
