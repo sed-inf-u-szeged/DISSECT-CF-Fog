@@ -10,7 +10,8 @@
 
  - Install the dependency of the simulator's jar: 
  
-   ```mvn install:install-file \
+   ```
+   mvn install:install-file \
     -Dfile=<absolute-path-to>/DISSECT-CF-Fog/simulator/target/dissect-cf-fog-1.0.0-SNAPSHOT.jar \
     -DgroupId=hu.u_szeged.inf.sed.fog.simulator \
     -DartifactId=dissect-cf-fog \
