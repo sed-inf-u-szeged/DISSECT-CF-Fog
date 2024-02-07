@@ -1,6 +1,6 @@
-package hu.executor.dao.model;
+package hu.u_szeged.inf.fog.simulator.executor.dao.model;
 
-import hu.executor.model.SimulatorJobStatus;
+import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJobStatus;
 import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
 import java.time.LocalDateTime;
 import java.util.Map;

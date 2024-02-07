@@ -1,4 +1,4 @@
-package hu.executor.model.filetype;
+package hu.u_szeged.inf.fog.simulator.executor.model.filetype;
 
 public enum ResultFileType implements FileType {
     TIMELINE;

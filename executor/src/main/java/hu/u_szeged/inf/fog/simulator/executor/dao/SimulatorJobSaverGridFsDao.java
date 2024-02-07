@@ -1,6 +1,5 @@
-package hu.executor.dao;
+package hu.u_szeged.inf.fog.simulator.executor.dao;
 
-import hu.executor.model.filetype.FileType;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -14,6 +13,8 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.stereotype.Component;
+
+import hu.u_szeged.inf.fog.simulator.executor.model.filetype.FileType;
 
 /**
  * A Grid FS Data Access Object for saving job related files.
