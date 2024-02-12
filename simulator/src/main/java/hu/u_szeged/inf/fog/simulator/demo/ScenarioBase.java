@@ -150,7 +150,7 @@ public class ScenarioBase {
         
         SimLogger.logRes("Total number of predictions: " + FeatureManager.getInstance().getTotalNumOfPredictions());
 
-        /*
+        
         final var actuatorEvents = ActuatorEvents.builder().changePosition(MobilityEvent.changePositionEventCounter)
                 .changeNode(MobilityEvent.changeNodeEventCounter).connectToNode(MobilityEvent.connectToNodeEventCounter)
                 .disconnectFromNode(MobilityEvent.disconnectFromNodeEventCounter).build();
@@ -174,8 +174,8 @@ public class ScenarioBase {
 
         return SimulatorJobResult.builder().architecture(architecture).actuatorEvents(actuatorEvents).cost(cost)
                 .dataVolume(dataVolume).runtime(TimeUnit.SECONDS.convert(runtime, TimeUnit.NANOSECONDS)).build();
-                */
-        return null;
+                
+        //return null;
     }
 
     public static void calculateIoTCost() {
