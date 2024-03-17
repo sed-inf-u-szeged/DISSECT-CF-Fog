@@ -5,6 +5,7 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
@@ -21,15 +22,14 @@ import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IoTWorkflowScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Random;
 
 public class DecentralizedWorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
 
-        HashMap<ComputingAppliance, Instance> workflowArchitecture1 = getWorkflowArchitecutre();
-        HashMap<ComputingAppliance, Instance> workflowArchitecture2 = getWorkflowArchitecutre();
+        LinkedHashMap<Object, Instance> workflowArchitecture = getWorkflowArchitecutre();
         ArrayList<Actuator> actuatorArchitecture = getActuatorArchitecture();
 
         // String workflowFile = ScenarioBase.resourcePath +
@@ -38,24 +38,15 @@ public class DecentralizedWorkflowSimulation {
 
         String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_workflow.xml";
 
-        DecentralizedWorkflowScheduler deSchedule1 = new DecentralizedWorkflowScheduler(workflowArchitecture1, actuatorArchitecture, 1000);
-        DecentralizedWorkflowScheduler deSchedule2 = new DecentralizedWorkflowScheduler(workflowArchitecture2, actuatorArchitecture, 1000);
-
         //WorkflowJobModel.loadWorkflowXML(workflowFile);
         //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule1);
         //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule2);
+        //TODO reading in the jobs and distributing it through the architectures
+        ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers = new ArrayList<>();
+        ACOC aco = new ACOC(8,0.8,50,0.2);
+        aco.runACOC(workflowArchitecture,actuatorArchitecture,workflowSchedulers);
 
-        ArrayList<DecentralizedWorkflowScheduler> WorkflowSchedulers = new ArrayList<>();
-        WorkflowSchedulers.add(deSchedule1);
-        WorkflowSchedulers.add(deSchedule2);
-
-
-        /*for(WorkflowJob workflowJob : WorkflowJob.workflowJobs){
-            Random r = new Random();
-            DecentralizedWorkflowScheduler ws = WorkflowSchedulers.get(r.nextInt(2));
-            ws.workflowJobs.add(workflowJob);
-        }*/
-        new DecentralizedWorkflowExecutor(WorkflowSchedulers);
+        //new DecentralizedWorkflowExecutor(workflowArchitecture,actuatorArchitecture,);
 
         //new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
         //new WorkflowExecutor(new IoTWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
@@ -88,9 +79,9 @@ public class DecentralizedWorkflowSimulation {
         return actuatorArchitecture;
     }
 
-    private static HashMap<ComputingAppliance, Instance> getWorkflowArchitecutre() throws Exception {
+    private static LinkedHashMap<Object, Instance> getWorkflowArchitecutre() throws Exception {
 
-        String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+        String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
 
         ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(0, 0), 1000);
 
@@ -98,18 +89,12 @@ public class DecentralizedWorkflowSimulation {
         ComputingAppliance fog2 = new ComputingAppliance(cloudfile, "fog2", new GeoLocation(10, 10), 1000);
         ComputingAppliance fog3 = new ComputingAppliance(cloudfile, "fog3", new GeoLocation(20, 0), 1000);
         ComputingAppliance fog4 = new ComputingAppliance(cloudfile, "fog4", new GeoLocation(10, -10), 1000);
+        ComputingAppliance fog5 = new ComputingAppliance(cloudfile, "fog5", new GeoLocation(15, -10), 1000);
+        ComputingAppliance fog6 = new ComputingAppliance(cloudfile, "fog6", new GeoLocation(-30, -10), 1000);
+        ComputingAppliance fog7 = new ComputingAppliance(cloudfile, "fog7", new GeoLocation(-25, 23), 1000);
+        ComputingAppliance fog8 = new ComputingAppliance(cloudfile, "fog8", new GeoLocation(40, 10), 1000);
 
-        fog1.addNeighbor(fog2, 100);
-        fog1.addNeighbor(fog3, 110);
-        fog1.addNeighbor(fog4, 120);
-        fog2.addNeighbor(fog3, 130);
-        fog2.addNeighbor(fog4, 140);
-        fog3.addNeighbor(fog4, 150);
-
-        fog1.setParent(cloud1, 60);
-        fog2.setParent(cloud1, 70);
-        fog3.setParent(cloud1, 80);
-        fog4.setParent(cloud1, 90);
+        //TODO neighbour and parent needs fixing
 
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
 
@@ -119,12 +104,15 @@ public class DecentralizedWorkflowSimulation {
         Instance instance1 = new Instance("instance1", va, arc1, 0.051 / 60 / 60 / 1000, 1);
         Instance instance2 = new Instance("instance2", va, arc2, 0.102 / 60 / 60 / 1000, 1);
 
-        HashMap<ComputingAppliance, Instance> workflowArchitecture = new HashMap<ComputingAppliance, Instance>();
-        workflowArchitecture.put(cloud1, instance1);
+        LinkedHashMap<Object, Instance> workflowArchitecture = new LinkedHashMap<Object, Instance>();
         workflowArchitecture.put(fog1, instance2);
+        workflowArchitecture.put(fog6, instance2);
         workflowArchitecture.put(fog2, instance2);
         workflowArchitecture.put(fog3, instance2);
         workflowArchitecture.put(fog4, instance2);
+        workflowArchitecture.put(fog5, instance2);
+        workflowArchitecture.put(fog7, instance2);
+        workflowArchitecture.put(fog8, instance2);
 
         return workflowArchitecture;
     }

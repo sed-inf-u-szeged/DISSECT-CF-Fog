@@ -5,14 +5,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.PriorityQueue;
-import java.util.Random;
 
+import java.util.*;
 
 
 public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
@@ -23,8 +18,8 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
     public ArrayList<Actuator> actuatorArchitecture;
     public ArrayList<WorkflowJob> workflowJobs = new ArrayList<>();
 
-    public DecentralizedWorkflowScheduler(HashMap<ComputingAppliance, Instance> workflowArchitecture,
-                                ArrayList<Actuator> actuatorArchitecutre, int defaultLatency) {
+    public DecentralizedWorkflowScheduler(LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
+                                          ArrayList<Actuator> actuatorArchitecutre, int defaultLatency) {
         this.workflowArchitecture = workflowArchitecture;
         this.actuatorArchitecture = actuatorArchitecutre;
         this.defaultLatency = defaultLatency;
