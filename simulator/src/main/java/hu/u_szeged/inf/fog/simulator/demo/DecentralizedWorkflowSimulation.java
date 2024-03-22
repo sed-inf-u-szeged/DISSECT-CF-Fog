@@ -1,11 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.aco.ACOC;
+import hu.u_szeged.inf.fog.simulator.aco.ACO;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
@@ -28,8 +27,15 @@ import java.util.Random;
 public class DecentralizedWorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
-
+        String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
         LinkedHashMap<Object, Instance> workflowArchitecture = getWorkflowArchitecutre();
+        
+        ArrayList<Object> centerNodes = new ArrayList<Object>();
+        
+        centerNodes.add(new ComputingAppliance(cloudfile, "fog2", new GeoLocation(10, 10), 1000));
+        centerNodes.add(new ComputingAppliance(cloudfile, "fog5", new GeoLocation(15, -10), 1000));
+        centerNodes.add(new ComputingAppliance(cloudfile, "fog6", new GeoLocation(-30, -10), 1000));
+
         ArrayList<Actuator> actuatorArchitecture = getActuatorArchitecture();
 
         // String workflowFile = ScenarioBase.resourcePath +
@@ -43,9 +49,13 @@ public class DecentralizedWorkflowSimulation {
         //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule2);
         //TODO reading in the jobs and distributing it through the architectures
         ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers = new ArrayList<>();
-        ACOC aco = new ACOC(8,0.8,50,0.2);
-        aco.runACOC(workflowArchitecture,actuatorArchitecture,workflowSchedulers);
+        
+        ACO aco = new ACO(3, 5, 10, 0.01, 50, 0.5);
+        aco.runACO(workflowArchitecture, centerNodes);
 
+        //ACOC acoc = new ACOC(8,0.8,50,0.2);
+        //acoc.runACOC(workflowArchitecture,actuatorArchitecture,workflowSchedulers);
+        
         //new DecentralizedWorkflowExecutor(workflowArchitecture,actuatorArchitecture,);
 
         //new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
@@ -86,14 +96,15 @@ public class DecentralizedWorkflowSimulation {
         ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(0, 0), 1000);
 
         ComputingAppliance fog1 = new ComputingAppliance(cloudfile, "fog1", new GeoLocation(0, 10), 1000);
-        ComputingAppliance fog2 = new ComputingAppliance(cloudfile, "fog2", new GeoLocation(10, 10), 1000);
+       
         ComputingAppliance fog3 = new ComputingAppliance(cloudfile, "fog3", new GeoLocation(20, 0), 1000);
         ComputingAppliance fog4 = new ComputingAppliance(cloudfile, "fog4", new GeoLocation(10, -10), 1000);
-        ComputingAppliance fog5 = new ComputingAppliance(cloudfile, "fog5", new GeoLocation(15, -10), 1000);
-        ComputingAppliance fog6 = new ComputingAppliance(cloudfile, "fog6", new GeoLocation(-30, -10), 1000);
+       
         ComputingAppliance fog7 = new ComputingAppliance(cloudfile, "fog7", new GeoLocation(-25, 23), 1000);
         ComputingAppliance fog8 = new ComputingAppliance(cloudfile, "fog8", new GeoLocation(40, 10), 1000);
 
+
+        
         //TODO neighbour and parent needs fixing
 
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
@@ -106,11 +117,8 @@ public class DecentralizedWorkflowSimulation {
 
         LinkedHashMap<Object, Instance> workflowArchitecture = new LinkedHashMap<Object, Instance>();
         workflowArchitecture.put(fog1, instance2);
-        workflowArchitecture.put(fog6, instance2);
-        workflowArchitecture.put(fog2, instance2);
         workflowArchitecture.put(fog3, instance2);
         workflowArchitecture.put(fog4, instance2);
-        workflowArchitecture.put(fog5, instance2);
         workflowArchitecture.put(fog7, instance2);
         workflowArchitecture.put(fog8, instance2);
 
