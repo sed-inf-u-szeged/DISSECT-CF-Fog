@@ -65,6 +65,7 @@ public class SimulatorJobDao {
     private SimulatorJob convertJobDataObjectToDomain(SimulatorJobDataObject simulatorJobDo) {
         return Optional.ofNullable(simulatorJobDo)
                 .map(job -> SimulatorJob.builder().id(job.getId()).user(job.getUser())
+                        .code(job.getCode())
                         .simulatorJobStatus(job.getSimulatorJobStatus())
                         .configFiles(retrieverGridFsDao.retrieveFiles(job.getConfigFiles())).build())
                 .orElse(null);

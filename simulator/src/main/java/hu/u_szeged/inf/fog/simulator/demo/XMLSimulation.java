@@ -30,7 +30,7 @@ public class XMLSimulation {
 
         // WorkflowJobsModel.loadWorkflowXML(workflowFile);
         InstanceModel.loadInstanceXML(instancefile);
-        ApplianceModel.loadApplianceXML(appliancefile, iaasMapper);
+        ApplianceModel.loadApplianceXML(appliancefile, iaasMapper,"");
         DeviceModel.loadDeviceXML(devicefile);
 
         long starttime = System.nanoTime();

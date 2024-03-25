@@ -30,6 +30,7 @@ public class SimulatorJobDataObject {
     private Map<String, ObjectId> configFiles;
     private Map<String, ObjectId> resultFiles;
     private SimulatorJobResult simulatorJobResult;
+    private String code;
     @CreatedDate
     private LocalDateTime createdDate;
     @LastModifiedDate

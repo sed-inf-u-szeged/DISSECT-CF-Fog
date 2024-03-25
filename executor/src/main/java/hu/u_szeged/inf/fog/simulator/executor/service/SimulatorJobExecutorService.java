@@ -83,7 +83,7 @@ public class SimulatorJobExecutorService {
         try {
             DeviceModel.loadDeviceXML(simulatorJobConfigs.getFirst(DEVICES_FILE).getPath());
             InstanceModel.loadInstanceXML(simulatorJobConfigs.getFirst(INSTANCES_FILE).getPath());
-            ApplianceModel.loadApplianceXML(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders);
+            ApplianceModel.loadApplianceXML(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders, simulatorJob.getCode());
         } catch (Exception e) {
             e.printStackTrace();
         }
