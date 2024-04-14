@@ -20,16 +20,14 @@ import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
-import hu.u_szeged.inf.fog.simulator.aco.ACO;
+import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 
 import java.util.*;
 
 
 public class DecentralizedWorkflowExecutor {
-    public static ACO aco;
-    public static LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture;
+
     public static ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers = new ArrayList<>();
-    public static ArrayList<LinkedHashMap<Object, Instance>> workflowArchitectures = new ArrayList<>();
     public static ArrayList<ArrayList<Actuator>> actuatorArchitectures = new ArrayList<>();
 
     public static HashMap<Integer, Integer> vmTaskLogger = new HashMap<Integer, Integer>();
@@ -40,24 +38,12 @@ public class DecentralizedWorkflowExecutor {
 
     public static long realStartTime = 0;
 
-    public DecentralizedWorkflowExecutor(LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
-                                         ArrayList<Actuator> actuatorArchitecutre, ACO aco) {
-        for(int i = 0; i<aco.getNumberOfClusters();i++){
-            //workflowSchedulers.add(new DecentralizedWorkflowScheduler(workflowArchitectures.get(i),actuatorArchitectures.get(i),1000));
-        }
-        int i=0;
-        for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
-            workflowSchedulers.get(i).workflowArchitecture.put((ComputingAppliance) entry.getKey(),entry.getValue());
-            i++;
-            if(i==aco.getNumberOfClusters()){
-                break;
-            }
-        }
+    public DecentralizedWorkflowExecutor(ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers,ArrayList<Actuator> actuatorArchitecutre) {
 
-        //aco.runACO(workflowArchitecture,actuatorArchitecutre,workflowSchedulers);
         for(DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
             workflowScheduler.init();
             workflowScheduler.schedule();
+            DecentralizedWorkflowExecutor.workflowSchedulers.add(workflowScheduler);
         }
 
         this.checkFirstVMState();

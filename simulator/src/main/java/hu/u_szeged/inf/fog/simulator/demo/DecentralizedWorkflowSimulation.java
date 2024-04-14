@@ -17,24 +17,15 @@ import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IoTWorkflowScheduler;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.Random;
 
 public class DecentralizedWorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
         String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
-        LinkedHashMap<Object, Instance> workflowArchitecture = getWorkflowArchitecutre();
-        
-        ArrayList<Object> centerNodes = new ArrayList<Object>();
-        
-        centerNodes.add(new ComputingAppliance(cloudfile, "fog2", new GeoLocation(10, 10), 1000));
-        centerNodes.add(new ComputingAppliance(cloudfile, "fog5", new GeoLocation(15, -10), 1000));
-        centerNodes.add(new ComputingAppliance(cloudfile, "fog6", new GeoLocation(-30, -10), 1000));
+        LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture = getWorkflowArchitecutre();
 
         ArrayList<Actuator> actuatorArchitecture = getActuatorArchitecture();
 
@@ -43,43 +34,34 @@ public class DecentralizedWorkflowSimulation {
         // workflowFile = ScientificWorkflowParser.parseToIoTWorkflow(workflowFile);
 
         String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_workflow.xml";
+        
+        //ACO aco = new ACO(3, 5, 10, 0.01, 50, 0.5);
+        //aco.runACO(workflowArchitecture, centerNodes);
 
-        //WorkflowJobModel.loadWorkflowXML(workflowFile);
-        //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule1);
-        //WorkflowJobModel.loadWorkflowXML(workflowFile, deSchedule2);
-        //TODO reading in the jobs and distributing it through the architectures
+        ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures;
         ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers = new ArrayList<>();
-        
-        ACO aco = new ACO(3, 5, 10, 0.01, 50, 0.5);
-        aco.runACO(workflowArchitecture, centerNodes);
 
-        //ACOC acoc = new ACOC(8,0.8,50,0.2);
-        //acoc.runACOC(workflowArchitecture,actuatorArchitecture,workflowSchedulers);
-        
-        //new DecentralizedWorkflowExecutor(workflowArchitecture,actuatorArchitecture,);
+        ACOC acoc = new ACOC(0.8,50,0.2,15);
+        workflowArchitectures = acoc.runACOC(workflowArchitecture,actuatorArchitecture);
+
+        for(LinkedHashMap<ComputingAppliance, Instance> architecture : workflowArchitectures){
+            DecentralizedWorkflowScheduler actual = new DecentralizedWorkflowScheduler(architecture, actuatorArchitecture, 10);
+            workflowSchedulers.add(actual);
+        }
+
+        for(DecentralizedWorkflowScheduler dws : workflowSchedulers){
+            WorkflowJobModel.loadWorkflowXML(workflowFile,dws);
+        }
+
+        new DecentralizedWorkflowExecutor(workflowSchedulers,actuatorArchitecture);
 
         //new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
         //new WorkflowExecutor(new IoTWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
 
         Timed.simulateUntilLastEvent();
-        //ScenarioBase.logStreamProcessing();
+        ScenarioBase.logStreamProcessing(workflowSchedulers);
         //WorkflowGraphVisualiser.generateDAG(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
         //TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-
-        int nonCompleted = 0;
-        for(DecentralizedWorkflowScheduler workflowScheduler : DecentralizedWorkflowExecutor.workflowSchedulers){
-            for (WorkflowJob wj : workflowScheduler.workflowJobs) {
-                System.out.println(wj.toString());
-                if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
-                    nonCompleted++;
-                }
-            }
-        }
-        SimLogger.logRes("Completed: " + nonCompleted + "/" + WorkflowJob.workflowJobs.size());
-
-        SimLogger.logRes("Execution time: " + Timed.getFireCount() + " Real execution time" + " "
-                + (Timed.getFireCount() - WorkflowExecutor.realStartTime) + "ms (~"
-                + (Timed.getFireCount() - WorkflowExecutor.realStartTime) / 1000 / 60 + " minutes)");
     }
 
     private static ArrayList<Actuator> getActuatorArchitecture() {
@@ -89,7 +71,7 @@ public class DecentralizedWorkflowSimulation {
         return actuatorArchitecture;
     }
 
-    private static LinkedHashMap<Object, Instance> getWorkflowArchitecutre() throws Exception {
+    private static LinkedHashMap<ComputingAppliance, Instance> getWorkflowArchitecutre() throws Exception {
 
         String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
 
@@ -103,10 +85,6 @@ public class DecentralizedWorkflowSimulation {
         ComputingAppliance fog7 = new ComputingAppliance(cloudfile, "fog7", new GeoLocation(-25, 23), 1000);
         ComputingAppliance fog8 = new ComputingAppliance(cloudfile, "fog8", new GeoLocation(40, 10), 1000);
 
-
-        
-        //TODO neighbour and parent needs fixing
-
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
 
         AlterableResourceConstraints arc1 = new AlterableResourceConstraints(2, 0.001, 4294967296L);
@@ -115,10 +93,10 @@ public class DecentralizedWorkflowSimulation {
         Instance instance1 = new Instance("instance1", va, arc1, 0.051 / 60 / 60 / 1000, 1);
         Instance instance2 = new Instance("instance2", va, arc2, 0.102 / 60 / 60 / 1000, 1);
 
-        LinkedHashMap<Object, Instance> workflowArchitecture = new LinkedHashMap<Object, Instance>();
-        workflowArchitecture.put(fog1, instance2);
+        LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture = new LinkedHashMap<ComputingAppliance, Instance>();
+        workflowArchitecture.put(fog1, instance1);
         workflowArchitecture.put(fog3, instance2);
-        workflowArchitecture.put(fog4, instance2);
+        workflowArchitecture.put(fog4, instance1);
         workflowArchitecture.put(fog7, instance2);
         workflowArchitecture.put(fog8, instance2);
 

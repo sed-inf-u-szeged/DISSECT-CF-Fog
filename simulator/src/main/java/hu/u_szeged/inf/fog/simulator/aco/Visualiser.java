@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
@@ -14,67 +14,68 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 
+public class Visualiser {
 
-public class MapVisualiser {
-    
-   static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
-       for(Pair pair : list) {
-           if( (pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
-               return true;
-           }
-       }
-    return false;
-       
-   }
+    static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
+        for(Pair pair : list) {
+            if( (pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
+                return true;
+            }
+        }
+        return false;
 
-    public static void mapGenerator(String scriptPath, String resultDirectory, Device... devices) throws IOException {
-        MapVisualiser.generateMap(scriptPath, resultDirectory, new ArrayList<>(Arrays.asList(devices)));
-    }
-    
-    public static void mapGenerator(String scriptPath, String resultDirectory, ArrayList<Device> devices) throws IOException {
-        MapVisualiser.generateMap(scriptPath, resultDirectory, devices);
     }
 
-    public static void generateMap(String scriptPath, String resultDirectory, ArrayList<Device> devices)
+    //public static void mapGenerator(String scriptPath, String resultDirectory, Device... devices) throws IOException {
+    //    Visualiser.generateMap(scriptPath, resultDirectory, new ArrayList<>(Arrays.asList(devices)));
+    //}
+
+    public static void mapGenerator(String scriptPath, String resultDirectory, List<Ant> ants) throws IOException {
+        Visualiser.generateMap(scriptPath, resultDirectory, ants);
+    }
+
+    public static void generateMap(String scriptPath, String resultDirectory, List<Ant> ants)
             throws IOException {
 
         String nodeInfoForMapScript = "";
         String latencyInfoForMapScript = "";
 
-       // HashMap<ComputingAppliance, ComputingAppliance> checkedAppliances = new HashMap<ComputingAppliance, ComputingAppliance>();
+        // HashMap<ComputingAppliance, ComputingAppliance> checkedAppliances = new HashMap<ComputingAppliance, ComputingAppliance>();
         ArrayList<Pair> checkedAppliances = new ArrayList<Pair>();
 
-        for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            String parentName = ca.parent != null ? ca.parent.name : "null";
+        for (Ant ant : ants){
+            if(ant.clusterNumber!=0) {
+                ComputingAppliance ca = (ComputingAppliance) ant.node;
+                String parentName = String.valueOf(ant.clusterNumber);
 
-            nodeInfoForMapScript = nodeInfoForMapScript.concat(ca.name).concat(",")
-                    .concat(String.valueOf(ca.geoLocation.latitude)).concat(",")
-                    .concat(String.valueOf(ca.geoLocation.longitude)).concat(",").concat(parentName).concat(",")
-                    .concat(String.valueOf(ca.range)).concat(";");
-            if (ca.parent != null) {
-                latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
-                        .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")
-                        .concat(String.valueOf(ca.parent.geoLocation.latitude)).concat(",")
-                        .concat(String.valueOf(ca.parent.geoLocation.longitude)).concat(",")
-                        .concat(String.valueOf(ca.iaas.repositories.get(0).getLatencies()
-                                .get(ca.parent.iaas.repositories.get(0).getName())))
-                        .concat(";");
-            }
-            
-            for (ComputingAppliance coApp : ca.neighbors) {
-                
-                if (!isContain(checkedAppliances, coApp, ca)) {
-                    checkedAppliances.add(new Pair(coApp,ca));
-                    
+                nodeInfoForMapScript = nodeInfoForMapScript.concat(ca.name).concat(",")
+                        .concat(String.valueOf(ca.geoLocation.latitude)).concat(",")
+                        .concat(String.valueOf(ca.geoLocation.longitude)).concat(",").concat(parentName).concat(",")
+                        .concat(String.valueOf(ca.range)).concat(";");
+                if (ca.parent != null) {
                     latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
                             .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")
-                            .concat(String.valueOf(coApp.geoLocation.latitude)).concat(",")
-                            .concat(String.valueOf(coApp.geoLocation.longitude)).concat(",")
+                            .concat(String.valueOf(ca.parent.geoLocation.latitude)).concat(",")
+                            .concat(String.valueOf(ca.parent.geoLocation.longitude)).concat(",")
                             .concat(String.valueOf(ca.iaas.repositories.get(0).getLatencies()
-                                    .get(coApp.iaas.repositories.get(0).getName())))
+                                    .get(ca.parent.iaas.repositories.get(0).getName())))
                             .concat(";");
+                }
+
+                for (ComputingAppliance coApp : ca.neighbors) {
+                    if (!isContain(checkedAppliances, coApp, ca)) {
+                        checkedAppliances.add(new Pair(coApp, ca));
+                        latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
+                                .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")
+                                .concat(String.valueOf(coApp.geoLocation.latitude)).concat(",")
+                                .concat(String.valueOf(coApp.geoLocation.longitude)).concat(",")
+                                .concat(String.valueOf(ca.iaas.repositories.get(0).getLatencies()
+                                        .get(coApp.iaas.repositories.get(0).getName())))
+                                .concat(";");
+                    }
                 }
             }
         }
@@ -82,7 +83,7 @@ public class MapVisualiser {
         nodeInfoForMapScript = nodeInfoForMapScript.replaceAll(".$", "");
         latencyInfoForMapScript = latencyInfoForMapScript.replaceAll(".$", "");
 
-        for (int i = 0; i < devices.size(); i++) {
+        /*for (int i = 0; i < devices.size(); i++) {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + "devicePath-" + i + ".csv");
 
             Device device = devices.get(i);
@@ -108,19 +109,19 @@ public class MapVisualiser {
             }
 
             fw.close();
-        }
+        }*/
 
         if (System.getProperty("os.name").contains("Windows")) {
-            ProcessBuilder pb = new ProcessBuilder("python", scriptPath + "map.py", nodeInfoForMapScript,
-                    latencyInfoForMapScript, resultDirectory, Integer.toString(devices.size()));
+            ProcessBuilder pb = new ProcessBuilder("python", scriptPath + "clusterMap.py", nodeInfoForMapScript,
+                    latencyInfoForMapScript, resultDirectory, Integer.toString(0));
             // System.out.println(pb.command());
 
             pb.redirectOutput(Redirect.INHERIT);
             pb.redirectError(Redirect.INHERIT);
             pb.start();
         } else {
-            ProcessBuilder pb = new ProcessBuilder("python3", scriptPath + "map.py", nodeInfoForMapScript,
-                    latencyInfoForMapScript, resultDirectory, Integer.toString(devices.size()));
+            ProcessBuilder pb = new ProcessBuilder("python3", scriptPath + "clusterMap.py", nodeInfoForMapScript,
+                    latencyInfoForMapScript, resultDirectory, Integer.toString(0));
 
             pb.redirectOutput(Redirect.INHERIT);
             pb.redirectError(Redirect.INHERIT);
@@ -130,12 +131,12 @@ public class MapVisualiser {
 }
 
 class Pair{
-    
+
     Pair(ComputingAppliance left, ComputingAppliance right){
         this.left=left;
         this.right=right;
     }
-    
+
     ComputingAppliance left;
     ComputingAppliance right;
 }

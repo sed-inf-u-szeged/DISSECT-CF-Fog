@@ -38,12 +38,12 @@ public class ACO {
 
     public void runACO(LinkedHashMap<Object, Instance> workflowArchitecture, ArrayList<Object> centerNodes) {
         for (int iteration = 0; iteration < maxIterations; iteration++) {
-            Ant[] ants = new Ant[numberOfAnts];
+            SolutionAnt[] ants = new SolutionAnt[numberOfAnts];
 
             // Generate ant solutions
             System.out.println("Iteration: " + iteration);
             for (int i = 0; i < numberOfAnts; i++) {
-                ants[i] = new Ant(numberOfNodes, numberOfClusters);           
+                ants[i] = new SolutionAnt(numberOfNodes, numberOfClusters);
                 ants[i].generateSolution(pheromoneMatrix, randomFactor, numberOfClusters);
                 System.out.println("ant-" + i + " " + Arrays.toString(ants[i].solution));
             }
@@ -58,12 +58,12 @@ public class ACO {
      * Calculates fitness level how accurate a solution is.
      * Uses calculateHeuristics for easier change of heuristic
      */
-    private void calculateFitness(Ant[] ants, LinkedHashMap<Object, Instance> workflowArchitecture, ArrayList<Object> centerNodes) {
+    private void calculateFitness(SolutionAnt[] ants, LinkedHashMap<Object, Instance> workflowArchitecture, ArrayList<Object> centerNodes) {
         
         int[][] weightMatrix = new int[numberOfNodes][numberOfClusters];
         
         //fill weightMatrix
-        for (Ant ant : ants) {
+        for (SolutionAnt ant : ants) {
             for (int j = 0; j < numberOfNodes; j++) {
                 for (int k = 0; k < numberOfClusters; k++) {
                     if (ant.solution[j] == k) {
@@ -106,7 +106,7 @@ public class ACO {
         return 0;
     }
 
-    private void updatePheromones(Ant[] ants) {
+    private void updatePheromones(SolutionAnt[] ants) {
         Arrays.sort(ants);
 
         // only five ants are considered
@@ -145,13 +145,13 @@ public class ACO {
     } 
 }
 
-class Ant implements Comparable<Ant>{
+class SolutionAnt implements Comparable<SolutionAnt>{
     
     double fitness;
     int[] solution;
     double[] randomSolution;
     
-    public Ant(int numberOfNodes, int numberOfClusters) {
+    public SolutionAnt(int numberOfNodes, int numberOfClusters) {
         this.fitness = 0;
         this.solution = new int[numberOfNodes];
         this.randomSolution = new double[numberOfNodes];
@@ -161,7 +161,7 @@ class Ant implements Comparable<Ant>{
     }
 
     @Override
-    public int compareTo(Ant ant) {
+    public int compareTo(SolutionAnt ant) {
         if (this.fitness < ant.fitness) {
             return -1;
         }
