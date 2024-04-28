@@ -48,6 +48,81 @@ for i in nodeInfo:
             fill=True,
             fill_color="gray",
         ).add_to(map)
+    elif node[3] == "3":  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
+        folium.Marker(
+            location=[node[1], node[2]],
+            popup=popup,
+            icon=folium.Icon(icon="cloud", color="red"),
+        ).add_to(map)
+
+        folium.Circle(
+            location=[node[1], node[2]],
+            radius=float(node[4]) * 1000,
+            color="red",
+            fill=True,
+            fill_color="red",
+        ).add_to(map)
+    elif node[3] == "4":  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
+        folium.Marker(
+            location=[node[1], node[2]],
+            popup=popup,
+            icon=folium.Icon(icon="cloud", color="purple"),
+        ).add_to(map)
+
+        folium.Circle(
+            location=[node[1], node[2]],
+            radius=float(node[4]) * 1000,
+            color="purple",
+            fill=True,
+            fill_color="purple",
+        ).add_to(map)
+    elif node[3] == "5":  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
+        folium.Marker(
+            location=[node[1], node[2]],
+            popup=popup,
+            icon=folium.Icon(icon="cloud", color="green"),
+        ).add_to(map)
+
+        folium.Circle(
+            location=[node[1], node[2]],
+            radius=float(node[4]) * 1000,
+            color="green",
+            fill=True,
+            fill_color="green",
+        ).add_to(map)
+    elif node[3] == "6":  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
+        folium.Marker(
+            location=[node[1], node[2]],
+            popup=popup,
+            icon=folium.Icon(icon="cloud", color="orange"),
+        ).add_to(map)
+
+        folium.Circle(
+            location=[node[1], node[2]],
+            radius=float(node[4]) * 1000,
+            color="orange",
+            fill=True,
+            fill_color="orange",
+        ).add_to(map)
+    elif node[3] == "7":  # if fog node
+        popup = folium.Popup(node[0], show=True, sticky=True)
+        folium.Marker(
+            location=[node[1], node[2]],
+            popup=popup,
+            icon=folium.Icon(icon="cloud", color="orange"),
+        ).add_to(map)
+
+        folium.Circle(
+            location=[node[1], node[2]],
+            radius=float(node[4]) * 1000,
+            color="orange",
+            fill=True,
+            fill_color="orange",
+        ).add_to(map)
 
 
 # reading from file the geolocation info of the device

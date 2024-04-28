@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.workflow;
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
@@ -92,9 +93,31 @@ public class DecentralizedWorkflowExecutor {
                     }
                 }
             }
+            ComputingAppliance emptyCA = null;
+            ComputingAppliance maxCA = null;
+            int maxNum = 1;
+            for(ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()){
+                if(ca.workflowQueue.isEmpty()){
+                    emptyCA = ca;
+                } else if (ca.workflowQueue.size() > maxNum) {
+                    maxNum = ca.workflowQueue.size();
+                    maxCA = ca;
+                }
+            }
+            if(emptyCA != null && maxCA != null){
+                workflowScheduler.jobReAssign(maxCA.workflowQueue.poll(),emptyCA);
+            }
 
             for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
                 int size = ca.workflowQueue.size();
+                if(ca.workflowVMs.size()<size-1){
+                    Instance i = workflowScheduler.workflowArchitecture.get(ca);
+                    try {
+                        ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                    } catch (VMManager.VMManagementException e) {
+                        e.printStackTrace();
+                    }
+                }
                 for (int i = 0; i < size; i++) {
                     WorkflowJob workflowJob = ca.workflowQueue.poll();
                     System.out.println(workflowJob.id + " is peeked at " + Timed.getFireCount());
@@ -141,6 +164,7 @@ public class DecentralizedWorkflowExecutor {
                 }
             }
         }
+
     }
 
     private static WorkflowJob findWorkflowJob(String id) {
@@ -175,6 +199,7 @@ public class DecentralizedWorkflowExecutor {
 
     private boolean checkComputingAppliances() {
         boolean ready = true;
+        boolean one = true;
         for(DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
             int vmCount = 0;
             for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
@@ -205,7 +230,6 @@ public class DecentralizedWorkflowExecutor {
                     continue;
                 }
             } else if (uses.type.equals(Uses.Type.DATA)) {
-
                 for (WorkflowJob wj : workflowScheduler.workflowJobs) {
                     if (wj.id.equals(uses.id)) {
                         StorageObject so = new StorageObject(uses.id + "-" + currentJob.id, uses.size, false);

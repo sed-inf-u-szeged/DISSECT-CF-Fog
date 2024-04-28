@@ -30,10 +30,10 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
     @Override
     public void schedule(WorkflowJob workflowJob) {
-        if (workflowJob.id.contains("service")) {
+        ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
+        if (workflowJob.id.contains("service") || workflowJob.id.contains("ID")) {
             if (workflowJob.ca == null) {
                 Random r = new Random();
-                ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
                 workflowJob.ca = allComputingAppliances.get(r.nextInt(allComputingAppliances.size()));
             }
             if (workflowJob.inputs.get(0).amount == 0) {
@@ -56,11 +56,18 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
     }
     public void schedule() {
+        ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
+        ArrayList<WorkflowJob> wjs = new ArrayList<>();
+        for(WorkflowJob wj : workflowJobs){
+            if(wj.id.contains("service") || wj.id.contains("actuator") || wj.id.contains("ID")){
+                wjs.add(wj);
+            }
+        }
+        wjs.sort(new WorkflowComperator());
         for(WorkflowJob workflowJob : workflowJobs){
-            if (workflowJob.id.contains("service")) {
+            if (workflowJob.id.contains("service") || workflowJob.id.contains("ID")) {
                 if (workflowJob.ca == null) {
                     Random r = new Random();
-                    ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
                     workflowJob.ca = allComputingAppliances.get(r.nextInt(allComputingAppliances.size()));
                 }
                 if (workflowJob.inputs.get(0).amount == 0) {
@@ -106,7 +113,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
     public void jobReAssign(WorkflowJob workflowJob, ComputingAppliance futureAppliance) {
 
         if (workflowJob.state.equals(WorkflowJob.State.SUBMITTED) && workflowJob.ca != futureAppliance
-                && workflowJob.underRecieving == 0 && workflowJob.inputs.get(0).amount > 0) {
+                && workflowJob.underRecieving == 0 && workflowJob.inputs.get(0).amount == 0) {
 
             workflowJob.state = WorkflowJob.State.REASSIGNING;
             workflowJob.FileRecievedByAssigning = 0;
@@ -124,7 +131,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
                                     if (workflowJob.FileRecievedByAssigning == workflowJob.fileRecieved) {
                                         workflowJob.ca = futureAppliance;
                                         workflowJob.state = WorkflowJob.State.SUBMITTED;
-                                        // schedule(workflowJob); ?
+                                        //schedule(workflowJob);
                                         if (DecentralizedWorkflowExecutor.jobReassigns.get(workflowJob) == null) {
                                             DecentralizedWorkflowExecutor.jobReassigns.put(workflowJob, 1);
                                         } else {
@@ -144,14 +151,13 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
     class WorkflowComperator implements Comparator<WorkflowJob> {
         @Override
         public int compare(WorkflowJob o1, WorkflowJob o2) {
-            if(o1.inputs.size() > o2.inputs.size()){
-                return 1;
-            }
-            if(o1.inputs.size() < o2.inputs.size()){
-                return -1;
-            }
-            return 0;
+            return Integer.compare(o1.inputs.get(0).amount,o2.inputs.get(0).amount);
         }
     }
-
+    class ComputingApplianceComperator implements Comparator<ComputingAppliance> {
+        @Override
+        public int compare(ComputingAppliance ca1, ComputingAppliance ca2) {
+            return Integer.compare(ca1.workflowQueue.size(), ca2.workflowQueue.size());
+        }
+    }
 }

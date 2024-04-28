@@ -14,10 +14,10 @@ import java.util.*;
 public class ACOC {
     private int numberOfNodes;
     private int numberOfClusters;
-    private double evaporationRate;
-    private int maxIterations;
-    private double randomFactor;
-    private int baseLatency;
+    private final double evaporationRate;
+    private final int maxIterations;
+    private final double randomFactor;
+    private final int baseLatency;
     private List<Ant> ants;
     private ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures;
 
@@ -27,6 +27,7 @@ public class ACOC {
      * @param evaporationRate
      * @param maxIterations
      * @param randomFactor
+     * @param baseLatency
      */
     public ACOC(double evaporationRate, int maxIterations, double randomFactor, int baseLatency) {
         this.numberOfNodes = 0;
@@ -62,17 +63,17 @@ public class ACOC {
     private void evaporatePheromones(Ant ant, int position) {
         for (int i = 0; i < ant.pheromoneMatrix.length; i++) {
             if (i != position) {
-                ant.pheromoneMatrix[i] = ant.pheromoneMatrix[i] * evaporationRate;
+                ant.pheromoneMatrix[i] = ant.pheromoneMatrix[i] * (1-evaporationRate);
             }
         }
     }
 
-    private void generateClusters() throws IOException {
+    private void generateClusters(){
         boolean runCondition = true;
         numberOfClusters = 0;
         if(numberOfNodes==1){
             ants.get(0).clusterNumber=1;
-            runCondition=false;
+            return;
         }
         for (int i = 0; i < numberOfNodes; i++) {
             Ant anti = ants.get(i);
@@ -150,7 +151,7 @@ public class ACOC {
                         ant.clusterNumber=2;
                     }
                 }
-                runCondition=false;
+                return;
             }
             if (runCondition) {
                 for (Ant ant : ants) {
@@ -199,21 +200,21 @@ public class ACOC {
             LinkedHashMap<ComputingAppliance, Instance> workflowArchiteture = workflowArchitectures.get(ant.clusterNumber-1);
             workflowArchiteture.put(ant.node,ant.instance);
         }
-        int i=0;
-        int j=0;
         for (LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture : workflowArchitectures) {
+            int i=0;
             for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
+                int j=0;
                 for (Map.Entry<ComputingAppliance, Instance> entry2 : workflowArchitecture.entrySet()) {
-                    if(j>i){
+                    if(j>=i+1 && j!=i){
                         ComputingAppliance ca = entry.getKey();
-                        ca.addNeighbor(entry2.getKey(),latency); //TODO: ckonstruktorba kirakni a latencyt
-                        }
+                        ca.addNeighbor(entry2.getKey(),latency);
                     }
                     j++;
                 }
                 i++;
             }
         }
+    }
     public int getNumberOfClusters(){
         return numberOfClusters;
     }
@@ -227,6 +228,7 @@ class Ant implements Comparable<Ant>{
     double[] mergeMatrix;
     ComputingAppliance node;
     Instance instance;
+
     public Ant(int numberOfNodes, ComputingAppliance node, Instance instance) {
         this.node = node;
         this.instance = instance;
@@ -262,7 +264,7 @@ class Ant implements Comparable<Ant>{
                     pheromoneMatrix[i] = gaussianKernel(calculateHeuristics(i, Node, workflowArchitecture)/1000,2)+pheromoneMatrix[i];
 
                 } else {
-                    number = ((1-evaporationRate)*pheromoneMatrix[i])/evaporationRate;
+                    number = (evaporationRate*pheromoneMatrix[i])/(1-evaporationRate);
                     pheromoneMatrix[i] += number;
                 }
             }
