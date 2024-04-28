@@ -22,12 +22,15 @@ import hu.u_szeged.inf.fog.simulator.provider.IBMProvider;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -35,10 +38,10 @@ import java.util.concurrent.TimeUnit;
 public class ScenarioBase {
         
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
-            .append(File.separator).append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
+            .append(File.separator).append("simulator").append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
 
-    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator).append(File.separator)
+    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator).append("simulator").append(File.separator)
             .append("src").append(File.separator).append("main").append(File.separator).append("resources")
             .append(File.separator).append("script").append(File.separator).toString();
 
@@ -224,6 +227,54 @@ public class ScenarioBase {
         SimLogger.logRes("Execution time: " + Timed.getFireCount() + " Real execution time" + " "
                 + (Timed.getFireCount() - WorkflowExecutor.realStartTime) + "ms (~"
                 + (Timed.getFireCount() - WorkflowExecutor.realStartTime) / 1000 / 60 + " minutes)");
+
+    }
+    public static void logStreamProcessing(ArrayList<DecentralizedWorkflowScheduler> dws) {
+        SimLogger.logRes("\n~~Information about the simulation:~~\n");
+
+        double totalCost = 0.0;
+        double totalEnergyConsumption = 0.0;
+        for(DecentralizedWorkflowScheduler dw : dws) {
+            for (ComputingAppliance ca : dw.workflowArchitecture.keySet()) {
+                SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVMs.size() + " utilised VMs (IDs): ");
+                for (VirtualMachine vm : ca.workflowVMs) {
+                    SimLogger.logRes("\t" + vm.hashCode() + " ");
+                }
+                SimLogger.logRes("\n");
+                Instance i = dw.workflowArchitecture.get(ca);
+                SimLogger.logRes(ca.vmTime + " " + i.pricePerTick);
+                totalCost += dw.workflowArchitecture.get(ca).calculateCloudCost(ca.vmTime);
+                SimLogger.logRes("Energy Cons. by " + ca.name + " " + ca.energyConsumption);
+                totalEnergyConsumption += ca.energyConsumption;
+            }
+        }
+
+        for (Entry<Integer, Integer> entry : DecentralizedWorkflowExecutor.vmTaskLogger.entrySet()) {
+            SimLogger.logRes(entry.getKey() + ": " + entry.getValue() + " jobs");
+        }
+        for (Entry<WorkflowJob, Integer> entry : DecentralizedWorkflowExecutor.jobReassigns.entrySet()) {
+            SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " re-assigning");
+        }
+        for (Entry<WorkflowJob, Integer> entry : DecentralizedWorkflowExecutor.actuatorReassigns.entrySet()) {
+            SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " actuator re-assigning");
+        }
+
+        int originalNum = 0;
+        int nonCompleted = 0;
+        for(DecentralizedWorkflowScheduler dw : dws) {
+            for (WorkflowJob wj : dw.workflowJobs) {
+                originalNum++;
+                if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
+                    nonCompleted++;
+                }
+            }
+        }
+        SimLogger.logRes("Completed: " + nonCompleted + "/" + originalNum);
+        SimLogger.logRes("Total cost: " + totalCost);
+        SimLogger.logRes("Total energy consumption: " + totalEnergyConsumption);
+        SimLogger.logRes("Execution time: " + Timed.getFireCount() + " Real execution time" + " "
+                + (Timed.getFireCount() - DecentralizedWorkflowExecutor.realStartTime) + "ms (~"
+                + (Timed.getFireCount() - DecentralizedWorkflowExecutor.realStartTime) / 1000 / 60 + " minutes)");
 
     }
 

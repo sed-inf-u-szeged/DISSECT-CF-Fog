@@ -3,6 +3,8 @@ package hu.u_szeged.inf.fog.simulator.workflow;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
+
 import java.util.ArrayList;
 
 
@@ -74,6 +76,19 @@ public class WorkflowJob {
         this.fileRecieved = 0;
         this.filesRecieved = new ArrayList<StorageObject>();
         WorkflowJob.workflowJobs.add(this);
+    }
+    public WorkflowJob(String id, double runtime, double longitude, double latitude, State state,
+                       ArrayList<Uses> inputs, ArrayList<Uses> outputs, DecentralizedWorkflowScheduler dws) {
+        this.id = id;
+        this.runtime = runtime;
+        this.state = WorkflowJob.State.SUBMITTED;
+        this.inputs = inputs;
+        this.outputs = outputs;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.fileRecieved = 0;
+        this.filesRecieved = new ArrayList<StorageObject>();
+        dws.workflowJobs.add(this);
     }
 
     public static class Uses {

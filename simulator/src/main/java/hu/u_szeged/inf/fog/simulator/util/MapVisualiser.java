@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.util;
 
+import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
