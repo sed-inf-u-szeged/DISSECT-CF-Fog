@@ -1,6 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
-public class CustomStrategyTemplate {
+public class CustomApplictaionStrategyTemplate {
     private static final String CUSTOM_APPLICATION_STRATEGY_TEMPLATE =
             "import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;\n" +
             "import hu.u_szeged.inf.fog.simulator.application.Application;\n" +
@@ -15,9 +15,8 @@ public class CustomStrategyTemplate {
             "    }\n" +
             "\n" +
             "    @Override\n" +
-            "    public void findApplication(long dataForTransfer) {\n" +
-            "${code}    }\n" +
-            "}";
+            "${code}" +
+                    "}";
 
     public static String renderCustomApplicationStrategyTemplate(String code) {
         return CUSTOM_APPLICATION_STRATEGY_TEMPLATE.replace("${code}", code);
