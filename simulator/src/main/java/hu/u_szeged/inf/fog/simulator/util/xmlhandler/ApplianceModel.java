@@ -99,6 +99,9 @@ public class ApplianceModel {
     }
 
 
+    public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper) throws Exception {
+        loadApplianceXML(appliancefile,iaasMapper,"");
+    }
 
     public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper, String code) throws Exception {
         File file = new File(appliancefile);
@@ -163,7 +166,8 @@ public class ApplianceModel {
         } else if (strategy.equals("RuntimeAwareApplicationStrategy")) {
             return new RuntimeAwareApplicationStrategy(activationRatio, TransferDevider);
         } else if (strategy.equals("CustomApplicationStrategy")) {
-            String fullCode = CustomStrategyTemplate.renderCustomApplicationStrategyTemplate(code);
+            if(code.equals("") || code == null) throw new IllegalArgumentException("Application code can not be empty!");
+            String fullCode = CustomApplictaionStrategyTemplate.renderCustomApplicationStrategyTemplate(code);
             return CustomApplicationStrategy.loadCustomStrategy(activationRatio,TransferDevider,fullCode);
         }else {
             System.err.println("WARNING: the application strategy called " + strategy + " does not exist!");
