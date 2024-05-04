@@ -10,7 +10,7 @@ public class CustomDeviceStrategyTemplate {
                 "class HelperDeviceStrategy extends DeviceStrategy {\n" +
                 "\n" +
                 "@Override\n" +
-                "{$code}\n" +
+                "${code}\n" +
                 "}";
     public static String renderCustomDeviceStrategyTemplate(String code) {
         return CUSTOM_DEVICE_STRATEGY_TEMPLATE.replace("${code}", code);
