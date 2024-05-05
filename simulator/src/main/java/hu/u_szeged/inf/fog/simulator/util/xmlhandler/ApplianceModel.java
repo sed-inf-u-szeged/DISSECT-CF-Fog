@@ -100,10 +100,10 @@ public class ApplianceModel {
 
 
     public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper) throws Exception {
-        loadApplianceXML(appliancefile,iaasMapper,"");
+        loadApplianceXML(appliancefile,iaasMapper,"",false);
     }
 
-    public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper, String code) throws Exception {
+    public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper, String code, Boolean isApplicationCustome) throws Exception {
         File file = new File(appliancefile);
         JAXBContext jaxbContext = JAXBContext.newInstance(AppliancesModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
@@ -114,7 +114,7 @@ public class ApplianceModel {
                     new GeoLocation(am.latitude, am.longitude), am.range);
             for (ApplicationModel a : am.getApplications()) {
                 ca.addApplication(new Application(a.name, a.freq, a.tasksize, a.countOfInstructions, a.canJoin,
-                        findApplicationStrategy(a.strategy, a.activationRatio, a.transferDevider, code),
+                        findApplicationStrategy(a.strategy, a.activationRatio, a.transferDevider, code,isApplicationCustome),
                         Instance.instances.get(a.instance)));
             }
         }
@@ -145,7 +145,7 @@ public class ApplianceModel {
     }
 
     private static ApplicationStrategy findApplicationStrategy(String strategy, double activationRatio,
-            double TransferDevider, String code) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
+            double TransferDevider, String code, Boolean isCustom) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
 
         /*try {
             FeatureManager.getInstance().sendFeaturesForPrediction();
@@ -154,6 +154,10 @@ public class ApplianceModel {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }*/
+
+        if(!isCustom){
+            strategy = code;
+        }
 
         if (strategy.equals("HoldDownApplicationStrategy")) {
             return new HoldDownApplicationStrategy(activationRatio, TransferDevider);
@@ -166,7 +170,7 @@ public class ApplianceModel {
         } else if (strategy.equals("RuntimeAwareApplicationStrategy")) {
             return new RuntimeAwareApplicationStrategy(activationRatio, TransferDevider);
         } else if (strategy.equals("CustomApplicationStrategy")) {
-            if(code.equals("") || code == null) throw new IllegalArgumentException("Application code can not be empty!");
+            if(code.isEmpty() || code == null) throw new IllegalArgumentException("Application code can not be empty!");
             String fullCode = CustomApplictaionStrategyTemplate.renderCustomApplicationStrategyTemplate(code);
             return CustomApplicationStrategy.loadCustomStrategy(activationRatio,TransferDevider,fullCode);
         }else {

@@ -162,10 +162,10 @@ public class DeviceModel {
     }
 
     public static void loadDeviceXML(String stationfile) throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
-        loadDeviceXML(stationfile,"");
+        loadDeviceXML(stationfile,"",false);
     }
 
-    public static void loadDeviceXML(String stationfile, String code) throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
+    public static void loadDeviceXML(String stationfile, String code, Boolean isDeviceCustom) throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
         File file = new File(stationfile);
         JAXBContext jaxbContext = JAXBContext.newInstance(DevicesModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
@@ -187,13 +187,16 @@ public class DeviceModel {
             // TODO:
             new SmartDevice(dm.startTime, dm.stopTime, dm.fileSize, dm.freq,
                     new RandomWalkMobilityStrategy(gl, dm.speed, 2 * dm.speed, dm.radius),
-                    findDeviceStrategy(dm.strategy, code), localMachine, dm.latency, true);
+                    findDeviceStrategy(dm.strategy, code, isDeviceCustom), localMachine, dm.latency, true);
 
         }
 
     }
+    private static DeviceStrategy findDeviceStrategy(String strategy, String code, Boolean isCustom) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
+        if(!isCustom){
+            strategy = code;
+        }
 
-    private static DeviceStrategy findDeviceStrategy(String strategy, String code) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
         if (strategy.equals("CostAwareDeviceStrategy")) {
             return new CostAwareDeviceStrategy();
         } else if (strategy.equals("DistanceBasedDeviceStrategy")) {

@@ -66,7 +66,9 @@ public class SimulatorJobDao {
         return Optional.ofNullable(simulatorJobDo)
                 .map(job -> SimulatorJob.builder().id(job.getId()).user(job.getUser())
                         .deviceCode(job.getDeviceCode())
+                        .isDeviceCodeCustom(job.getIsDeviceCodeCustom())
                         .applicationCode(job.getApplicationCode())
+                        .isApplicationCodeCustom(job.getIsApplicationCodeCustom())
                         .simulatorJobStatus(job.getSimulatorJobStatus())
                         .configFiles(retrieverGridFsDao.retrieveFiles(job.getConfigFiles())).build())
                 .orElse(null);
