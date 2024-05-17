@@ -1,17 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
 
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.HoldDownApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.PliantApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.PushUpApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.RandomApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.application.strategy.*;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Map;
 import javax.xml.bind.JAXBContext;
@@ -102,8 +99,11 @@ public class ApplianceModel {
     }
 
 
-
     public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper) throws Exception {
+        loadApplianceXML(appliancefile,iaasMapper,"",false);
+    }
+
+    public static void loadApplianceXML(String appliancefile, Map<String, String> iaasMapper, String code, Boolean isApplicationCustome) throws Exception {
         File file = new File(appliancefile);
         JAXBContext jaxbContext = JAXBContext.newInstance(AppliancesModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
@@ -114,7 +114,7 @@ public class ApplianceModel {
                     new GeoLocation(am.latitude, am.longitude), am.range);
             for (ApplicationModel a : am.getApplications()) {
                 ca.addApplication(new Application(a.name, a.freq, a.tasksize, a.countOfInstructions, a.canJoin,
-                        findApplicationStrategy(a.strategy, a.activationRatio, a.transferDevider),
+                        findApplicationStrategy(a.strategy, a.activationRatio, a.transferDevider, code,isApplicationCustome),
                         Instance.instances.get(a.instance)));
             }
         }
@@ -145,7 +145,7 @@ public class ApplianceModel {
     }
 
     private static ApplicationStrategy findApplicationStrategy(String strategy, double activationRatio,
-            double TransferDevider) {
+            double TransferDevider, String code, Boolean isCustom) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
 
         /*try {
             FeatureManager.getInstance().sendFeaturesForPrediction();
@@ -154,6 +154,10 @@ public class ApplianceModel {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }*/
+
+        if(!isCustom){
+            strategy = code;
+        }
 
         if (strategy.equals("HoldDownApplicationStrategy")) {
             return new HoldDownApplicationStrategy(activationRatio, TransferDevider);
@@ -165,7 +169,11 @@ public class ApplianceModel {
             return new RandomApplicationStrategy(activationRatio, TransferDevider);
         } else if (strategy.equals("RuntimeAwareApplicationStrategy")) {
             return new RuntimeAwareApplicationStrategy(activationRatio, TransferDevider);
-        } else {
+        } else if (strategy.equals("CustomApplicationStrategy")) {
+            if(code.isEmpty() || code == null) throw new IllegalArgumentException("Application code can not be empty!");
+            String fullCode = CustomApplictaionStrategyTemplate.renderCustomApplicationStrategyTemplate(code);
+            return CustomApplicationStrategy.loadCustomStrategy(activationRatio,TransferDevider,fullCode);
+        }else {
             System.err.println("WARNING: the application strategy called " + strategy + " does not exist!");
             System.exit(0);
         }

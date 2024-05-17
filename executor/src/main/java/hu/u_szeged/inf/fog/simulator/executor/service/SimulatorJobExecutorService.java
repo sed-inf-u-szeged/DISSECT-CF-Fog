@@ -81,9 +81,9 @@ public class SimulatorJobExecutorService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         try {
-            DeviceModel.loadDeviceXML(simulatorJobConfigs.getFirst(DEVICES_FILE).getPath());
+            DeviceModel.loadDeviceXML(simulatorJobConfigs.getFirst(DEVICES_FILE).getPath(),simulatorJob.getDeviceCode(),Boolean.valueOf(simulatorJob.getIsDeviceCodeCustom()));
             InstanceModel.loadInstanceXML(simulatorJobConfigs.getFirst(INSTANCES_FILE).getPath());
-            ApplianceModel.loadApplianceXML(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders);
+            ApplianceModel.loadApplianceXML(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders, simulatorJob.getApplicationCode(),Boolean.valueOf(simulatorJob.getIsApplicationCodeCustom()));
         } catch (Exception e) {
             e.printStackTrace();
         }

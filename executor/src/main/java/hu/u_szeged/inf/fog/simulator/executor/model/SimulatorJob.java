@@ -21,6 +21,10 @@ public class SimulatorJob {
     private MultiValueMap<ConfigFileType, File> configFiles;
     private MultiValueMap<ResultFileType, File> resultFiles;
     private SimulatorJobResult simulatorJobResult;
+    private String deviceCode;
+    private String isDeviceCodeCustom;
+    private String applicationCode;
+    private String isApplicationCodeCustom;
 
     public boolean isValid() {
         return Stream.of(ConfigFileType.values()).map(configFiles::containsKey).allMatch(Boolean::booleanValue);

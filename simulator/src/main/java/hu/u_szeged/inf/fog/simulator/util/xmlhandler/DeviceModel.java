@@ -4,16 +4,16 @@ import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.application.strategy.CustomApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.application.strategy.CustomApplictaionStrategyTemplate;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.CostAwareDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.DistanceBasedDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.PliantDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.strategy.*;
+
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -161,7 +161,11 @@ public class DeviceModel {
                 + idlepower + ", maxpower=" + maxpower + "]";
     }
 
-    public static void loadDeviceXML(String stationfile) throws JAXBException {
+    public static void loadDeviceXML(String stationfile) throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
+        loadDeviceXML(stationfile,"",false);
+    }
+
+    public static void loadDeviceXML(String stationfile, String code, Boolean isDeviceCustom) throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
         File file = new File(stationfile);
         JAXBContext jaxbContext = JAXBContext.newInstance(DevicesModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
@@ -183,13 +187,16 @@ public class DeviceModel {
             // TODO:
             new SmartDevice(dm.startTime, dm.stopTime, dm.fileSize, dm.freq,
                     new RandomWalkMobilityStrategy(gl, dm.speed, 2 * dm.speed, dm.radius),
-                    findDeviceStrategy(dm.strategy), localMachine, dm.latency, true);
+                    findDeviceStrategy(dm.strategy, code, isDeviceCustom), localMachine, dm.latency, true);
 
         }
 
     }
+    private static DeviceStrategy findDeviceStrategy(String strategy, String code, Boolean isCustom) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
+        if(!isCustom){
+            strategy = code;
+        }
 
-    private static DeviceStrategy findDeviceStrategy(String strategy) {
         if (strategy.equals("CostAwareDeviceStrategy")) {
             return new CostAwareDeviceStrategy();
         } else if (strategy.equals("DistanceBasedDeviceStrategy")) {
@@ -200,7 +207,12 @@ public class DeviceModel {
             return new RandomDeviceStrategy();
         } else if (strategy.equals("LoadBalancedDeviceStrategy")) {
             return new LoadBalancedDeviceStrategy();
-        } else {
+        }else if (strategy.equals("CustomDeviceStrategy")) {
+            if(code.equals("") || code == null) throw new IllegalArgumentException("Application code can not be empty!");
+            String fullCode = CustomDeviceStrategyTemplate.renderCustomDeviceStrategyTemplate(code);
+            return CustomDeviceStrategy.loadCustomStrategy(fullCode);
+        }
+        else {
             System.err.println("WARNING: the device strategy called " + strategy + " does not exist!");
             System.exit(0);
         }
