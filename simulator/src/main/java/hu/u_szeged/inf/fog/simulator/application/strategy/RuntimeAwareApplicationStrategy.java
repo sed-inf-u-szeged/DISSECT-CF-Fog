@@ -2,7 +2,7 @@ package hu.u_szeged.inf.fog.simulator.application.strategy;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
 import java.util.ArrayList;
 

@@ -6,15 +6,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.result.ActuatorEvents;
-import hu.u_szeged.inf.fog.simulator.result.Architecture;
-import hu.u_szeged.inf.fog.simulator.result.Cost;
-import hu.u_szeged.inf.fog.simulator.result.DataVolume;
-import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.AWSProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
@@ -22,11 +17,17 @@ import hu.u_szeged.inf.fog.simulator.provider.IBMProvider;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.result.ActuatorEvents;
+import hu.u_szeged.inf.fog.simulator.util.result.Architecture;
+import hu.u_szeged.inf.fog.simulator.util.result.Cost;
+import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
+import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
+
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -38,10 +39,10 @@ import java.util.concurrent.TimeUnit;
 public class ScenarioBase {
         
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
-            .append(File.separator).append("simulator").append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
+            .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
 
-    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator).append("simulator").append(File.separator)
+    public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
             .append("src").append(File.separator).append("main").append(File.separator).append("resources")
             .append(File.separator).append("script").append(File.separator).toString();
 
@@ -154,31 +155,44 @@ public class ScenarioBase {
         SimLogger.logRes("Total number of predictions: " + FeatureManager.getInstance().getTotalNumOfPredictions());
 
         
-        final var actuatorEvents = ActuatorEvents.builder().changePosition(MobilityEvent.changePositionEventCounter)
-                .changeNode(MobilityEvent.changeNodeEventCounter).connectToNode(MobilityEvent.connectToNodeEventCounter)
-                .disconnectFromNode(MobilityEvent.disconnectFromNodeEventCounter).build();
+        final var actuatorEvents = new ActuatorEvents(
+                MobilityEvent.changeNodeEventCounter,
+                MobilityEvent.changePositionEventCounter,
+                MobilityEvent.connectToNodeEventCounter,
+                MobilityEvent.disconnectFromNodeEventCounter
+        );
 
-        final var architecture = Architecture.builder().tasks(numberOfTasks).usedVirtualMachines(numberOfVms)
-                .totalEnergyConsumptionOfNodesInWatt(totalEnergyConsumption / 1000 / 3_600_000)
-                .totalEnergyConsumptionOfDevicesInWatt(totalDeviceEnergyConsumption / 1000 / 3_600_000)
-                .sumOfMillisecondsOnNetwork(
-                        TimeUnit.SECONDS.convert(Application.totalTimeOnNetwork, TimeUnit.MILLISECONDS))
-                .sumOfByteOnNetwork(Application.totalBytesOnNetwork)
-                .timeout(TimeUnit.MINUTES.convert(Application.lastAction - Device.lastAction, TimeUnit.MILLISECONDS))
-                .simulationLength(TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS)).build();
+        final var architecture = new Architecture(
+                numberOfVms,
+                numberOfTasks,
+                totalEnergyConsumption / 1000 / 3_600_000,
+                totalDeviceEnergyConsumption / 1000 / 3_600_000,
+                TimeUnit.SECONDS.convert(Application.totalTimeOnNetwork, TimeUnit.MILLISECONDS),
+                Application.totalBytesOnNetwork,
+                TimeUnit.MINUTES.convert(Application.lastAction - Device.lastAction, TimeUnit.MILLISECONDS),
+                TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS)
+        );
 
-        final var cost = Cost.builder().totalCostInEuro(totalCost)
-                .IBM(BigDecimal.valueOf(Provider.providers.get(0).calculate()).toPlainString())
-                .AWS(BigDecimal.valueOf(Provider.providers.get(1).calculate()).toPlainString())
-                .azure(BigDecimal.valueOf(Provider.providers.get(2).calculate()).toPlainString()).build();
+        final var cost = new Cost(
+                totalCost,
+                BigDecimal.valueOf(Provider.providers.get(0).calculate()).toPlainString(),
+                BigDecimal.valueOf(Provider.providers.get(1).calculate()).toPlainString(),
+                BigDecimal.valueOf(Provider.providers.get(2).calculate()).toPlainString()
+        );
 
-        final var dataVolume = DataVolume.builder().generatedDataInBytes(totalGeneratedData)
-                .processedDataInBytes(totalProcessedData).arrivedDataInBytes(totalReceivedData).build();
+        final var dataVolume = new DataVolume(
+                totalGeneratedData,
+                totalProcessedData,
+                totalReceivedData
+        );
 
-        return SimulatorJobResult.builder().architecture(architecture).actuatorEvents(actuatorEvents).cost(cost)
-                .dataVolume(dataVolume).runtime(TimeUnit.SECONDS.convert(runtime, TimeUnit.NANOSECONDS)).build();
-                
-        //return null;
+        return new SimulatorJobResult(
+                actuatorEvents,
+                architecture,
+                cost,
+                dataVolume,
+                TimeUnit.SECONDS.convert(runtime, TimeUnit.NANOSECONDS)
+        );
     }
 
     public static void calculateIoTCost() {

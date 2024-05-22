@@ -22,14 +22,12 @@ public class SimRandomTest {
         
         for(int i=0;i<size;i++) {
             array1[i] = SeedSyncer.centralRnd.nextInt()%10;
-            System.out.println(array1[i]);
         }
         
         SeedSyncer.resetCentral();
         
         for(int i=0;i<size;i++) {
             array2[i] = SeedSyncer.centralRnd.nextInt()%10;
-            System.out.println(array2[i]);
         }
         
         assertArrayEquals(array1, array2);
@@ -38,7 +36,6 @@ public class SimRandomTest {
         
         for(int i=0;i<size;i++) {
             array2[i] = SeedSyncer.centralRnd.nextInt()%10;
-            System.out.println(array2[i]);
         }
         
         assertFalse(Arrays.equals(array1, array2));

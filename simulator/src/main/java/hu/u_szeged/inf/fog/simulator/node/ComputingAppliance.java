@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.physical;
+package hu.u_szeged.inf.fog.simulator.node;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.specialized.IaaSEnergyMeter;
@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
+
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 

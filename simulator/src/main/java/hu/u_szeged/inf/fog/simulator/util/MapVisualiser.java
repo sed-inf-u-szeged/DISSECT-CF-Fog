@@ -1,12 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.util;
 
-import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.ACOC;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

@@ -2,7 +2,7 @@ package hu.u_szeged.inf.fog.simulator.iot.mobility.forecasting;
 
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
 /**
  * This class predicts helps to predict the device's next location based on

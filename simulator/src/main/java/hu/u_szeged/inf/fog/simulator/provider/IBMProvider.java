@@ -1,8 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.provider;
 
-import hu.u_szeged.inf.fog.simulator.application.Application;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import hu.u_szeged.inf.fog.simulator.application.Application;
 
 // https://www.ibm.com/cloud/blog/better-pricing-better-standard-plan-watson-iot-platform
 // https://cloud.google.com/iot/pricing

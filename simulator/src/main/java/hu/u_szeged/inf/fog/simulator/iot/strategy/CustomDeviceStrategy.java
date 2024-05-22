@@ -1,9 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.iot.strategy;
 
-import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
-
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+
+import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

@@ -3,14 +3,14 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
-import hu.u_szeged.inf.fog.simulator.aco.ACO;
-import hu.u_szeged.inf.fog.simulator.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.xmlhandler.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.ACO;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 
 import java.util.ArrayList;
