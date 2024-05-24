@@ -19,12 +19,11 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.ACOC;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
-
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DecentralizedWorkflowExecutor {
 
@@ -39,19 +38,20 @@ public class DecentralizedWorkflowExecutor {
 
     public static long realStartTime = 0;
 
-    public DecentralizedWorkflowExecutor(ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers,ArrayList<Actuator> actuatorArchitecutre) {
+    public DecentralizedWorkflowExecutor(ArrayList<DecentralizedWorkflowScheduler> workflowSchedulers,
+            ArrayList<Actuator> actuatorArchitecutre) {
 
-        for(DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
+        for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers) {
             workflowScheduler.init();
             workflowScheduler.schedule();
             DecentralizedWorkflowExecutor.workflowSchedulers.add(workflowScheduler);
         }
 
-        this.checkFirstVMState();
+        this.checkFirstVmState();
 
     }
 
-    private void checkFirstVMState() {
+    private void checkFirstVmState() {
         new DeferredEvent(1) {
 
             @Override
@@ -61,7 +61,7 @@ public class DecentralizedWorkflowExecutor {
                     execute();
                     WorkflowExecutor.realStartTime = Timed.getFireCount();
                 } else {
-                    checkFirstVMState();
+                    checkFirstVmState();
                 }
             }
 
@@ -69,7 +69,7 @@ public class DecentralizedWorkflowExecutor {
     }
 
     public static void execute() {
-        for(DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
+        for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers) {
             if (workflowScheduler.actuatorArchitecture != null) {
                 for (Actuator a : workflowScheduler.actuatorArchitecture) {
                     WorkflowJob workflowJob = a.actuatorWorkflowQueue.poll();
@@ -84,7 +84,7 @@ public class DecentralizedWorkflowExecutor {
                                 workflowJob.state = WorkflowJob.State.COMPLETED;
                                 a.isWorking = false;
                                 a.actuatorEventList
-                                        .add(new TimelineEntry(actuatorStartTime, Timed.getFireCount(), workflowJob.id));
+                                       .add(new TimelineEntry(actuatorStartTime, Timed.getFireCount(), workflowJob.id));
                                 execute();
                             }
                         };
@@ -93,27 +93,27 @@ public class DecentralizedWorkflowExecutor {
                     }
                 }
             }
-            ComputingAppliance emptyCA = null;
-            ComputingAppliance maxCA = null;
+            ComputingAppliance emptyCa = null;
+            ComputingAppliance maxCa = null;
             int maxNum = 1;
-            for(ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()){
-                if(ca.workflowQueue.isEmpty()){
-                    emptyCA = ca;
+            for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
+                if (ca.workflowQueue.isEmpty()) {
+                    emptyCa = ca;
                 } else if (ca.workflowQueue.size() > maxNum) {
                     maxNum = ca.workflowQueue.size();
-                    maxCA = ca;
+                    maxCa = ca;
                 }
             }
-            if(emptyCA != null && maxCA != null){
-                workflowScheduler.jobReAssign(maxCA.workflowQueue.poll(),emptyCA);
+            if (emptyCa != null && maxCa != null) {
+                workflowScheduler.jobReAssign(maxCa.workflowQueue.poll(),emptyCa);
             }
 
             for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
                 int size = ca.workflowQueue.size();
-                if(ca.workflowVMs.size()<size-1){
+                if (ca.workflowVms.size() < size - 1) {
                     Instance i = workflowScheduler.workflowArchitecture.get(ca);
                     try {
-                        ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                        ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
                     } catch (VMManager.VMManagementException e) {
                         e.printStackTrace();
                     }
@@ -121,9 +121,10 @@ public class DecentralizedWorkflowExecutor {
                 for (int i = 0; i < size; i++) {
                     WorkflowJob workflowJob = ca.workflowQueue.poll();
                     System.out.println(workflowJob.id + " is peeked at " + Timed.getFireCount());
-                    if (workflowJob.inputs.get(0).amount == 0 && workflowJob.state.equals(WorkflowJob.State.SUBMITTED)) {
+                    if (workflowJob.inputs.get(0).amount == 0 
+                            && workflowJob.state.equals(WorkflowJob.State.SUBMITTED)) {
                         workflowJob.state = WorkflowJob.State.STARTED;
-                        VirtualMachine vm = findVM(workflowJob);
+                        VirtualMachine vm = findVm(workflowJob);
                         try {
                             WorkflowJob.numberOfStartedWorkflowJobs++;
                             long vmStartTime = Timed.getFireCount();
@@ -134,39 +135,42 @@ public class DecentralizedWorkflowExecutor {
                                 noi = workflowJob.fileRecieved
                                         * workflowScheduler.workflowArchitecture.get(ca).processingRatio;
                             } else {
-                                noi = 1000 * workflowJob.runtime * vm.getResourceAllocation().allocated.getRequiredCPUs()
+                                noi = 1000 * workflowJob.runtime 
+                                        * vm.getResourceAllocation().allocated.getRequiredCPUs()
                                         * vm.getResourceAllocation().allocated.getRequiredProcessingPower();
                             }
                             long vmTimeStart = Timed.getFireCount();
-                            vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
+                            vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing, 
+                                    new ConsumptionEventAdapter() {
 
-                                @Override
-                                public void conComplete() {
-                                    workflowJob.ca.vmTime += Timed.getFireCount() - vmTimeStart;
-                                    workflowJob.ca.timelineList.add(new TimelineEntry(vmStartTime, Timed.getFireCount(),
+                                    @Override
+                                    public void conComplete() {
+                                        workflowJob.ca.vmTime += Timed.getFireCount() - vmTimeStart;
+                                        workflowJob.ca.timelineList.add(
+                                                new TimelineEntry(vmStartTime, Timed.getFireCount(),
                                             Integer.toString(vm.hashCode()) + "-" + workflowJob.id));
-                                    workflowJob.state = WorkflowJob.State.COMPLETED;
-                                    System.out.println(workflowJob.id + " is finished at " + Timed.getFireCount() + " on "
+                                        workflowJob.state = WorkflowJob.State.COMPLETED;
+                                        System.out.println(workflowJob.id + " is finished at " 
+                                            + Timed.getFireCount() + " on "
                                             + workflowJob.ca.name);
-                                    sendFileToChildren(workflowJob, workflowScheduler);
-                                    if (vmTaskLogger.get(vm.hashCode()) == null) {
-                                        vmTaskLogger.put(vm.hashCode(), 1);
-                                    } else {
-                                        vmTaskLogger.put(vm.hashCode(), vmTaskLogger.get(vm.hashCode()) + 1);
+                                        sendFileToChildren(workflowJob, workflowScheduler);
+                                        if (vmTaskLogger.get(vm.hashCode()) == null) {
+                                            vmTaskLogger.put(vm.hashCode(), 1);
+                                        } else {
+                                            vmTaskLogger.put(vm.hashCode(), vmTaskLogger.get(vm.hashCode()) + 1);
+                                        }
                                     }
-                                }
-                            });
-
-                        }catch (NetworkException e) {
+                                });
+                        } catch (NetworkException e) {
                             e.printStackTrace();
                         }
                     }
                 }
             }
         }
-
     }
 
+    /*
     private static WorkflowJob findWorkflowJob(String id) {
         for (WorkflowJob workflowJob : WorkflowJob.workflowJobs) {
             if (workflowJob.id.equals(id)) {
@@ -175,6 +179,8 @@ public class DecentralizedWorkflowExecutor {
         }
         return null;
     }
+    */
+    
     private static WorkflowJob findWorkflowJob(String id, DecentralizedWorkflowScheduler workflowScheduler) {
         for (WorkflowJob workflowJob : workflowScheduler.workflowJobs) {
             if (workflowJob.id.equals(id)) {
@@ -184,7 +190,7 @@ public class DecentralizedWorkflowExecutor {
         return null;
     }
 
-    private static VirtualMachine findVM(WorkflowJob workflowJob) {
+    private static VirtualMachine findVm(WorkflowJob workflowJob) {
         VirtualMachine virtualMachine = null;
         int min = Integer.MAX_VALUE;
         for (VirtualMachine vm : workflowJob.ca.iaas.listVMs()) {
@@ -199,11 +205,11 @@ public class DecentralizedWorkflowExecutor {
 
     private boolean checkComputingAppliances() {
         boolean ready = true;
-        boolean one = true;
-        for(DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
+        // boolean one = true;
+        for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers) {
             int vmCount = 0;
             for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
-                for (VirtualMachine vm : ca.workflowVMs) {
+                for (VirtualMachine vm : ca.workflowVms) {
                     if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
                         vmCount++;
                         break;
@@ -276,7 +282,7 @@ public class DecentralizedWorkflowExecutor {
     }
 
     private void startSensors() {
-        for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers){
+        for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers) {
             for (WorkflowJob workflowJob : workflowScheduler.workflowJobs) {
                 if (workflowJob.id.contains("sensor")) {
 
@@ -316,7 +322,8 @@ public class DecentralizedWorkflowExecutor {
 
                                     long sensorStartTime = Timed.getFireCount();
                                     repo.requestContentDelivery(workflowJob.id + "_" + uses.id,
-                                            childWorkflowJob.ca.iaas.repositories.get(0), new ConsumptionEventAdapter() {
+                                            childWorkflowJob.ca.iaas.repositories.get(0), 
+                                            new ConsumptionEventAdapter() {
 
                                                 @Override
                                                 public void conComplete() {

@@ -6,22 +6,22 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
 /**
  * This class predicts helps to predict the device's next location based on
- * weighted Markov prediction model
+ * weighted Markov prediction model.
  */
 public class Predictor {
-    final int k;
+    final int kk;
     final Backlog backlog;
     int prevAngle = -1;
     ProbabilityMatrix probabilityMatrix;
 
     /**
-     * Instantiates a predictor object
+     * Instantiates a predictor object.
      *
      * @param k The maximum number of previous directions to take into consideration
      *          when predicting
      */
     public Predictor(int k) {
-        this.k = k;
+        this.kk = k;
         this.backlog = new Backlog(k);
         probabilityMatrix = new ProbabilityMatrix();
     }
@@ -62,9 +62,9 @@ public class Predictor {
             for (int i = 0; i < dirQueueSize; i++) {
                 // double[][] POW_MATRIX = Utils.pow(probabilityMatrix.getTransitionMatrix(), i
                 // + 1);
-                double[][] POW_MATRIX = cache[i];
-                Integer curr_dir = backlog.directionQueue.get(i);
-                product += POW_MATRIX[curr_dir][n] * weights.get(i);
+                double[][] powMatrix = cache[i];
+                Integer currDirectrion = backlog.directionQueue.get(i);
+                product += powMatrix[currDirectrion][n] * weights.get(i);
             }
             if (product > max) {
                 max = product;
@@ -76,8 +76,8 @@ public class Predictor {
 
     /**
      * Predicts if a device moving in the predicted direction will connect to a
-     * computing appliance or not
-     * 
+     * computing appliance or not.
+     *
      * @param device    The device that moves
      * @param direction The predicted direction
      * @return true if it will likely connect, false otherwise
@@ -90,7 +90,7 @@ public class Predictor {
         GeoLocation futureLocation = future(device, direction, speed);
         for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
             double futureDistance = futureLocation.calculateDistance(ca.geoLocation);
-            int futureLatency = device.latency + (int) (futureDistance / 1000);
+            // int futureLatency = device.latency + (int) (futureDistance / 1000);
             if (futureDistance <= ca.range) {
                 return true;
             }
@@ -100,8 +100,8 @@ public class Predictor {
 
     /**
      * Predicts if a device moving in the predicted direction will disconnect from a
-     * computing appliance or not
-     * 
+     * computing appliance or not.
+     *
      * @param device    The device that moves
      * @param direction The predicted direction
      * @return true if it will likely disconnect, false otherwise
@@ -117,7 +117,7 @@ public class Predictor {
             
         GeoLocation futureLocation = future(device, direction, speed);
         double futureDistance = futureLocation.calculateDistance(device.application.computingAppliance.geoLocation);
-        int futureLatency = device.latency + (int) (futureDistance / 1000);
+        //int futureLatency = device.latency + (int) (futureDistance / 1000);
         return futureDistance > device.application.computingAppliance.range;
     }
 

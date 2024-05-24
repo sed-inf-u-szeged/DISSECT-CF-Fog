@@ -4,7 +4,7 @@ import java.util.Vector;
 
 public interface Normalizer {
 
-    public Vector<Double> normalizeIncrement(Vector<Double> source_vector);
+    public Vector<Double> normalizeIncrement(Vector<Double> sourceVector);
 
-    public Vector<Double> normalizeDecrement(Vector<Double> source_vector);
+    public Vector<Double> normalizeDecrement(Vector<Double> sourceVector);
 }

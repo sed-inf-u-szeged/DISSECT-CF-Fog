@@ -8,7 +8,7 @@ public class WeightCoefficient {
     /**
      * Calculates the weight of a transition, as: k - i + 1 / sum(m_i), i = 1, 2,
      * ..., k
-     * 
+     *
      * @param iteration  Is the 'i' in the formula above
      * @param transition Is the 'k' in the formulve above
      * @return Weight of the transition based on its historical value (transition)
@@ -21,7 +21,7 @@ public class WeightCoefficient {
     /**
      * Gives an exponential-like function to represent the weight of direction
      * transitions. If the direction is itself, the function gives a higher value.
-     * 
+     *
      * @param x The direction argument
      * @return The weighted value
      */

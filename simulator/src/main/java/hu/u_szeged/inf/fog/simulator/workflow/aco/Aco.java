@@ -3,14 +3,13 @@ package hu.u_szeged.inf.fog.simulator.workflow.aco;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ACO {
+public class Aco {
 
     private int numberOfClusters;    
     private int numberOfNodes;
@@ -21,7 +20,7 @@ public class ACO {
     private int defaultLatency;
     private double[][] pheromoneMatrix;
 
-    public ACO(int numberOfClusters, int numberOfNodes, int numberOfAnts,
+    public Aco(int numberOfClusters, int numberOfNodes, int numberOfAnts,
                double evaporationRate, int maxIterations, double randomFactor, int defaultLatency) {
         this.numberOfClusters = numberOfClusters;
         this.numberOfNodes = numberOfNodes;
@@ -38,11 +37,12 @@ public class ACO {
                 pheromoneMatrix[i][j] = Math.random();
             }
         }
-        ACO.printMatrix("inital pheromone matrix: ", pheromoneMatrix);
+        Aco.printMatrix("inital pheromone matrix: ", pheromoneMatrix);
     }
 
-    public ArrayList<LinkedHashMap<ComputingAppliance, Instance>> runACO(LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
-                                                                         ArrayList<ComputingAppliance> centerNodes) throws IOException {
+    public ArrayList<LinkedHashMap<ComputingAppliance, Instance>> runAco(
+            LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
+            ArrayList<ComputingAppliance> centerNodes) throws IOException {
         for (int iteration = 0; iteration < maxIterations; iteration++) {
             SolutionAnt[] ants = new SolutionAnt[numberOfAnts];
 
@@ -56,9 +56,10 @@ public class ACO {
             calculateFitness(ants, workflowArchitecture, centerNodes);
             updatePheromones(ants,numberOfAnts);
             evaporatePheromones();
-            ACO.printMatrix("updated pheromone matrix: ", pheromoneMatrix);
+            Aco.printMatrix("updated pheromone matrix: ", pheromoneMatrix);
         }
-        ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures = generateArchitetures(workflowArchitecture,centerNodes);
+        ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures 
+            = generateArchitetures(workflowArchitecture,centerNodes);
         Visualiser.mapGenerator(ScenarioBase.scriptPath,ScenarioBase.resultDirectory,workflowArchitectures);
         return workflowArchitectures;
     }
@@ -67,12 +68,13 @@ public class ACO {
      * Calculates fitness level how accurate a solution is.
      * Uses calculateHeuristics for easier change of heuristic
      */
-    private void calculateFitness(SolutionAnt[] ants, LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture, ArrayList<ComputingAppliance> centerNodes) {
+    private void calculateFitness(SolutionAnt[] ants, LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
+                ArrayList<ComputingAppliance> centerNodes) {
         for (SolutionAnt ant : ants) {
             double fitnessLevel = 0;
             for (int i = 0; i < numberOfNodes; i++) {
                 double heuristic = calculateHeuristics(i, workflowArchitecture, centerNodes.get(ant.solution[i]));
-                fitnessLevel += heuristic/1000;
+                fitnessLevel += heuristic / 1000;
             }
             ant.fitness = fitnessLevel;
         }
@@ -81,7 +83,8 @@ public class ACO {
     /**
      * This function exist so it's easier to change the heuristics.
      */
-    private double calculateHeuristics(int j, LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture, ComputingAppliance centerNode) {
+    private double calculateHeuristics(int j, LinkedHashMap<ComputingAppliance, 
+            Instance> workflowArchitecture, ComputingAppliance centerNode) {
         int i = 0;
         ComputingAppliance node = null;
         ComputingAppliance center = null;
@@ -99,7 +102,7 @@ public class ACO {
 
     private void updatePheromones(SolutionAnt[] ants,int numberOfAnts) {
         Arrays.sort(ants);
-        int number = (int) Math.ceil(numberOfAnts*0.2);
+        int number = (int) Math.ceil(numberOfAnts * 0.2);
         // only top 20% of ants are considered
         for (int i = 0; i < number; i++) {
             for (int j = 0; j < numberOfNodes; j++) {
@@ -134,18 +137,19 @@ public class ACO {
             System.out.println(); 
         }
     }
+    
     public ArrayList<LinkedHashMap<ComputingAppliance, Instance>> generateArchitetures(LinkedHashMap<ComputingAppliance,
             Instance> workflowArchitecture,ArrayList<ComputingAppliance> centerNodes) {
         ArrayList<LinkedHashMap<ComputingAppliance, Instance>> architectures = new ArrayList<>();
-        for(int i = 0; i < numberOfClusters; i++) {
-            LinkedHashMap <ComputingAppliance, Instance> cluster = new LinkedHashMap<>();
+        for (int i = 0; i < numberOfClusters; i++) {
+            LinkedHashMap<ComputingAppliance, Instance> cluster = new LinkedHashMap<>();
             cluster.put(centerNodes.get(i),workflowArchitecture.get(centerNodes.get(i)));
             architectures.add(cluster);
 
         }
-        int i=0;
+        int i = 0;
         for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
-            if(!centerNodes.contains(entry.getKey())) {
+            if (!centerNodes.contains(entry.getKey())) {
                 double max = -1;
                 int index = 0;
                 for (int j = 0; j < numberOfClusters; j++) {
@@ -158,12 +162,12 @@ public class ACO {
             }
             i++;
         }
-        for (LinkedHashMap<ComputingAppliance, Instance> Architecture : architectures) {
-            i=0;
-            for (Map.Entry<ComputingAppliance, Instance> entry : Architecture.entrySet()) {
-                int j=0;
-                for (Map.Entry<ComputingAppliance, Instance> entry2 : Architecture.entrySet()) {
-                    if(j>=i+1 && j!=i){
+        for (LinkedHashMap<ComputingAppliance, Instance> architecture : architectures) {
+            i = 0;
+            for (Map.Entry<ComputingAppliance, Instance> entry : architecture.entrySet()) {
+                int j = 0;
+                for (Map.Entry<ComputingAppliance, Instance> entry2 : architecture.entrySet()) {
+                    if (j >= i + 1 && j != i) {
                         ComputingAppliance ca = entry.getKey();
                         ca.addNeighbor(entry2.getKey(),defaultLatency);
                     }
@@ -176,7 +180,7 @@ public class ACO {
     }
 }
 
-class SolutionAnt implements Comparable<SolutionAnt>{
+class SolutionAnt implements Comparable<SolutionAnt> {
     
     double fitness;
     int[] solution;
@@ -217,7 +221,7 @@ class SolutionAnt implements Comparable<SolutionAnt>{
                         maxIndex = j;
                     }
                 }
-                System.out.println("i: " +maxIndex);
+                System.out.println("i: " + maxIndex);
             } else {
                 double sum = Double.MIN_VALUE;
                 double randomNum = Math.random();

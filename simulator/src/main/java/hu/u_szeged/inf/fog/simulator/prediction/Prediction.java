@@ -1,56 +1,60 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
 import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
+import java.util.ArrayList;
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Prediction {
+    
     public class ErrorMetrics {
-        private double RMSE, MSE, MAE;
+        
+        private double rmse;
+        private double mse;
+        private double mae;
 
         public ErrorMetrics(JSONObject jsonObject) throws JSONException {
-            this.RMSE = jsonObject.getDouble("RMSE");
-            this.MSE = jsonObject.getDouble("MSE");
-            this.MAE = jsonObject.getDouble("MAE");
+            this.rmse = jsonObject.getDouble("RMSE");
+            this.mse = jsonObject.getDouble("MSE");
+            this.mae = jsonObject.getDouble("MAE");
         }
 
-        public double getRMSE() {
-            return RMSE;
+        public double getRmse() {
+            return rmse;
         }
 
-        public double getMSE() {
-            return MSE;
+        public double getMse() {
+            return mse;
         }
 
-        public double getMAE() {
-            return MAE;
+        public double getMae() {
+            return mae;
         }
 
-        public JSONObject toJSON() throws JSONException {
+        public JSONObject toJson() throws JSONException {
             return new JSONObject()
-                    .put("RMSE", RMSE)
-                    .put("MSE", MSE)
-                    .put("MAE", MAE);
+                    .put("RMSE", rmse)
+                    .put("MSE", mse)
+                    .put("MAE", mae);
         }
     }
+    
     public class Data {
         private List<Integer> timestamp;
         private List<Double> data;
 
-        public Data(JSONArray timestampJSON, JSONArray dataJSON) throws JSONException {
+        public Data(JSONArray timestampJson, JSONArray dataJson) throws JSONException {
             this.timestamp = new ArrayList<>();
             this.data = new ArrayList<>();
 
-            for (int i = 0; i < dataJSON.length(); i++) {
-                this.data.add(dataJSON.getDouble(i));
+            for (int i = 0; i < dataJson.length(); i++) {
+                this.data.add(dataJson.getDouble(i));
             }
 
-            for (int i = 0; i < timestampJSON.length(); i++) {
-                this.timestamp.add(timestampJSON.getInt(i));
+            for (int i = 0; i < timestampJson.length(); i++) {
+                this.timestamp.add(timestampJson.getInt(i));
             }
         }
 
@@ -62,10 +66,10 @@ public class Prediction {
             return data;
         }
 
-        public JSONObject toJSON() throws JSONException {
+        public JSONObject toJson() throws JSONException {
             return new JSONObject()
-                    .put("data", Utils.listToJSONArray(data))
-                    .put("timestamp", Utils.listToJSONArray(timestamp));
+                    .put("data", Utils.listToJsonArray(data))
+                    .put("timestamp", Utils.listToJsonArray(timestamp));
         }
     }
 
@@ -81,10 +85,10 @@ public class Prediction {
     private ErrorMetrics errorMetrics;
 
     public Prediction(JSONObject jsonObject) throws JSONException {
-        fromJSONObject(jsonObject);
+        fromJsonObject(jsonObject);
     }
 
-    private void fromJSONObject(JSONObject jsonObject) throws JSONException {
+    private void fromJsonObject(JSONObject jsonObject) throws JSONException {
         this.featureName = jsonObject.getString("feature_name");
         this.predictionNumber = jsonObject.getInt("prediction_number");
         this.simulationSettings = new SimulationSettings(jsonObject.getJSONObject("simulation_settings"));
@@ -162,24 +166,24 @@ public class Prediction {
         return errorMetrics;
     }
 
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJson() throws JSONException {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("feature_name", featureName);
         jsonObject.put("prediction_number", predictionNumber);
-        jsonObject.put("simulation_settings", simulationSettings.toJSON());
-        jsonObject.put("original_data", originalData.toJSON());
-        jsonObject.put("preprocessed_data", preprocessedData.toJSON());
-        jsonObject.put("test_data_beginning", testDataBeginning.toJSON());
-        jsonObject.put("test_data_end", testDataEnd.toJSON());
+        jsonObject.put("simulation_settings", simulationSettings.toJson());
+        jsonObject.put("original_data", originalData.toJson());
+        jsonObject.put("preprocessed_data", preprocessedData.toJson());
+        jsonObject.put("test_data_beginning", testDataBeginning.toJson());
+        jsonObject.put("test_data_end", testDataEnd.toJson());
 
         if (predictionFuture != null) {
-            jsonObject.put("prediction_future", predictionFuture.toJSON());
+            jsonObject.put("prediction_future", predictionFuture.toJson());
         }
         if (predictionTest != null) {
-            jsonObject.put("prediction_test", predictionTest.toJSON());
+            jsonObject.put("prediction_test", predictionTest.toJson());
         }
         if (errorMetrics != null) {
-            jsonObject .put("error_metrics", errorMetrics.toJSON());
+            jsonObject.put("error_metrics", errorMetrics.toJson());
         }
 
         return jsonObject;

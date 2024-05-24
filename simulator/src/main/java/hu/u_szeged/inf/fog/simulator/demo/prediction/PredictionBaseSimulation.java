@@ -11,7 +11,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.*;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
@@ -21,8 +20,6 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyChartVisualiser;
-import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 
@@ -30,7 +27,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PredictionBaseSimulation implements PredictionSimulation.ISimulation {
+public class PredictionBaseSimulation implements PredictionSimulation.SimulationInterface {
     @Override
     public void simulation() throws Exception {
 

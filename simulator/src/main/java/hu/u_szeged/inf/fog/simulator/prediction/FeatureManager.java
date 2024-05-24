@@ -2,16 +2,15 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 
 import hu.u_szeged.inf.fog.simulator.prediction.communication.ServerSocket;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.SocketMessage;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.AbstractPredictionApplication;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.ElectronApplication;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.IApplication;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONObject;
 
 public class FeatureManager {
     private static FeatureManager featureManager;
@@ -29,7 +28,7 @@ public class FeatureManager {
     }
 
     public Feature getFeatureByName(String name) {
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             if (feature.getName().equals(name)) {
                 return feature;
             }
@@ -41,15 +40,16 @@ public class FeatureManager {
         return getFeatureByName(feature.getName()) != null;
     }
 
-    public void exportDatasetToCSV(String path, String fileName) throws IOException {
+    public void exportDatasetToCsv(String path, String fileName) throws IOException {
         Files.createDirectories(Paths.get(path));
         String fullPath = path + fileName;
-        PredictionLogger.info("FeatureManager-exportDatasetToCSV", String.format("Exporting dataset to %s...", fullPath));
+        PredictionLogger.info("FeatureManager-exportDatasetToCSV", 
+                String.format("Exporting dataset to %s...", fullPath));
         try (PrintWriter printWriter = new PrintWriter(fullPath)) {
             StringBuilder sb = new StringBuilder();
 
             // Columns
-            for (Feature feature: features) {
+            for (Feature feature : features) {
                 sb.append(feature.getName()).append(";");
             }
 
@@ -57,7 +57,7 @@ public class FeatureManager {
 
             // Values
             for (int i = 0; i < getFeatureValuesMaxLength(); i++) {
-                for (Feature feature: features) {
+                for (Feature feature : features) {
                     if (i < feature.getValues().size()) {
                         sb.append(String.format("%.16f", feature.getValues().get(i)).replace("\\.", ",")).append(";");
                     } else {
@@ -74,15 +74,16 @@ public class FeatureManager {
         }
     }
 
-    public void exportMetricsToCSV(String path, String fileName) throws IOException {
+    public void exportMetricsToCsv(String path, String fileName) throws IOException {
         Files.createDirectories(Paths.get(path));
         String fullPath = path + fileName;
-        PredictionLogger.info("FeatureManager-exportMetricsToCSV", String.format("Exporting metrics to %s...", fullPath));
+        PredictionLogger.info("FeatureManager-exportMetricsToCSV", 
+                String.format("Exporting metrics to %s...", fullPath));
         try (PrintWriter printWriter = new PrintWriter(fullPath)) {
             StringBuilder sb = new StringBuilder();
 
             // Columns
-            for (Feature feature: features) {
+            for (Feature feature : features) {
                 sb.append(String.format("%s::%s", feature.getName(), "RMSE")).append(";");
                 sb.append(String.format("%s::%s", feature.getName(), "MSE")).append(";");
                 sb.append(String.format("%s::%s", feature.getName(), "MAE")).append(";");
@@ -92,11 +93,15 @@ public class FeatureManager {
 
             // Values
             for (int i = 0; i < getFeaturePredictionsMaxLength(); i++) {
-                for (Feature feature: features) {
-                    if (i < feature.getPredictions().size() && feature.getPredictions().get(i).getErrorMetrics() != null) {
-                        sb.append(String.format("%.16f", feature.getPredictions().get(i).getErrorMetrics().getRMSE()).replace("\\.", ",")).append(";");
-                        sb.append(String.format("%.16f", feature.getPredictions().get(i).getErrorMetrics().getMSE()).replace("\\.", ",")).append(";");
-                        sb.append(String.format("%.16f", feature.getPredictions().get(i).getErrorMetrics().getMAE()).replace("\\.", ",")).append(";");
+                for (Feature feature : features) {
+                    if (i < feature.getPredictions().size() 
+                            && feature.getPredictions().get(i).getErrorMetrics() != null) {
+                        sb.append(String.format("%.16f", feature.getPredictions().get(i)
+                                .getErrorMetrics().getRmse()).replace("\\.", ",")).append(";");
+                        sb.append(String.format("%.16f", feature.getPredictions().get(i)
+                                .getErrorMetrics().getMse()).replace("\\.", ",")).append(";");
+                        sb.append(String.format("%.16f", feature.getPredictions().get(i)
+                                .getErrorMetrics().getMae()).replace("\\.", ",")).append(";");
                     } else {
                         sb.append("").append(";")
                                 .append("").append(";")
@@ -127,13 +132,13 @@ public class FeatureManager {
     public List<Prediction> predict(List<Feature> features, int windowSize) throws Exception {
         PredictionLogger.info("FeatureManager-sendFeatures", "Send features for prediction");
         List<Prediction> predictions = new ArrayList<>();
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             feature.setHasNewValue(false);
             SocketMessage message = ServerSocket.getInstance().sendAndGet(
                     SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
                     new SocketMessage(
                             "predict-feature",
-                            new JSONObject().put("feature", feature.toJSON(windowSize))
+                            new JSONObject().put("feature", feature.toJson(windowSize))
                     )
             );
 
@@ -147,14 +152,14 @@ public class FeatureManager {
             predictions.add(result);
         }
 
-        if (IApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
+        if (AbstractPredictionApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
             PredictionLogger.info("FeatureManager-sendFeatures", "Send features to UI");
-            for (Prediction prediction: predictions) {
+            for (Prediction prediction : predictions) {
                 ServerSocket.getInstance().sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
                         new SocketMessage(
                                 "prediction",
-                                new JSONObject().put("prediction", prediction.toJSON())
+                                new JSONObject().put("prediction", prediction.toJson())
                         )
                 );
             }
@@ -165,7 +170,7 @@ public class FeatureManager {
 
     private int getFeatureValuesMaxLength() {
         int max = Integer.MIN_VALUE;
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             if (feature.getValues().size() > max) {
                 max = feature.getValues().size();
             }
@@ -175,7 +180,7 @@ public class FeatureManager {
 
     private int getFeaturePredictionsMaxLength() {
         int max = Integer.MIN_VALUE;
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             if (feature.getPredictions().size() > max) {
                 max = feature.getPredictions().size();
             }
@@ -186,7 +191,7 @@ public class FeatureManager {
     public List<Feature> getFeaturesWithEnoughData(int windowSize) {
         List<Feature> result = new ArrayList<>();
 
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             if (feature.getValues().size() >= windowSize && feature.getHasNewValue()) {
                 result.add(feature);
             }
@@ -198,15 +203,15 @@ public class FeatureManager {
     public void printInfo() throws Exception {
         TableBuilder table = new TableBuilder();
         table.addHeader("Feature name", "Dataset length", "Number of predictions");
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             table.addRow(feature.getName(), feature.getValues().size(), feature.getPredictions().size());
         }
         System.out.println(table);
     }
 
-    public int getTotalNumOfPredictions(){
+    public int getTotalNumOfPredictions() {
         int temp = 0;
-        for (Feature feature: features) {
+        for (Feature feature : features) {
             temp += feature.getPredictions().size();
         }
         return temp;

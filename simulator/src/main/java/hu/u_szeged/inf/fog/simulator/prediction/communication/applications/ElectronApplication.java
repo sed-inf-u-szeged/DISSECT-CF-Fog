@@ -1,20 +1,17 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication.applications;
 
-import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
-
 import java.io.File;
-import java.io.IOException;
 
-public class ElectronApplication extends IApplication {
+public class ElectronApplication extends AbstractPredictionApplication {
     private boolean development;
     
     public ElectronApplication() {
-        IApplication.APPLICATIONS.add(this);
+        AbstractPredictionApplication.APPLICATIONS.add(this);
         this.development = true;
     }
 
     public ElectronApplication(boolean development) {
-        IApplication.APPLICATIONS.add(this);
+        AbstractPredictionApplication.APPLICATIONS.add(this);
         this.development = development;
     }
 
@@ -29,13 +26,17 @@ public class ElectronApplication extends IApplication {
     @Override
     public Process openWindows() throws Exception {
         String startCommand = (development || !buildExists()) ? "build_and_run" : "run";
-        return Runtime.getRuntime().exec(String.format("C:/Windows/System32/cmd.exe /c cd %s & start npm.cmd run electron:%s", getProjectLocation(), startCommand));
+        return Runtime.getRuntime().exec(
+                String.format("C:/Windows/System32/cmd.exe /c cd %s & start npm.cmd run electron:%s", 
+                        getProjectLocation(), startCommand));
     }
 
     @Override
     public Process openLinux() throws Exception {
         String startCommand = (development || !buildExists()) ? "build_and_run" : "run";
-        return Runtime.getRuntime().exec(String.format("gnome-terminal --working-directory=%s -- npm run electron:%s", getProjectLocation(), startCommand));
+        return Runtime.getRuntime().exec(
+                String.format("gnome-terminal --working-directory=%s -- npm run electron:%s", 
+                        getProjectLocation(), startCommand));
     }
 
     @Override

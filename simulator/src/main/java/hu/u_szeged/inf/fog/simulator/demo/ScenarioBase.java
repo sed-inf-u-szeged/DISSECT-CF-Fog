@@ -3,7 +3,6 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
@@ -11,9 +10,9 @@ import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
-import hu.u_szeged.inf.fog.simulator.provider.AWSProvider;
+import hu.u_szeged.inf.fog.simulator.provider.AwsProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
-import hu.u_szeged.inf.fog.simulator.provider.IBMProvider;
+import hu.u_szeged.inf.fog.simulator.provider.IbmProvider;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -196,8 +195,8 @@ public class ScenarioBase {
     }
 
     public static void calculateIoTCost() {
-        new IBMProvider();
-        new AWSProvider();
+        new IbmProvider();
+        new AwsProvider();
         new AzureProvider();
     }
 
@@ -207,8 +206,8 @@ public class ScenarioBase {
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
         for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
-            SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVMs.size() + " utilised VMs (IDs): ");
-            for (VirtualMachine vm : ca.workflowVMs) {
+            SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
+            for (VirtualMachine vm : ca.workflowVms) {
                 SimLogger.logRes("\t" + vm.hashCode() + " ");
             }
             SimLogger.logRes("\n");
@@ -250,8 +249,8 @@ public class ScenarioBase {
         double totalEnergyConsumption = 0.0;
         for(DecentralizedWorkflowScheduler dw : dws) {
             for (ComputingAppliance ca : dw.workflowArchitecture.keySet()) {
-                SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVMs.size() + " utilised VMs (IDs): ");
-                for (VirtualMachine vm : ca.workflowVMs) {
+                SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
+                for (VirtualMachine vm : ca.workflowVms) {
                     SimLogger.logRes("\t" + vm.hashCode() + " ");
                 }
                 SimLogger.logRes("\n");

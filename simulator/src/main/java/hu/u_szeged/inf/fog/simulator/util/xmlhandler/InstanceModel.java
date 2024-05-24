@@ -69,14 +69,14 @@ public class InstanceModel {
                 + ", pricePerTick=" + pricePerTick + "]";
     }
 
-    public static void loadInstanceXML(String datafile) throws JAXBException {
+    public static void loadInstanceXml(String datafile) throws JAXBException {
         File file = new File(datafile);
         JAXBContext jaxbContext = JAXBContext.newInstance(InstancesModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         InstancesModel instances = (InstancesModel) jaxbUnmarshaller.unmarshal(file);
         System.out.println(instances);
         for (InstanceModel im : instances.instanceList) {
-            Instance i = new Instance(im.name, new VirtualAppliance(im.name, im.startupProcess, 0, false, im.reqDisk),
+            new Instance(im.name, new VirtualAppliance(im.name, im.startupProcess, 0, false, im.reqDisk),
                     new AlterableResourceConstraints(im.cpuCores, im.coreProcessingPower, im.ram), im.pricePerTick);
 
         }

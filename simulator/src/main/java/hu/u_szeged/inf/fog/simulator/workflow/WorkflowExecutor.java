@@ -18,7 +18,6 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
-
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,11 +45,11 @@ public class WorkflowExecutor {
             WorkflowExecutor.workflowScheduler.schedule(workflowJob);
         }
 
-        this.checkFirstVMState();
+        this.checkFirstVmState();
 
     }
 
-    private void checkFirstVMState() {
+    private void checkFirstVmState() {
         new DeferredEvent(1) {
 
             @Override
@@ -61,7 +60,7 @@ public class WorkflowExecutor {
                     WorkflowExecutor.realStartTime = Timed.getFireCount();
 
                 } else {
-                    checkFirstVMState();
+                    checkFirstVmState();
                 }
             }
 
@@ -101,7 +100,7 @@ public class WorkflowExecutor {
 
                 if (workflowJob.inputs.get(0).amount == 0 && workflowJob.state.equals(WorkflowJob.State.SUBMITTED)) {
                     workflowJob.state = WorkflowJob.State.STARTED;
-                    VirtualMachine vm = findVM(workflowJob);
+                    VirtualMachine vm = findVm(workflowJob);
 
                     try {
                         WorkflowJob.numberOfStartedWorkflowJobs++;
@@ -154,7 +153,7 @@ public class WorkflowExecutor {
         return null;
     }
 
-    private static VirtualMachine findVM(WorkflowJob workflowJob) {
+    private static VirtualMachine findVm(WorkflowJob workflowJob) {
         VirtualMachine virtualMachine = null;
         int min = Integer.MAX_VALUE;
         for (VirtualMachine vm : workflowJob.ca.iaas.listVMs()) {
@@ -170,7 +169,7 @@ public class WorkflowExecutor {
     private boolean checkComputingAppliances() {
         int vmCount = 0;
         for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
-            for (VirtualMachine vm : ca.workflowVMs) {
+            for (VirtualMachine vm : ca.workflowVms) {
                 if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
                     vmCount++;
                     break;

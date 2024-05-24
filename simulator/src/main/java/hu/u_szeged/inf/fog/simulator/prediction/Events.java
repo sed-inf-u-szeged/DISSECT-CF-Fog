@@ -6,8 +6,9 @@ import java.util.List;
 
 public class Events {
     public static HashMap<String, List<EventHandler>> eventHandlers = new HashMap<>();
+    
     public interface EventHandler {
-         void receive(Object o);
+        void receive(Object o);
     }
 
     public static void addEventHandler(String event, EventHandler eventHandler) {
@@ -22,7 +23,7 @@ public class Events {
             return;
         }
 
-        for (EventHandler eventHandler: eventHandlers.get(event)) {
+        for (EventHandler eventHandler : eventHandlers.get(event)) {
             eventHandler.receive(o);
         }
     }

@@ -13,7 +13,7 @@ import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.xmlhandler.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IoTWorkflowScheduler;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IotWorkflowScheduler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,14 +31,14 @@ public class WorkflowSimulation {
 
         String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_workflow.xml";
 
-        WorkflowJobModel.loadWorkflowXML(workflowFile);
+        WorkflowJobModel.loadWorkflowXml(workflowFile);
 
         // new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
-        new WorkflowExecutor(new IoTWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
+        new WorkflowExecutor(new IotWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
 
         Timed.simulateUntilLastEvent();
         ScenarioBase.logStreamProcessing();
-        WorkflowGraphVisualiser.generateDAG(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
+        WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
     }
 

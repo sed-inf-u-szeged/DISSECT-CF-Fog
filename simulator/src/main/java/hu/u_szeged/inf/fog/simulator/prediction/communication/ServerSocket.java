@@ -1,15 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication;
 
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.AbstractPredictionApplication;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.ElectronApplication;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.IApplication;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.predictor.PredictorTemplate;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
-import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
-import org.json.JSONObject;
-
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONObject;
 
 public class ServerSocket {
     private static ServerSocket SERVER_SOCKET;
@@ -30,10 +29,11 @@ public class ServerSocket {
         return ServerSocket.SERVER_SOCKET;
     }
 
-    public void waitForConnections(List<IApplication> applications) {
+    public void waitForConnections(List<AbstractPredictionApplication> applications) {
         try {
             while (CONNECTED_CLIENTS != applications.size()) {
-                PredictionLogger.info("ServerSocket", String.format("Waiting for connection... (%s / %s)", CONNECTED_CLIENTS, applications.size()));
+                PredictionLogger.info("ServerSocket", 
+                        String.format("Waiting for connection... (%s / %s)", CONNECTED_CLIENTS, applications.size()));
                 Socket socket = server.accept();
                 PredictionLogger.info("ServerSocket", "Socket connected!");
 
@@ -59,11 +59,11 @@ public class ServerSocket {
             }
         }*/
 
-        if (IApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
+        if (AbstractPredictionApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
             try {
                 sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-                        new SocketMessage("set-ui-predictors", PredictorTemplate.getAllAsJSON())
+                        new SocketMessage("set-ui-predictors", PredictorTemplate.getAllAsJson())
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -72,7 +72,7 @@ public class ServerSocket {
     }
 
     public void stopThreads() {
-        for (ClientThread clientThread: clientThreads) {
+        for (ClientThread clientThread : clientThreads) {
             clientThread.stopThread();
         }
 
@@ -91,7 +91,7 @@ public class ServerSocket {
 
     public void waitForPredictionSettings() {
         PredictionLogger.info("ServerSocket", "Waiting for prediction settings...");
-        if (IApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
+        if (AbstractPredictionApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
             try {
                 SocketMessage message = sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
@@ -107,7 +107,8 @@ public class ServerSocket {
         try {
             sendAndGet(
                     SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
-                    new SocketMessage("simulation-settings", new JSONObject().put("simulation-settings", SimulationSettings.get().toJSON()))
+                    new SocketMessage("simulation-settings", 
+                            new JSONObject().put("simulation-settings", SimulationSettings.get().toJson()))
             );
         } catch (Exception e) {
             e.printStackTrace();
@@ -127,7 +128,7 @@ public class ServerSocket {
     }
 
     private ClientThread getClientThreadByApplication(SocketMessage.SocketApplication application) {
-        for (ClientThread clientThread: clientThreads) {
+        for (ClientThread clientThread : clientThreads) {
             if (clientThread.getSocketName().equals(application.value)) {
                 return clientThread;
             }
@@ -135,7 +136,8 @@ public class ServerSocket {
         return null;
     }
 
-    public SocketMessage sendAndGet(SocketMessage.SocketApplication application, SocketMessage message) throws Exception {
+    public SocketMessage sendAndGet(
+            SocketMessage.SocketApplication application, SocketMessage message) throws Exception {
         ClientThread clientThread = getClientThreadByApplication(application);
         return clientThread.sendAndGet(message);
     }

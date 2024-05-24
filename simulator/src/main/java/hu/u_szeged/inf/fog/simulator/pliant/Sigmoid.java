@@ -17,14 +17,14 @@ public class Sigmoid implements Normalizer {
         this.lambda = lambda;
     }
 
-    public Vector<Double> normalizeIncrement(Vector<Double> source_vector) {
+    public Vector<Double> normalizeIncrement(Vector<Double> sourceVector) {
 
-        Vector<Double> result = new Vector<Double>(source_vector.size());
+        Vector<Double> result = new Vector<Double>(sourceVector.size());
 
-        for (int i = 0; i < source_vector.size(); i++) {
+        for (int i = 0; i < sourceVector.size(); i++) {
             Double value = null;
-            if (source_vector.get(i) instanceof Double) {
-                value = (Double) source_vector.get(i);
+            if (sourceVector.get(i) instanceof Double) {
+                value = (Double) sourceVector.get(i);
             }
                 
             result.add(getAt(value));
@@ -32,13 +32,13 @@ public class Sigmoid implements Normalizer {
         return result;
     }
 
-    public Vector<Double> normalizeDecrement(Vector<Double> source_vector) {
-        Vector<Double> result = new Vector<Double>(source_vector.size());
+    public Vector<Double> normalizeDecrement(Vector<Double> sourceVector) {
+        Vector<Double> result = new Vector<Double>(sourceVector.size());
 
-        for (int i = 0; i < source_vector.size(); i++) {
+        for (int i = 0; i < sourceVector.size(); i++) {
             Double value = null;
-            if (source_vector.get(i) instanceof Double) {
-                value = (Double) source_vector.get(i);
+            if (sourceVector.get(i) instanceof Double) {
+                value = (Double) sourceVector.get(i);
             }
                 
             result.add(getAt((-1) * value));

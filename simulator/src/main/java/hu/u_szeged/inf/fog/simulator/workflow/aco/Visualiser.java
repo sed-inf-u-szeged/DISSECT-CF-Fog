@@ -1,26 +1,19 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
-import hu.u_szeged.inf.fog.simulator.iot.Device;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.ACOC;
-
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Visualiser {
 
     static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
-        for(Pair pair : list) {
-            if( (pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
+        for (Pair pair : list) {
+            if ((pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
                 return true;
             }
         }
@@ -35,6 +28,11 @@ public class Visualiser {
     public static void mapGenerator(String scriptPath, String resultDirectory, List<Ant> ants) throws IOException {
         Visualiser.generateMap(scriptPath, resultDirectory, ants);
     }
+    
+    public static void mapGenerator(String scriptPath, String resultDirectory, 
+            ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures) throws IOException {
+        Visualiser.generateMap(scriptPath, resultDirectory, workflowArchitectures);
+    }
 
     public static void generateMap(String scriptPath, String resultDirectory, List<Ant> ants)
             throws IOException {
@@ -44,8 +42,8 @@ public class Visualiser {
 
         ArrayList<Pair> checkedAppliances = new ArrayList<Pair>();
 
-        for (Ant ant : ants){
-            if(ant.clusterNumber!=0) {
+        for (Ant ant : ants) {
+            if (ant.clusterNumber != 0) {
                 ComputingAppliance ca = (ComputingAppliance) ant.node;
                 String parentName = String.valueOf(ant.clusterNumber);
 
@@ -66,7 +64,8 @@ public class Visualiser {
                 for (ComputingAppliance coApp : ca.neighbors) {
                     if (!isContain(checkedAppliances, coApp, ca)) {
                         checkedAppliances.add(new Pair(coApp, ca));
-                        latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
+                        latencyInfoForMapScript = 
+                                latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
                                 .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")
                                 .concat(String.valueOf(coApp.geoLocation.latitude)).concat(",")
                                 .concat(String.valueOf(coApp.geoLocation.longitude)).concat(",")
@@ -99,11 +98,8 @@ public class Visualiser {
         }
     }
 
-    public static void mapGenerator(String scriptPath, String resultDirectory, ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures) throws IOException {
-        Visualiser.generateMap(scriptPath, resultDirectory, workflowArchitectures);
-    }
-
-    public static void generateMap(String scriptPath, String resultDirectory, ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures)
+    public static void generateMap(String scriptPath, String resultDirectory, 
+            ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures)
             throws IOException {
 
         String nodeInfoForMapScript = "";
@@ -111,10 +107,10 @@ public class Visualiser {
 
         ArrayList<Pair> checkedAppliances = new ArrayList<Pair>();
 
-        int i=0;
-        for (LinkedHashMap<ComputingAppliance, Instance> workflowArchiteture : workflowArchitectures){
+        int i = 0;
+        for (LinkedHashMap<ComputingAppliance, Instance> workflowArchiteture : workflowArchitectures) {
             i++;
-            for(Map.Entry<ComputingAppliance, Instance> entry : workflowArchiteture.entrySet()){
+            for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchiteture.entrySet()) {
                 ComputingAppliance ca = entry.getKey();
                 String parentName = String.valueOf(i);
 
@@ -135,7 +131,8 @@ public class Visualiser {
                 for (ComputingAppliance coApp : ca.neighbors) {
                     if (!isContain(checkedAppliances, coApp, ca)) {
                         checkedAppliances.add(new Pair(coApp, ca));
-                        latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
+                        latencyInfoForMapScript = 
+                                latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
                                 .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")
                                 .concat(String.valueOf(coApp.geoLocation.latitude)).concat(",")
                                 .concat(String.valueOf(coApp.geoLocation.longitude)).concat(",")
@@ -171,9 +168,9 @@ public class Visualiser {
 
 class Pair{
 
-    Pair(ComputingAppliance left, ComputingAppliance right){
-        this.left=left;
-        this.right=right;
+    Pair(ComputingAppliance left, ComputingAppliance right) {
+        this.left = left;
+        this.right = right;
     }
 
     ComputingAppliance left;

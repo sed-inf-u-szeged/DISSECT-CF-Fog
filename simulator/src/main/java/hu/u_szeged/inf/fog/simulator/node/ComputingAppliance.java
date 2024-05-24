@@ -10,12 +10,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
@@ -45,7 +43,7 @@ public class ComputingAppliance {
 
     public double energyConsumption;
 
-    public ArrayList<VirtualMachine> workflowVMs = new ArrayList<VirtualMachine>();
+    public ArrayList<VirtualMachine> workflowVms = new ArrayList<VirtualMachine>();
 
     public long vmTime;
 
@@ -66,14 +64,14 @@ public class ComputingAppliance {
     }
 
     public double getLoadOfResource() {
-        double usedCPU = 0.0;
+        double usedCpu = 0.0;
         for (VirtualMachine vm : this.iaas.listVMs()) {
             if (vm.getResourceAllocation() != null) {
-                usedCPU += vm.getResourceAllocation().allocated.getRequiredCPUs();
+                usedCpu += vm.getResourceAllocation().allocated.getRequiredCPUs();
             }
         }
-        double requiredCPUs = this.iaas.getRunningCapacities().getRequiredCPUs();
-        return requiredCPUs > 0 ? usedCPU / requiredCPUs * 100 : 0;
+        double requiredCpus = this.iaas.getRunningCapacities().getRequiredCPUs();
+        return requiredCpus > 0 ? usedCpu / requiredCpus * 100 : 0;
     }
 
     public void readEnergy() {

@@ -3,7 +3,7 @@ package hu.u_szeged.inf.fog.simulator.provider;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 
 // https://aws.amazon.com/iot-core/pricing/
-public class AWSProvider extends Provider {
+public class AwsProvider extends Provider {
 
     static final double defaultConnectivityCostPerMessages = 0.08 / 1_000_000;
 
@@ -13,12 +13,12 @@ public class AWSProvider extends Provider {
 
     double publishingCostPerMessages;
 
-    public AWSProvider() {
+    public AwsProvider() {
         this.name = "AWS";
         Provider.providers.add(this);
     }
 
-    public AWSProvider(double connectivityCostPerMessages, double publishingCostPerMessages) {
+    public AwsProvider(double connectivityCostPerMessages, double publishingCostPerMessages) {
         this.connectivityCostPerMessages = connectivityCostPerMessages;
         this.publishingCostPerMessages = publishingCostPerMessages;
         this.name = "AWS";

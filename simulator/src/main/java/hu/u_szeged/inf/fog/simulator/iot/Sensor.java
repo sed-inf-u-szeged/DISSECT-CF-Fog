@@ -25,6 +25,7 @@ public class Sensor extends DeferredEvent {
 
     /**
      * Defines a sensor measurement.
+     *
      * @param device the device that will store the generated data
      * @param delay the length of the measurement (ms)
      */

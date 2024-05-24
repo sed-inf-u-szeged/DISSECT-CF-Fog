@@ -25,7 +25,8 @@ public class EdgeDevice extends Device {
 
     Predictor predictor;
 
-    public static VirtualAppliance edgeDeviceVa = new VirtualAppliance("edgeDeviceVa", 1, 0, false, 1073741824L); // 1 GB
+    public static VirtualAppliance edgeDeviceVa = 
+            new VirtualAppliance("edgeDeviceVa", 1, 0, false, 1073741824L); // 1 GB
 
     public AlterableResourceConstraints edgeDeviceArc;
 
@@ -40,7 +41,7 @@ public class EdgeDevice extends Device {
     public ArrayList<TimelineEntry> timelineEntries = new ArrayList<TimelineEntry>();
 
     public EdgeDevice(long startTime, long stopTime, long fileSize, long freq,
-            MobilityStrategy mobilityStrategy, int kOrder, DeviceStrategy deviceStrategy, PhysicalMachine localMachine,
+            MobilityStrategy mobilityStrategy, int kkOrder, DeviceStrategy deviceStrategy, PhysicalMachine localMachine,
             double instructionPerByte, int latency, boolean pathLogging) {
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 1) * 60 * 1000; // TODO: fix this delay value
         this.startTime = startTime + delay;
@@ -57,7 +58,7 @@ public class EdgeDevice extends Device {
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
         this.latency = latency;
-        this.predictor = new Predictor(kOrder);
+        this.predictor = new Predictor(kkOrder);
         this.edgeDeviceArc = new AlterableResourceConstraints(localMachine.getCapacities().getRequiredCPUs(),
                 localMachine.getCapacities().getRequiredProcessingPower(),
                 localMachine.getCapacities().getRequiredMemory());

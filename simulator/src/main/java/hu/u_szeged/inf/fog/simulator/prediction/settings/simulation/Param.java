@@ -28,7 +28,7 @@ public class Param {
         this.value = value;
     }
 
-    public JSONObject toJSON() {
+    public JSONObject toJson() {
         try {
             return new JSONObject()
                     .put("key", key)

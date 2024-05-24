@@ -1,13 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.provider;
 
+import hu.u_szeged.inf.fog.simulator.application.Application;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import hu.u_szeged.inf.fog.simulator.application.Application;
-
 // https://www.ibm.com/cloud/blog/better-pricing-better-standard-plan-watson-iot-platform
 // https://cloud.google.com/iot/pricing
-public class IBMProvider extends Provider {
+public class IbmProvider extends Provider {
 
     public static class ExchangeInterval {
 
@@ -28,33 +27,33 @@ public class IBMProvider extends Provider {
             Arrays.asList(new ExchangeInterval(0, 449_999, 0.001), new ExchangeInterval(450_000, 6_999_999, 0.0007),
                     new ExchangeInterval(7_000_000, Double.MAX_VALUE, 0.00014)));
 
-    public IBMProvider() {
+    public IbmProvider() {
         this.name = "IBM";
         Provider.providers.add(this);
     }
 
-    public IBMProvider(ArrayList<ExchangeInterval> exchangeIntervals) {
+    public IbmProvider(ArrayList<ExchangeInterval> exchangeIntervals) {
         this.name = "IBM";
-        IBMProvider.exchangeIntervals = exchangeIntervals;
+        IbmProvider.exchangeIntervals = exchangeIntervals;
         Provider.providers.add(this);
     }
 
     @Override
     public double calculate() {
 
-        double totalprocessedSizeInMB = (double) Application.totalProcessedSize / 1048576; // 1 MB
+        double totalprocessedSizeInMb = (double) Application.totalProcessedSize / 1048576; // 1 MB
         double cost = 0.0;
 
         ArrayList<ExchangeInterval> intervals = exchangeIntervals.isEmpty() ? defaultexchangeIntervals
-                : IBMProvider.exchangeIntervals;
+                : IbmProvider.exchangeIntervals;
 
         for (ExchangeInterval ei : intervals) {
-            if (totalprocessedSizeInMB <= ei.mbto && totalprocessedSizeInMB >= ei.mbfrom) {
+            if (totalprocessedSizeInMb <= ei.mbto && totalprocessedSizeInMb >= ei.mbfrom) {
                 cost = ei.cost;
             }
         }
 
-        this.cost = totalprocessedSizeInMB * cost;
+        this.cost = totalprocessedSizeInMb * cost;
         return this.cost;
     }
 }

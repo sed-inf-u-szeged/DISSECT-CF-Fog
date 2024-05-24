@@ -5,7 +5,7 @@ import java.lang.ProcessBuilder.Redirect;
 
 public class WorkflowGraphVisualiser {
 
-    public static void generateDAG(String scriptpath, String resultDirectory, String ioTworkflowFile)
+    public static void generateDag(String scriptpath, String resultDirectory, String ioTworkflowFile)
             throws IOException {
         // ProcessBuilder pb = new ProcessBuilder("python3", scriptpath, workflowfile,
         // resultpath);

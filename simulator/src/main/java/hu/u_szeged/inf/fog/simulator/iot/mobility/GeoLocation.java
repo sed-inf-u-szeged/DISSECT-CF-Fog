@@ -14,12 +14,12 @@ public class GeoLocation {
     }
 
     public double calculateDistance(GeoLocation other) {
-        double o_longitude = other.longitude;
-        double o_latitude = other.latitude;
-        double d_lat = o_latitude * Math.PI / 180 - this.latitude * Math.PI / 180;
-        double d_long = o_longitude * Math.PI / 180 - this.longitude * Math.PI / 180;
-        double a = Math.sin(d_lat / 2) * Math.sin(d_lat / 2) + Math.cos(this.latitude * Math.PI / 180)
-                * Math.cos(o_latitude * Math.PI / 180) * Math.sin(d_long / 2) * Math.sin(d_long / 2);
+        double otherLongitude = other.longitude;
+        double otherLatitude = other.latitude;
+        double ddLat = otherLatitude * Math.PI / 180 - this.latitude * Math.PI / 180;
+        double ddLong = otherLongitude * Math.PI / 180 - this.longitude * Math.PI / 180;
+        double a = Math.sin(ddLat / 2) * Math.sin(ddLat / 2) + Math.cos(this.latitude * Math.PI / 180)
+                * Math.cos(otherLatitude * Math.PI / 180) * Math.sin(ddLong / 2) * Math.sin(ddLong / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         double d = earthRadius * c;
         return d * 1000;
@@ -32,18 +32,17 @@ public class GeoLocation {
 
     public double angle(GeoLocation other) {
 
-        double dLon = (other.longitude - longitude);
+        double ddLon = (other.longitude - longitude);
 
-        double y = Math.sin(dLon) * Math.cos(other.latitude);
+        double y = Math.sin(ddLon) * Math.cos(other.latitude);
         double x = Math.cos(latitude) * Math.sin(other.latitude)
-                - Math.sin(latitude) * Math.cos(other.latitude) * Math.cos(dLon);
+                - Math.sin(latitude) * Math.cos(other.latitude) * Math.cos(ddLon);
 
         double brng = Math.atan2(y, x);
 
         brng = Math.toDegrees(brng);
         brng = (brng + 360) % 360;
         brng = 359 - brng; // count degrees counter-clockwise - remove to make clockwise // TODO: Check it
-                           // 360?
 
         return brng;
     }

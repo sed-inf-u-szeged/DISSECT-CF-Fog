@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.util.result;
 
+@SuppressWarnings("unused")
 public class SimulatorJobResult {
 
     private ActuatorEvents actuatorEvents;
@@ -8,7 +9,8 @@ public class SimulatorJobResult {
     private DataVolume dataVolume;
     private long runtime;
     
-    public SimulatorJobResult(ActuatorEvents actuatorEvents, Architecture architecture, Cost cost, DataVolume dataVolume, long runtime) {
+    public SimulatorJobResult(ActuatorEvents actuatorEvents, Architecture architecture, 
+            Cost cost, DataVolume dataVolume, long runtime) {
         this.actuatorEvents = actuatorEvents;
         this.architecture = architecture;
         this.cost = cost;

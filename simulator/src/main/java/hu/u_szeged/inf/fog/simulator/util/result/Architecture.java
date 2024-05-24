@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.util.result;
 
+@SuppressWarnings("unused")
 public class Architecture {
     private int usedVirtualMachines;
     private int tasks;
@@ -21,5 +22,5 @@ public class Architecture {
         this.sumOfByteOnNetwork = sumOfByteOnNetwork;
         this.timeout = timeout;
         this.simulationLength = simulationLength;
-}
+    }
 }

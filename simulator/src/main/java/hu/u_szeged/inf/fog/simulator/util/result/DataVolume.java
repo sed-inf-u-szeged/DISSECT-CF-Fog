@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.util.result;
 
+@SuppressWarnings("unused")
 public class DataVolume {
 
     private long generatedDataInBytes;

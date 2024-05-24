@@ -3,10 +3,8 @@ package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
-
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Random;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -15,8 +13,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-
-
 
 @XmlRootElement(name = "job")
 @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -70,7 +66,7 @@ public class WorkflowJobModel {
                 + ", latitude=" + latitude + "]";
     }
 
-    public static void loadWorkflowXML(String workflowfile) throws JAXBException {
+    public static void loadWorkflowXml(String workflowfile) throws JAXBException {
 
         File file = new File(workflowfile);
         JAXBContext jaxbContext = JAXBContext.newInstance(WorkflowJobsModel.class);
@@ -104,7 +100,9 @@ public class WorkflowJobModel {
         }
         System.out.println(WorkflowJob.workflowJobs.size() + " jobs loaded.");
     }
-    public static void loadWorkflowXML(String workflowfile, DecentralizedWorkflowScheduler workflowScheduler) throws JAXBException {
+    
+    public static void loadWorkflowXml(String workflowfile, 
+            DecentralizedWorkflowScheduler workflowScheduler) throws JAXBException {
 
         File file = new File(workflowfile);
         JAXBContext jaxbContext = JAXBContext.newInstance(WorkflowJobsModel.class);
@@ -120,7 +118,6 @@ public class WorkflowJobModel {
                 ArrayList<Uses> inputs = new ArrayList<>();
                 ArrayList<Uses> outputs = new ArrayList<>();
 
-                int i=0;
                 for (int usesIndex = 0; usesIndex < wjModel.uses.size(); usesIndex++) {
 
                     UsesModel usesModel = wjModel.uses.get(usesIndex);
@@ -140,7 +137,8 @@ public class WorkflowJobModel {
         System.out.println(workflowScheduler.workflowJobs.size() + " jobs loaded.");
     }
 
-    public static void loadWorkflowXML(String workflowfile, DecentralizedWorkflowScheduler workflowScheduler, int multiply) throws JAXBException {
+    public static void loadWorkflowXml(String workflowfile, 
+            DecentralizedWorkflowScheduler workflowScheduler, int multiply) throws JAXBException {
 
         File file = new File(workflowfile);
         JAXBContext jaxbContext = JAXBContext.newInstance(WorkflowJobsModel.class);
@@ -148,8 +146,8 @@ public class WorkflowJobModel {
         WorkflowJobsModel job = (WorkflowJobsModel) jaxbUnmarshaller.unmarshal(file);
 
         System.out.print("Loading " + job.name + " workflow..");
-        int j=0;
-        for(int i=0; i<multiply; i++) {
+        int j = 0;
+        for (int i = 0; i < multiply; i++) {
             for (int repeatIndex = 0; repeatIndex < job.repeat; repeatIndex++) {
 
                 for (int jobIndex = 0; jobIndex < job.jobList.size(); jobIndex++) {
@@ -170,7 +168,8 @@ public class WorkflowJobModel {
                                     repeatIndex + "_" + usesModel.id + j));
                         }
                     }
-                    new WorkflowJob(repeatIndex + "_" + wjModel.id + j, wjModel.runtime, wjModel.longitude, wjModel.latitude,
+                    new WorkflowJob(repeatIndex + "_" + wjModel.id 
+                            + j, wjModel.runtime, wjModel.longitude, wjModel.latitude,
                             WorkflowJob.State.SUBMITTED, inputs, outputs, workflowScheduler);
                 }
                 j++;

@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.util;
 
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

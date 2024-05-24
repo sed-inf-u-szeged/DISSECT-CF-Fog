@@ -15,10 +15,10 @@ public class MobilityEvent {
     public static long changeNodeEventCounter = 0;
 
     public static void changePositionEvent(Device device, GeoLocation geoLocation) {
-    	if(geoLocation != null) {
-    		device.geoLocation = geoLocation;
+        if (geoLocation != null) {
+            device.geoLocation = geoLocation;
             changePositionEventCounter++;
-    	}
+        }
     }
 
     public static void connectToNodeEvent(Device device, Application application) {
@@ -79,15 +79,12 @@ public class MobilityEvent {
 
     public static void refresh(Device device, Application application) {
         if (application == null && device.application != null) {
-            // System.out.println("disconnect.. "+ Timed.getFireCount());
             MobilityEvent.disconnectFromNodeEvent(device, application);
         }
         if (application != null && device.application == null) {
-            // System.out.println("connect to "+ Timed.getFireCount());
             MobilityEvent.connectToNodeEvent(device, application);
         }
         if (application != null && device.application != null && application != device.application) {
-            // System.out.println("changed to " + Timed.getFireCount());
             MobilityEvent.changeNodeEvent(device, application);
         }
     }

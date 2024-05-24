@@ -33,7 +33,7 @@ public class Option {
         this.label = label;
     }
 
-    public JSONObject toJSON() {
+    public JSONObject toJson() {
         try {
             return new JSONObject()
                     .put("id", id)

@@ -6,15 +6,17 @@ import java.util.LinkedList;
  * This class represents a queue data type with limited size. The new elements
  * are inserted to the head of the queue. If the queue reaches its max capacity,
  * the oldest item is removed.
- * 
+ *
  * @param <T> Type of the elements in the list
  */
 public class LimitedQueue<T> extends LinkedList<T> {
+
+    private static final long serialVersionUID = 1L;
     private final int maxSize;
 
     /**
-     * Instantiates a limited queue object
-     * 
+     * Instantiates a limited queue object.
+     *
      * @param maxSize The capacity of the queue
      */
     public LimitedQueue(int maxSize) {
@@ -27,7 +29,7 @@ public class LimitedQueue<T> extends LinkedList<T> {
     /**
      * Adds a new element to the queue. If the current size > capacity, then the
      * oldest element is removed from the queue, maintaining its fixed size.
-     * 
+     *
      * @param k The element to be added
      * @return Always true
      */
@@ -41,8 +43,8 @@ public class LimitedQueue<T> extends LinkedList<T> {
 
     /**
      * Simple to string method that writes the element in order with space between
-     * them
-     * 
+     * them.
+     *
      * @return The string
      */
     @Override

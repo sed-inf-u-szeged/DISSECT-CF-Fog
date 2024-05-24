@@ -42,10 +42,10 @@ public class ScientificWorkflowParser {
         return links;
     }
 
-    public static String parseToIoTWorkflow(String workflowfile) throws IOException {
-        String new_file = Paths.get(workflowfile).getParent().toString() + "/IoT_"
+    public static String parseToIotWorkflow(String workflowfile) throws IOException {
+        String newFile = Paths.get(workflowfile).getParent().toString() + "/IoT_"
                 + Paths.get(workflowfile).getFileName().toString();
-        FileWriter fw = new FileWriter(new_file);
+        FileWriter fw = new FileWriter(newFile);
 
         fw.write("<?xml version='1.0' encoding='UTF-8'?>\n");
         fw.write("<adag name='App1' repeat='1'>\n");
@@ -61,14 +61,14 @@ public class ScientificWorkflowParser {
                             + Paths.get(workflowfile).getFileName().toString());
 
             for (int i = 0; i < jobElements.size(); i++) {
-                String jobID = jobElements.get(i).attributeValue("id");
-                fw.write("\t<job id='" + jobID + "' runtime='" + jobElements.get(i).attributeValue("runtime") + "'>\n");
-                int amount = dependencyCounter.get(jobID) != null ? dependencyCounter.get(jobID) : 0;
+                String jobId = jobElements.get(i).attributeValue("id");
+                fw.write("\t<job id='" + jobId + "' runtime='" + jobElements.get(i).attributeValue("runtime") + "'>\n");
+                int amount = dependencyCounter.get(jobId) != null ? dependencyCounter.get(jobId) : 0;
                 fw.write("\t\t<uses link='input' type='compute' amount='" + amount + "' />\n");
 
                 for (Map<String, String> dependecyMap : dependencyList) {
 
-                    if (dependecyMap.get(jobID) != null) {
+                    if (dependecyMap.get(jobId) != null) {
 
                         long size = 0;
                         for (int j = 0; j < jobElements.get(i).elements().size(); j++) {
@@ -77,7 +77,7 @@ public class ScientificWorkflowParser {
 
                             }
                         }
-                        fw.write("\t\t<uses link='output' " + "id='" + dependecyMap.get(jobID) + "' type='data' size='"
+                        fw.write("\t\t<uses link='output' " + "id='" + dependecyMap.get(jobId) + "' type='data' size='"
                                 + size + "'/>\n");
                     }
                 }
@@ -89,7 +89,7 @@ public class ScientificWorkflowParser {
         fw.write("</adag>\n");
         fw.close();
 
-        return new_file;
+        return newFile;
     }
 
 }

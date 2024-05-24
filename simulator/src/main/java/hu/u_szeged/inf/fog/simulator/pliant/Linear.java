@@ -6,29 +6,29 @@ import java.util.Vector;
 public class Linear implements Normalizer {
 
     @Override
-    public Vector<Double> normalizeIncrement(Vector<Double> source_vector) {
+    public Vector<Double> normalizeIncrement(Vector<Double> sourceVector) {
 
-        Vector<Double> result = new Vector<Double>(source_vector.size());
+        Vector<Double> result = new Vector<Double>(sourceVector.size());
 
-        double max = (Double) Collections.max(source_vector) + 1.0;
-        double min = (Double) Collections.min(source_vector) - 1.0;
+        double max = (Double) Collections.max(sourceVector) + 1.0;
+        double min = (Double) Collections.min(sourceVector) - 1.0;
         double dist = (double) max - min;
-        for (int i = 0; i < source_vector.size(); i++) {
-            result.add(((Double) source_vector.get(i) - min) / (dist));
+        for (int i = 0; i < sourceVector.size(); i++) {
+            result.add(((Double) sourceVector.get(i) - min) / (dist));
         }
 
         return result;
     }
 
     @Override
-    public Vector<Double> normalizeDecrement(Vector<Double> source_vector) {
-        Vector<Double> result = new Vector<Double>(source_vector.size());
+    public Vector<Double> normalizeDecrement(Vector<Double> sourceVector) {
+        Vector<Double> result = new Vector<Double>(sourceVector.size());
 
-        double max = (Double) Collections.max(source_vector) + 1.0;
-        double min = (Double) Collections.min(source_vector) - 1.0;
+        double max = (Double) Collections.max(sourceVector) + 1.0;
+        double min = (Double) Collections.min(sourceVector) - 1.0;
         double dist = (double) min - max;
-        for (int i = 0; i < source_vector.size(); i++) {
-            result.add(((Double) source_vector.get(i) - max) / (dist));
+        for (int i = 0; i < sourceVector.size(); i++) {
+            result.add(((Double) sourceVector.get(i) - max) / (dist));
         }
         return result;
     }

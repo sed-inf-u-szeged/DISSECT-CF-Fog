@@ -9,10 +9,13 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.PredictorSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 
 public class PliantApplicationStrategy extends ApplicationStrategy {
 
@@ -112,7 +115,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         Vector<Double> loadOfResource = new Vector<Double>();
         Vector<Double> price = new Vector<Double>();
         Vector<Double> unprocesseddata = new Vector<Double>();
-        Map<String, Double> pred_unprocesseddata = new HashMap<>();
+        Map<String, Double> predUnprocessedData = new HashMap<>();
 
         for (int i = 0; i < availableCompAppliances.size(); i++) {
 
@@ -141,7 +144,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             //if we have prediction
             //find the element from prediction.
             if (predictions.size() > 0) {
-                for (Prediction prediction: predictions) {
+                for (Prediction prediction : predictions) {
                     String[] name = prediction.getFeatureName().split("::");
 
                     //Find the relevant compuerappliant
@@ -156,12 +159,13 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                             num++;
                         }
                         tmpavg /= num;
-                        double act_ud = (double) ((ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
+                        double actUd = (double) ((ca.applications.get(0).receivedData 
+                                - ca.applications.get(0).processedData)
                                 / ca.applications.get(0).tasksize);
                         //pred_unprocesseddata.add(p.getData().get(0));
-                        sig = new Sigmoid(Double.valueOf(-1.0 /32768.0), Double.valueOf(act_ud));
+                        sig = new Sigmoid(Double.valueOf(-1.0 / 32768.0), Double.valueOf(actUd));
                         //unprocesseddata.add(sig.getAt((double) tmpavg));
-                        pred_unprocesseddata.put(name[0], sig.getAt((double) tmpavg));
+                        predUnprocessedData.put(name[0], sig.getAt((double) tmpavg));
 
                     }
                 }
@@ -176,14 +180,14 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             temp.add(price.get(i));
 
             temp.add(unprocesseddata.get(i));
-            if (pred_unprocesseddata.containsKey(availableCompAppliances.get(i).name)) {
-                temp.add(pred_unprocesseddata.get(availableCompAppliances.get(i).name));
+            if (predUnprocessedData.containsKey(availableCompAppliances.get(i).name)) {
+                temp.add(predUnprocessedData.get(availableCompAppliances.get(i).name));
             }
             score.add((int) (FuzzyIndicators.getAggregation(temp) * 100));
         }
         // System.out.println("Pontozás: " + score);
 
-        Integer currentCaScore;
+        
         Vector<Double> temp = new Vector<Double>();
 
         Sigmoid sig = new Sigmoid(Double.valueOf(-1.0 / 8.0),
@@ -199,7 +203,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         temp.add(sig.getAt(
                 (double) ((currentCa.applications.get(0).receivedData - currentCa.applications.get(0).processedData)
                         / currentCa.applications.get(0).tasksize)));
-
+        Integer currentCaScore;
         currentCaScore = (int) (FuzzyIndicators.getAggregation(temp) * 100);
         /*
          * System.out.println(currentCA.name + " Load Resource " +

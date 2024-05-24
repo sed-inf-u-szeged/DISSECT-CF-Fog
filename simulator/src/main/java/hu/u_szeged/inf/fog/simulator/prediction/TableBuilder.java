@@ -6,12 +6,13 @@ import java.util.List;
 public class TableBuilder {
     private List<TableRow> rows;
     private boolean hasHeader;
+    
     public class TableRow {
         private List<String> data;
 
         public TableRow(Object... items) {
             this.data = new ArrayList<>();
-            for (Object item: items) {
+            for (Object item : items) {
                 this.data.add(item.toString());
             }
         }
@@ -27,7 +28,7 @@ public class TableBuilder {
 
     public int getMaxSizeInColumn(int columnIndex) {
         int max = Integer.MIN_VALUE;
-        for (TableRow row: rows) {
+        for (TableRow row : rows) {
             int size = row.getData().get(columnIndex).length();
             if (size > max) {
                 max = size;
@@ -37,7 +38,7 @@ public class TableBuilder {
     }
 
     private boolean compatible(TableRow row) {
-        for (TableRow r: rows) {
+        for (TableRow r : rows) {
             if (r.getSize() != row.getSize()) {
                 return false;
             }

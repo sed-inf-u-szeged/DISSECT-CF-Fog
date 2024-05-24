@@ -6,35 +6,30 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.ACOC;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-
-
 
 public class MapVisualiser {
     
-   static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
-       for(Pair pair : list) {
-           if( (pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
-               return true;
-           }
-       }
-    return false;
-       
-   }
+    static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
+        for (Pair pair : list) {
+            if ((pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
+                return true;
+            }
+        }
+        return false;   
+    }
 
     public static void mapGenerator(String scriptPath, String resultDirectory, Device... devices) throws IOException {
         MapVisualiser.generateMap(scriptPath, resultDirectory, new ArrayList<>(Arrays.asList(devices)));
     }
     
-    public static void mapGenerator(String scriptPath, String resultDirectory, ArrayList<Device> devices) throws IOException {
+    public static void mapGenerator(String scriptPath, String resultDirectory, ArrayList<Device> devices) 
+            throws IOException {
         MapVisualiser.generateMap(scriptPath, resultDirectory, devices);
     }
 
@@ -44,7 +39,8 @@ public class MapVisualiser {
         String nodeInfoForMapScript = "";
         String latencyInfoForMapScript = "";
 
-       // HashMap<ComputingAppliance, ComputingAppliance> checkedAppliances = new HashMap<ComputingAppliance, ComputingAppliance>();
+        // HashMap<ComputingAppliance, ComputingAppliance> checkedAppliances 
+        //      = new HashMap<ComputingAppliance, ComputingAppliance>();
         ArrayList<Pair> checkedAppliances = new ArrayList<Pair>();
 
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
@@ -130,11 +126,11 @@ public class MapVisualiser {
     }
 }
 
-class Pair{
+class Pair {
     
-    Pair(ComputingAppliance left, ComputingAppliance right){
-        this.left=left;
-        this.right=right;
+    Pair(ComputingAppliance left, ComputingAppliance right) {
+        this.left = left;
+        this.right = right;
     }
     
     ComputingAppliance left;

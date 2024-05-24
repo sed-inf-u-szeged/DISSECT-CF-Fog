@@ -48,15 +48,15 @@ public class AzureProvider extends Provider {
             messageSize = this.messageSize;
         }
 
-        int CountOfServicableApplications = 0;
+        int countOfServicableApplications = 0;
         for (Application app : Application.allApplications) {
             if (app.serviceable) {
-                CountOfServicableApplications++;
+                countOfServicableApplications++;
             }
         }
         double time = (double) Timed.getFireCount() / 1000 / 60 / 60 / 24 / 30;
 
-        this.cost = CountOfServicableApplications * monthlyCost * time;
+        this.cost = countOfServicableApplications * monthlyCost * time;
 
         long totalMessageCount = 0;
         double totalDeviceFileSize = 0.0;

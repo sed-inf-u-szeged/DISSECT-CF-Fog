@@ -1,17 +1,16 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings.predictor;
 
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class Parameter {
+    
     public enum ParameterType {
         TEXT("text"), BOOLEAN("boolean"), SELECT("select"), OPEN_FILE("openFile"), BUTTON("button");
         private final String type;
+        
         ParameterType(final String type) {
             this.type = type;
         }
@@ -24,7 +23,8 @@ public class Parameter {
     private List<Option> options;
     private String defaultValue;
 
-    public Parameter(String id, String label, ParameterType type, boolean required, List<Option> options, String defaultValue) {
+    public Parameter(String id, String label, ParameterType type, boolean required, 
+            List<Option> options, String defaultValue) {
         this.id = id;
         this.label = label;
         this.type = type;
@@ -106,12 +106,12 @@ public class Parameter {
         return this;
     }
 
-    public JSONObject toJSON() {
+    public JSONObject toJson() {
         try {
             JSONArray array = new JSONArray();
             if (options != null) {
-                for (Option o: options) {
-                    array.put(o.toJSON());
+                for (Option o : options) {
+                    array.put(o.toJson());
                 }
             }
 

@@ -62,7 +62,7 @@ public class RandomWalkMobilityStrategy extends MobilityStrategy {
                         "ERROR: After 100 iteration, the device's new position couldn't be determined because of"
                         + "the nodes' the small radius, or the device's high speed.");
                 device.stopMeter();
-                SmartDevice.stuckData+=device.calculateStuckData();
+                SmartDevice.stuckData += device.calculateStuckData();
             }
 
         }

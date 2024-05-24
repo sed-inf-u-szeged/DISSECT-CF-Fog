@@ -8,7 +8,6 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.pliant.FuzzyIndicators;
 import hu.u_szeged.inf.fog.simulator.pliant.Kappa;
 import hu.u_szeged.inf.fog.simulator.pliant.Sigmoid;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
@@ -84,13 +83,13 @@ public class PliantDeviceStrategy extends DeviceStrategy {
             numberofvm.add(kappa.getAt(sig.getAt(Double.valueOf(availableApplications.get(i).utilisedVms.size()))));
         }
 
-        double sum_stations = 0.0;
+        double sumStations = 0.0;
         for (int i = 0; i < availableApplications.size(); ++i) {
-            sum_stations += availableApplications.get(i).deviceList.size();
+            sumStations += availableApplications.get(i).deviceList.size();
         }
 
         Vector<Double> numberofstation = new Vector<Double>();
-        sig = new Sigmoid(Double.valueOf(-0.125), Double.valueOf(sum_stations / (availableApplications.size())));
+        sig = new Sigmoid(Double.valueOf(-0.125), Double.valueOf(sumStations / (availableApplications.size())));
         for (int i = 0; i < availableApplications.size(); ++i) {
             numberofstation
                     .add(kappa.getAt(sig.getAt(Double.valueOf(Application.allApplications.get(i).deviceList.size()))));
@@ -110,12 +109,12 @@ public class PliantDeviceStrategy extends DeviceStrategy {
             numberofActiveStation.add(sum);
         }
 
-        sum_stations = 0.0;
+        sumStations = 0.0;
         for (int i = 0; i < numberofActiveStation.size(); ++i) {
-            sum_stations += numberofActiveStation.get(i);
+            sumStations += numberofActiveStation.get(i);
         }
 
-        sig = new Sigmoid(Double.valueOf(-0.125), Double.valueOf(sum_stations / (numberofActiveStation.size())));
+        sig = new Sigmoid(Double.valueOf(-0.125), Double.valueOf(sumStations / (numberofActiveStation.size())));
         for (int i = 0; i < numberofActiveStation.size(); ++i) {
             double a = numberofActiveStation.get(i);
             double b = sig.getAt(a);
@@ -123,17 +122,17 @@ public class PliantDeviceStrategy extends DeviceStrategy {
             numberofActiveStation.set(i, c);
         }
 
-        Vector<Double> preferVM = new Vector<Double>();
+        Vector<Double> preferVm = new Vector<Double>();
         sig = new Sigmoid(Double.valueOf(1.0 / 32), Double.valueOf(3));
         for (int i = 0; i < availableApplications.size(); ++i) {
-            preferVM.add(kappa
+            preferVm.add(kappa
                     .getAt(sig.getAt(Double.valueOf(availableApplications.get(i).instance.arc.getRequiredCPUs()))));
         }
 
-        Vector<Double> preferVMMem = new Vector<Double>();
+        Vector<Double> preferVmMem = new Vector<Double>();
         sig = new Sigmoid(Double.valueOf(1.0 / 256.0), Double.valueOf(350.0));
         for (int i = 0; i < availableApplications.size(); ++i) {
-            preferVMMem.add(kappa.getAt(sig
+            preferVmMem.add(kappa.getAt(sig
                     .getAt(Double.valueOf(availableApplications.get(i).instance.arc.getRequiredMemory() / 10000000))));
         }
 
@@ -143,7 +142,7 @@ public class PliantDeviceStrategy extends DeviceStrategy {
             temp.add(price.get(i));
             temp.add(numberofstation.get(i));
             temp.add(numberofActiveStation.get(i));
-            temp.add(preferVM.get(i));
+            temp.add(preferVm.get(i));
             temp.add(workload.get(i));
             temp.add(currentprice.get(i));
             score.add(FuzzyIndicators.getAggregation(temp) * 100);

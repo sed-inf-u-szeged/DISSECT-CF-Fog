@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.util;
 
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import java.io.IOException;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;

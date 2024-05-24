@@ -29,9 +29,9 @@ public class XMLSimulation {
         iaasMapper.put("LPDS_16", fogfile2);
 
         // WorkflowJobsModel.loadWorkflowXML(workflowFile);
-        InstanceModel.loadInstanceXML(instancefile);
-        ApplianceModel.loadApplianceXML(appliancefile, iaasMapper);
-        DeviceModel.loadDeviceXML(devicefile);
+        InstanceModel.loadInstanceXml(instancefile);
+        ApplianceModel.loadApplianceXml(appliancefile, iaasMapper);
+        DeviceModel.loadDeviceXml(devicefile);
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();

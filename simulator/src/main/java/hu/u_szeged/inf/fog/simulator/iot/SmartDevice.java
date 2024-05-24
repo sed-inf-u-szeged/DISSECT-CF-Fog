@@ -35,6 +35,7 @@ public class SmartDevice extends Device {
     /**
      * Defines a new smart device. To avoid a completely periodic behavior, a random 
      * value between 0-3 minutes is added to the initial start time of the device.
+     *
      * @param startTime the time when the device starts generating data (ms)
      * @param stopTime the time when the device stops generating data (ms)
      * @param fileSize the size of the generated data (byte)

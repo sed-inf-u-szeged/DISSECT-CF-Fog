@@ -205,7 +205,7 @@ public abstract class Device extends Timed {
     /**
      * The method calculates how much data remains unprocessed due to the position
      * of the device.
-     * 
+     *
      * @return the amount of unprocessed data in the local storage.
      */
     public long calculateStuckData() {
@@ -275,6 +275,7 @@ public abstract class Device extends Timed {
 
         /**
          * It creates an event for file transfer.
+         *
          * @param device the device performing the file transfer
          * @param so the file that is under transfer.
          */

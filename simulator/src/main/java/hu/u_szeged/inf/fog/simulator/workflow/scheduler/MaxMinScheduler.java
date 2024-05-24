@@ -5,7 +5,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
@@ -37,8 +36,8 @@ public class MaxMinScheduler extends WorkflowScheduler {
         if (Timed.getFireCount() > 0) {
             this.jobReAssign(workflowJob, ComputingAppliance.allComputingAppliances.get(0));
 
-            if (workflowJob.ca.workflowVMs.size() < 2) {
-                addVM(workflowJob.ca);
+            if (workflowJob.ca.workflowVms.size() < 2) {
+                addVm(workflowJob.ca);
             }
         }
     }
@@ -49,7 +48,7 @@ public class MaxMinScheduler extends WorkflowScheduler {
             Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
-                ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
             } catch (VMManagementException e) {
                 e.printStackTrace();
             }

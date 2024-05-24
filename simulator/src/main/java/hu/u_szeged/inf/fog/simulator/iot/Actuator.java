@@ -3,7 +3,6 @@ package hu.u_szeged.inf.fog.simulator.iot;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;

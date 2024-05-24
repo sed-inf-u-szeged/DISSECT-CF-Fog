@@ -12,7 +12,6 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -36,7 +35,7 @@ public abstract class WorkflowScheduler {
                 && workflowJob.underRecieving == 0 && workflowJob.inputs.get(0).amount > 0) {
 
             workflowJob.state = WorkflowJob.State.REASSIGNING;
-            workflowJob.FileRecievedByAssigning = 0;
+            workflowJob.fileRecievedByAssigning = 0;
 
             for (StorageObject so : workflowJob.filesRecieved) {
                 System.out.println(so.size + " " + Timed.getFireCount() + " " + " asdasdadssd");
@@ -47,8 +46,8 @@ public abstract class WorkflowScheduler {
                                 @Override
                                 public void conComplete() {
                                     workflowJob.ca.iaas.repositories.get(0).deregisterObject(so.id);
-                                    workflowJob.FileRecievedByAssigning += so.size;
-                                    if (workflowJob.FileRecievedByAssigning == workflowJob.fileRecieved) {
+                                    workflowJob.fileRecievedByAssigning += so.size;
+                                    if (workflowJob.fileRecievedByAssigning == workflowJob.fileRecieved) {
                                         workflowJob.ca = futureAppliance;
                                         workflowJob.state = WorkflowJob.State.SUBMITTED;
                                         // schedule(workflowJob); ?
@@ -83,16 +82,16 @@ public abstract class WorkflowScheduler {
         }
     }
 
-    public void addVM(ComputingAppliance ca) {
+    public void addVm(ComputingAppliance ca) {
         Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
         try {
-            ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+            ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
         } catch (VMManagementException e) {
             e.printStackTrace();
         }
     }
 
-    public void shutdownVM(ComputingAppliance ca) {
+    public void shutdownVm(ComputingAppliance ca) {
         for (VirtualMachine vm : ca.iaas.listVMs()) {
 
             if (!vm.underProcessing.isEmpty()) {

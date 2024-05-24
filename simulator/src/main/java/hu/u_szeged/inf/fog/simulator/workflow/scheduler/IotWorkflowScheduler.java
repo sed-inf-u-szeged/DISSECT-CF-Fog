@@ -6,7 +6,6 @@ import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -15,11 +14,11 @@ import java.util.Random;
 
 
 
-public class IoTWorkflowScheduler extends WorkflowScheduler {
+public class IotWorkflowScheduler extends WorkflowScheduler {
 
     int defaultLatency;
 
-    public IoTWorkflowScheduler(HashMap<ComputingAppliance, Instance> workflowArchitecture,
+    public IotWorkflowScheduler(HashMap<ComputingAppliance, Instance> workflowArchitecture,
             ArrayList<Actuator> actuatorArchitecutre, int defaultLatency) {
         WorkflowScheduler.workflowArchitecture = workflowArchitecture;
         WorkflowScheduler.actuatorArchitecture = actuatorArchitecutre;
@@ -60,7 +59,7 @@ public class IoTWorkflowScheduler extends WorkflowScheduler {
             Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
-                ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
             } catch (VMManagementException e) {
                 e.printStackTrace();
             }

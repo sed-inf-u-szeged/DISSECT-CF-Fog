@@ -10,9 +10,12 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.PriorityQueue;
+import java.util.Random;
 
 public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
@@ -55,19 +58,20 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
         }
 
     }
+    
     public void schedule() {
         ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
         ArrayList<WorkflowJob> wjs = new ArrayList<>();
-        for(WorkflowJob wj : workflowJobs){
-            if(wj.id.contains("service") || wj.id.contains("actuator") || wj.id.contains("ID")){
+        for (WorkflowJob wj : workflowJobs) {
+            if (wj.id.contains("service") || wj.id.contains("actuator") || wj.id.contains("ID")) {
                 wjs.add(wj);
             }
         }
         wjs.sort(new WorkflowComperator());
-        for(WorkflowJob workflowJob : workflowJobs){
+        for (WorkflowJob workflowJob : workflowJobs) {
             if (workflowJob.id.contains("service") || workflowJob.id.contains("ID")) {
                 if (workflowJob.ca == null) {
-                    Random r = new Random();
+                    Random r = new Random(); // TODO: simulator's random!
                     workflowJob.ca = allComputingAppliances.get(r.nextInt(allComputingAppliances.size()));
                 }
                 if (workflowJob.inputs.get(0).amount == 0) {
@@ -96,7 +100,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
             Instance i = workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
-                ca.workflowVMs.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
             } catch (VMManagementException e) {
                 e.printStackTrace();
             }
@@ -116,7 +120,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
                 && workflowJob.underRecieving == 0 && workflowJob.inputs.get(0).amount == 0) {
 
             workflowJob.state = WorkflowJob.State.REASSIGNING;
-            workflowJob.FileRecievedByAssigning = 0;
+            workflowJob.fileRecievedByAssigning = 0;
 
             for (StorageObject so : workflowJob.filesRecieved) {
                 System.out.println(so.size + " " + Timed.getFireCount() + " " + " asdasdadssd");
@@ -127,8 +131,8 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
                                 @Override
                                 public void conComplete() {
                                     workflowJob.ca.iaas.repositories.get(0).deregisterObject(so.id);
-                                    workflowJob.FileRecievedByAssigning += so.size;
-                                    if (workflowJob.FileRecievedByAssigning == workflowJob.fileRecieved) {
+                                    workflowJob.fileRecievedByAssigning += so.size;
+                                    if (workflowJob.fileRecievedByAssigning == workflowJob.fileRecieved) {
                                         workflowJob.ca = futureAppliance;
                                         workflowJob.state = WorkflowJob.State.SUBMITTED;
                                         //schedule(workflowJob);
@@ -154,6 +158,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
             return Integer.compare(o1.inputs.get(0).amount,o2.inputs.get(0).amount);
         }
     }
+    
     class ComputingApplianceComperator implements Comparator<ComputingAppliance> {
         @Override
         public int compare(ComputingAppliance ca1, ComputingAppliance ca2) {

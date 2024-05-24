@@ -1,13 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings.predictor;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class PredictorTemplate {
     private String id;
@@ -72,18 +70,18 @@ public class PredictorTemplate {
         this.options = options;
     }
 
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJson() throws JSONException {
         JSONArray arrayHypers = new JSONArray();
         if (hyperparameters != null) {
-            for (Parameter p: hyperparameters) {
-                arrayHypers.put(p.toJSON());
+            for (Parameter p : hyperparameters) {
+                arrayHypers.put(p.toJson());
             }
         }
 
         JSONArray arrayOptions = new JSONArray();
         if (options != null) {
-            for (Parameter p: options) {
-                arrayOptions.put(p.toJSON());
+            for (Parameter p : options) {
+                arrayOptions.put(p.toJson());
             }
         }
 
@@ -94,10 +92,10 @@ public class PredictorTemplate {
                 .put("options", options == null ? new JSONArray() : arrayOptions);
     }
 
-    public static JSONObject getAllAsJSON() throws JSONException { // TODO replace json to classes
+    public static JSONObject getAllAsJson() throws JSONException { // TODO replace json to classes
         JSONArray array = new JSONArray();
-        for (PredictorTemplate predictorTemplate: getAll()) {
-            array.put(predictorTemplate.toJSON());
+        for (PredictorTemplate predictorTemplate : getAll()) {
+            array.put(predictorTemplate.toJson());
         }
         return new JSONObject().put("predictors", array);
     }
@@ -107,18 +105,24 @@ public class PredictorTemplate {
         predictorTemplates.add(
                 new PredictorTemplate("ARIMA", "ARIMA",
                         Arrays.asList(
-                                new Parameter("P value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("3"),
-                                new Parameter("D value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0"),
-                                new Parameter("Q value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0")
+                                new Parameter("P value").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("3"),
+                                new Parameter("D value").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("0"),
+                                new Parameter("Q value").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("0")
                         )
                 )
         );
         predictorTemplates.add(
                 new PredictorTemplate("RANDOM_FOREST", "Random forest",
                         Arrays.asList(
-                                new Parameter("Number of trees").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("10"),
-                                new Parameter("Max depth").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("50"),
-                                new Parameter("Lags").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("100")
+                                new Parameter("Number of trees").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("10"),
+                                new Parameter("Max depth").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("50"),
+                                new Parameter("Lags").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("100")
                         )
                 )
         );
@@ -137,10 +141,14 @@ public class PredictorTemplate {
                                                 new Option("Mul")
                                         )
                                 ),
-                                new Parameter("alpha", "Alpha (Level smoothing)").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
-                                new Parameter("beta", "Beta (Trend smoothing)").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
-                                new Parameter("gamma", "Gamma (Seasonality smoothing)").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
-                                new Parameter("Seasonal periods").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("60")
+                                new Parameter("alpha", "Alpha (Level smoothing)").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
+                                new Parameter("beta", "Beta (Trend smoothing)").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
+                                new Parameter("gamma", "Gamma (Seasonality smoothing)").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("0.1"),
+                                new Parameter("Seasonal periods").required()
+                                .setType(Parameter.ParameterType.TEXT).setDefaultValue("60")
                         )
                 )
         );
@@ -164,12 +172,14 @@ public class PredictorTemplate {
         predictorTemplates.add(
                 new PredictorTemplate("LSTM", "LSTM",
                         Arrays.asList(
-                                new Parameter("Future model location").required().setType(Parameter.ParameterType.OPEN_FILE).setOptions(
+                                new Parameter("Future model location")
+                                .required().setType(Parameter.ParameterType.OPEN_FILE).setOptions(
                                         Arrays.asList(
                                                 new Option("h5", "H5 model file")
                                         )
                                 ),
-                                new Parameter("Test model location").setType(Parameter.ParameterType.OPEN_FILE).setOptions(
+                                new Parameter("Test model location")
+                                .setType(Parameter.ParameterType.OPEN_FILE).setOptions(
                                         Arrays.asList(
                                                 new Option("h5", "H5 model file")
                                         )

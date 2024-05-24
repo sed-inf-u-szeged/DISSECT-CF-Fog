@@ -14,43 +14,43 @@ public class Utils {
     private static final int LEAF_SIZE = 120;
 
     /**
-     * Calculates the sum of integers within an interval
-     * 
-     * @param A Start of the interval (include)
-     * @param B End of the interval (include)
+     * Calculates the sum of integers within an interval.
+     *
+     * @param a Start of the interval (include)
+     * @param b End of the interval (include)
      * @return Sum of elements [A, B]
      */
-    public static int sumAtoB(int A, int B) {
-        return ((A + B) * (B - A + 1)) / 2;
+    public static int sumAtoB(int a, int b) {
+        return ((a + b) * (b - a + 1)) / 2;
     }
 
     /**
      * Calculates the sum of elements within a given interval, while applying a
      * transform function to the elements. Basically, gives the sum of f(x), x :=
      * [A, B].
-     * 
-     * @param A         Start of the interval (included)
-     * @param B         End of the interval (included)
+     *
+     * @param a         Start of the interval (included)
+     * @param b         End of the interval (included)
      * @param transform The function that applies to each element (f(x))
      * @return The sum of the transformed elements
      */
-    public static double sumAtoBTransform(int A, int B, Function<Integer, Double> transform) {
-        return IntStream.rangeClosed(A, B).mapToObj(transform::apply).mapToDouble(Double::doubleValue).sum();
+    public static double sumIntToIntTransform(int a, int b, Function<Integer, Double> transform) {
+        return IntStream.rangeClosed(a, b).mapToObj(transform::apply).mapToDouble(Double::doubleValue).sum();
     }
 
     /**
-     * Calculates the power to the i of a matrix
-     * 
-     * @param M Matrix to be powered
+     * Calculates the power to the i of a matrix.
+     *
+     * @param m Matrix to be powered
      * @param i Exponent
      * @return M^i
      */
-    public static double[][] pow(double[][] M, int i) {
+    public static double[][] pow(double[][] m, int i) {
         if (i == 0) {
-            return identityM(M);
+            return identityM(m);
         }
-        double[][] tmp1 = Arrays.stream(M).map(double[]::clone).toArray(double[][]::new);
-        double[][] tmp2 = Arrays.stream(M).map(double[]::clone).toArray(double[][]::new);
+        double[][] tmp1 = Arrays.stream(m).map(double[]::clone).toArray(double[][]::new);
+        double[][] tmp2 = Arrays.stream(m).map(double[]::clone).toArray(double[][]::new);
 
         for (int j = 1; j < i; j++) {
             tmp1 = strassenMultiplication(tmp1, tmp2);
@@ -59,18 +59,18 @@ public class Utils {
     }
 
     /**
-     * Naive O(n^3) matrix multiplication
-     * 
-     * @param A First matrix
-     * @param B Second matrix
+     * Naive O(n^3) matrix multiplication.
+     *
+     * @param a First matrix
+     * @param b Second matrix
      * @return A * B
      */
-    public static double[][] basicMultiplication(double[][] A, double[][] B) {
-        double[][] result = new double[A.length][B[0].length];
+    public static double[][] basicMultiplication(double[][] a, double[][] b) {
+        double[][] result = new double[a.length][b[0].length];
 
         for (int row = 0; row < result.length; row++) {
             for (int col = 0; col < result[row].length; col++) {
-                result[row][col] = multiplyMatricesCell(A, B, row, col);
+                result[row][col] = multiplyMatricesCell(a, b, row, col);
             }
         }
         return result;
@@ -78,166 +78,167 @@ public class Utils {
 
     /**
      * Calculates the value of a cell during matrix multiplication (row x col
-     * composition)
-     * 
-     * @param A   The left side matrix
-     * @param B   The right side matrix
+     * composition).
+     *
+     * @param a   The left side matrix
+     * @param b   The right side matrix
      * @param row The current row
      * @param col The current column
      * @return The value of multiplying row and col
      */
-    private static double multiplyMatricesCell(double[][] A, double[][] B, int row, int col) {
+    private static double multiplyMatricesCell(double[][] a, double[][] b, int row, int col) {
         double cell = 0;
-        for (int i = 0; i < B.length; i++) {
-            cell += A[row][i] * B[i][col];
+        for (int i = 0; i < b.length; i++) {
+            cell += a[row][i] * b[i][col];
         }
         return cell;
     }
 
     /**
      * Matrix multiplication using Strassen algorithm.
-     * 
-     * @param A - Matrix with dimension of NxN
-     * @param B - Matrix with dimension of NxN
+     *
+     * @param a - Matrix with dimension of NxN
+     * @param b - Matrix with dimension of NxN
      * @return A * B result matrix with dimension of NxN
      */
-    public static double[][] strassenMultiplication(double[][] A, double[][] B) {
-        if (!canMultiply(A, B)) {
+    public static double[][] strassenMultiplication(double[][] a, double[][] b) {
+        if (!canMultiply(a, b)) {
             throw new RuntimeException("Cannot multiply matrices with incompatible dimensions");
         }
-        int n = A.length;
-        double[][] R = new double[n][n];
+        int n = a.length;
+        double[][] r = new double[n][n];
         if (n <= LEAF_SIZE) {
-            R = basicMultiplication(A, B);
+            r = basicMultiplication(a, b);
         } else {
-            double[][] A11 = new double[n / 2][n / 2];
-            double[][] A12 = new double[n / 2][n / 2];
-            double[][] A21 = new double[n / 2][n / 2];
-            double[][] A22 = new double[n / 2][n / 2];
-            double[][] B11 = new double[n / 2][n / 2];
-            double[][] B12 = new double[n / 2][n / 2];
-            double[][] B21 = new double[n / 2][n / 2];
-            double[][] B22 = new double[n / 2][n / 2];
+            double[][] a11 = new double[n / 2][n / 2];
+            double[][] a12 = new double[n / 2][n / 2];
+            double[][] a21 = new double[n / 2][n / 2];
+            double[][] a22 = new double[n / 2][n / 2];
+            
+            split(a, a11, 0, 0);
+            split(a, a12, 0, n / 2);
+            split(a, a21, n / 2, 0);
+            split(a, a22, n / 2, n / 2);
 
-            split(A, A11, 0, 0);
-            split(A, A12, 0, n / 2);
-            split(A, A21, n / 2, 0);
-            split(A, A22, n / 2, n / 2);
+            double[][] b11 = new double[n / 2][n / 2];
+            double[][] b12 = new double[n / 2][n / 2];
+            double[][] b21 = new double[n / 2][n / 2];
+            double[][] b22 = new double[n / 2][n / 2];
+            
+            split(b, b11, 0, 0);
+            split(b, b12, 0, n / 2);
+            split(b, b21, n / 2, 0);
+            split(b, b22, n / 2, n / 2);
 
-            split(B, B11, 0, 0);
-            split(B, B12, 0, n / 2);
-            split(B, B21, n / 2, 0);
-            split(B, B22, n / 2, n / 2);
+            double[][] m1 = strassenMultiplication(add(a11, a22), add(b11, b22));
+            double[][] m2 = strassenMultiplication(add(a21, a22), b11);
+            double[][] m3 = strassenMultiplication(a11, sub(b12, b22));
+            double[][] m4 = strassenMultiplication(a22, sub(b21, b11));
+            double[][] m5 = strassenMultiplication(add(a11, a12), b22);
+            double[][] m6 = strassenMultiplication(sub(a21, a11), add(b11, b12));
+            double[][] m7 = strassenMultiplication(sub(a12, a22), add(b21, b22));
+            double[][] c11 = add(sub(add(m1, m4), m5), m7);
+            double[][] c12 = add(m3, m5);
+            double[][] c21 = add(m2, m4);
+            double[][] c22 = add(sub(add(m1, m3), m2), m6);
 
-            double[][] M1 = strassenMultiplication(add(A11, A22), add(B11, B22));
-            double[][] M2 = strassenMultiplication(add(A21, A22), B11);
-            double[][] M3 = strassenMultiplication(A11, sub(B12, B22));
-            double[][] M4 = strassenMultiplication(A22, sub(B21, B11));
-            double[][] M5 = strassenMultiplication(add(A11, A12), B22);
-            double[][] M6 = strassenMultiplication(sub(A21, A11), add(B11, B12));
-            double[][] M7 = strassenMultiplication(sub(A12, A22), add(B21, B22));
-            double[][] C11 = add(sub(add(M1, M4), M5), M7);
-            double[][] C12 = add(M3, M5);
-            double[][] C21 = add(M2, M4);
-            double[][] C22 = add(sub(add(M1, M3), M2), M6);
-
-            join(C11, R, 0, 0);
-            join(C12, R, 0, n / 2);
-            join(C21, R, n / 2, 0);
-            join(C22, R, n / 2, n / 2);
+            join(c11, r, 0, 0);
+            join(c12, r, 0, n / 2);
+            join(c21, r, n / 2, 0);
+            join(c22, r, n / 2, n / 2);
         }
-        return R;
+        return r;
     }
 
     /**
-     * Split parent matrix into child matrix
-     * 
-     * @param P  Parent matrix
-     * @param C  Child matrix
-     * @param iB sub index
-     * @param jB sub index
+     * Split parent matrix into child matrix.
+     *
+     * @param p  Parent matrix
+     * @param c  Child matrix
+     * @param ib sub index
+     * @param jb sub index
      */
-    private static void split(double[][] P, double[][] C, int iB, int jB) {
-        for (int i1 = 0, i2 = iB; i1 < C.length; i1++, i2++) {
-            for (int j1 = 0, j2 = jB; j1 < C.length; j1++, j2++) {
-                C[i1][j1] = P[i2][j2];
+    private static void split(double[][] p, double[][] c, int ib, int jb) {
+        for (int i1 = 0, i2 = ib; i1 < c.length; i1++, i2++) {
+            for (int j1 = 0, j2 = jb; j1 < c.length; j1++, j2++) {
+                c[i1][j1] = p[i2][j2];
             }
         }
     }
 
     /**
-     * Adds two matrices
-     * 
-     * @param A First matrix
-     * @param B Second matrix
+     * Adds two matrices.
+     *
+     * @param a First matrix
+     * @param b Second matrix
      * @return A + B matrix
      */
-    private static double[][] add(double[][] A, double[][] B) {
-        int n = A.length;
-        double[][] C = new double[n][n];
+    private static double[][] add(double[][] a, double[][] b) {
+        int n = a.length;
+        double[][] c = new double[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                C[i][j] = A[i][j] + B[i][j];
+                c[i][j] = a[i][j] + b[i][j];
             }
         }
-        return C;
+        return c;
     }
 
     /**
-     * Subtract two matrices
-     * 
-     * @param A First matrix
-     * @param B Second matrix
+     * Subtract two matrices.
+     *
+     * @param a First matrix
+     * @param b Second matrix
      * @return A - B matrix
      */
-    private static double[][] sub(double[][] A, double[][] B) {
-        int n = A.length;
-        double[][] C = new double[n][n];
+    private static double[][] sub(double[][] a, double[][] b) {
+        int n = a.length;
+        double[][] c = new double[n][n];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                C[i][j] = A[i][j] - B[i][j];
+                c[i][j] = a[i][j] - b[i][j];
             }
         }
             
-        return C;
+        return c;
     }
 
     /**
-     * Join a child matrix into a parent matrix
-     * 
-     * @param C  Child matrix
-     * @param P  Parent matrix
-     * @param iB Sub index
-     * @param jB Sub index
+     * Join a child matrix into a parent matrix.
+     *
+     * @param c  Child matrix
+     * @param p  Parent matrix
+     * @param ib Sub index
+     * @param jb Sub index
      */
-    private static void join(double[][] C, double[][] P, int iB, int jB) {
-        for (int i1 = 0, i2 = iB; i1 < C.length; i1++, i2++) {
-            for (int j1 = 0, j2 = jB; j1 < C.length; j1++, j2++) {
-                P[i2][j2] = C[i1][j1];
+    private static void join(double[][] c, double[][] p, int ib, int jb) {
+        for (int i1 = 0, i2 = ib; i1 < c.length; i1++, i2++) {
+            for (int j1 = 0, j2 = jb; j1 < c.length; j1++, j2++) {
+                p[i2][j2] = c[i1][j1];
             }
         }
     }
 
-    private static double[][] identityM(double[][] M) {
-        double[][] I = new double[M.length][M[0].length];
-        for (int i = 0; i < M.length; i++) {
-            for (int j = 0; j < M[0].length; j++) {
+    private static double[][] identityM(double[][] m) {
+        double[][] id = new double[m.length][m[0].length];
+        for (int i = 0; i < m.length; i++) {
+            for (int j = 0; j < m[0].length; j++) {
                 if (i == j) {
-                    I[i][j] = 1;
+                    id[i][j] = 1;
                 }
             }
         }
-        return I;
+        return id;
     }
 
     /**
      * Decides whether two matrices can be multiplied.
-     * 
-     * @param A First matrix
-     * @param B Second matrix
+     *
+     * @param a First matrix
+     * @param b Second matrix
      * @return True if two matrices can be multiplied, false otherwise
      */
-    private static boolean canMultiply(double[][] A, double[][] B) {
-        return Objects.equals(A.length, B[0].length);
+    private static boolean canMultiply(double[][] a, double[][] b) {
+        return Objects.equals(a.length, b[0].length);
     }
 }
