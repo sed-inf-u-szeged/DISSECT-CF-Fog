@@ -2,18 +2,14 @@ package hu.u_szeged.inf.fog.simulator.test.random;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.util.Arrays;
-
 import org.junit.jupiter.api.Test;
-
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 
 public class SimRandomTest {
 
     @Test
-    void modifySeed() {
-        
+    void modifySeed() {  
         final int size = 5;
         int[] array1 = new int[size];  
         int[] array2 = new int[size];
