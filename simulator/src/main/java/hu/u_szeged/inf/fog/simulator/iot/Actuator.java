@@ -33,5 +33,4 @@ public class Actuator {
         this.delay = delay;
         Actuator.allActuators.add(this);
     }
-
 }

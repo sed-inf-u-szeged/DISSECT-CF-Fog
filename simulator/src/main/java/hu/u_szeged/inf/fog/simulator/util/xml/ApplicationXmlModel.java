@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -6,10 +6,14 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-
+/**
+ * This class is annotated with JAXB annotations to map Java classes to XML representations and vice versa.
+ * It is responsible for XML driven simulation, in this case loading one application from a file.
+ * Example files are located in: src/main/resources/demo/XML_examples
+ */
 @XmlRootElement(name = "application")
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class ApplicationModel {
+public class ApplicationXmlModel {
 
     public String name;
     public long freq;
@@ -72,5 +76,4 @@ public class ApplicationModel {
                 + ", countOfInstructions=" + countOfInstructions + ", activationRatio=" + activationRatio
                 + ", transferDevider=" + transferDevider + ", strategy=" + strategy + ", canJoin=" + canJoin + "]";
     }
-
 }

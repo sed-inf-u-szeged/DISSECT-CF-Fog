@@ -135,9 +135,9 @@ public class ScenarioBase {
                 "Total energy consumption of the devices (kWh): " + totalDeviceEnergyConsumption / 1000 / 3_600_000);
         SimLogger.logRes("Total cost ($): " + totalCost);
         SimLogger.logRes("IoT costs ($): ");
-        for (int i = 0; i < Provider.providers.size(); i++) {
-            SimLogger.logRes("\t" + Provider.providers.get(i).name + ": "
-                    + BigDecimal.valueOf(Provider.providers.get(i).calculate()).toPlainString() + " ");
+        for (int i = 0; i < Provider.allProviders.size(); i++) {
+            SimLogger.logRes("\t" + Provider.allProviders.get(i).name + ": "
+                    + BigDecimal.valueOf(Provider.allProviders.get(i).calculate()).toPlainString() + " ");
         }
         SimLogger.logRes("Total amount of generated / received / processed / locally processed / stuck data (bytes): "
                 + totalGeneratedData + " / " + totalReceivedData + " / " + totalProcessedData + " / "
@@ -175,9 +175,9 @@ public class ScenarioBase {
 
         final var cost = new Cost(
                 totalCost,
-                BigDecimal.valueOf(Provider.providers.get(0).calculate()).toPlainString(),
-                BigDecimal.valueOf(Provider.providers.get(1).calculate()).toPlainString(),
-                BigDecimal.valueOf(Provider.providers.get(2).calculate()).toPlainString()
+                BigDecimal.valueOf(Provider.allProviders.get(0).calculate()).toPlainString(),
+                BigDecimal.valueOf(Provider.allProviders.get(1).calculate()).toPlainString(),
+                BigDecimal.valueOf(Provider.allProviders.get(2).calculate()).toPlainString()
         );
 
         final var dataVolume = new DataVolume(

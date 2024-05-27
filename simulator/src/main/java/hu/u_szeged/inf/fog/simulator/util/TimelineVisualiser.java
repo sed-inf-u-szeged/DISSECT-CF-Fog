@@ -10,10 +10,18 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-
-
+/**
+ * Provides functionality to generate a timeline visualization in HTML format
+ * that presents main simulation events.
+ */
 public class TimelineVisualiser {
 
+    /**
+     * Generates a timeline visualization resulting in an HTML file.
+     *
+     * @param resultDirectory he directory where the HTML file will be generated
+     * @return The generated HTML file.
+     */
     public static File generateTimeline(String resultDirectory) throws IOException {
 
         FileWriter fw = new FileWriter(resultDirectory + File.separator + "timeline.html");
@@ -36,13 +44,13 @@ public class TimelineVisualiser {
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             if (ca.applications.isEmpty()) {
                 for (TimelineEntry tc : ca.timelineList) {
-                    fw.write("[ '" + ca.name + "', '" + tc.vmId + "', new Date(0,0,0,0,0,0," + tc.start
+                    fw.write("[ '" + ca.name + "', '" + tc.text + "', new Date(0,0,0,0,0,0," + tc.start
                             + "), new Date(0,0,0,0,0,0," + tc.stop + ")],");
                 }
             } else {
                 for (Application a : ca.applications) {
                     for (TimelineEntry tc : a.timelineEntries) {
-                        fw.write("[ '" + a.name + "', '" + tc.vmId + "', new Date(0,0,0,0,0,0," + tc.start
+                        fw.write("[ '" + a.name + "', '" + tc.text + "', new Date(0,0,0,0,0,0," + tc.start
                                 + "), new Date(0,0,0,0,0,0," + tc.stop + ")],");
                     }
                 }
@@ -53,7 +61,7 @@ public class TimelineVisualiser {
             if (device instanceof EdgeDevice) {
                 EdgeDevice ed = (EdgeDevice) device;
                 for (TimelineEntry tc : ed.timelineEntries) {
-                    fw.write("[ 'Device-" + tc.vmId + "', '" + "', new Date(0,0,0,0,0,0," + tc.start
+                    fw.write("[ 'Device-" + tc.text + "', '" + "', new Date(0,0,0,0,0,0," + tc.start
                             + "), new Date(0,0,0,0,0,0," + tc.stop + ")],");
                 }
             }
@@ -61,13 +69,13 @@ public class TimelineVisualiser {
 
         for (Actuator a : Actuator.allActuators) {
             for (TimelineEntry tc : a.actuatorEventList) {
-                fw.write("[ '" + a.name + "', '" + tc.vmId + "', new Date(0,0,0,0,0,0," + tc.start
+                fw.write("[ '" + a.name + "', '" + tc.text + "', new Date(0,0,0,0,0,0," + tc.start
                         + "), new Date(0,0,0,0,0,0," + tc.stop + ")],");
             }
         }
 
         for (TimelineEntry tc : Sensor.sensorEventList) {
-            fw.write("[ 'IoT sensors', '" + tc.vmId + "', new Date(0,0,0,0,0,0," + tc.start + "), new Date(0,0,0,0,0,0,"
+            fw.write("[ 'IoT sensors', '" + tc.text + "', new Date(0,0,0,0,0,0," + tc.start + "), new Date(0,0,0,0,0,0,"
                     + tc.stop + ")],");
         }
 
@@ -80,20 +88,40 @@ public class TimelineVisualiser {
         fw.close();
 
         return new File(resultDirectory + File.separator + "timeline.html");
-
     }
 
+    /**
+     * Represents a single entry in the timeline.
+     */
     public static class TimelineEntry {
 
-        public TimelineEntry(long start, long stop, String vmId) {
+        /**
+         * Start time of the timeline event.
+         */
+        public long start;
+        
+        /**
+         * End time of the timeline event.
+         */
+        public long stop;
+        
+        /**
+         * Description of the event.
+         */
+        public String text;
+
+        /**
+         * Constructs a timeline entry with the specified parameters.
+         *
+         * @param start start time of the timeline entry
+         * @param stop  end time of the timeline entry
+         * @param text  description of the event
+         */
+        public TimelineEntry(long start, long stop, String text) {
             super();
             this.start = start;
             this.stop = stop;
-            this.vmId = vmId;
+            this.text = text;
         }
-
-        public long start;
-        public long stop;
-        public String vmId;
     }
 }

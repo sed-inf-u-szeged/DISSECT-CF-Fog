@@ -4,34 +4,71 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 
-// https://azure.microsoft.com/en-us/pricing/details/iot-hub/
+/**
+ * The class represents a service provider mimicking Microsoft Azure.
+ * It calculates the cost based on messages sent per day, monthly cost, and message size.
+ * Based on: // https://azure.microsoft.com/en-us/pricing/details/iot-hub/
+ */
 public class AzureProvider extends Provider {
 
+    /**
+     * The default size of a message in bytes for Azure.
+     */
     static final long defaultMessageSize = 4096;
 
+    /**
+     * The default number of messages per day for Azure.
+     */
     static final long defaultmessagesPerDay = 400_000;
 
+    /**
+     * The default monthly cost for Azure.
+     */
     static final int defaultMonthlyCost = 25;
 
+    /**
+     * The number of messages sent per day.
+     */
     long messagesPerDay;
 
+    /**
+     * The monthly cost for the provider.
+     */
     int monthlyCost;
 
+    /**
+     * The size of a message.
+     */
     long messageSize;
 
+    /**
+     * Constructs the provider with default values.
+     */
     public AzureProvider() {
         this.name = "Azure";
-        Provider.providers.add(this);
+        Provider.allProviders.add(this);
     }
-
+    
+    /**
+     * Constructs the provider with specified values for 
+     * messages per day, monthly cost, and message size.
+     *
+     * @param messagesPerDay the number of messages sent per day
+     * @param monthlyCost    the monthly cost of the provider
+     * @param messageSize    the size of a message
+     */
     public AzureProvider(long messagesPerDay, int monthlyCost, long messageSize) {
         this.messagesPerDay = messagesPerDay;
         this.monthlyCost = monthlyCost;
         this.messageSize = messageSize;
         this.name = "Azure";
-        Provider.providers.add(this);
+        Provider.allProviders.add(this);
     }
 
+    /**
+     * Calculates and returns with the cost incurred based on
+     * messages sent per day, monthly cost, and message size.
+     */
     @Override
     public double calculate() {
         long messagesPerDay;
@@ -76,5 +113,4 @@ public class AzureProvider extends Provider {
 
         return this.cost;
     }
-
 }

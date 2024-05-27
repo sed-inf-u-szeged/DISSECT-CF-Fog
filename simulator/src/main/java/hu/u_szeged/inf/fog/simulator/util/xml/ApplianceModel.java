@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
@@ -12,8 +12,6 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Map;
 import javax.xml.bind.JAXBContext;
@@ -35,8 +33,8 @@ public class ApplianceModel {
     public long range;
     public String file;
 
-    public ArrayList<ApplicationModel> applications;
-    public ArrayList<ApplianceNeigboursModel> neighbours;
+    public ArrayList<ApplicationXmlModel> applications;
+    public ArrayList<ApplianceNeigboursXmlModel> neighbours;
 
     @XmlAttribute(name = "name", required = true)
     public void setName(String name) {
@@ -63,7 +61,7 @@ public class ApplianceModel {
         this.file = file;
     }
 
-    public ArrayList<ApplicationModel> getApplications() {
+    public ArrayList<ApplicationXmlModel> getApplications() {
         return applications;
     }
 
@@ -75,60 +73,64 @@ public class ApplianceModel {
 
     @XmlElementWrapper(name = "applications")
     @XmlElement(name = "application")
-    public void setApplications(ArrayList<ApplicationModel> applications) {
+    public void setApplications(ArrayList<ApplicationXmlModel> applications) {
         this.applications = applications;
     }
 
-    public void add(ApplicationModel applicationModel) {
+    public void add(ApplicationXmlModel applicationModel) {
         if (this.applications == null) {
-            this.applications = new ArrayList<ApplicationModel>();
+            this.applications = new ArrayList<ApplicationXmlModel>();
         }
         this.applications.add(applicationModel);
     }
     
-    public void add(ApplianceNeigboursModel device) {
+    public void add(ApplianceNeigboursXmlModel device) {
         if (this.neighbours == null) {
-            this.neighbours = new ArrayList<ApplianceNeigboursModel>();
+            this.neighbours = new ArrayList<ApplianceNeigboursXmlModel>();
         }
         this.neighbours.add(device);
     }
 
-    public ArrayList<ApplianceNeigboursModel> getNeighbourAppliances() {
+    public ArrayList<ApplianceNeigboursXmlModel> getNeighbourAppliances() {
         return neighbours;
     }
 
     @XmlElementWrapper(name = "neighbours")
     @XmlElement(name = "neighbour")
-    public void setNeighbourAppliances(ArrayList<ApplianceNeigboursModel> neighbours) {
+    public void setNeighbourAppliances(ArrayList<ApplianceNeigboursXmlModel> neighbours) {
         this.neighbours = neighbours;
     }
 
 
-    public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper) throws Exception {
-        loadApplianceXml(appliancefile,iaasMapper,"",false);
+    public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper) {
+        try {
+            loadApplianceXml(appliancefile,iaasMapper,"",false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper, 
             String code, Boolean isApplicationCustome) throws Exception {
         File file = new File(appliancefile);
-        JAXBContext jaxbContext = JAXBContext.newInstance(AppliancesModel.class);
+        JAXBContext jaxbContext = JAXBContext.newInstance(AppliancesXmlModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        AppliancesModel appliances = (AppliancesModel) jaxbUnmarshaller.unmarshal(file);
+        AppliancesXmlModel appliances = (AppliancesXmlModel) jaxbUnmarshaller.unmarshal(file);
 
         for (ApplianceModel am : appliances.applianceList) {
             ComputingAppliance ca = new ComputingAppliance(iaasMapper.get(am.file), am.name,
                     new GeoLocation(am.latitude, am.longitude), am.range);
-            for (ApplicationModel a : am.getApplications()) {
+            for (ApplicationXmlModel a : am.getApplications()) {
                 ca.addApplication(new Application(a.name, a.freq, a.tasksize, a.countOfInstructions, a.canJoin,
                         findApplicationStrategy(a.strategy, a.activationRatio, 
                                 a.transferDevider, code,isApplicationCustome),
-                        Instance.instances.get(a.instance)));
+                        Instance.allInstances.get(a.instance)));
             }
         }
         for (ApplianceModel am : appliances.applianceList) {
             ComputingAppliance ca = getComputingApplianceByName(am.name);
             if (am.neighbours != null) {
-                for (ApplianceNeigboursModel nam : am.neighbours) {
+                for (ApplianceNeigboursXmlModel nam : am.neighbours) {
                     ComputingAppliance friend = getComputingApplianceByName(nam.name);
                     if (Boolean.parseBoolean(nam.parent) && nam.parent != null) {
                         ca.setParent(friend, nam.latency);
@@ -138,7 +140,6 @@ public class ApplianceModel {
                 }
             }
         }
-
         System.out.println(appliances);
     }
 

@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
@@ -164,19 +164,22 @@ public class DeviceModel {
                 + idlepower + ", maxpower=" + maxpower + "]";
     }
 
-    public static void loadDeviceXml(String stationfile) throws JAXBException, IOException, 
-        ClassNotFoundException, InvocationTargetException, NoSuchMethodException, 
-        IllegalAccessException, InstantiationException {
-        loadDeviceXml(stationfile,"",false);
+    public static void loadDeviceXml(String stationfile) {
+        try {
+            loadDeviceXml(stationfile,"",false);
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException 
+                | IllegalAccessException    | InstantiationException | JAXBException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void loadDeviceXml(String stationfile, String code, Boolean isDeviceCustom) 
             throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException,
             NoSuchMethodException, IllegalAccessException, InstantiationException {
         File file = new File(stationfile);
-        JAXBContext jaxbContext = JAXBContext.newInstance(DevicesModel.class);
+        JAXBContext jaxbContext = JAXBContext.newInstance(DevicesXmlModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-        DevicesModel devices = (DevicesModel) jaxbUnmarshaller.unmarshal(file);
+        DevicesXmlModel devices = (DevicesXmlModel) jaxbUnmarshaller.unmarshal(file);
         System.out.println(devices.deviceList);
         for (DeviceModel dm : devices.deviceList) {
             HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
@@ -194,14 +197,12 @@ public class DeviceModel {
             new SmartDevice(dm.startTime, dm.stopTime, dm.fileSize, dm.freq,
                     new RandomWalkMobilityStrategy(gl, dm.speed, 2 * dm.speed, dm.radius),
                     findDeviceStrategy(dm.strategy, code, isDeviceCustom), localMachine, dm.latency, true);
-
         }
-
     }
     
     private static DeviceStrategy findDeviceStrategy(String strategy, String code, boolean isCustom) {
         if (!isCustom) {
-            strategy = code; // TODO
+            strategy = code; // TODO: check it
         }
 
         if (strategy.equals("CostAwareDeviceStrategy")) {

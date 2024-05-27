@@ -1,11 +1,16 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
+/**
+ * This class is annotated with JAXB annotations to map Java classes to XML representations and vice versa.
+ * It is responsible for XML driven simulation, in this case loading a uses tag of a workflow job from a file.
+ * Example files are located in: src/main/resources/demo/WORKFLOW_examples
+ */
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class UsesModel {
+public class UsesXmlModel {
 
     public String link;
     public String id;
@@ -55,5 +60,4 @@ public class UsesModel {
         return "UsesModel [link=" + link + ", id=" + id + ", type=" + type + ", amount=" + amount + ", activate="
                 + activate + ", runtime=" + runtime + ", size=" + size + "]";
     }
-
 }

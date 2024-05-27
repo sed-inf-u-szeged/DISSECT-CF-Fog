@@ -7,18 +7,39 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+/**
+ * Provides logging functionality for the simulation.
+ */
 public class SimLogger {
     
+    /**
+     * Logger instance for logging simulation events.
+     */
     public static Logger simLogger = Logger.getLogger("DISSECT-CF-Fog-SimLogger"); 
     
+    /**
+     * Logs event occurring runtime.
+     *
+     * @param string the message to log
+     */
     public static void logRun(String string) {
         simLogger.info(string);
     }
     
+    /**
+     * Logs event occurring after (i.e. logging results).
+     *
+     * @param string he message to log
+     */
     public static void logRes(String string) {
         simLogger.warning(string);
     }
     
+    /**
+     * Logs critical error event and exits the program.
+     *
+     * @param string he error message to log
+     */
     public static void logError(String string) {
         simLogger.severe(string);
         simLogger.severe("ERROR");
@@ -62,5 +83,4 @@ public class SimLogger {
             }  
         }
     }
-
 }

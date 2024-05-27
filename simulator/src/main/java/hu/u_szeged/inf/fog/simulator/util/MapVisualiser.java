@@ -13,9 +13,48 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+/**
+ * Provides functionality to generate a map visualization in HTML format
+ * that presents the position of computing appliances and device paths.
+ */
 public class MapVisualiser {
     
-    static boolean isContain(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
+    /**
+     * Represents a pair of computing appliances.
+     */
+    static class Pair {
+        
+        /**
+         * The first computing appliance.
+         */
+        ComputingAppliance left;
+        
+        /**
+         * The second computing appliance.
+         */
+        ComputingAppliance right;
+    
+        /**
+         * Constructs a pair of computing appliances.
+         *
+         * @param left  the first computing appliance
+         * @param right the second computing appliance
+         */
+        Pair(ComputingAppliance left, ComputingAppliance right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
+    
+    /**
+     * Checks if the list contains a specific pair of computing appliances.
+     *
+     * @param list  The list of pairs to check.
+     * @param left  The left computing appliance.
+     * @param right The right computing appliance.
+     * @return True if the pair is contained in the list, false otherwise.
+     */
+    static boolean isIncluded(ArrayList<Pair> list, ComputingAppliance left, ComputingAppliance right) {
         for (Pair pair : list) {
             if ((pair.left == left && pair.right == right) || (pair.left == right && pair.right == left)) {
                 return true;
@@ -24,16 +63,41 @@ public class MapVisualiser {
         return false;   
     }
 
+    /**
+     * Generates a map visualization resulting in an HTML file.
+     * Setting up the right Python environment is required.
+     * This version is more suitable for a small number of devices. 
+     *
+     * @param scriptPath      the path to the directory containing the Python script
+     * @param resultDirectory the directory where the visualization output will be stored
+     * @param devices         the devices which will be displayed in the map
+     */
     public static void mapGenerator(String scriptPath, String resultDirectory, Device... devices) throws IOException {
         MapVisualiser.generateMap(scriptPath, resultDirectory, new ArrayList<>(Arrays.asList(devices)));
     }
     
+    /**
+     * Generates a map visualization resulting in an HTML file.
+     * Setting up the right Python environment is required.
+     * This version is more suitable for a large number of devices. 
+     *
+     * @param scriptPath      the path to the directory containing the Python script
+     * @param resultDirectory the directory where the visualization output will be stored
+     * @param devices         the devices in a list which will be displayed in the map
+     */
     public static void mapGenerator(String scriptPath, String resultDirectory, ArrayList<Device> devices) 
             throws IOException {
         MapVisualiser.generateMap(scriptPath, resultDirectory, devices);
     }
 
-    public static void generateMap(String scriptPath, String resultDirectory, ArrayList<Device> devices)
+    /**
+     * The real map generator.
+     *
+     * @param scriptPath      the path to the directory containing the Python script
+     * @param resultDirectory the directory where the visualization output will be stored
+     * @param devices         the devices which will be displayed in the map
+     */
+    private static void generateMap(String scriptPath, String resultDirectory, ArrayList<Device> devices)
             throws IOException {
 
         String nodeInfoForMapScript = "";
@@ -62,7 +126,7 @@ public class MapVisualiser {
             
             for (ComputingAppliance coApp : ca.neighbors) {
                 
-                if (!isContain(checkedAppliances, coApp, ca)) {
+                if (!isIncluded(checkedAppliances, coApp, ca)) {
                     checkedAppliances.add(new Pair(coApp,ca));
                     
                     latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
@@ -124,15 +188,4 @@ public class MapVisualiser {
             pb.start();
         }
     }
-}
-
-class Pair {
-    
-    Pair(ComputingAppliance left, ComputingAppliance right) {
-        this.left = left;
-        this.right = right;
-    }
-    
-    ComputingAppliance left;
-    ComputingAppliance right;
 }

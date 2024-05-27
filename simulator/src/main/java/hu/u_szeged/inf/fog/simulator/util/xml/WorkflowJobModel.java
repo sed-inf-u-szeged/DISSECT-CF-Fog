@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class WorkflowJobModel {
 
     public String id;
-    public ArrayList<UsesModel> uses;
+    public ArrayList<UsesXmlModel> uses;
     public double runtime;
     public double longitude;
     public double latitude;
@@ -45,18 +45,18 @@ public class WorkflowJobModel {
     }
 
     @XmlElement(name = "uses")
-    public void setUses(ArrayList<UsesModel> uses) {
+    public void setUses(ArrayList<UsesXmlModel> uses) {
         this.uses = uses;
     }
 
-    public void add(UsesModel device) {
+    public void add(UsesXmlModel device) {
         if (this.uses == null) {
-            this.uses = new ArrayList<UsesModel>();
+            this.uses = new ArrayList<UsesXmlModel>();
         }
         this.uses.add(device);
     }
 
-    public ArrayList<UsesModel> getUses() {
+    public ArrayList<UsesXmlModel> getUses() {
         return uses;
     }
 
@@ -84,7 +84,7 @@ public class WorkflowJobModel {
 
                 for (int usesIndex = 0; usesIndex < wjModel.uses.size(); usesIndex++) {
 
-                    UsesModel usesModel = wjModel.uses.get(usesIndex);
+                    UsesXmlModel usesModel = wjModel.uses.get(usesIndex);
                     if (usesModel.link.equals("input")) {
                         inputs.add(new Uses(Uses.Type.valueOf(usesModel.type.toUpperCase()), usesModel.size,
                                 usesModel.runtime, usesModel.activate, usesModel.amount, usesModel.id));
@@ -120,7 +120,7 @@ public class WorkflowJobModel {
 
                 for (int usesIndex = 0; usesIndex < wjModel.uses.size(); usesIndex++) {
 
-                    UsesModel usesModel = wjModel.uses.get(usesIndex);
+                    UsesXmlModel usesModel = wjModel.uses.get(usesIndex);
                     if (usesModel.link.equals("input")) {
                         inputs.add(new Uses(Uses.Type.valueOf(usesModel.type.toUpperCase()), usesModel.size,
                                 usesModel.runtime, usesModel.activate, usesModel.amount, usesModel.id));
@@ -158,7 +158,7 @@ public class WorkflowJobModel {
 
                     for (int usesIndex = 0; usesIndex < wjModel.uses.size(); usesIndex++) {
 
-                        UsesModel usesModel = wjModel.uses.get(usesIndex);
+                        UsesXmlModel usesModel = wjModel.uses.get(usesIndex);
                         if (usesModel.link.equals("input")) {
                             inputs.add(new Uses(Uses.Type.valueOf(usesModel.type.toUpperCase()), usesModel.size,
                                     usesModel.runtime, usesModel.activate, usesModel.amount, usesModel.id + j));

@@ -16,7 +16,6 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.PliantDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyChartVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
@@ -141,8 +140,6 @@ public class IoTSimulation {
         ScenarioBase.calculateIoTCost();
         ScenarioBase.logBatchProcessing(stoptime - starttime);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-        EnergyChartVisualiser.generateApplicationEnergyChart(ScenarioBase.resultDirectory);
-        EnergyChartVisualiser.generateDeviceEnergyChart(ScenarioBase.resultDirectory);
         MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, smartDevice2);
     }
 

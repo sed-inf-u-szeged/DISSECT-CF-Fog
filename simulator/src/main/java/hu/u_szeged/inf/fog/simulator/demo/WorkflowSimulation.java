@@ -11,7 +11,7 @@ import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
-import hu.u_szeged.inf.fog.simulator.util.xmlhandler.WorkflowJobModel;
+import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IotWorkflowScheduler;
 

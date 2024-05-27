@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import java.util.ArrayList;
 import javax.xml.bind.annotation.XmlAccessType;

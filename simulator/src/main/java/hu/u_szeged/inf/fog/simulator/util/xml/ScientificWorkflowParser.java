@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
+package hu.u_szeged.inf.fog.simulator.util.xml;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,10 +12,22 @@ import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
+/**
+ * Parses a scientific workflow XML file and transforms it into an IoT workflow XML file.
+ * Example files are located in: src/main/resources/demo/WORKFLOW_examples/
+ */
 public class ScientificWorkflowParser {
 
+    /**
+     * A map to store the number of dependencies for each job. 
+     */
     static Map<String, Integer> dependencyCounter = new HashMap<>();
 
+    /**
+     * Parses the input XML file to extract and return with links between parent and child elements.
+     *
+     * @param filePath the path to the input XML file
+     */
     private static List<Map<String, String>> getLinks(String filePath) {
         List<Map<String, String>> links = new ArrayList<>();
         SAXReader reader = new SAXReader();
@@ -42,6 +54,12 @@ public class ScientificWorkflowParser {
         return links;
     }
 
+    /**
+     * Parses the input scientific workflow XML file and generates an IoT workflow XML file.
+     *
+     * @param workflowfile the path to the input scientific workflow XML file
+     * @return the path to the generated IoT workflow XML file
+     */
     public static String parseToIotWorkflow(String workflowfile) throws IOException {
         String newFile = Paths.get(workflowfile).getParent().toString() + "/IoT_"
                 + Paths.get(workflowfile).getFileName().toString();
@@ -67,9 +85,7 @@ public class ScientificWorkflowParser {
                 fw.write("\t\t<uses link='input' type='compute' amount='" + amount + "' />\n");
 
                 for (Map<String, String> dependecyMap : dependencyList) {
-
                     if (dependecyMap.get(jobId) != null) {
-
                         long size = 0;
                         for (int j = 0; j < jobElements.get(i).elements().size(); j++) {
                             if (jobElements.get(i).elements().get(j).attributeValue("link").equals("output")) {
@@ -91,5 +107,4 @@ public class ScientificWorkflowParser {
 
         return newFile;
     }
-
 }
