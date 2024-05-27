@@ -125,7 +125,7 @@ public class EdgeDevice extends Device {
          * 
          * } }
          */
-        GeoLocation newLocation = this.mobilityStrategy.move(this, freq);
+        GeoLocation newLocation = this.mobilityStrategy.move(this);
         if (this.isPathLogged) {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }

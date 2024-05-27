@@ -9,7 +9,6 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.CostAwareDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.CustomDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.CustomDeviceStrategyTemplate;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DistanceBasedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
@@ -200,9 +199,9 @@ public class DeviceModel {
 
     }
     
-    private static DeviceStrategy findDeviceStrategy(String strategy, String code, Boolean isCustom) {
+    private static DeviceStrategy findDeviceStrategy(String strategy, String code, boolean isCustom) {
         if (!isCustom) {
-            strategy = code;
+            strategy = code; // TODO
         }
 
         if (strategy.equals("CostAwareDeviceStrategy")) {
@@ -215,17 +214,9 @@ public class DeviceModel {
             return new RandomDeviceStrategy();
         } else if (strategy.equals("LoadBalancedDeviceStrategy")) {
             return new LoadBalancedDeviceStrategy();
-        } else if (strategy.equals("CustomDeviceStrategy")) {
-            if (code.equals("") || code == null) {
-                throw new IllegalArgumentException("Application code can not be empty!");
-            }
-            String fullCode = CustomDeviceStrategyTemplate.renderCustomDeviceStrategyTemplate(code);
-            try {
-                return CustomDeviceStrategy.loadCustomStrategy(fullCode);
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException
-                    | InstantiationException | IOException e) {
-                e.printStackTrace();
-            }
+        } else if (strategy.equals("CustomDeviceStrategy") && !code.equals("") && code != null) {
+            String fullCode = CustomDeviceStrategy.renderCustomDeviceStrategyTemplate(code);
+            return CustomDeviceStrategy.loadCustomStrategy(fullCode);
         } else {
             System.err.println("WARNING: the device strategy called " + strategy + " does not exist!");
             System.exit(0);

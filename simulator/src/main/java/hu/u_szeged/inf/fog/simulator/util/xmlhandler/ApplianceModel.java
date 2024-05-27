@@ -3,7 +3,6 @@ package hu.u_szeged.inf.fog.simulator.util.xmlhandler;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.CustomApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.CustomApplictaionStrategyTemplate;
 import hu.u_szeged.inf.fog.simulator.application.strategy.HoldDownApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.PliantApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.PushUpApplicationStrategy;
@@ -179,17 +178,9 @@ public class ApplianceModel {
             return new RandomApplicationStrategy(activationRatio, transferDevider);
         } else if (strategy.equals("RuntimeAwareApplicationStrategy")) {
             return new RuntimeAwareApplicationStrategy(activationRatio, transferDevider);
-        } else if (strategy.equals("CustomApplicationStrategy")) {
-            if (code.isEmpty() || code == null) {
-                throw new IllegalArgumentException("Application code can not be empty!");
-            }
-            String fullCode = CustomApplictaionStrategyTemplate.renderCustomApplicationStrategyTemplate(code);
-            try {
-                return CustomApplicationStrategy.loadCustomStrategy(activationRatio,transferDevider,fullCode);
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException
-                    | InstantiationException | IOException e) {
-                e.printStackTrace();
-            }
+        } else if (strategy.equals("CustomApplicationStrategy") && !code.isEmpty() && code != null) {
+            String fullCode = CustomApplicationStrategy.renderCustomApplicationStrategyTemplate(code);
+            return CustomApplicationStrategy.loadCustomStrategy(activationRatio,transferDevider,fullCode);
         } else {
             System.err.println("WARNING: the application strategy called " + strategy + " does not exist!");
             System.exit(0);

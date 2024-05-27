@@ -4,8 +4,15 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import java.util.ArrayList;
 
+/**
+ * This class represents a device strategy for finding an application based on the physical distance.
+ */
 public class DistanceBasedDeviceStrategy extends DeviceStrategy {
 
+    /**
+     * If there are available applications, then the closest one will be chosen.
+     * As it can cause a node change, the latency must be updated. 
+     */
     @Override
     public void findApplication() {
         this.chosenApplication = null;
@@ -21,8 +28,7 @@ public class DistanceBasedDeviceStrategy extends DeviceStrategy {
                 }
             }
         }
+        
         MobilityEvent.refresh(this.device, this.chosenApplication);
-
     }
-
 }
