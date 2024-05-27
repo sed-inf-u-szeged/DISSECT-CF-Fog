@@ -14,7 +14,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.Sensor;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
@@ -92,7 +92,7 @@ public class WorkflowExecutor {
             }
         }
 
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             int size = ca.workflowQueue.size();
             for (int i = 0; i < size; i++) {
                 WorkflowJob workflowJob = ca.workflowQueue.poll();
@@ -168,7 +168,7 @@ public class WorkflowExecutor {
 
     private boolean checkComputingAppliances() {
         int vmCount = 0;
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             for (VirtualMachine vm : ca.workflowVms) {
                 if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
                     vmCount++;

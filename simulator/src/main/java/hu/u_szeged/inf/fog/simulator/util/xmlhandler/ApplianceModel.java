@@ -144,7 +144,7 @@ public class ApplianceModel {
     }
 
     private static ComputingAppliance getComputingApplianceByName(String name) {
-        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+        for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             if (ca.name.equals(name)) {
                 return ca;
             }

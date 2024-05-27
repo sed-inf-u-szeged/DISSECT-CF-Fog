@@ -5,13 +5,28 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
 
+/**
+ * The strategy considers both resource load and latency to ensure efficient data transfer.
+ */
 public class RuntimeAwareApplicationStrategy extends ApplicationStrategy {
 
+    /**
+     * Constructs a new strategy with the specified activation ratio and transfer divider.
+     *
+     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio 
+     * @param transferDivider determining the ratio of the data to be transferred
+     */
     public RuntimeAwareApplicationStrategy(double activationRatio, double transferDivider) {
         this.activationRatio = activationRatio;
         this.transferDivider = transferDivider;
     }
 
+    /**
+     * Finds a suitable application from the available computing appliances based on load and latency,
+     * and starts a data transfer to the chosen application.
+     *
+     * @param dataForTransfer the amount of data to be transferred
+     */
     @Override
     public void findApplication(long dataForTransfer) {
 
@@ -30,7 +45,5 @@ public class RuntimeAwareApplicationStrategy extends ApplicationStrategy {
                     .get(SeedSyncer.centralRnd.nextInt(selectedCa.applications.size()));
             this.startDataTranfer(chosenApplication, dataForTransfer);
         }
-
     }
-
 }

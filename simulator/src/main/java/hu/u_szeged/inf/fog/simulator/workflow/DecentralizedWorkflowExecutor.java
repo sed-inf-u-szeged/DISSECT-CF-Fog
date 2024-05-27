@@ -16,6 +16,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.Sensor;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
@@ -93,10 +94,10 @@ public class DecentralizedWorkflowExecutor {
                     }
                 }
             }
-            ComputingAppliance emptyCa = null;
-            ComputingAppliance maxCa = null;
+            WorkflowComputingAppliance emptyCa = null;
+            WorkflowComputingAppliance maxCa = null;
             int maxNum = 1;
-            for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
+            for (WorkflowComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
                 if (ca.workflowQueue.isEmpty()) {
                     emptyCa = ca;
                 } else if (ca.workflowQueue.size() > maxNum) {
@@ -108,7 +109,7 @@ public class DecentralizedWorkflowExecutor {
                 workflowScheduler.jobReAssign(maxCa.workflowQueue.poll(),emptyCa);
             }
 
-            for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
+            for (WorkflowComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
                 int size = ca.workflowQueue.size();
                 if (ca.workflowVms.size() < size - 1) {
                     Instance i = workflowScheduler.workflowArchitecture.get(ca);
@@ -208,7 +209,7 @@ public class DecentralizedWorkflowExecutor {
         // boolean one = true;
         for (DecentralizedWorkflowScheduler workflowScheduler : workflowSchedulers) {
             int vmCount = 0;
-            for (ComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
+            for (WorkflowComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
                 for (VirtualMachine vm : ca.workflowVms) {
                     if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
                         vmCount++;

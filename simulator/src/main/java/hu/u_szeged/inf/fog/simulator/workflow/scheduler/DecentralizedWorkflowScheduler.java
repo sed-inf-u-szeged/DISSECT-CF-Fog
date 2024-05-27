@@ -7,6 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
@@ -20,11 +21,11 @@ import java.util.Random;
 public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
     public int defaultLatency;
-    public HashMap<ComputingAppliance, Instance> workflowArchitecture;
+    public HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture;
     public ArrayList<Actuator> actuatorArchitecture;
     public ArrayList<WorkflowJob> workflowJobs = new ArrayList<>();
 
-    public DecentralizedWorkflowScheduler(LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,
+    public DecentralizedWorkflowScheduler(LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture,
                                           ArrayList<Actuator> actuatorArchitecutre, int defaultLatency) {
         this.workflowArchitecture = workflowArchitecture;
         this.actuatorArchitecture = actuatorArchitecutre;
@@ -33,7 +34,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
     @Override
     public void schedule(WorkflowJob workflowJob) {
-        ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
+        ArrayList<WorkflowComputingAppliance> allComputingAppliances = new ArrayList<>(workflowArchitecture.keySet());
         if (workflowJob.id.contains("service") || workflowJob.id.contains("ID")) {
             if (workflowJob.ca == null) {
                 Random r = new Random();
@@ -72,7 +73,8 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
             if (workflowJob.id.contains("service") || workflowJob.id.contains("ID")) {
                 if (workflowJob.ca == null) {
                     Random r = new Random(); // TODO: simulator's random!
-                    workflowJob.ca = allComputingAppliances.get(r.nextInt(allComputingAppliances.size()));
+                    workflowJob.ca = (WorkflowComputingAppliance) allComputingAppliances.get(
+                            r.nextInt(allComputingAppliances.size()));
                 }
                 if (workflowJob.inputs.get(0).amount == 0) {
                     workflowJob.ca.workflowQueue.add(workflowJob);
@@ -96,7 +98,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
 
     @Override
     public void init() {
-        for (ComputingAppliance ca : workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : workflowArchitecture.keySet()) {
             Instance i = workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
@@ -106,7 +108,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
             }
         }
 
-        for (ComputingAppliance ca : workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : workflowArchitecture.keySet()) {
             ca.workflowQueue = new PriorityQueue<WorkflowJob>(new WorkflowComperator());
         }
         for (Actuator a : actuatorArchitecture) {
@@ -133,7 +135,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
                                     workflowJob.ca.iaas.repositories.get(0).deregisterObject(so.id);
                                     workflowJob.fileRecievedByAssigning += so.size;
                                     if (workflowJob.fileRecievedByAssigning == workflowJob.fileRecieved) {
-                                        workflowJob.ca = futureAppliance;
+                                        workflowJob.ca = (WorkflowComputingAppliance) futureAppliance;
                                         workflowJob.state = WorkflowJob.State.SUBMITTED;
                                         //schedule(workflowJob);
                                         if (DecentralizedWorkflowExecutor.jobReassigns.get(workflowJob) == null) {
@@ -159,9 +161,9 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
         }
     }
     
-    class ComputingApplianceComperator implements Comparator<ComputingAppliance> {
+    class ComputingApplianceComperator implements Comparator<WorkflowComputingAppliance> {
         @Override
-        public int compare(ComputingAppliance ca1, ComputingAppliance ca2) {
+        public int compare(WorkflowComputingAppliance ca1, WorkflowComputingAppliance ca2) {
             return Integer.compare(ca1.workflowQueue.size(), ca2.workflowQueue.size());
         }
     }

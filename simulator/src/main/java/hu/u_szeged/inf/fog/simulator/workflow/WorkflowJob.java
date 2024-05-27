@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.workflow;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 import java.util.ArrayList;
 
@@ -41,7 +42,7 @@ public class WorkflowJob {
     public ArrayList<Uses> inputs;
     public ArrayList<Uses> outputs;
 
-    public ComputingAppliance ca;
+    public WorkflowComputingAppliance ca;
 
     public Actuator actuator;
 

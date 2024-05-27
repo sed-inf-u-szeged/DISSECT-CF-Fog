@@ -88,7 +88,7 @@ public class Predictor {
         }
             
         GeoLocation futureLocation = future(device, direction, speed);
-        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+        for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             double futureDistance = futureLocation.calculateDistance(ca.geoLocation);
             // int futureLatency = device.latency + (int) (futureDistance / 1000);
             if (futureDistance <= ca.range) {

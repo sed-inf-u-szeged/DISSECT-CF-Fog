@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.workflow.aco;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class Acoc {
     private final double randomFactor;
     private final int baseLatency;
     private List<Ant> ants;
-    private ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures;
+    private ArrayList<LinkedHashMap<WorkflowComputingAppliance, Instance>> workflowArchitectures;
 
     /**
      * Ant colony based algorithm constructor, it initializes the pheromone matrix with fix 0.2 value
@@ -35,11 +36,11 @@ public class Acoc {
         this.workflowArchitectures = new ArrayList<>();
     }
 
-    public ArrayList<LinkedHashMap<ComputingAppliance, Instance>> runAcoc(
-            LinkedHashMap<ComputingAppliance,Instance> workflowArchitecture,
+    public ArrayList<LinkedHashMap<WorkflowComputingAppliance, Instance>> runAcoc(
+            LinkedHashMap<WorkflowComputingAppliance,Instance> workflowArchitecture,
                         ArrayList<Actuator> actuatorArchitecutre) throws IOException {
         numberOfNodes = workflowArchitecture.size();
-        for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
+        for (Map.Entry<WorkflowComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
             Ant ant = new Ant(numberOfNodes, entry.getKey(),entry.getValue());
             for (int iteration = 0; iteration < maxIterations; iteration++) {
                 ant.generateSolution(randomFactor, entry.getKey(), workflowArchitecture, iteration, evaporationRate);
@@ -190,21 +191,21 @@ public class Acoc {
     
     private void generateArchitectures(int latency) {
         for (int i = 0; i < numberOfClusters; i++) {
-            LinkedHashMap<ComputingAppliance, Instance> workflowArchiteture = new LinkedHashMap<>();
+            LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchiteture = new LinkedHashMap<>();
             workflowArchitectures.add(workflowArchiteture);
         }
         for (Ant ant : ants) {
-            LinkedHashMap<ComputingAppliance, Instance> workflowArchiteture = 
+            LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchiteture = 
                     workflowArchitectures.get(ant.clusterNumber - 1);
             workflowArchiteture.put(ant.node,ant.instance);
         }
-        for (LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture : workflowArchitectures) {
+        for (LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture : workflowArchitectures) {
             int i = 0;
-            for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
+            for (Map.Entry<WorkflowComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
                 int j = 0;
-                for (Map.Entry<ComputingAppliance, Instance> entry2 : workflowArchitecture.entrySet()) {
+                for (Map.Entry<WorkflowComputingAppliance, Instance> entry2 : workflowArchitecture.entrySet()) {
                     if (j >= i + 1 && j != i) {
-                        ComputingAppliance ca = entry.getKey();
+                        WorkflowComputingAppliance ca = entry.getKey();
                         ca.addNeighbor(entry2.getKey(),latency);
                     }
                     j++;
@@ -225,10 +226,10 @@ class Ant implements Comparable<Ant> {
     int clusterNumber;
     double[] pheromoneMatrix;
     double[] mergeMatrix;
-    ComputingAppliance node;
+    WorkflowComputingAppliance node;
     Instance instance;
 
-    public Ant(int numberOfNodes, ComputingAppliance node, Instance instance) {
+    public Ant(int numberOfNodes, WorkflowComputingAppliance node, Instance instance) {
         this.node = node;
         this.instance = instance;
         this.clusterNumber = -1;
@@ -254,8 +255,9 @@ class Ant implements Comparable<Ant> {
      * Generates a solution "String" which is int array for given ant.
      * Uses both exploitation and biased exploration.
      */
-    public void generateSolution(double randomFactor, ComputingAppliance node,
-            LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture,int position, double evaporationRate) {
+    public void generateSolution(double randomFactor, WorkflowComputingAppliance node,
+            LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture,
+            int position, double evaporationRate) {
         double randomNumber;
         double number;
         
@@ -284,11 +286,11 @@ class Ant implements Comparable<Ant> {
     /**
      * This function exist so it's easier to change the heuristics.
      */
-    private double calculateHeuristics(int x, ComputingAppliance current, 
-            LinkedHashMap<ComputingAppliance, Instance> workflowArchitecture) {
+    private double calculateHeuristics(int x, WorkflowComputingAppliance current, 
+            LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture) {
         int i = 0;
-        ComputingAppliance node = null;
-        for (Map.Entry<ComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
+        WorkflowComputingAppliance node = null;
+        for (Map.Entry<WorkflowComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
             if (i == x) {
                 node = entry.getKey();
             }

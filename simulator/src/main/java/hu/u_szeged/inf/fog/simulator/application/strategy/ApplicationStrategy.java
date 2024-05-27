@@ -35,7 +35,7 @@ public abstract class ApplicationStrategy {
     public double transferDivider;
 
     /**
-     * The method to be overridden, which defines the offloading strategy.
+     * The method to be overridden, which defines the logic of the offloading strategy.
      *
      * @param dataForTransfer the amount of data to be transmitted
      */

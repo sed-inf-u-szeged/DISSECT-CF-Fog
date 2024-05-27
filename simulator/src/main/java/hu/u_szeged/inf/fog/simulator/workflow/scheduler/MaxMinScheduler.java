@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.Comparator;
@@ -14,7 +15,7 @@ import java.util.PriorityQueue;
 public class MaxMinScheduler extends WorkflowScheduler {
     int cloudIndex;
 
-    public MaxMinScheduler(HashMap<ComputingAppliance, Instance> workflowArchitecture) {
+    public MaxMinScheduler(HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture) {
         WorkflowScheduler.workflowArchitecture = workflowArchitecture;
     }
 
@@ -22,7 +23,8 @@ public class MaxMinScheduler extends WorkflowScheduler {
     public void schedule(WorkflowJob workflowJob) {
 
         if (workflowJob.ca == null) {
-            workflowJob.ca = ComputingAppliance.allComputingAppliances.get(cloudIndex);
+            workflowJob.ca = (WorkflowComputingAppliance) ComputingAppliance
+                    .getAllComputingAppliances().get(cloudIndex);
             if (cloudIndex == WorkflowScheduler.workflowArchitecture.keySet().size() - 1) {
                 cloudIndex = 0;
             } else {
@@ -34,7 +36,7 @@ public class MaxMinScheduler extends WorkflowScheduler {
         }
 
         if (Timed.getFireCount() > 0) {
-            this.jobReAssign(workflowJob, ComputingAppliance.allComputingAppliances.get(0));
+            this.jobReAssign(workflowJob, ComputingAppliance.getAllComputingAppliances().get(0));
 
             if (workflowJob.ca.workflowVms.size() < 2) {
                 addVm(workflowJob.ca);
@@ -44,7 +46,7 @@ public class MaxMinScheduler extends WorkflowScheduler {
 
     @Override
     public void init() {
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
@@ -54,7 +56,7 @@ public class MaxMinScheduler extends WorkflowScheduler {
             }
         }
 
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             ca.workflowQueue = new PriorityQueue<WorkflowJob>(new MaxMinComperator());
         }
     }

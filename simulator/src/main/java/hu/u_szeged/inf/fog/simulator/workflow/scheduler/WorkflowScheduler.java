@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
@@ -17,7 +18,7 @@ import java.util.HashMap;
 
 public abstract class WorkflowScheduler {
 
-    public static HashMap<ComputingAppliance, Instance> workflowArchitecture;
+    public static HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture;
 
     public static ArrayList<Actuator> actuatorArchitecture;
 
@@ -48,7 +49,7 @@ public abstract class WorkflowScheduler {
                                     workflowJob.ca.iaas.repositories.get(0).deregisterObject(so.id);
                                     workflowJob.fileRecievedByAssigning += so.size;
                                     if (workflowJob.fileRecievedByAssigning == workflowJob.fileRecieved) {
-                                        workflowJob.ca = futureAppliance;
+                                        workflowJob.ca = (WorkflowComputingAppliance) futureAppliance;
                                         workflowJob.state = WorkflowJob.State.SUBMITTED;
                                         // schedule(workflowJob); ?
                                         if (WorkflowExecutor.jobReassigns.get(workflowJob) == null) {
@@ -82,7 +83,7 @@ public abstract class WorkflowScheduler {
         }
     }
 
-    public void addVm(ComputingAppliance ca) {
+    public void addVm(WorkflowComputingAppliance ca) {
         Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
         try {
             ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);

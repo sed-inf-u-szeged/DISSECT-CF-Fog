@@ -131,7 +131,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
             });
         }*/
 
-        for (ComputingAppliance computingAppliance: ComputingAppliance.allComputingAppliances) {
+        for (ComputingAppliance computingAppliance: ComputingAppliance.getAllComputingAppliances()) {
             FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")) {
                 @Override
                 public double compute() {

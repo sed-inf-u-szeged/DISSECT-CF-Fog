@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ public class IotWorkflowScheduler extends WorkflowScheduler {
 
     int defaultLatency;
 
-    public IotWorkflowScheduler(HashMap<ComputingAppliance, Instance> workflowArchitecture,
+    public IotWorkflowScheduler(HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture,
             ArrayList<Actuator> actuatorArchitecutre, int defaultLatency) {
         WorkflowScheduler.workflowArchitecture = workflowArchitecture;
         WorkflowScheduler.actuatorArchitecture = actuatorArchitecutre;
@@ -30,7 +31,7 @@ public class IotWorkflowScheduler extends WorkflowScheduler {
         if (workflowJob.id.contains("service")) {
             if (workflowJob.ca == null) {
                 Random r = new Random();
-                workflowJob.ca = ComputingAppliance.allComputingAppliances
+                workflowJob.ca = (WorkflowComputingAppliance) ComputingAppliance.getAllComputingAppliances()
                         .get(r.nextInt(WorkflowScheduler.workflowArchitecture.keySet().size()));
             }
             if (workflowJob.inputs.get(0).amount == 0) {
@@ -55,7 +56,7 @@ public class IotWorkflowScheduler extends WorkflowScheduler {
 
     @Override
     public void init() {
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
             ca.iaas.repositories.get(0).registerObject(i.va);
             try {
@@ -65,7 +66,7 @@ public class IotWorkflowScheduler extends WorkflowScheduler {
             }
         }
 
-        for (ComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
+        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
             ca.workflowQueue = new PriorityQueue<WorkflowJob>(new WorkflowComperator());
         }
         for (Actuator a : WorkflowScheduler.actuatorArchitecture) {

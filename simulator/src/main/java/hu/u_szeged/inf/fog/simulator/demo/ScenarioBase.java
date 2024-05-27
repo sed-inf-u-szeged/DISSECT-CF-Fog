@@ -9,6 +9,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.AwsProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
@@ -205,7 +206,8 @@ public class ScenarioBase {
 
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
-        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+        for (ComputingAppliance wca : ComputingAppliance.getAllComputingAppliances()) {
+            WorkflowComputingAppliance ca = (WorkflowComputingAppliance) wca;
             SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
             for (VirtualMachine vm : ca.workflowVms) {
                 SimLogger.logRes("\t" + vm.hashCode() + " ");
@@ -248,7 +250,8 @@ public class ScenarioBase {
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
         for(DecentralizedWorkflowScheduler dw : dws) {
-            for (ComputingAppliance ca : dw.workflowArchitecture.keySet()) {
+            for (ComputingAppliance wca : dw.workflowArchitecture.keySet()) {
+                WorkflowComputingAppliance ca = (WorkflowComputingAppliance) wca;
                 SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
                 for (VirtualMachine vm : ca.workflowVms) {
                     SimLogger.logRes("\t" + vm.hashCode() + " ");
