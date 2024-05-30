@@ -25,7 +25,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PredictionBase implements PredictionConfigurator.ISimulation {
+public class PredictionSimulationDefinition implements PredictionConfigurator.SimulationDefinition {
     @Override
     public void simulation() throws Exception {
 

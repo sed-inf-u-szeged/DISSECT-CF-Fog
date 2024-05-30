@@ -61,8 +61,7 @@ public abstract class Launcher {
      *         {@code false} otherwise
      */
     public static boolean hasApplication(String applicationName) {
-        for (Launcher applicationInterface 
-                : Launcher.predictionApplications) {
+        for (Launcher applicationInterface : Launcher.predictionApplications) {
             if (applicationInterface.getClass().getSimpleName().equals(applicationName)) {
                 return true;
             }

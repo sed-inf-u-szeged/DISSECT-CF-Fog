@@ -2,7 +2,7 @@
 <appliances>
   <appliance name="cloud1">
     <latitude>0</latitude>
-    <longitude>-45</longitude>
+    <longitude>-60</longitude>
     <range>100000</range>
     <file>LPDS_32</file>
     <applications>
@@ -13,10 +13,34 @@
         <countOfInstructions>1000</countOfInstructions>
         <activationRatio>0.9</activationRatio>
         <transferDevider>2</transferDevider>
-        <strategy>RandomApplicationStrategy</strategy>
+        <strategy>HoldDownApplicationStrategy</strategy>
         <canJoin>true</canJoin>
       </application>
     </applications>
     <neighbours/>
+  </appliance>
+  <appliance name="fog1">
+    <latitude>0</latitude>
+    <longitude>0</longitude>
+    <range>100000</range>
+    <file>LPDS_16</file>
+    <applications>
+      <application name="fog1_app1">
+        <freq>60000</freq>
+        <tasksize>50000</tasksize>
+        <instance>a1.large</instance>
+        <countOfInstructions>1000</countOfInstructions>
+        <activationRatio>0.9</activationRatio>
+        <transferDevider>2</transferDevider>
+        <strategy>PushUpApplicationStrategy</strategy>
+        <canJoin>true</canJoin>
+      </application>
+    </applications>
+    <neighbours>
+         <neighbour name="cloud1">
+            <latency>100</latency>
+            <parent>true</parent>
+         </neighbour>
+      </neighbours>
   </appliance>
 </appliances>

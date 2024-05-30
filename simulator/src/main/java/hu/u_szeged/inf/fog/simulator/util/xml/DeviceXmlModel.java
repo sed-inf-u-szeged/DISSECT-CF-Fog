@@ -29,9 +29,14 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * This class is annotated with JAXB annotations to map Java classes to XML representations and vice versa.
+ * It is responsible for XML driven simulation, in this case loading an IoT device from a file.
+ * Example files are located in: src/main/resources/demo/XML_examples
+ */
 @XmlRootElement(name = "device")
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class DeviceModel {
+public class DeviceXmlModel {
 
     public String name;
     public long startTime;
@@ -164,15 +169,27 @@ public class DeviceModel {
                 + idlepower + ", maxpower=" + maxpower + "]";
     }
 
+    /**
+     * Loads a device XML file and based on that it creates IoT devices.
+     *
+     * @param stationfile the path to the device XML file
+     */
     public static void loadDeviceXml(String stationfile) {
         try {
             loadDeviceXml(stationfile,"",false);
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException 
-                | IllegalAccessException    | InstantiationException | JAXBException | IOException e) {
+                | IllegalAccessException | InstantiationException | JAXBException | IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Loads a device XML file and processes its content to create IoT devices.
+     *
+     * @param stationfile the path to the device XML file
+     * @param code code submitted by the user on the DISSECT-CF-Fog-WebApp
+     * @param isDeviceCustom a flag indicating whether the device code is custom (user-based)
+     */
     public static void loadDeviceXml(String stationfile, String code, Boolean isDeviceCustom) 
             throws JAXBException, IOException, ClassNotFoundException, InvocationTargetException,
             NoSuchMethodException, IllegalAccessException, InstantiationException {
@@ -181,7 +198,7 @@ public class DeviceModel {
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         DevicesXmlModel devices = (DevicesXmlModel) jaxbUnmarshaller.unmarshal(file);
         System.out.println(devices.deviceList);
-        for (DeviceModel dm : devices.deviceList) {
+        for (DeviceXmlModel dm : devices.deviceList) {
             HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
             EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions;
 
@@ -202,7 +219,7 @@ public class DeviceModel {
     
     private static DeviceStrategy findDeviceStrategy(String strategy, String code, boolean isCustom) {
         if (!isCustom) {
-            strategy = code; // TODO: check it
+            code = strategy; // TODO: check it
         }
 
         if (strategy.equals("CostAwareDeviceStrategy")) {

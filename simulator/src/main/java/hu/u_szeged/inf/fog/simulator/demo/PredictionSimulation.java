@@ -3,7 +3,10 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.PredictorLauncher;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.*;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.ExportSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictionSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictorSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 
 @SuppressWarnings("unused")
 public class PredictionSimulation {
@@ -16,9 +19,9 @@ public class PredictionSimulation {
     }
     
     private static void runPredictionOnly() throws Exception {
-        PredictionConfigurator predictionSimulation = new PredictionConfigurator(new PredictionBase());
+        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
         
-        predictionSimulation.addSimulationSettings(new SimulationSettings(
+        predictionConfigurator.addSimulationSettings(new SimulationSettings(
                 new ExportSettings(true, ScenarioBase.resultDirectory, true, true, true, true),
                 new PredictionSettings(
                         64,
@@ -36,19 +39,19 @@ public class PredictionSimulation {
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LSTM)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ONLY_SIMULATION)
         ));
-        predictionSimulation.addApplications(
+        predictionConfigurator.addLaunchers(
                 new PredictorLauncher()
         );
-        predictionSimulation.simulate();
+        predictionConfigurator.execute();
     }
     
     private static void runPredictionWithUI() throws Exception {
-        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionBase());
+        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
         
-        predictionConfigurator.addApplications(
+        predictionConfigurator.addLaunchers(
                 new PredictorLauncher(),
                 new ElectronLauncher()
         );
-        predictionConfigurator.simulate();
+        predictionConfigurator.execute();
     }
 }

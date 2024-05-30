@@ -1,10 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication;
 
-import hu.u_szeged.inf.fog.simulator.prediction.settings.predictor.PredictorTemplate;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictorTemplate;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 
 import org.json.JSONObject;
 

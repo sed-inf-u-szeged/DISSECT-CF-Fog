@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.prediction.settings.predictor;
+package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import java.util.ArrayList;
 import java.util.Arrays;

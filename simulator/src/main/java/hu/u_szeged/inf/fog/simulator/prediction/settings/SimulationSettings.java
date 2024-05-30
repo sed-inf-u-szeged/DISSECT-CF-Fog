@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.prediction.settings.simulation;
+package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.TableBuilder;

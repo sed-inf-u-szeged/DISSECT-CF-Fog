@@ -136,11 +136,11 @@ public class FeatureManager {
                     if (i < feature.getPredictions().size() 
                             && feature.getPredictions().get(i).getErrorMetrics() != null) {
                         sb.append(String.format("%.16f", feature.getPredictions()
-                                .get(i).getErrorMetrics().getRMSE()).replace("\\.", ",")).append(";");
+                                .get(i).getErrorMetrics().getRmse()).replace("\\.", ",")).append(";");
                         sb.append(String.format("%.16f", feature.getPredictions()
-                                .get(i).getErrorMetrics().getMSE()).replace("\\.", ",")).append(";");
+                                .get(i).getErrorMetrics().getMse()).replace("\\.", ",")).append(";");
                         sb.append(String.format("%.16f", feature.getPredictions()
-                                .get(i).getErrorMetrics().getMAE()).replace("\\.", ",")).append(";");
+                                .get(i).getErrorMetrics().getMae()).replace("\\.", ",")).append(";");
                     } else {
                         sb.append("").append(";")
                                 .append("").append(";")
@@ -234,7 +234,7 @@ public class FeatureManager {
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
                         new SocketMessage(
                                 "prediction",
-                                new JSONObject().put("prediction", prediction.toJSON())
+                                new JSONObject().put("prediction", prediction.toJson())
                         )
                 );
             }

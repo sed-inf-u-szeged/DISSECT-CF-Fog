@@ -23,9 +23,15 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
+/**
+ * This class is annotated with JAXB annotations to map Java classes to XML representations and vice versa.
+ * It is responsible for XML driven simulation, in this case loading an IoT application and its
+ * Computing Appliance's connection from a file.
+ * Example files are located in: src/main/resources/demo/XML_examples
+ */
 @XmlRootElement(name = "appliance")
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class ApplianceModel {
+public class ApplianceXmlModel {
 
     public String name;
     public double latitude;
@@ -77,20 +83,6 @@ public class ApplianceModel {
         this.applications = applications;
     }
 
-    public void add(ApplicationXmlModel applicationModel) {
-        if (this.applications == null) {
-            this.applications = new ArrayList<ApplicationXmlModel>();
-        }
-        this.applications.add(applicationModel);
-    }
-    
-    public void add(ApplianceNeigboursXmlModel device) {
-        if (this.neighbours == null) {
-            this.neighbours = new ArrayList<ApplianceNeigboursXmlModel>();
-        }
-        this.neighbours.add(device);
-    }
-
     public ArrayList<ApplianceNeigboursXmlModel> getNeighbourAppliances() {
         return neighbours;
     }
@@ -101,7 +93,13 @@ public class ApplianceModel {
         this.neighbours = neighbours;
     }
 
-
+    /**
+     * Loads an appliance XML file and based on that it creates Application and 
+     * Computing Appliance objects.
+     *
+     * @param appliancefile the path to the appliance XML file
+     * @param iaasMapper a map that maps IaaS identifiers to their corresponding files
+     */
     public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper) {
         try {
             loadApplianceXml(appliancefile,iaasMapper,"",false);
@@ -110,24 +108,33 @@ public class ApplianceModel {
         }
     }
 
+    /**
+     * Loads an appliance XML file and  based on that it creates Application and 
+     * Computing Appliance objects.
+     *
+     * @param appliancefile the path to the appliance XML file
+     * @param iaasMapper a map that maps IaaS identifiers to their corresponding files
+     * @param code submitted by the user on the DISSECT-CF-Fog-WebApp
+     * @param isApplicationCustom a flag indicating whether the application code is custom (user-based)
+     */
     public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper, 
-            String code, Boolean isApplicationCustome) throws Exception {
+            String code, Boolean isApplicationCustom) throws Exception {
         File file = new File(appliancefile);
         JAXBContext jaxbContext = JAXBContext.newInstance(AppliancesXmlModel.class);
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
         AppliancesXmlModel appliances = (AppliancesXmlModel) jaxbUnmarshaller.unmarshal(file);
 
-        for (ApplianceModel am : appliances.applianceList) {
+        for (ApplianceXmlModel am : appliances.applianceList) {
             ComputingAppliance ca = new ComputingAppliance(iaasMapper.get(am.file), am.name,
                     new GeoLocation(am.latitude, am.longitude), am.range);
             for (ApplicationXmlModel a : am.getApplications()) {
                 ca.addApplication(new Application(a.name, a.freq, a.tasksize, a.countOfInstructions, a.canJoin,
                         findApplicationStrategy(a.strategy, a.activationRatio, 
-                                a.transferDevider, code,isApplicationCustome),
+                                a.transferDevider, code,isApplicationCustom),
                         Instance.allInstances.get(a.instance)));
             }
         }
-        for (ApplianceModel am : appliances.applianceList) {
+        for (ApplianceXmlModel am : appliances.applianceList) {
             ComputingAppliance ca = getComputingApplianceByName(am.name);
             if (am.neighbours != null) {
                 for (ApplianceNeigboursXmlModel nam : am.neighbours) {
@@ -155,18 +162,8 @@ public class ApplianceModel {
     private static ApplicationStrategy findApplicationStrategy(String strategy, double activationRatio,
             double transferDevider, String code, Boolean isCustom) {
 
-        /*
-         TODO: feature manager!
-         try {
-            FeatureManager.getInstance().sendFeaturesForPrediction();
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
-
         if (!isCustom) {
-            strategy = code;
+            code = strategy;
         }
 
         if (strategy.equals("HoldDownApplicationStrategy")) {

@@ -43,6 +43,18 @@ To execute a user-defined simulation, run the following command in the root dire
 
 `java -cp target/dissect-cf-fog-1.0.0-SNAPSHOT-jar-with-dependencies.jar hu.u_szeged.inf.fog.simulator.demo.IoTSimulation`
 
+### Documentation
+
+Run the following command to generate the documentation for the simulator's java API (it will be generated in the target/site/apidocs subfolder of the main directory):
+
+`mvn javadoc:javadoc`
+
+### Examples
+
+The code examples can be found in the following package:
+
+src.main.java.hu.u_szeged.inf.fog.simulator.demo
+
 
 [Eclipse]: https://www.eclipse.org/downloads/
 [IntelliJ]: https://www.jetbrains.com/idea/download

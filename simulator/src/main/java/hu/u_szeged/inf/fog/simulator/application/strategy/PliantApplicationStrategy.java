@@ -9,7 +9,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

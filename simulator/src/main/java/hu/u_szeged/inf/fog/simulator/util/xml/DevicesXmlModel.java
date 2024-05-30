@@ -15,21 +15,21 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class DevicesXmlModel {
     
-    ArrayList<DeviceModel> deviceList;
+    ArrayList<DeviceXmlModel> deviceList;
 
-    public ArrayList<DeviceModel> getDevices() {
+    public ArrayList<DeviceXmlModel> getDevices() {
         return deviceList;
     }
 
     @XmlElement(name = "device")
-    public void setDevices(ArrayList<DeviceModel> devices) {
+    public void setDevices(ArrayList<DeviceXmlModel> devices) {
         this.deviceList = devices;
     }
 
     @Override
     public String toString() {
         StringBuffer str = new StringBuffer();
-        for (DeviceModel device : this.deviceList) {
+        for (DeviceXmlModel device : this.deviceList) {
             str.append(device.toString());
             str.append("\n");
         }
