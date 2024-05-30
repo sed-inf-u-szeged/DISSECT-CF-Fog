@@ -64,8 +64,8 @@ public class Prediction {
 
         public JSONObject toJSON() throws JSONException {
             return new JSONObject()
-                    .put("data", Utils.listToJSONArray(data))
-                    .put("timestamp", Utils.listToJSONArray(timestamp));
+                    .put("data", Utils.listToJsonArray(data))
+                    .put("timestamp", Utils.listToJsonArray(timestamp));
         }
     }
 

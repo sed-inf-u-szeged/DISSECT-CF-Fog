@@ -1,12 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings.predictor;
 
+import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class Parameter {
     public enum ParameterType {

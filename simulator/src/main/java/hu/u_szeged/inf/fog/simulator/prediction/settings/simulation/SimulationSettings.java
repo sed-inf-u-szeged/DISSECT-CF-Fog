@@ -58,7 +58,7 @@ public class SimulationSettings {
 
     public JSONObject toJSON() throws JSONException {
         return new JSONObject()
-                .put("export", export.toJSON())
+                .put("export", export.toJson())
                 .put("prediction", prediction.toJSON())
                 .put("predictor", predictor.toJSON());
     }

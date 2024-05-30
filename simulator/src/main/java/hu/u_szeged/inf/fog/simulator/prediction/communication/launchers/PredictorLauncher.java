@@ -1,14 +1,14 @@
-package hu.u_szeged.inf.fog.simulator.prediction.communication.applications;
+package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
 import java.io.File;
 
 /**
  * The class provides implementations for starting the Python-based prediction application.
  */
-public class PredictorApplication extends IApplication {
+public class PredictorLauncher extends Launcher {
     
-    public PredictorApplication() {
-        IApplication.predictionApplications.add(this);
+    public PredictorLauncher() {
+        Launcher.predictionApplications.add(this);
     }
 
     @Override

@@ -1,20 +1,40 @@
-package hu.u_szeged.inf.fog.simulator.demo.prediction;
+package hu.u_szeged.inf.fog.simulator.demo;
 
-import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.PredictorApplication;
-import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.PredictorLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.*;
 
-public class PredictionSim {
+@SuppressWarnings("unused")
+public class PredictionSimulation {
+    
     public static void main(String[] args) throws Exception {
-        PredictionSimulation predictionSimulation = new PredictionSimulation(new PredictionBaseSimulation());
+        /** run only with prediction **/
+        // runPredictionOnly();
+        /** run with prediction and UI **/
+        runPredictionWithUI();
+    }
+    
+    private static void runPredictionOnly() throws Exception {
+        PredictionConfigurator predictionSimulation = new PredictionConfigurator(new PredictionBase());
+        
         predictionSimulation.addSimulationSettings(getSimulationSettings());
         predictionSimulation.addApplications(
-                new PredictorApplication()
+                new PredictorLauncher()
         );
         predictionSimulation.simulate();
     }
     
+    private static void runPredictionWithUI() throws Exception {
+        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionBase());
+        
+        predictionConfigurator.addApplications(
+                new PredictorLauncher(),
+                new ElectronLauncher()
+        );
+        predictionConfigurator.simulate();
+    }
+
     public static SimulationSettings getSimulationSettings() throws Exception {
         return new SimulationSettings(
                 new ExportSettings(true, ScenarioBase.resultDirectory, true, true, false, true),

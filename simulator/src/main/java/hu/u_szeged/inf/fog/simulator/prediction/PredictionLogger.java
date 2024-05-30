@@ -3,7 +3,11 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Helper class for logging prediction-related events.
+ */
 public class PredictionLogger {
+    // TODO: replace to the simulator's logger
     static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
     public static void info(String event, String text) {

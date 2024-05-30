@@ -1,9 +1,8 @@
-package hu.u_szeged.inf.fog.simulator.demo.prediction;
+package hu.u_szeged.inf.fog.simulator.demo;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -11,28 +10,22 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.*;
-import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
-import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
-
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PredictionBaseSimulation implements PredictionSimulation.ISimulation {
+public class PredictionBase implements PredictionConfigurator.ISimulation {
     @Override
     public void simulation() throws Exception {
 
@@ -174,8 +167,6 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
         ScenarioBase.calculateIoTCost();
         ScenarioBase.logBatchProcessing(stoptime - starttime);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-        //EnergyChartVisualiser.generateApplicationEnergyChart(ScenarioBase.resultDirectory);
-        //EnergyChartVisualiser.generateDeviceEnergyChart(ScenarioBase.resultDirectory);
         //MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, Device.allDevices);
     }
 
@@ -193,9 +184,10 @@ public class PredictionBaseSimulation implements PredictionSimulation.ISimulatio
         }
         return null;
     }
+    
     private static double[] generatePosition() {
-        // double maxLatitude = 48.3; lat: 2.5
-        // double maxLongitude = 22.3; long: 5.9
+        // double maxLatitude = 48.3; diff: 2.5
+        // double maxLongitude = 22.3; diff: 5.9
         double minLatitude = 45.8;
         double minLongitude = 16.4;
 

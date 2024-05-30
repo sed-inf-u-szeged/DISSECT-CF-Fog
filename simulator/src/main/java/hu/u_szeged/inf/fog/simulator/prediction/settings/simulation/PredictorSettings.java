@@ -44,7 +44,7 @@ public class PredictorSettings {
 
     public HashMap<String, Object> jsonObjectTOHashMap(JSONObject jsonObject, String jsonKey) throws JSONException {
         HashMap<String, Object> result = new HashMap<>();
-        List<String> optionKeys = Utils.getJSONObjectKeys(jsonObject.getJSONObject(jsonKey));
+        List<String> optionKeys = Utils.getJsonObjectKeys(jsonObject.getJSONObject(jsonKey));
         for (String key: optionKeys) {
             try {
                 double value = jsonObject.getJSONObject(jsonKey).getDouble(key);

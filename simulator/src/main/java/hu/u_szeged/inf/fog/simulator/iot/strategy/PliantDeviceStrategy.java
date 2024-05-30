@@ -12,8 +12,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Vector;
 
+/**
+ * This class represents a device strategy based on Fuzzy logic and Pliant system.
+ */
 public class PliantDeviceStrategy extends DeviceStrategy {
 
+    /**
+     * Finds and sets the chosen application for the device, which is 
+     * determined by the decision maker method.
+     * As it can cause a node change, the latency must be updated. 
+     */
     @Override
     public void findApplication() {
         this.chosenApplication = null;
@@ -26,6 +34,13 @@ public class PliantDeviceStrategy extends DeviceStrategy {
         MobilityEvent.refresh(this.device, this.chosenApplication);
     }
 
+    /**
+     * Makes a decision on which application to choose from the available applications.
+     * It considers various metrics such as load of resource, cost, connections, etc.
+     *
+     * @param availableApplications the list of available applications to choose from
+     * @return the index of the chosen application in the availableApplications list
+     */
     private int decisionMaker(ArrayList<Application> availableApplications) {
 
         Kappa kappa = new Kappa(3.0, 0.4);

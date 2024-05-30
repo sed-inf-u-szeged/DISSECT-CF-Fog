@@ -1,14 +1,14 @@
-package hu.u_szeged.inf.fog.simulator.prediction.communication.applications;
+package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
 import java.io.File;
 
 /**
  * The class provides implementations for starting the Electron-based prediction application.
  */
-public class ElectronApplication extends IApplication {
+public class ElectronLauncher extends Launcher {
       
-    public ElectronApplication() {
-        IApplication.predictionApplications.add(this);
+    public ElectronLauncher() {
+        Launcher.predictionApplications.add(this);
     }
 
     @Override

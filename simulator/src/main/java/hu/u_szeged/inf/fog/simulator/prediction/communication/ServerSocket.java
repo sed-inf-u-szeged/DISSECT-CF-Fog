@@ -1,10 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication;
 
-import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.ElectronApplication;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.applications.IApplication;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.predictor.PredictorTemplate;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.simulation.SimulationSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
+
 import org.json.JSONObject;
 
 import java.net.Socket;
@@ -30,7 +31,7 @@ public class ServerSocket {
         return ServerSocket.SERVER_SOCKET;
     }
 
-    public void waitForConnections(List<IApplication> applications) {
+    public void waitForConnections(List<Launcher> applications) {
         try {
             while (CONNECTED_CLIENTS != applications.size()) {
                 PredictionLogger.info("ServerSocket", String.format("Waiting for connection... (%s / %s)", CONNECTED_CLIENTS, applications.size()));
@@ -59,7 +60,7 @@ public class ServerSocket {
             }
         }*/
 
-        if (IApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
+        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
             try {
                 sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
@@ -91,7 +92,7 @@ public class ServerSocket {
 
     public void waitForPredictionSettings() {
         PredictionLogger.info("ServerSocket", "Waiting for prediction settings...");
-        if (IApplication.hasApplication(ElectronApplication.class.getSimpleName())) {
+        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
             try {
                 SocketMessage message = sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,

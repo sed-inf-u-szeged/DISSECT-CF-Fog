@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.mobility.forecasting;
+package hu.u_szeged.inf.fog.simulator.prediction.mobility;
 
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;

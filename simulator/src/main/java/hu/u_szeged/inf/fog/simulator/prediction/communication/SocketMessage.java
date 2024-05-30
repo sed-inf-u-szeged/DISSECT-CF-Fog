@@ -3,8 +3,6 @@ package hu.u_szeged.inf.fog.simulator.prediction.communication;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.Serializable;
-
 public class SocketMessage {
     public enum SocketApplication {
         UNKNOWN("UNKNOWN"),

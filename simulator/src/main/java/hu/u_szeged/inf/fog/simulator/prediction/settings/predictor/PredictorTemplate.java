@@ -1,13 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings.predictor;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class PredictorTemplate {
     private String id;

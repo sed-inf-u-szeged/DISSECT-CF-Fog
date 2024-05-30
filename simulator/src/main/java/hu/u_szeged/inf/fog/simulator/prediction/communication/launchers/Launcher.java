@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.prediction.communication.applications;
+package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import java.util.ArrayList;
@@ -10,12 +10,12 @@ import org.apache.commons.lang3.SystemUtils;
  * to the time series analysis. This class provides methods to manage and 
  * open these applications on different operating systems.
  */
-public abstract class IApplication {
+public abstract class Launcher {
     
     /**
      * A list of all registered applications used for prediction.
      */
-    public static List<IApplication> predictionApplications = new ArrayList<>();
+    public static List<Launcher> predictionApplications = new ArrayList<>();
     
     /**
      * Returns the project path associated with this application.
@@ -61,8 +61,8 @@ public abstract class IApplication {
      *         {@code false} otherwise
      */
     public static boolean hasApplication(String applicationName) {
-        for (IApplication applicationInterface 
-                : IApplication.predictionApplications) {
+        for (Launcher applicationInterface 
+                : Launcher.predictionApplications) {
             if (applicationInterface.getClass().getSimpleName().equals(applicationName)) {
                 return true;
             }
