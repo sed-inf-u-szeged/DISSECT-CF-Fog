@@ -18,7 +18,24 @@ public class PredictionSimulation {
     private static void runPredictionOnly() throws Exception {
         PredictionConfigurator predictionSimulation = new PredictionConfigurator(new PredictionBase());
         
-        predictionSimulation.addSimulationSettings(getSimulationSettings());
+        predictionSimulation.addSimulationSettings(new SimulationSettings(
+                new ExportSettings(true, ScenarioBase.resultDirectory, true, true, true, true),
+                new PredictionSettings(
+                        64,
+                        64,
+                        256,
+                        new PredictionSettings.SmoothingSettings(48, 5),
+                        true,
+                        0
+                ),
+                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.HOLT_WINTERS)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.RANDOM_FOREST)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LINEAR_REGRESSION)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.SVR)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LSTM)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ONLY_SIMULATION)
+        ));
         predictionSimulation.addApplications(
                 new PredictorLauncher()
         );
@@ -33,29 +50,5 @@ public class PredictionSimulation {
                 new ElectronLauncher()
         );
         predictionConfigurator.simulate();
-    }
-
-    public static SimulationSettings getSimulationSettings() throws Exception {
-        return new SimulationSettings(
-                new ExportSettings(true, ScenarioBase.resultDirectory, true, true, false, true),
-                new PredictionSettings(
-                        64,
-                        64,
-                        256,
-                        new PredictionSettings.SmoothingSettings(
-                                48,
-                                5
-                        ),
-                        true,
-                        0
-                ),
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.HOLT_WINTERS)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.RANDOM_FOREST)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LINEAR_REGRESSION)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.SVR)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LSTM)
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ONLY_SIMULATION)
-        );
     }
 }

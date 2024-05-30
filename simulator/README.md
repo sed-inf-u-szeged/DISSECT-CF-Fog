@@ -16,6 +16,8 @@ This directory contains the heart of the DISSECT-CF-Fog modular simulation platf
 	* Installing Python is optional because the script's primary function is to generate a map after the simulation ends, which can be useful for debugging. For more details, refer to the `MapVisualiser.mapGenerator(..)` instruction in the demo package. 
 	
 	* The script (located in the `src/main/resources/script` directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
+	
+	* For Windows OS, installation of [Graphviz] (version 11) is also required if the workflow visualization script (DAG.py) is also executed
 
 ### Running simulations using the IDE
 
@@ -48,3 +50,4 @@ To execute a user-defined simulation, run the following command in the root dire
 [Maven]: https://maven.apache.org/download.cgi
 [Installation]: https://maven.apache.org/install.html
 [Python]: https://www.python.org/downloads/
+[Graphviz]: https://graphviz.org/download/

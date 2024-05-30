@@ -112,53 +112,18 @@ public class PredictionBase implements PredictionConfigurator.ISimulation {
 
         generateDevices(device_multiplier);
 
-        /*for (ComputingAppliance computingAppliance: ComputingAppliance.allComputingAppliances) {
-            FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "Memory")) {
-                @Override
-                public double compute() {
-                    double result = 0.0;
-                    for (PhysicalMachine physicalMachine: computingAppliance.iaas.machines) {
-                        for (VirtualMachine vm: physicalMachine.listVMs()) {
-                            if (vm.getResourceAllocation() != null) {
-                                result += vm.getResourceAllocation().allocated.getRequiredMemory();
-                            }
-                        }
-                    }
-                    return result;
-                }
-            });
-        }*/
-
         for (ComputingAppliance computingAppliance: ComputingAppliance.getAllComputingAppliances()) {
             FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")) {
                 @Override
                 public double compute() {
                     int result = 0;
                     for (Application application: computingAppliance.applications) {
-                        result += application.receivedData - application.processedData;
+                        result += (application.receivedData - application.processedData);
                     }
                     return result;
                 }
             });
         }
-        /*
-        for (ComputingAppliance computingAppliance: ComputingAppliance.getAllComputingAppliances()) {
-            FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "memoryUsage")) {
-                @Override
-                public double compute() {
-                    double result = 0.0;
-                    for (PhysicalMachine physicalMachine: computingAppliance.iaas.machines) {
-                        for (VirtualMachine vm: physicalMachine.listVMs()) {
-                            if (vm.getResourceAllocation() != null) {
-                                result += vm.getResourceAllocation().allocated.getRequiredMemory();
-                            }
-                        }
-                    }
-                    return result;
-                }
-            });
-        }
-        */
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();
@@ -167,7 +132,7 @@ public class PredictionBase implements PredictionConfigurator.ISimulation {
         ScenarioBase.calculateIoTCost();
         ScenarioBase.logBatchProcessing(stoptime - starttime);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-        //MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, Device.allDevices);
+        // MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, Device.allDevices);
     }
 
     private static ApplicationStrategy generateAppStrategy(String strategy, double activationRatio, double transferDivider) {
@@ -315,7 +280,6 @@ public class PredictionBase implements PredictionConfigurator.ISimulation {
 
             double[] pos = generatePosition();
 
-            
             new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 50, 1 * 60 * 1000, 
                     new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);

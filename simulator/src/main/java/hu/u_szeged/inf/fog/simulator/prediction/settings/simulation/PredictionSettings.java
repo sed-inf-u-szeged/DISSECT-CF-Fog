@@ -4,6 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class PredictionSettings {
+    
     public static class SmoothingSettings {
         private int windowSize;
         private int polynomialDegree;

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Prediction {
+    
     public class ErrorMetrics {
         private double RMSE, MSE, MAE;
 

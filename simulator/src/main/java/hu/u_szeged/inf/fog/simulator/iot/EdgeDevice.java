@@ -16,34 +16,61 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.prediction.mobility.Predictor;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.util.ArrayList;
 
+/**
+ * The EdgeDevice class represents a device at the edge of a network, inheriting from the Device class.
+ * With this implementation, a more complex, mobility-enabled IoT devices can be created. 
+ * The device is capable of local data processing by initializing a local VM.
+ */
 public class EdgeDevice extends Device {
 
-    Predictor predictor;
-
+    /**
+     * The VM image file associated to the local virtual machine.
+     */
     public static VirtualAppliance edgeDeviceVa = 
             new VirtualAppliance("edgeDeviceVa", 1, 0, false, 1073741824L); // 1 GB
 
+    /**
+     * The resource requirement associated to the local virtual machine.
+     */
     public AlterableResourceConstraints edgeDeviceArc;
 
+    /**
+     * The VirtualMachine instance representing the local virtual machine on the edge device.
+     */
     public VirtualMachine localVm;
 
-    // public static int success=0, all=0; // TODO: rename!
-
-    // public static int vmShutdown = 0, vmStart = 0, vmReq = 0;
-
+    /**
+     * The instruction per byte ratio used for data processing tasks.
+     */
     private double instructionPerByte;
 
+    /**
+     * This list stores the start and end timestamps of the locally processed tasks.
+     */
     public ArrayList<TimelineEntry> timelineEntries = new ArrayList<TimelineEntry>();
 
-    public EdgeDevice(long startTime, long stopTime, long fileSize, long freq,
-            MobilityStrategy mobilityStrategy, int kkOrder, DeviceStrategy deviceStrategy, PhysicalMachine localMachine,
-            double instructionPerByte, int latency, boolean pathLogging) {
-        long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 1) * 60 * 1000; // TODO: fix this delay value
+    /**
+     * Constructs a new EdgeDevice instance.
+     *
+     * @param startTime          the start time of the edge device
+     * @param stopTime           the stop time of the edge device
+     * @param fileSize           the file size associated with the edge device
+     * @param freq               the frequency of operations for the edge device
+     * @param mobilityStrategy   the mobility strategy for the edge device
+     * @param deviceStrategy     the device strategy for the edge device
+     * @param localMachine       the local physical machine for the edge device
+     * @param instructionPerByte the instruction per byte ratio for data processing
+     * @param latency            the base network latency for the edge device
+     * @param pathLogging        flag indicating if the path logging is enabled for the edge device
+     */
+    public EdgeDevice(long startTime, long stopTime, long fileSize, long freq, MobilityStrategy mobilityStrategy, 
+            DeviceStrategy deviceStrategy, PhysicalMachine localMachine,double instructionPerByte, int latency, 
+            boolean pathLogging) {
+        long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000; 
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
         this.fileSize = fileSize;
@@ -58,19 +85,16 @@ public class EdgeDevice extends Device {
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
         this.latency = latency;
-        this.predictor = new Predictor(kkOrder);
         this.edgeDeviceArc = new AlterableResourceConstraints(localMachine.getCapacities().getRequiredCPUs(),
                 localMachine.getCapacities().getRequiredProcessingPower(),
                 localMachine.getCapacities().getRequiredMemory());
         this.startMeter();
         this.localMachine.turnon();
-        /*
-        if (Device.longestRunningDevice < this.stopTime) {
-            Device.longestRunningDevice = this.stopTime;
-        }*/
-
     }
 
+    /**
+     * Starts the virtual machine if it is not already running.
+     */
     private void startVm() {
         if (this.localVm == null) {
             this.localMachine.localDisk.registerObject(edgeDeviceVa);
@@ -91,6 +115,9 @@ public class EdgeDevice extends Device {
         }
     }
 
+    /**
+     * Stops the virtual machine if it is currently running.
+     */
     private void stopVm() {
         if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             try {
@@ -101,55 +128,23 @@ public class EdgeDevice extends Device {
         }
     }
 
+    /**
+     * The tick method is called to simulate a time step for the edge device.
+     * It handles data transfer, mobility updates, and local processing.
+     */
     @Override
     public void tick(long fires) {
         if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
             new Sensor(this, 1);
         }
 
-        /*
-         * int direction = -1; if (!(this.mobilityStrategy instanceof
-         * StaticMobilityStrategy)) { GeoLocation prev = new
-         * GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude);
-         * GeoLocation newLocation = this.mobilityStrategy.move(freq);
-         * if(this.pathLogging) { this.devicePath.add(new
-         * GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude)); }
-         * MobilityEvent.changePositionEvent(this, newLocation);
-         * 
-         * double angle = prev.angle(newLocation); if (!prev.equals(newLocation)) {
-         * predictor.updateBacklog(prev, newLocation); // TODO: reduce number of
-         * prediction direction = predictor.predictDirection();
-         * System.out.println("PREDICTED: " + direction + " vs. PREV ACTUAL: " + angle);
-         * 
-         * if (direction == (int) angle) { success++; } all++;
-         * 
-         * } }
-         */
         GeoLocation newLocation = this.mobilityStrategy.move(this);
         if (this.isPathLogged) {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);
 
-        this.deviceStrategy.findApplication(); // TODO: Objects.nonNull/isNull
-
-        /*
-         * if(predictor.predictConnection(this, direction, this.mobilityStrategy.speed))
-         * { if(this.localVm != null &&
-         * this.localVm.getState().equals(VirtualMachine.State.RUNNING)) { try {
-         * this.localVm.switchoff(true); vmShutdown++; } catch (StateChangeException e)
-         * { e.printStackTrace(); } } }else if(predictor.predictDisconnection(this,
-         * direction, this.mobilityStrategy.speed)) { if(this.localVm == null) {
-         * this.localMachine.localDisk.registerObject(edgeDeviceVa); try { this.localVm
-         * = this.localMachine.requestVM(EdgeDevice.edgeDeviceVa, this.edgeDeviceArc,
-         * this.localMachine.localDisk, 1)[0]; vmReq++; } catch (VMManagementException |
-         * NetworkException e) { e.printStackTrace(); } }else
-         * if(this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) { try {
-         * this.localVm.switchOn(this.localMachine.allocateResources(edgeDeviceArc,
-         * false, PhysicalMachine.defaultAllocLen), this.localMachine.localDisk);
-         * vmStart++; } catch (VMManagementException | NetworkException e) {
-         * e.printStackTrace(); } } }
-         */
+        this.deviceStrategy.findApplication(); 
 
         try {
             if (this.deviceStrategy.chosenApplication != null) {
