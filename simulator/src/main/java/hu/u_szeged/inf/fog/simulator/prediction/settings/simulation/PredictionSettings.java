@@ -14,10 +14,10 @@ public class PredictionSettings {
         }
 
         public SmoothingSettings(String jsonString) throws JSONException {
-            fromJsonString(jsonString);
+            fromJSONString(jsonString);
         }
 
-        private void fromJsonString(String jsonString) throws JSONException {
+        private void fromJSONString(String jsonString) throws JSONException {
             JSONObject jsonObject = new JSONObject(jsonString);
             this.windowSize = jsonObject.getInt("windowSize");
             this.polynomialDegree = jsonObject.getInt("polynomialDegree");
@@ -39,7 +39,7 @@ public class PredictionSettings {
             this.polynomialDegree = polynomialDegree;
         }
 
-        public JSONObject toJson() throws JSONException {
+        public JSONObject toJSON() throws JSONException {
             return new JSONObject()
                     .put("windowSize", windowSize)
                     .put("polynomialDegree", polynomialDegree);
@@ -53,8 +53,7 @@ public class PredictionSettings {
     private boolean scale;
     private int minPredictionTime;
 
-    public PredictionSettings(int length, int testSize, int batchSize, 
-            SmoothingSettings smoothing, boolean scale, int minPredictionTime) {
+    public PredictionSettings(int length, int testSize, int batchSize, SmoothingSettings smoothing, boolean scale, int minPredictionTime) {
         this.length = length;
         this.testSize = testSize;
         this.batchSize = batchSize;
@@ -64,10 +63,10 @@ public class PredictionSettings {
     }
 
     public PredictionSettings(JSONObject jsonObject) throws JSONException {
-        fromJsonObject(jsonObject);
+        fromJSONObject(jsonObject);
     }
 
-    private void fromJsonObject(JSONObject jsonObject) throws JSONException {
+    private void fromJSONObject(JSONObject jsonObject) throws JSONException {
         this.length = jsonObject.getInt("length");
         this.testSize = jsonObject.getInt("testSize");
         this.batchSize = jsonObject.getInt("batchSize");
@@ -124,12 +123,12 @@ public class PredictionSettings {
         this.minPredictionTime = minPredictionTime;
     }
 
-    public JSONObject toJson() throws JSONException {
+    public JSONObject toJSON() throws JSONException {
         return new JSONObject()
                 .put("length", length)
                 .put("testSize", testSize)
                 .put("batchSize", batchSize)
-                .put("smoothing", smoothing.toJson())
+                .put("smoothing", smoothing.toJSON())
                 .put("scale", scale)
                 .put("minPredictionTime", minPredictionTime);
     }

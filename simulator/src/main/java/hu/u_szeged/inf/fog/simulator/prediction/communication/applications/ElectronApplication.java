@@ -2,30 +2,28 @@ package hu.u_szeged.inf.fog.simulator.prediction.communication.applications;
 
 import java.io.File;
 
-public class ElectronApplication extends AbstractPredictionApplication {
-    private boolean development;
-    
+/**
+ * The class provides implementations for starting the Electron-based prediction application.
+ */
+public class ElectronApplication extends IApplication {
+      
     public ElectronApplication() {
-        AbstractPredictionApplication.APPLICATIONS.add(this);
-        this.development = true;
-    }
-
-    public ElectronApplication(boolean development) {
-        AbstractPredictionApplication.APPLICATIONS.add(this);
-        this.development = development;
+        IApplication.predictionApplications.add(this);
     }
 
     @Override
     public String getProjectLocation() {
-        return new StringBuilder(System.getProperty("user.dir"))
-                .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
-                .append("resources").append(File.separator).append("prediction").append(File.separator).append("ui")
-                .append(File.separator).toString();
+        String parentPath = new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath();
+
+        String str = new StringBuilder(parentPath).append(File.separator)
+                .append("predictor-ui").append(File.separator).append("ui").toString();
+
+        return str;
     }
 
     @Override
     public Process openWindows() throws Exception {
-        String startCommand = (development || !buildExists()) ? "build_and_run" : "run";
+        String startCommand = (!buildExists()) ? "build_and_run" : "run";
         return Runtime.getRuntime().exec(
                 String.format("C:/Windows/System32/cmd.exe /c cd %s & start npm.cmd run electron:%s", 
                         getProjectLocation(), startCommand));
@@ -33,15 +31,10 @@ public class ElectronApplication extends AbstractPredictionApplication {
 
     @Override
     public Process openLinux() throws Exception {
-        String startCommand = (development || !buildExists()) ? "build_and_run" : "run";
+        String startCommand = (!buildExists()) ? "build_and_run" : "run";
         return Runtime.getRuntime().exec(
                 String.format("gnome-terminal --working-directory=%s -- npm run electron:%s", 
                         getProjectLocation(), startCommand));
-    }
-
-    @Override
-    public Process openMac() throws Exception {
-        return null;
     }
 
     private boolean buildExists() {

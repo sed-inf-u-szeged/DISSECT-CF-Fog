@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.demo.prediction;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -11,15 +12,19 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.*;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
+import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionSimulation;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 
@@ -27,12 +32,12 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PredictionBaseSimulation implements PredictionSimulation.SimulationInterface {
+public class PredictionBaseSimulation implements PredictionSimulation.ISimulation {
     @Override
     public void simulation() throws Exception {
 
         /** SETTINGS **/
-        int device_multiplier = 200;
+        int device_multiplier = 30;
         long tasksize = 5120; 
         double instructions = 480; // 1 minute on a1.2xlarge
         String applicationStrategy = "Pliant"; // PushUp HoldDown Random RuntimeAware
@@ -143,6 +148,24 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
                 }
             });
         }
+        /*
+        for (ComputingAppliance computingAppliance: ComputingAppliance.getAllComputingAppliances()) {
+            FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "memoryUsage")) {
+                @Override
+                public double compute() {
+                    double result = 0.0;
+                    for (PhysicalMachine physicalMachine: computingAppliance.iaas.machines) {
+                        for (VirtualMachine vm: physicalMachine.listVMs()) {
+                            if (vm.getResourceAllocation() != null) {
+                                result += vm.getResourceAllocation().allocated.getRequiredMemory();
+                            }
+                        }
+                    }
+                    return result;
+                }
+            });
+        }
+        */
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();
@@ -204,7 +227,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
 
             double[] pos = generatePosition();
 
-            new SmartDevice(0, 1 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(0, 1 * 60 * 60 * 1000, 50, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -228,7 +251,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
 
             double[] pos = generatePosition();
 
-            new SmartDevice(1 * 60 * 60 *1000, 2 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(1 * 60 * 60 *1000, 2 * 60 * 60 * 1000, 50, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -252,7 +275,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
 
             double[] pos = generatePosition();
 
-            new SmartDevice(2 * 60 * 60 *1000, 3 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(2 * 60 * 60 *1000, 3 * 60 * 60 * 1000, 50, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -276,7 +299,7 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
 
             double[] pos = generatePosition();
 
-            new SmartDevice(3 * 60 * 60 *1000, 4 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            new SmartDevice(3 * 60 * 60 *1000, 4 * 60 * 60 * 1000, 50, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
@@ -300,7 +323,9 @@ public class PredictionBaseSimulation implements PredictionSimulation.Simulation
 
             double[] pos = generatePosition();
 
-            new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 150, 1 * 60 * 1000, new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+            
+            new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 50, 1 * 60 * 1000, 
+                    new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
         }
     }

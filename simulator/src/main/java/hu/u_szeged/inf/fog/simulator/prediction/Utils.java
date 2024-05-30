@@ -1,27 +1,27 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.Objects;
 
 public class Utils {
     public static DateTimeFormatter DTF_CSV = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
-    
-    public static <T> JSONArray listToJsonArray(List<T> list) {
+    public static <T> JSONArray listToJSONArray(List<T> list) {
         JSONArray result = new JSONArray();
-        for (T item : list) {
+        for (T item: list) {
             result.put(item);
         }
         return result;
     }
 
-    @SuppressWarnings("unchecked") // TODO: should be removed
-    public static <T> List<T> jsonArrayToList(JSONArray array) throws JSONException {
+    public static <T> List<T> JSONArrayToList(JSONArray array) throws JSONException {
         List<T> result = new ArrayList<>();
         for (int i = 0; i < array.length(); i++) {
             result.add((T) array.get(i));
@@ -29,9 +29,9 @@ public class Utils {
         return result;
     }
 
-    public static List<String> getJsonObjectKeys(JSONObject jsonObject) {
+    public static List<String> getJSONObjectKeys(JSONObject jsonObject) {
         List<String> result = new ArrayList<>();
-        Iterator<?> it = jsonObject.keys();
+        Iterator it = jsonObject.keys();
         while (it.hasNext()) {
             result.add((String) it.next());
         }

@@ -9,13 +9,13 @@ This directory contains the heart of the DISSECT-CF-Fog modular simulation platf
 
 * [Maven] (version 3.9.3, [Installation]) 
 
-	* Remark 1: IDEs typically have built-in Maven support, so direct installation may not be needed.
+	* IDEs typically have built-in Maven support, so direct installation may not be needed.
 
 * [Python] (version 3.8 or higher)
  
-	* Remark 1: Installing Python is optional because the script's primary function is to generate a map after the simulation ends, which can be useful for debugging. For more details, refer to the `MapVisualiser.mapGenerator(..)` instruction in the demo package. 
+	* Installing Python is optional because the script's primary function is to generate a map after the simulation ends, which can be useful for debugging. For more details, refer to the `MapVisualiser.mapGenerator(..)` instruction in the demo package. 
 	
-	* Remark 2: The script (located in the `src/main/resources/script` directory) requires additional installation of dependencies with the following  command: `pip install -r requirement.txt`
+	* The script (located in the `src/main/resources/script` directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
 
 ### Running simulations using the IDE
 

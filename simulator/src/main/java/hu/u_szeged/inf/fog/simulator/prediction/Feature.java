@@ -2,6 +2,8 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -18,7 +20,7 @@ public abstract class Feature {
         this.hasNewValue = false;
     }
 
-    public abstract double compute();
+    abstract public double compute();
 
     public void computeValue() {
         values.add(compute());
@@ -43,23 +45,17 @@ public abstract class Feature {
 
     @Override
     public String toString() {
-        return "Feature{" 
-              + "name='" + name + '\''
-              + ", values=" + values.size()
-              + ", predictions=" + predictions.size()
-              + '}';
+        return "Feature{" +
+                "name='" + name + '\'' +
+                ", values=" + values.size() +
+                ", predictions=" + predictions.size() +
+                '}';
     }
 
-    public JSONObject toJson() throws JSONException {
+    public JSONObject toJSON() throws JSONException {
         return new JSONObject()
                 .put("name", name)
-                .put("values", Utils.listToJsonArray(values));
-    }
-    
-    public JSONObject toJson(int windowSize) throws JSONException {
-        return new JSONObject()
-                .put("name", name)
-                .put("values", Utils.listToJsonArray(getWindowValues(windowSize)));
+                .put("values", Utils.listToJSONArray(values));
     }
 
     public List<Double> getWindowValues(int windowSize) {
@@ -67,6 +63,12 @@ public abstract class Feature {
             return new ArrayList<>();
         }
         return values.subList(values.size() - windowSize, values.size());
+    }
+
+    public JSONObject toJSON(int windowSize) throws JSONException {
+        return new JSONObject()
+                .put("name", name)
+                .put("values", Utils.listToJSONArray(getWindowValues(windowSize)));
     }
 
     public void setHasNewValue(boolean hasNewValue) {

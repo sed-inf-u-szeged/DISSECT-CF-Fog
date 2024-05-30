@@ -11,8 +11,7 @@ public class ExportSettings {
     private boolean savePredictions;
     private boolean saveMetrics;
 
-    public ExportSettings(boolean enabled, String location, boolean saveDataset, 
-            boolean savePredictionSettings, boolean savePredictions, boolean saveMetrics) {
+    public ExportSettings(boolean enabled, String location, boolean saveDataset, boolean savePredictionSettings, boolean savePredictions, boolean saveMetrics) {
         this.enabled = enabled;
         this.location = location;
         this.saveDataset = saveDataset;
@@ -22,10 +21,10 @@ public class ExportSettings {
     }
 
     public ExportSettings(JSONObject jsonObject) throws JSONException {
-        fromJsonObject(jsonObject);
+        fromJSONObject(jsonObject);
     }
 
-    private void fromJsonObject(JSONObject jsonObject) throws JSONException {
+    private void fromJSONObject(JSONObject jsonObject) throws JSONException {
         this.enabled = jsonObject.getBoolean("enabled");
         this.location = jsonObject.getString("location");
         this.saveDataset = jsonObject.getBoolean("saveDataset");
@@ -51,7 +50,6 @@ public class ExportSettings {
         this.enabled = true;
         return this;
     }
-    
     public ExportSettings disable() {
         this.enabled = false;
         return this;
@@ -105,7 +103,7 @@ public class ExportSettings {
         return this;
     }
 
-    public JSONObject toJson() throws JSONException {
+    public JSONObject toJSON() throws JSONException {
         return new JSONObject()
                 .put("enabled", enabled)
                 .put("location", location)

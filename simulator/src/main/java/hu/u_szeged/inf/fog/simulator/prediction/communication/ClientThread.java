@@ -1,12 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.Socket;
 import org.json.JSONObject;
+
+import java.io.*;
+import java.net.Socket;
 
 public class ClientThread extends Thread {
     private Socket socket;
@@ -50,15 +48,13 @@ public class ClientThread extends Thread {
     public SocketMessage sendAndGet(SocketMessage message) {
         SocketMessage inMessage = null;
         try {
-            PredictionLogger.info("socket-out", 
-                    String.format("[%s]: %s", name == null ? "UNKNOWN" : name, message.getEvent()));
+            PredictionLogger.info("socket-out", String.format("[%s]: %s", name == null ? "UNKNOWN" : name, message.getEvent()));
 
-            SocketMessage messageSize = new SocketMessage("data-size", 
-                    new JSONObject().put("size", message.toString().getBytes().length));
+            SocketMessage messageSize = new SocketMessage("data-size", new JSONObject().put("size", message.toString().getBytes().length));
             out.write(createByteArrayMessage(messageSize));
             out.flush();
 
-            // String r = in.readLine(); // ACK for message size
+            String r = in.readLine(); // ACK for message size
 
             out.write(createByteArrayMessage(message));
             out.flush();
@@ -70,8 +66,7 @@ public class ClientThread extends Thread {
             }
 
             inMessage = new SocketMessage(data);
-            PredictionLogger.info("socket-in", 
-                    String.format("[%s]: %s", name == null ? "UNKNOWN" : name, inMessage.getEvent()));
+            PredictionLogger.info("socket-in", String.format("[%s]: %s", name == null ? "UNKNOWN" : name, inMessage.getEvent()));
         } catch (Exception e) {
             //e.printStackTrace();
         }

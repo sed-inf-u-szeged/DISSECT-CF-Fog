@@ -15,7 +15,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.Sensor;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;

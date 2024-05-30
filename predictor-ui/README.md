@@ -1,30 +1,31 @@
-# Prediction settings in DISSECT-CF-Fog
+# Overview
 
+This directory contains the Phyton scripts used for time series analysis functionality of the DISSECT-CF-Fog simulation framework. It also has a user-friendly interface, which makes easier to set the necessary parameters up for the evaluation,  however, for more experienced people, the the interface may not be sufficient, or covers all functionality.
 
-## Installation and settings
-1. Install
-    * Node.js <small>(>= 18.16.1)</small>
-    * Angular <small>(>= 16.1.3)</small>
-    * Python <small>(>= 3.11.4)</small>
-2. Install <b>[requirements.txt](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/resources/prediction/scripts/requirements.txt)</b>.
-3. In <b>[application files](https://github.com/andrasmarkus/dissect-cf/tree/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/prediction/communication/applications)</b> update start commands if needed:
+**Attention**: the module can only be used together with the core simulator. 
 
-```java
-@Override
-public Process openWindows() throws Exception {
-    return Runtime.getRuntime().exec(String.format("C:/Windows/System32/cmd.exe /c cd %s & start npm.cmd run electron:build_and_run", getProjectLocation()));
-}
+## Getting started
 
-@Override
-public Process openLinux() throws Exception {
-    return Runtime.getRuntime().exec("<Start command for Linux>");
-}
+* [Node.js] (version 18 or higher)
 
-@Override
-public Process openMac() throws Exception {
-    return Runtime.getRuntime().exec("<Start command for MacOS>");
-}
-```
+* [Python] (version 3.11 or higher)
+
+    * The script (located in the `script/` directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
+
+* [Angular] (version 16 or higher) 
+
+    * To start the UI, you need to install Angular with the Node Package Manager with the folloginw command: `npm install -g @angular/cli@16`
+
+    * The predictor UI (located in the ui/ directory) requires additional installation of dependencies (defined in package.json) with the following command: `npm install`
+
+    * To run a dev server for the predictor UI use the following command: `ng serve` (the server will run on `http://localhost:4200/` by default)
+
+**Attention**: both the UI and the Python application are controlled by the core simulator, no need to start them manually. However, updating the applications' [start command] is recommended as it depends on the specific installation environment.
+
+[Node.js]: https://nodejs.org/en/download/
+[Python]: https://www.python.org/downloads/
+[Angular]: https://angular.dev/
+[start command]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/simulator/src/main/java/hu/u_szeged/inf/fog/simulator/prediction/communication/applications
 
 ## Prediction without UI
 Take the example in <b>[PredictionSim.java](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/demo/PredictionSim.java)</b>

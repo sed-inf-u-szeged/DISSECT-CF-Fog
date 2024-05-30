@@ -29,13 +29,13 @@ public class PredictionSim {
                         true,
                         0
                 ),
-                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
+                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.HOLT_WINTERS)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.RANDOM_FOREST)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LINEAR_REGRESSION)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.SVR)
                 //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LSTM)
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ONLY_SIMULATION)
+                //PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ONLY_SIMULATION)
         );
     }
 }

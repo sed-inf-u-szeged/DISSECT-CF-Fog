@@ -13,6 +13,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
@@ -329,10 +330,11 @@ public class Application extends Timed {
      */
     @Override
     public void tick(long fires) {
-        // TODO: reduce complexity of the method
-        // TODO: only needed when prediction is active
-        // FeatureManager.getInstance().getFeatureByName(
-        // String.format("%s::%s", computingAppliance.name, "notYetProcessedData")).computeValue();
+        for (String featureName : FeatureManager.getInstance().getFeatureNames("::")) {
+            FeatureManager.getInstance().getFeatureByName(
+                    String.format("%s::%s", computingAppliance.name, featureName)).computeValue();
+        }
+        
         long unprocessedData = (this.receivedData - this.processedData);
         if (unprocessedData > 0) {
             long alreadyProcessedData = 0;

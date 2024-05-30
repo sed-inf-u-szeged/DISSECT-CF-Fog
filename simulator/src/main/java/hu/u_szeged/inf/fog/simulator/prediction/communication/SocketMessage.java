@@ -3,20 +3,19 @@ package hu.u_szeged.inf.fog.simulator.prediction.communication;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
+
 public class SocketMessage {
-    
     public enum SocketApplication {
         UNKNOWN("UNKNOWN"),
         APPLICATION_FEATURE_HANDLER("APPLICATION_FEATURE_HANDLER"),
         APPLICATION_PREDICTOR("APPLICATION_PREDICTOR"),
         APPLICATION_INTERFACE("APPLICATION_INTERFACE");
         public final String value;
-        
         SocketApplication(final String value) {
             this.value = value;
         }
     }
-    
     private String event;
     private JSONObject data;
 
@@ -26,21 +25,21 @@ public class SocketMessage {
     }
 
     public SocketMessage(String jsonString) throws JSONException {
-        fromJsonString(jsonString);
+        fromJSONString(jsonString);
     }
 
     public SocketMessage copy() {
         return new SocketMessage(event, data);
     }
 
-    public void fromJsonString(String jsonString) throws JSONException {
+    public void fromJSONString(String jsonString) throws JSONException {
         JSONObject jsonObject = new JSONObject(jsonString);
 
         this.event = jsonObject.getString("event");
         this.data = jsonObject.getJSONObject("data");
     }
 
-    private JSONObject toJson() throws JSONException {
+    private JSONObject toJSON() throws JSONException {
         return new JSONObject()
             .put("event", event)
             .put("data", data);
@@ -49,7 +48,7 @@ public class SocketMessage {
     @Override
     public String toString() {
         try {
-            return toJson().toString();
+            return toJSON().toString();
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }

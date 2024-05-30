@@ -9,6 +9,7 @@ from predictor_models.svr_model import SVRModel
 from app_utils.log import Log
 from app_utils.preprocessor import Preprocessor
 
+import time
 
 class Predictor:
 
@@ -69,7 +70,10 @@ class Predictor:
             }
         }
 
+        start_time = None
         if self._predictor_model is not None:
+            start_time = time.time()
+
             prediction_future, prediction_test, error_metrics = self._predictor_model.make_prediction(
                 feature_name=feature_name,
                 original_data=original_data,
@@ -87,6 +91,7 @@ class Predictor:
                 "data": Preprocessor.get_data_inverse(prediction_test["data"], scaler_preprocessed)
             }
             result["error_metrics"] = error_metrics
+            result["prediction_time"] = ((time.time() - start_time) * 1000) if start_time is not None else -1
 
         return result
 
