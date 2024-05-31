@@ -15,9 +15,9 @@ This directory contains the heart of the DISSECT-CF-Fog modular simulation platf
  
 	* Installing Python is optional because the script's primary function is to generate a map after the simulation ends, which can be useful for debugging. For more details, refer to the `MapVisualiser.mapGenerator(..)` instruction in the demo package. 
 	
-	* The script (located in the `src/main/resources/script` directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
+	* The script (located in the *src/main/resources/script* directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
 	
-	* For Windows OS, installation of [Graphviz] (version 11) is also required if the workflow visualization script (DAG.py) is also executed
+	* For Windows OS, installation of [Graphviz] (version 11) is also required if the workflow visualization script (*DAG.py*) is also executed
 
 ### Running simulations using the IDE
 
@@ -45,7 +45,7 @@ To execute a user-defined simulation, run the following command in the root dire
 
 ### Documentation
 
-Run the following command to generate the documentation for the simulator's java API (it will be generated in the target/site/apidocs subfolder of the main directory):
+Run the following command to generate the documentation for the simulator's java API (it will be generated in the *target/site/apidocs* subfolder of the main directory):
 
 `mvn javadoc:javadoc`
 
@@ -53,7 +53,7 @@ Run the following command to generate the documentation for the simulator's java
 
 The code examples can be found in the following package:
 
-src.main.java.hu.u_szeged.inf.fog.simulator.demo
+*src.main.java.hu.u_szeged.inf.fog.simulator.demo*
 
 
 [Eclipse]: https://www.eclipse.org/downloads/
