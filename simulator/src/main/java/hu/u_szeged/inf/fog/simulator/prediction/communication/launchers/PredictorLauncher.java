@@ -26,13 +26,17 @@ public class PredictorLauncher extends Launcher {
         String command =  String.format(String.format(
                "C:/Windows/System32/cmd.exe /c cd %s & start python.exe main.py", getProjectLocation()));
        
-        System.out.println("Parancs: " + command);
+        System.out.println("Command: " + command);
             
         return Runtime.getRuntime().exec(command);
     }
 
     @Override
     public Process openLinux() throws Exception {
-        return Runtime.getRuntime().exec(String.format("gnome-terminal -- python3.10 %smain.py", getProjectLocation()));
+        String command = String.format("gnome-terminal -- python3.10 %s/main.py", getProjectLocation());
+
+        System.out.println("Command: " + command);
+        
+        return Runtime.getRuntime().exec(command);
     }
 }

@@ -166,7 +166,7 @@ public class Visualiser {
     }
 }
 
-class Pair{
+class Pair {
 
     Pair(ComputingAppliance left, ComputingAppliance right) {
         this.left = left;

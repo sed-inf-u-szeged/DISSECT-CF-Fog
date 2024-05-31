@@ -7,6 +7,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.Acoc;
@@ -18,6 +19,8 @@ import java.util.LinkedHashMap;
 public class DistributedWorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
+    	SimLogger.setLogging(1, true);
+    	
         //String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
         ArrayList<WorkflowComputingAppliance> centerNodes = new ArrayList<>();
         //LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture = getWorkflowArchitecutre();

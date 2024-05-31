@@ -91,7 +91,7 @@ public class PredictionConfigurator {
         }
 
         if (SimulationSettings.get().getExport().canExportPredictionSettings()) {
-            SimulationSettings.get().exportToJSON(SimulationSettings.get()
+            SimulationSettings.get().exportToJson(SimulationSettings.get()
                     .getExport().getLocation(), Utils.getFileNameWithDate("simulation_settings", "json"));
         }
     }

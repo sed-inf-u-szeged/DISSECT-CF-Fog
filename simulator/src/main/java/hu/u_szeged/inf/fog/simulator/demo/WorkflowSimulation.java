@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -9,32 +7,36 @@ import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
+import hu.u_szeged.inf.fog.simulator.util.xml.ScientificWorkflowParser;
 import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.IotWorkflowScheduler;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
+@SuppressWarnings("unused")
 public class WorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
-
+    	SimLogger.setLogging(1, true);
+    	
         HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture = getWorkflowArchitecutre();
-        ArrayList<Actuator> actuatorArchitecture = getActuatorArchitecture();
+        //ArrayList<Actuator> actuatorArchitecture = getActuatorArchitecture();
 
-        // String workflowFile = ScenarioBase.resourcePath +
-        // "/WORKFLOW_examples/CyberShake_100.xml";
-        // workflowFile = ScientificWorkflowParser.parseToIoTWorkflow(workflowFile);
+        String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/CyberShake_100.xml";
+        workflowFile = ScientificWorkflowParser.parseToIotWorkflow(workflowFile);
 
-        String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_workflow.xml";
+        //String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_workflow.xml";
 
         WorkflowJobModel.loadWorkflowXml(workflowFile);
 
-        // new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
-        new WorkflowExecutor(new IotWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
+        new WorkflowExecutor(new MaxMinScheduler(workflowArchitecture));
+        //new WorkflowExecutor(new IotWorkflowScheduler(workflowArchitecture, actuatorArchitecture, 1000));
 
         Timed.simulateUntilLastEvent();
         ScenarioBase.logStreamProcessing();
@@ -42,7 +44,7 @@ public class WorkflowSimulation {
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
     }
 
-    private static ArrayList<Actuator> getActuatorArchitecture() {
+	private static ArrayList<Actuator> getActuatorArchitecture() {
         ArrayList<Actuator> actuatorArchitecture = new ArrayList<Actuator>();
         actuatorArchitecture.add(new Actuator("actuator1", "coffee", 25 * 1000));
         actuatorArchitecture.add(new Actuator("actuator2", "newspaper", 20 * 1000));
@@ -89,5 +91,4 @@ public class WorkflowSimulation {
 
         return workflowArchitecture;
     }
-
 }

@@ -214,7 +214,7 @@ public class Prediction {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("feature_name", featureName);
         jsonObject.put("prediction_number", predictionNumber);
-        jsonObject.put("simulation_settings", simulationSettings.toJSON());
+        jsonObject.put("simulation_settings", simulationSettings.toJson());
         jsonObject.put("original_data", originalData.toJson());
         jsonObject.put("preprocessed_data", preprocessedData.toJson());
         jsonObject.put("test_data_beginning", testDataBeginning.toJson());

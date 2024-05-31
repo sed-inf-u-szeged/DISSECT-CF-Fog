@@ -4,16 +4,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class SocketMessage {
+
     public enum SocketApplication {
+
         UNKNOWN("UNKNOWN"),
         APPLICATION_FEATURE_HANDLER("APPLICATION_FEATURE_HANDLER"),
         APPLICATION_PREDICTOR("APPLICATION_PREDICTOR"),
         APPLICATION_INTERFACE("APPLICATION_INTERFACE");
         public final String value;
+
         SocketApplication(final String value) {
             this.value = value;
         }
     }
+
     private String event;
     private JSONObject data;
 
@@ -23,21 +27,21 @@ public class SocketMessage {
     }
 
     public SocketMessage(String jsonString) throws JSONException {
-        fromJSONString(jsonString);
+        fromJsonString(jsonString);
     }
 
     public SocketMessage copy() {
         return new SocketMessage(event, data);
     }
 
-    public void fromJSONString(String jsonString) throws JSONException {
+    public void fromJsonString(String jsonString) throws JSONException {
         JSONObject jsonObject = new JSONObject(jsonString);
 
         this.event = jsonObject.getString("event");
         this.data = jsonObject.getJSONObject("data");
     }
 
-    private JSONObject toJSON() throws JSONException {
+    private JSONObject toJson() throws JSONException {
         return new JSONObject()
             .put("event", event)
             .put("data", data);
@@ -46,7 +50,7 @@ public class SocketMessage {
     @Override
     public String toString() {
         try {
-            return toJSON().toString();
+            return toJson().toString();
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -71,5 +75,4 @@ public class SocketMessage {
     public boolean hasError() {
         return data.has("error");
     }
-
 }
