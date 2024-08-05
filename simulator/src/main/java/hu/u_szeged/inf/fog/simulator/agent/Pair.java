@@ -9,4 +9,10 @@ public class Pair {
 		this.constraint = constraint;
 		this.ra = ra;
 	}
+
+	@Override
+	public String toString() {
+		return "Pair: " + ra + "-" + constraint;
+	}
+	
 }

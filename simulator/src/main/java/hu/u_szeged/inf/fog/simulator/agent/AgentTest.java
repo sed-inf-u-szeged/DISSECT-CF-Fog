@@ -27,7 +27,7 @@ public class AgentTest {
         constraints1.add(new Constraint("B", 2));
         constraints1.add(new Constraint("C", 3));
         constraints1.add(new Constraint("D", 4));
-        ResourceAgent ra1 = new ResourceAgent(new Repository(1_000, "ra1", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra1", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints1);
         latencyMap.put("ra1", 50);
@@ -35,7 +35,7 @@ public class AgentTest {
         ArrayList<Constraint> constraints2 = new ArrayList<>();
         constraints2.add(new Constraint("A", 4));
         constraints2.add(new Constraint("B", 7));
-        ResourceAgent ra2 = new ResourceAgent(new Repository(1_000, "ra2", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra2", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints2);
         latencyMap.put("ra2", 66);
@@ -44,7 +44,7 @@ public class AgentTest {
         constraints3.add(new Constraint("A", 4));
         constraints3.add(new Constraint("C", 3));
         constraints3.add(new Constraint("D", 3));
-        ResourceAgent ra3 = new ResourceAgent(new Repository(1_000, "ra3", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra3", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints3);
         latencyMap.put("ra3", 99);
@@ -52,14 +52,14 @@ public class AgentTest {
         ArrayList<Constraint> constraints4 = new ArrayList<>();
         constraints4.add(new Constraint("C", 5));
         constraints4.add(new Constraint("D", 5));
-        ResourceAgent ra4 = new ResourceAgent(new Repository(1_000, "ra4", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra4", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints4);
         latencyMap.put("ra4", 45);
 
         ArrayList<Constraint> constraints5 = new ArrayList<>();
         constraints5.add(new Constraint("B", 4));
-        ResourceAgent ra5 = new ResourceAgent(new Repository(1_000, "ra5", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra5", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints5);
         latencyMap.put("ra5", 55);
@@ -67,7 +67,7 @@ public class AgentTest {
         ArrayList<Constraint> constraints6 = new ArrayList<>();
         constraints6.add(new Constraint("B", 3));
         constraints6.add(new Constraint("D", 6));
-        ResourceAgent ra6 = new ResourceAgent(new Repository(1_000, "ra6", 1_000, 1_000, 1_000, latencyMap, 
+        new ResourceAgent(new Repository(1_000, "ra6", 1_000, 1_000, 1_000, latencyMap, 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
         		transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints6);
         latencyMap.put("ra6", 70);
@@ -77,13 +77,15 @@ public class AgentTest {
         demands.add(new Constraint("A", 3));
         demands.add(new Constraint("B", 3));
         demands.add(new Constraint("C", 3));
-
+        
         // choosing one Agent randomly
         Random random = new Random();
         ResourceAgent agent = ResourceAgent.agentList.get(random.nextInt((ResourceAgent.agentList.size())));
-	    BroadcastMessage bm = new BroadcastMessage(demands, 500);
-        agent.broadcast(bm, true);
+	    BroadcastMessage bm = new BroadcastMessage(demands, 1);
+
+        agent.broadcast(bm, true); // if false then add agent to the alreadyvisitedagent list
         
         Timed.simulateUntilLastEvent();
+        //System.out.println(Timed.getFireCount());
     }
 }

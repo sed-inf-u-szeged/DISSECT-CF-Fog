@@ -50,7 +50,9 @@ public class BroadcastMessage extends StorageObject {
             for (Constraint agentConstraint : agent.constraints) {
             	if (agentConstraint.name.equals(demand.name) && agentConstraint.value >= demand.value) {
             		fulfilledConstrains.add(demand);
-            		this.solution.add(new Pair(agent, demand));
+            		Pair p = new Pair(agent, demand);
+            		//System.out.println("Demand fulfilled: " + p.ra.repo.getName() + " - " + p.constraint);
+            		this.solution.add(p);
                     break;
                 }
             }
@@ -59,6 +61,10 @@ public class BroadcastMessage extends StorageObject {
         	demands.remove(constraint);
         }
         alreadyVisitedAgents.add(agent); 
+        
+        //System.out.println(this.solution);
+        //System.out.println(alreadyVisitedAgents);
+        //System.out.println(demands);
     }
 }
 
