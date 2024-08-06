@@ -22,7 +22,7 @@ public class AgentTest {
                 PowerTransitionGenerator.generateTransitions(20, 200, 300, 10, 20);
         
     	// creating RAs
-        ArrayList<Constraint> constraints1 = new ArrayList<>();
+    	ArrayList<Constraint> constraints1 = new ArrayList<>();
         constraints1.add(new Constraint("A", 1));
         constraints1.add(new Constraint("B", 2));
         constraints1.add(new Constraint("C", 3));
@@ -81,11 +81,16 @@ public class AgentTest {
         // choosing one Agent randomly
         Random random = new Random();
         ResourceAgent agent = ResourceAgent.agentList.get(random.nextInt((ResourceAgent.agentList.size())));
+        System.out.println("Starter agent: " + agent);
 	    BroadcastMessage bm = new BroadcastMessage(demands, 1);
-
-        agent.broadcast(bm, true); // if false then add agent to the alreadyvisitedagent list
-        
+	    
+        agent.broadcast(bm, true); 
+       
         Timed.simulateUntilLastEvent();
         //System.out.println(Timed.getFireCount());
+        
+        for(ResourceAgent ra : ResourceAgent.agentList) {
+        	System.out.println(ra + " " +  ra.acknowledgement);
+        }
     }
 }

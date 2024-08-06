@@ -13,7 +13,7 @@ public class Constraint {
 
 	@Override
 	public String toString() {
-		return "Constraint: " + name + "-" + value;
+		return "Constraint(" + name + "," + value + ")";
 	}
 
 }

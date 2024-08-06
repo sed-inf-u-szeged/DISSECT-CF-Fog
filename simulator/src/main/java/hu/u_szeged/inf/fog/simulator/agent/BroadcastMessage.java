@@ -45,7 +45,7 @@ public class BroadcastMessage extends StorageObject {
     }
 
 	public void checkFulfillment(ResourceAgent agent) {
-		 ArrayList<Constraint> fulfilledConstrains = new ArrayList<Constraint>();
+		ArrayList<Constraint> fulfilledConstrains = new ArrayList<Constraint>();
         for (Constraint demand : demands) {
             for (Constraint agentConstraint : agent.constraints) {
             	if (agentConstraint.name.equals(demand.name) && agentConstraint.value >= demand.value) {
@@ -66,6 +66,8 @@ public class BroadcastMessage extends StorageObject {
         //System.out.println(alreadyVisitedAgents);
         //System.out.println(demands);
     }
+
+	
 }
 
 

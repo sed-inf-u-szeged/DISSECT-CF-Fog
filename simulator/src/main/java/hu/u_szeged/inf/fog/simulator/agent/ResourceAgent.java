@@ -1,18 +1,22 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 
 public class ResourceAgent {
 
     static ArrayList < ResourceAgent > agentList = new ArrayList < > ();
 
     Repository repo;
+    
+    int acknowledgement;
 
     /**
      * Agent's capabilities.
@@ -33,29 +37,34 @@ public class ResourceAgent {
     public void broadcast(BroadcastMessage bm, boolean serviceable) {
         boolean solutionFound = false;
         boolean deadEnd = false;
-        // checking demand fulfillment (can the first RA used as well? - currently yes!)
+        // checking demand fulfillment 
         if (serviceable) {
             bm.checkFulfillment(this);
+        } else {
+        	bm.alreadyVisitedAgents.add(this); 
         }
-        // if demand == empty then solution found
-        //System.out.println(bm.demands.size() == 0);
         if (bm.demands.size() == 0) {
-            System.out.println("Solution found:" + bm.solution + " " + bm.id);
+            System.out.println("A solution found: " + bm.solution + " on this path: " + bm.alreadyVisitedAgents);
             solutionFound = true;
         }
-        // else if agentList.size == alreadyvisitedagents then demand cannot be fulfilled
-        //System.out.println(bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size());
-        if (bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size()) {
-            System.out.println("Solution cannot be set for this path: " + bm.alreadyVisitedAgents);
+        if (solutionFound == false && bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size()) {
+            System.out.println("Demands cannot be fulfilled on this path: " + bm.alreadyVisitedAgents);
             deadEnd = true;
+        }
+        
+        ArrayList<ResourceAgent> agentsToBeAcknowledged = new ArrayList<>(bm.alreadyVisitedAgents);
+    	    	
+        if(solutionFound == true || deadEnd == true) {
+        	agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
+        	this.decreaseAcknowledgement(agentsToBeAcknowledged);
         }
 
         if (solutionFound == false && deadEnd == false) {
             // broadcasting message to the neighbors
             ArrayList < ResourceAgent > neighbors = new ArrayList < > (ResourceAgent.agentList);
             neighbors.removeAll(bm.alreadyVisitedAgents);
-            //System.out.println(neighbors);
-            for (ResourceAgent agent: neighbors) {
+            this.decreaseAcknowledgement(agentsToBeAcknowledged);
+            for (ResourceAgent agent : neighbors) {
                 String name = UUID.randomUUID().toString();
                 BroadcastMessage bmsg = new BroadcastMessage(bm, name);
                 this.repo.registerObject(bmsg);
@@ -64,9 +73,11 @@ public class ResourceAgent {
 
                         @Override
                         public void conComplete() {
+                        	increaseAcknowledgemnet(agentsToBeAcknowledged); 
                             repo.deregisterObject(bmsg);
                             agent.broadcast(bmsg, true);
                         }
+
                     });
                 } catch (NetworkException e) {
 
@@ -76,10 +87,38 @@ public class ResourceAgent {
         }
 
     }
+    
+	private void increaseAcknowledgemnet(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
+		for(ResourceAgent agent : agentsToBeAcknowledged) {
+			agent.acknowledgement++;
+		}
+		
+	}
 
-    @Override
+    private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
+    	for(ResourceAgent agent : agentsToBeAcknowledged) {
+			String name = UUID.randomUUID().toString();
+			StorageObject so = new StorageObject(name, 1, false);
+			 this.repo.registerObject(so);
+			 try {
+					this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
+
+					    @Override
+					    public void conComplete() {				    	
+					    	agent.acknowledgement--;
+					        repo.deregisterObject(so);
+					    }
+					});
+					
+				} catch (NetworkException e) {
+					e.printStackTrace();
+				}
+		}
+	}
+
+	@Override
     public String toString() {
-        return "ResourceAgent: " + repo.getName();
+        return "RA(" + repo.getName() + ")";
     }
 
 }

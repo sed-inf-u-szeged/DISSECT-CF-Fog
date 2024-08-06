@@ -12,7 +12,7 @@ public class Pair {
 
 	@Override
 	public String toString() {
-		return "Pair: " + ra + "-" + constraint;
+		return " Pair:{" + ra + "-" + constraint + "} ";
 	}
 	
 }
