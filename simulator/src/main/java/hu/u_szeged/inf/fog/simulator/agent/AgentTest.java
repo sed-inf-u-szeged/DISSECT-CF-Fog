@@ -77,17 +77,12 @@ public class AgentTest {
         demands.add(new Constraint("A", 3));
         demands.add(new Constraint("B", 3));
         demands.add(new Constraint("C", 3));
-        
-        // choosing one Agent randomly
-        Random random = new Random();
-        ResourceAgent agent = ResourceAgent.agentList.get(random.nextInt((ResourceAgent.agentList.size())));
-        System.out.println("Starter agent: " + agent);
-	    BroadcastMessage bm = new BroadcastMessage(demands, 1);
 	    
-        agent.broadcast(bm, true); 
-       
-        Timed.simulateUntilLastEvent();
-        //System.out.println(Timed.getFireCount());
+	    Orchestration.submitApplication(true, demands, 1);
+
+	    Timed.simulateUntilLastEvent();
+	    
+        System.out.println("Time: " + Timed.getFireCount());
         
         for(ResourceAgent ra : ResourceAgent.agentList) {
         	System.out.println(ra + " " +  ra.acknowledgement);

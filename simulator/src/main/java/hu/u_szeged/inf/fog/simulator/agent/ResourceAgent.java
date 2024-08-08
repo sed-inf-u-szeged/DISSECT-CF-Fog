@@ -43,27 +43,33 @@ public class ResourceAgent {
         } else {
         	bm.alreadyVisitedAgents.add(this); 
         }
+        
+        ArrayList<ResourceAgent> agentsToBeAcknowledged = new ArrayList<>(bm.alreadyVisitedAgents);
         if (bm.demands.size() == 0) {
             System.out.println("A solution found: " + bm.solution + " on this path: " + bm.alreadyVisitedAgents);
+            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, bm.solution);
             solutionFound = true;
         }
         if (solutionFound == false && bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size()) {
             System.out.println("Demands cannot be fulfilled on this path: " + bm.alreadyVisitedAgents);
+            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
             deadEnd = true;
         }
         
-        ArrayList<ResourceAgent> agentsToBeAcknowledged = new ArrayList<>(bm.alreadyVisitedAgents);
+        
     	    	
         if(solutionFound == true || deadEnd == true) {
-        	agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
-        	this.decreaseAcknowledgement(agentsToBeAcknowledged);
+        	
+        	
         }
 
         if (solutionFound == false && deadEnd == false) {
             // broadcasting message to the neighbors
             ArrayList < ResourceAgent > neighbors = new ArrayList < > (ResourceAgent.agentList);
             neighbors.removeAll(bm.alreadyVisitedAgents);
-            this.decreaseAcknowledgement(agentsToBeAcknowledged);
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
             for (ResourceAgent agent : neighbors) {
                 String name = UUID.randomUUID().toString();
                 BroadcastMessage bmsg = new BroadcastMessage(bm, name);
@@ -95,18 +101,26 @@ public class ResourceAgent {
 		
 	}
 
-    private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
+    private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution) {
     	for(ResourceAgent agent : agentsToBeAcknowledged) {
 			String name = UUID.randomUUID().toString();
 			StorageObject so = new StorageObject(name, 1, false);
+			
 			 this.repo.registerObject(so);
 			 try {
 					this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
 
 					    @Override
-					    public void conComplete() {				    	
+					    public void conComplete() {		
 					    	agent.acknowledgement--;
 					        repo.deregisterObject(so);
+					    	if(solution != null && agent == agentsToBeAcknowledged.get(0)) {
+					    		Orchestration.solutions.add(solution);
+					    		if(agent.acknowledgement == 0) {
+					    			Orchestration.removeDuplicates();
+					    		}
+					    	}
+					    	
 					    }
 					});
 					

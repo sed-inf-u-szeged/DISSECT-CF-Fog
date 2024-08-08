@@ -15,18 +15,18 @@ public class BroadcastMessage extends StorageObject {
      */
     ArrayList<Constraint> demands;
     
-    int size;
+    int broadcastMessageSize;
 
-    public BroadcastMessage(ArrayList<Constraint> demands, int size) {
-    	super("bm", size, false);
+    public BroadcastMessage(ArrayList<Constraint> demands, int broadcastMessageSize) {
+    	super("bm", broadcastMessageSize, false);
     	this.solution = new ArrayList<Pair>();
     	this.alreadyVisitedAgents = new ArrayList<ResourceAgent>();
 		this.demands = demands;
-		this.size = size;
+		this.broadcastMessageSize = broadcastMessageSize;
     }
     
     public BroadcastMessage(BroadcastMessage other, String name) {
-    	super(name, other.size, false);
+    	super(name, other.broadcastMessageSize, false);
     	
     	this.alreadyVisitedAgents = new ArrayList<>();
         for (ResourceAgent agent : other.alreadyVisitedAgents) {
