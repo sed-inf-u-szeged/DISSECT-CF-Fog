@@ -68,7 +68,7 @@ public class EdgeDevice extends Device {
      * @param pathLogging        flag indicating if the path logging is enabled for the edge device
      */
     public EdgeDevice(long startTime, long stopTime, long fileSize, long freq, MobilityStrategy mobilityStrategy, 
-            DeviceStrategy deviceStrategy, PhysicalMachine localMachine,double instructionPerByte, int latency, 
+            DeviceStrategy deviceStrategy, PhysicalMachine localMachine, double instructionPerByte, int latency, 
             boolean pathLogging) {
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000; 
         this.startTime = startTime + delay;

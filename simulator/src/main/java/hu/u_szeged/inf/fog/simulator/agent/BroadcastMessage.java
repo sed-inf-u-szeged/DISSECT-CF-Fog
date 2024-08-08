@@ -1,8 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import java.util.ArrayList;
-
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import java.util.ArrayList;
 
 public class BroadcastMessage extends StorageObject {
     
@@ -18,17 +17,17 @@ public class BroadcastMessage extends StorageObject {
     int broadcastMessageSize;
 
     public BroadcastMessage(ArrayList<Constraint> demands, int broadcastMessageSize) {
-    	super("bm", broadcastMessageSize, false);
-    	this.solution = new ArrayList<Pair>();
-    	this.alreadyVisitedAgents = new ArrayList<ResourceAgent>();
-		this.demands = demands;
-		this.broadcastMessageSize = broadcastMessageSize;
+        super("bm", broadcastMessageSize, false);
+        this.solution = new ArrayList<Pair>();
+        this.alreadyVisitedAgents = new ArrayList<ResourceAgent>();
+        this.demands = demands;
+        this.broadcastMessageSize = broadcastMessageSize;
     }
     
     public BroadcastMessage(BroadcastMessage other, String name) {
-    	super(name, other.broadcastMessageSize, false);
-    	
-    	this.alreadyVisitedAgents = new ArrayList<>();
+        super(name, other.broadcastMessageSize, false);
+
+        this.alreadyVisitedAgents = new ArrayList<>();
         for (ResourceAgent agent : other.alreadyVisitedAgents) {
             this.alreadyVisitedAgents.add(agent);
         }
@@ -44,30 +43,23 @@ public class BroadcastMessage extends StorageObject {
         }
     }
 
-	public void checkFulfillment(ResourceAgent agent) {
-		ArrayList<Constraint> fulfilledConstrains = new ArrayList<Constraint>();
+    public void checkFulfillment(ResourceAgent agent) {
+        ArrayList<Constraint> fulfilledConstrains = new ArrayList<Constraint>();
+        
         for (Constraint demand : demands) {
             for (Constraint agentConstraint : agent.constraints) {
-            	if (agentConstraint.name.equals(demand.name) && agentConstraint.value >= demand.value) {
-            		fulfilledConstrains.add(demand);
-            		Pair p = new Pair(agent, demand);
-            		//System.out.println("Demand fulfilled: " + p.ra.repo.getName() + " - " + p.constraint);
-            		this.solution.add(p);
+                if (agentConstraint.name.equals(demand.name) && agentConstraint.value >= demand.value) {
+                    fulfilledConstrains.add(demand);
+                    Pair p = new Pair(agent, demand);
+                    this.solution.add(p);
                     break;
                 }
             }
         }
-        for(Constraint constraint : fulfilledConstrains) {
-        	demands.remove(constraint);
+        
+        for (Constraint constraint : fulfilledConstrains) {
+            demands.remove(constraint);
         }
         alreadyVisitedAgents.add(agent); 
-        
-        //System.out.println(this.solution);
-        //System.out.println(alreadyVisitedAgents);
-        //System.out.println(demands);
     }
-
-	
 }
-
-

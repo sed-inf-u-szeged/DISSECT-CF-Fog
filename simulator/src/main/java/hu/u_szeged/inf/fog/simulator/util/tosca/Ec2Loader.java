@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 
-public class EC2Loader {
+public class Ec2Loader {
     
     private static final String path = new StringBuilder(ScenarioBase.resourcePath)
             .append("TOSCA_examples").append(File.separator).toString();
@@ -29,6 +29,6 @@ public class EC2Loader {
     
     // temp. main for testing
     public static void main(String[] args) {
-        EC2Loader.read();
+        Ec2Loader.read();
     }    
 }

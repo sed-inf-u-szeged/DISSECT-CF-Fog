@@ -105,7 +105,7 @@ public class DecentralizedWorkflowExecutor {
                 }
             }
             if (emptyCa != null && maxCa != null) {
-                workflowScheduler.jobReAssign(maxCa.workflowQueue.poll(),emptyCa);
+                workflowScheduler.jobReAssign(maxCa.workflowQueue.poll(), emptyCa);
             }
 
             for (WorkflowComputingAppliance ca : workflowScheduler.workflowArchitecture.keySet()) {
@@ -224,7 +224,7 @@ public class DecentralizedWorkflowExecutor {
         return ready;
     }
 
-    private static void sendFileToChildren(WorkflowJob currentJob,DecentralizedWorkflowScheduler workflowScheduler) {
+    private static void sendFileToChildren(WorkflowJob currentJob, DecentralizedWorkflowScheduler workflowScheduler) {
         for (Uses uses : currentJob.outputs) {
             if (uses.type.equals(Uses.Type.ACTUATE)) {
                 for (WorkflowJob wj : workflowScheduler.workflowJobs) {

@@ -176,7 +176,7 @@ public class DeviceXmlModel {
      */
     public static void loadDeviceXml(String stationfile) {
         try {
-            loadDeviceXml(stationfile,"",false);
+            loadDeviceXml(stationfile, "", false);
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException 
                 | IllegalAccessException | InstantiationException | JAXBException | IOException e) {
             e.printStackTrace();

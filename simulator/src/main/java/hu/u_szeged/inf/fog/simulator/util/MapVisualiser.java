@@ -127,7 +127,7 @@ public class MapVisualiser {
             for (ComputingAppliance coApp : ca.neighbors) {
                 
                 if (!isIncluded(checkedAppliances, coApp, ca)) {
-                    checkedAppliances.add(new Pair(coApp,ca));
+                    checkedAppliances.add(new Pair(coApp, ca));
                     
                     latencyInfoForMapScript = latencyInfoForMapScript.concat(String.valueOf(ca.geoLocation.latitude))
                             .concat(",").concat(String.valueOf(ca.geoLocation.longitude)).concat(",")

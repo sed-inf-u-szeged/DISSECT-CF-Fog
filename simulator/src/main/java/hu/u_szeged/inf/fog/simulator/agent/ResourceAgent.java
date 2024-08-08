@@ -1,29 +1,27 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.UUID;
-
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import java.util.ArrayList;
+import java.util.UUID;
 
 public class ResourceAgent {
 
-    static ArrayList < ResourceAgent > agentList = new ArrayList < > ();
+    public static ArrayList<ResourceAgent> agentList = new ArrayList<ResourceAgent>();
 
     Repository repo;
     
-    int acknowledgement;
+    public int acknowledgement;
 
     /**
      * Agent's capabilities.
      */
-    ArrayList < Constraint > constraints;
+    ArrayList<Constraint> constraints;
 
-    public ResourceAgent(Repository repo, ArrayList < Constraint > constraints) {
+    public ResourceAgent(Repository repo, ArrayList<Constraint> constraints) {
         this.repo = repo;
         this.constraints = constraints;
         try {
@@ -41,33 +39,26 @@ public class ResourceAgent {
         if (serviceable) {
             bm.checkFulfillment(this);
         } else {
-        	bm.alreadyVisitedAgents.add(this); 
+            bm.alreadyVisitedAgents.add(this); 
         }
         
         ArrayList<ResourceAgent> agentsToBeAcknowledged = new ArrayList<>(bm.alreadyVisitedAgents);
         if (bm.demands.size() == 0) {
             System.out.println("A solution found: " + bm.solution + " on this path: " + bm.alreadyVisitedAgents);
-            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
+            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size() - 1);
             this.decreaseAcknowledgement(agentsToBeAcknowledged, bm.solution);
             solutionFound = true;
         }
         if (solutionFound == false && bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size()) {
             System.out.println("Demands cannot be fulfilled on this path: " + bm.alreadyVisitedAgents);
-            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size()-1);
+            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size() - 1);
             this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
             deadEnd = true;
-        }
-        
-        
-    	    	
-        if(solutionFound == true || deadEnd == true) {
-        	
-        	
         }
 
         if (solutionFound == false && deadEnd == false) {
             // broadcasting message to the neighbors
-            ArrayList < ResourceAgent > neighbors = new ArrayList < > (ResourceAgent.agentList);
+            ArrayList<ResourceAgent> neighbors = new ArrayList<>(ResourceAgent.agentList);
             neighbors.removeAll(bm.alreadyVisitedAgents);
             this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
             for (ResourceAgent agent : neighbors) {
@@ -79,60 +70,53 @@ public class ResourceAgent {
 
                         @Override
                         public void conComplete() {
-                        	increaseAcknowledgemnet(agentsToBeAcknowledged); 
+                            increaseAcknowledgemnet(agentsToBeAcknowledged); 
                             repo.deregisterObject(bmsg);
                             agent.broadcast(bmsg, true);
                         }
-
                     });
                 } catch (NetworkException e) {
-
                     e.printStackTrace();
                 }
             }
         }
-
     }
     
-	private void increaseAcknowledgemnet(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
-		for(ResourceAgent agent : agentsToBeAcknowledged) {
-			agent.acknowledgement++;
-		}
-		
-	}
+    private void increaseAcknowledgemnet(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
+        for (ResourceAgent agent : agentsToBeAcknowledged) {
+            agent.acknowledgement++;
+        }
+    }
 
     private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution) {
-    	for(ResourceAgent agent : agentsToBeAcknowledged) {
-			String name = UUID.randomUUID().toString();
-			StorageObject so = new StorageObject(name, 1, false);
-			
-			 this.repo.registerObject(so);
-			 try {
-					this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
+        for (ResourceAgent agent : agentsToBeAcknowledged) {
+            String name = UUID.randomUUID().toString();
+            StorageObject so = new StorageObject(name, 1, false); // TODO: hard-coded
 
-					    @Override
-					    public void conComplete() {		
-					    	agent.acknowledgement--;
-					        repo.deregisterObject(so);
-					    	if(solution != null && agent == agentsToBeAcknowledged.get(0)) {
-					    		Orchestration.solutions.add(solution);
-					    		if(agent.acknowledgement == 0) {
-					    			Orchestration.removeDuplicates();
-					    		}
-					    	}
-					    	
-					    }
-					});
-					
-				} catch (NetworkException e) {
-					e.printStackTrace();
-				}
-		}
-	}
+            this.repo.registerObject(so);
+            try {
+                this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
 
-	@Override
+                    @Override
+                    public void conComplete() {
+                        agent.acknowledgement--;
+                        repo.deregisterObject(so);
+                        if (solution != null && agent == agentsToBeAcknowledged.get(0)) {
+                            Orchestration.solutions.add(solution);
+                            if (agent.acknowledgement == 0) {
+                                Orchestration.removeDuplicates();
+                            }
+                        }
+                    }
+                });
+            } catch (NetworkException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public String toString() {
         return "RA(" + repo.getName() + ")";
     }
-
 }

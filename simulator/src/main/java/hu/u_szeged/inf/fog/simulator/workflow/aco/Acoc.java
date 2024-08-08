@@ -36,11 +36,11 @@ public class Acoc {
     }
 
     public ArrayList<LinkedHashMap<WorkflowComputingAppliance, Instance>> runAcoc(
-            LinkedHashMap<WorkflowComputingAppliance,Instance> workflowArchitecture,
+            LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture,
                         ArrayList<Actuator> actuatorArchitecutre) throws IOException {
         numberOfNodes = workflowArchitecture.size();
         for (Map.Entry<WorkflowComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
-            Ant ant = new Ant(numberOfNodes, entry.getKey(),entry.getValue());
+            Ant ant = new Ant(numberOfNodes, entry.getKey(), entry.getValue());
             for (int iteration = 0; iteration < maxIterations; iteration++) {
                 ant.generateSolution(randomFactor, entry.getKey(), workflowArchitecture, iteration, evaporationRate);
 
@@ -50,7 +50,7 @@ public class Acoc {
         }
 
         generateClusters();
-        Visualiser.mapGenerator(ScenarioBase.scriptPath,ScenarioBase.resultDirectory,ants);
+        Visualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, ants);
         generateArchitectures(baseLatency);
         return workflowArchitectures;
 
@@ -196,7 +196,7 @@ public class Acoc {
         for (Ant ant : ants) {
             LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchiteture = 
                     workflowArchitectures.get(ant.clusterNumber - 1);
-            workflowArchiteture.put(ant.node,ant.instance);
+            workflowArchiteture.put(ant.node, ant.instance);
         }
         for (LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture : workflowArchitectures) {
             int i = 0;
@@ -205,7 +205,7 @@ public class Acoc {
                 for (Map.Entry<WorkflowComputingAppliance, Instance> entry2 : workflowArchitecture.entrySet()) {
                     if (j >= i + 1 && j != i) {
                         WorkflowComputingAppliance ca = entry.getKey();
-                        ca.addNeighbor(entry2.getKey(),latency);
+                        ca.addNeighbor(entry2.getKey(), latency);
                     }
                     j++;
                 }
@@ -235,8 +235,8 @@ class Ant implements Comparable<Ant> {
         this.bestValue = 0;
         this.pheromoneMatrix = new double[numberOfNodes];
         this.mergeMatrix = new double[numberOfNodes];
-        Arrays.fill(pheromoneMatrix,0.2);
-        Arrays.fill(mergeMatrix,0);
+        Arrays.fill(pheromoneMatrix, 0.2);
+        Arrays.fill(mergeMatrix, 0);
     }
     
     @Override

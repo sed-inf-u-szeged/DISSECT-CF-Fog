@@ -102,7 +102,7 @@ public class ApplianceXmlModel {
      */
     public static void loadApplianceXml(String appliancefile, Map<String, String> iaasMapper) {
         try {
-            loadApplianceXml(appliancefile,iaasMapper,"",false);
+            loadApplianceXml(appliancefile, iaasMapper, "", false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -130,7 +130,7 @@ public class ApplianceXmlModel {
             for (ApplicationXmlModel a : am.getApplications()) {
                 ca.addApplication(new Application(a.name, a.freq, a.tasksize, a.countOfInstructions, a.canJoin,
                         findApplicationStrategy(a.strategy, a.activationRatio, 
-                                a.transferDevider, code,isApplicationCustom),
+                                a.transferDevider, code, isApplicationCustom),
                         Instance.allInstances.get(a.instance)));
             }
         }
@@ -178,7 +178,7 @@ public class ApplianceXmlModel {
             return new RuntimeAwareApplicationStrategy(activationRatio, transferDevider);
         } else if (strategy.equals("CustomApplicationStrategy") && !code.isEmpty() && code != null) {
             String fullCode = CustomApplicationStrategy.renderCustomApplicationStrategyTemplate(code);
-            return CustomApplicationStrategy.loadCustomStrategy(activationRatio,transferDevider,fullCode);
+            return CustomApplicationStrategy.loadCustomStrategy(activationRatio, transferDevider, fullCode);
         } else {
             System.err.println("WARNING: the application strategy called " + strategy + " does not exist!");
             System.exit(0);

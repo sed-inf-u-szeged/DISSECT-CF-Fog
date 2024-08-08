@@ -56,7 +56,7 @@ public class SimLogger {
      * @param toFile set to true if you would like to store log messages into file as well
      */
     public static void setLogging(int logLevel, boolean toFile) {
-        System.setProperty("java.util.logging.SimpleFormatter.format","%5$s %n");
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s %n");
 
         switch (logLevel) {
           case 0:

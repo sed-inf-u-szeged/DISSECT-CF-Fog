@@ -157,7 +157,7 @@ public class DecentralizedWorkflowScheduler extends WorkflowScheduler {
     class WorkflowComperator implements Comparator<WorkflowJob> {
         @Override
         public int compare(WorkflowJob o1, WorkflowJob o2) {
-            return Integer.compare(o1.inputs.get(0).amount,o2.inputs.get(0).amount);
+            return Integer.compare(o1.inputs.get(0).amount, o2.inputs.get(0).amount);
         }
     }
     

@@ -25,20 +25,20 @@
 
   <property name="fileExtensions" value="java, properties, xml"/>
   <!-- Excludes all 'module-info.java' files              -->
-  <!-- See https://checkstyle.org/config_filefilters.html -->
+  <!-- See https://checkstyle.org/filefilters/index.html -->
   <module name="BeforeExecutionExclusionFileFilter">
     <property name="fileNamePattern" value="module\-info\.java$"/>
   </module>
-  <!-- https://checkstyle.org/config_filters.html#SuppressionFilter -->
+  <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
     <!--property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
            default="checkstyle-suppressions.xml" /-->
-    <property name="optional" value="true" />    
+    <property name="optional" value="true" />
     <property name="file" value="${checkstyle.suppressions.file}" />
   </module>
 
   <!-- Checks for whitespace                               -->
-  <!-- See http://checkstyle.org/config_whitespace.html -->
+  <!-- See http://checkstyle.org/checks/whitespace/index.html -->
   <module name="FileTabCharacter">
     <property name="eachLine" value="true"/>
   </module>
@@ -46,7 +46,8 @@
   <module name="LineLength">
     <property name="fileExtensions" value="java"/>
     <property name="max" value="120"/>
-    <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+    <property name="ignorePattern"
+             value="^package.*|^import.*|href\s*=\s*&quot;[^&quot;]*&quot;|http://|https://|ftp://"/>
   </module>
 
   <module name="TreeWalker">
@@ -105,13 +106,11 @@
       <property name="query" value="//RCURLY[parent::SLIST[count(./*)=1]
                                      or preceding-sibling::*[last()][self::LCURLY]]"/>
     </module>
-    <!-- module name="WhitespaceAfter">
+    <module name="WhitespaceAfter">
       <property name="tokens"
-               value="COMMA, SEMI, TYPECAST, LITERAL_IF, LITERAL_ELSE, LITERAL_RETURN,
-                    LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, LITERAL_FINALLY, DO_WHILE, ELLIPSIS,
-                    LITERAL_SWITCH, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_CATCH, LAMBDA,
-                    LITERAL_YIELD, LITERAL_CASE"/>
-    </module-->
+               value="COMMA, SEMI, TYPECAST, LITERAL_IF, LITERAL_ELSE,
+                    LITERAL_WHILE, LITERAL_DO, LITERAL_FOR, DO_WHILE"/>
+    </module>
     <module name="WhitespaceAround">
       <property name="allowEmptyConstructors" value="true"/>
       <property name="allowEmptyLambdas" value="true"/>
@@ -360,7 +359,7 @@
     <module name="CommentsIndentation">
       <property name="tokens" value="SINGLE_LINE_COMMENT, BLOCK_COMMENT_BEGIN"/>
     </module>
-    <!-- https://checkstyle.org/config_filters.html#SuppressionXpathFilter -->
+    <!-- https://checkstyle.org/filters/suppressionxpathfilter.html -->
     <module name="SuppressionXpathFilter">
       <property name="file" value="${org.checkstyle.google.suppressionxpathfilter.config}"
              default="checkstyle-xpath-suppressions.xml" />

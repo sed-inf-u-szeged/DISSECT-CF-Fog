@@ -54,13 +54,13 @@ public class Aco {
                 System.out.println("ant-" + i + " " + Arrays.toString(ants[i].solution));
             }
             calculateFitness(ants, workflowArchitecture, centerNodes);
-            updatePheromones(ants,numberOfAnts);
+            updatePheromones(ants, numberOfAnts);
             evaporatePheromones();
             Aco.printMatrix("updated pheromone matrix: ", pheromoneMatrix);
         }
         ArrayList<LinkedHashMap<ComputingAppliance, Instance>> workflowArchitectures 
-            = generateArchitetures(workflowArchitecture,centerNodes);
-        Visualiser.mapGenerator(ScenarioBase.scriptPath,ScenarioBase.resultDirectory,workflowArchitectures);
+            = generateArchitetures(workflowArchitecture, centerNodes);
+        Visualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowArchitectures);
         return workflowArchitectures;
     }
 
@@ -100,7 +100,7 @@ public class Aco {
         return 0;
     }
 
-    private void updatePheromones(SolutionAnt[] ants,int numberOfAnts) {
+    private void updatePheromones(SolutionAnt[] ants, int numberOfAnts) {
         Arrays.sort(ants);
         int number = (int) Math.ceil(numberOfAnts * 0.2);
         // only top 20% of ants are considered
@@ -139,11 +139,11 @@ public class Aco {
     }
     
     public ArrayList<LinkedHashMap<ComputingAppliance, Instance>> generateArchitetures(LinkedHashMap<ComputingAppliance,
-            Instance> workflowArchitecture,ArrayList<ComputingAppliance> centerNodes) {
+            Instance> workflowArchitecture, ArrayList<ComputingAppliance> centerNodes) {
         ArrayList<LinkedHashMap<ComputingAppliance, Instance>> architectures = new ArrayList<>();
         for (int i = 0; i < numberOfClusters; i++) {
             LinkedHashMap<ComputingAppliance, Instance> cluster = new LinkedHashMap<>();
-            cluster.put(centerNodes.get(i),workflowArchitecture.get(centerNodes.get(i)));
+            cluster.put(centerNodes.get(i), workflowArchitecture.get(centerNodes.get(i)));
             architectures.add(cluster);
 
         }
@@ -169,7 +169,7 @@ public class Aco {
                 for (Map.Entry<ComputingAppliance, Instance> entry2 : architecture.entrySet()) {
                     if (j >= i + 1 && j != i) {
                         ComputingAppliance ca = entry.getKey();
-                        ca.addNeighbor(entry2.getKey(),defaultLatency);
+                        ca.addNeighbor(entry2.getKey(), defaultLatency);
                     }
                     j++;
                 }
