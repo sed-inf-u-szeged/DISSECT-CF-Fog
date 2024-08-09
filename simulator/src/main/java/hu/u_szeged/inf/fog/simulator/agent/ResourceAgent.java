@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
@@ -45,14 +46,13 @@ public class ResourceAgent {
         ArrayList<ResourceAgent> agentsToBeAcknowledged = new ArrayList<>(bm.alreadyVisitedAgents);
         if (bm.demands.size() == 0) {
             System.out.println("A solution found: " + bm.solution + " on this path: " + bm.alreadyVisitedAgents);
-            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size() - 1);
-            this.decreaseAcknowledgement(agentsToBeAcknowledged, bm.solution);
+
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, bm.solution, bm.size);
             solutionFound = true;
         }
         if (solutionFound == false && bm.alreadyVisitedAgents.size() == ResourceAgent.agentList.size()) {
             System.out.println("Demands cannot be fulfilled on this path: " + bm.alreadyVisitedAgents);
-            agentsToBeAcknowledged.remove(bm.alreadyVisitedAgents.size() - 1);
-            this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, null, bm.size);
             deadEnd = true;
         }
 
@@ -60,19 +60,27 @@ public class ResourceAgent {
             // broadcasting message to the neighbors
             ArrayList<ResourceAgent> neighbors = new ArrayList<>(ResourceAgent.agentList);
             neighbors.removeAll(bm.alreadyVisitedAgents);
-            this.decreaseAcknowledgement(agentsToBeAcknowledged, null);
+            this.decreaseAcknowledgement(agentsToBeAcknowledged, null, bm.size);
+
             for (ResourceAgent agent : neighbors) {
                 String name = UUID.randomUUID().toString();
                 BroadcastMessage bmsg = new BroadcastMessage(bm, name);
+                final long initTime = Timed.getFireCount();
                 this.repo.registerObject(bmsg);
                 try {
                     this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
 
                         @Override
                         public void conComplete() {
-                            increaseAcknowledgemnet(agentsToBeAcknowledged); 
+                            agent.increaseAcknowledgement(agentsToBeAcknowledged, bm.size); 
                             repo.deregisterObject(bmsg);
                             agent.broadcast(bmsg, true);
+                            BroadcastMessage.totalByteOnNetwork += bm.size;
+                            BroadcastMessage.broadcastByteOnNetwork += bm.size;
+                            BroadcastMessage.totalTimeOnNetwork += Timed.getFireCount() - initTime;
+                            BroadcastMessage.broadcastTimeOnNetwork += Timed.getFireCount() - initTime;
+                            BroadcastMessage.totalMessageCount++;
+                            BroadcastMessage.broadcastMessageCount++;
                         }
                     });
                 } catch (NetworkException e) {
@@ -80,19 +88,40 @@ public class ResourceAgent {
                 }
             }
         }
-    }
+    }    
     
-    private void increaseAcknowledgemnet(ArrayList<ResourceAgent> agentsToBeAcknowledged) {
+    private void increaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, long msgSize) {
         for (ResourceAgent agent : agentsToBeAcknowledged) {
-            agent.acknowledgement++;
+            String name = UUID.randomUUID().toString();
+            StorageObject so = new StorageObject(name, msgSize / 2, false); 
+            this.repo.registerObject(so);
+            final long initTime = Timed.getFireCount();
+            try {
+                
+                this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
+
+                    @Override
+                    public void conComplete() {
+                        agent.acknowledgement++;
+                        repo.deregisterObject(so);
+                        BroadcastMessage.totalByteOnNetwork += so.size;
+                        BroadcastMessage.totalTimeOnNetwork += Timed.getFireCount() - initTime;
+                        BroadcastMessage.totalMessageCount++;
+                    }
+                });
+            } catch (NetworkException e) {
+                e.printStackTrace();
+            }
+            
         }
     }
 
-    private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution) {
+    private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution, 
+            long msgSize) {
         for (ResourceAgent agent : agentsToBeAcknowledged) {
             String name = UUID.randomUUID().toString();
-            StorageObject so = new StorageObject(name, 1, false); // TODO: hard-coded
-
+            StorageObject so = new StorageObject(name, msgSize / 2, false); 
+            final long initTime = Timed.getFireCount();
             this.repo.registerObject(so);
             try {
                 this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
@@ -101,6 +130,9 @@ public class ResourceAgent {
                     public void conComplete() {
                         agent.acknowledgement--;
                         repo.deregisterObject(so);
+                        BroadcastMessage.totalTimeOnNetwork += Timed.getFireCount() - initTime;
+                        BroadcastMessage.totalMessageCount++;
+                        BroadcastMessage.totalByteOnNetwork += so.size;
                         if (solution != null && agent == agentsToBeAcknowledged.get(0)) {
                             Orchestration.solutions.add(solution);
                             if (agent.acknowledgement == 0) {

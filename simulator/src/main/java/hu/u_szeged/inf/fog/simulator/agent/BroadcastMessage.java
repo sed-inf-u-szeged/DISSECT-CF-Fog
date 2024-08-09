@@ -14,19 +14,28 @@ public class BroadcastMessage extends StorageObject {
      */
     ArrayList<Constraint> demands;
     
-    int broadcastMessageSize;
+    public static long broadcastTimeOnNetwork = 0;
+    
+    public static long broadcastByteOnNetwork = 0;
+    
+    public static int broadcastMessageCount = 0;
+    
+    public static long totalTimeOnNetwork = 0;
+    
+    public static long totalByteOnNetwork = 0;
+    
+    public static int totalMessageCount = 0;
 
     public BroadcastMessage(ArrayList<Constraint> demands, int broadcastMessageSize) {
         super("bm", broadcastMessageSize, false);
         this.solution = new ArrayList<Pair>();
         this.alreadyVisitedAgents = new ArrayList<ResourceAgent>();
         this.demands = demands;
-        this.broadcastMessageSize = broadcastMessageSize;
     }
     
     public BroadcastMessage(BroadcastMessage other, String name) {
-        super(name, other.broadcastMessageSize, false);
-
+        super(name, other.size, false);
+        
         this.alreadyVisitedAgents = new ArrayList<>();
         for (ResourceAgent agent : other.alreadyVisitedAgents) {
             this.alreadyVisitedAgents.add(agent);
@@ -62,4 +71,13 @@ public class BroadcastMessage extends StorageObject {
         }
         alreadyVisitedAgents.add(agent); 
     }
+    
+    public static int calculateTotalMessages(int n) {
+        if (n == 2) {
+            return 1;
+        } else {
+            return (n - 1) + (n - 1) * calculateTotalMessages(n - 1); 
+        }
+    }
+ 
 }
