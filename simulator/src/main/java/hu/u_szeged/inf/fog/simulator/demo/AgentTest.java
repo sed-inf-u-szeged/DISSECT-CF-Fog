@@ -30,6 +30,7 @@ public class AgentTest {
 				.generateTransitions(20, 200, 300, 10, 20);
 		
 		// creating RAs
+		/*  */
 		ArrayList<Constraint> constraints1 = new ArrayList<>();
 		constraints1.add(new Constraint("A", 1));
 		constraints1.add(new Constraint("B", 2));
@@ -39,7 +40,7 @@ public class AgentTest {
 				transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
 				transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints1);
 		latencyMap.put("ra1", 50);
-
+ 
 		ArrayList<Constraint> constraints2 = new ArrayList<>();
 		constraints2.add(new Constraint("A", 4));
 		constraints2.add(new Constraint("B", 7));
@@ -47,7 +48,7 @@ public class AgentTest {
 				transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
 				transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints2);
 		latencyMap.put("ra2", 66);
-
+ 
 		ArrayList<Constraint> constraints3 = new ArrayList<>();
 		constraints3.add(new Constraint("A", 4));
 		constraints3.add(new Constraint("C", 3));
@@ -72,7 +73,7 @@ public class AgentTest {
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)), constraints5);
         latencyMap.put("ra5", 73);
-
+    
         ArrayList<Constraint> constraints6 = new ArrayList<>();
         constraints6.add(new Constraint("B", 3));
         constraints6.add(new Constraint("D", 6));
@@ -102,8 +103,11 @@ public class AgentTest {
 		
 		System.out.println("Total time: " + BroadcastMessage.totalTimeOnNetwork + " Broadcast time: " + BroadcastMessage.broadcastTimeOnNetwork); 
 		System.out.println("Total byte: " + BroadcastMessage.totalByteOnNetwork + " Broadcast byte: " + BroadcastMessage.broadcastByteOnNetwork); 
-		System.out.println("Total msg count: " + BroadcastMessage.totalMessageCount + " Broadcast msg count: " + BroadcastMessage.broadcastMessageCount
-		        + " / " + BroadcastMessage.calculateTotalMessages(ResourceAgent.agentList.size()) + " (naive)"); 
+		System.out.println("Total msg count: "             + BroadcastMessage.totalMessageCount 
+		                 + " Broadcast msg count: "        + BroadcastMessage.broadcastMessageCount
+		                 + " Ackknowledgement msg count: " + (BroadcastMessage.totalMessageCount - BroadcastMessage.broadcastMessageCount)
+		                 + " Worst case (ack / br): "      + BroadcastMessage.calculateAcknowledgementMessages(ResourceAgent.agentList.size())
+		                 + " / "                           + BroadcastMessage.calculateTotalBrMessages(ResourceAgent.agentList.size())); 
  
 		System.out.println("Acknowledgements:");
 		for (ResourceAgent ra : ResourceAgent.agentList) {

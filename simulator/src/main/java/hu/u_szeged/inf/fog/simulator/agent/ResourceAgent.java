@@ -60,6 +60,7 @@ public class ResourceAgent {
             // broadcasting message to the neighbors
             ArrayList<ResourceAgent> neighbors = new ArrayList<>(ResourceAgent.agentList);
             neighbors.removeAll(bm.alreadyVisitedAgents);
+            
             this.decreaseAcknowledgement(agentsToBeAcknowledged, null, bm.size);
 
             for (ResourceAgent agent : neighbors) {
@@ -91,6 +92,7 @@ public class ResourceAgent {
     }    
     
     private void increaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, long msgSize) {
+        //System.out.println(this.repo.getName() + " sends inc. to: " + agentsToBeAcknowledged);
         for (ResourceAgent agent : agentsToBeAcknowledged) {
             String name = UUID.randomUUID().toString();
             StorageObject so = new StorageObject(name, msgSize / 2, false); 
@@ -118,6 +120,7 @@ public class ResourceAgent {
 
     private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution, 
             long msgSize) {
+        //System.out.println(this.repo.getName() + " sends dec. to: " + agentsToBeAcknowledged);
         for (ResourceAgent agent : agentsToBeAcknowledged) {
             String name = UUID.randomUUID().toString();
             StorageObject so = new StorageObject(name, msgSize / 2, false); 

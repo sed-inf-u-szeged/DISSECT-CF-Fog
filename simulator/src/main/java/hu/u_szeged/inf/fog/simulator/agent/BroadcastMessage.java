@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class BroadcastMessage extends StorageObject {
     
@@ -72,12 +73,41 @@ public class BroadcastMessage extends StorageObject {
         alreadyVisitedAgents.add(agent); 
     }
     
-    public static int calculateTotalMessages(int n) {
+    public static int calculateTotalBrMessages(int n) {
         if (n == 2) {
             return 1;
         } else {
-            return (n - 1) + (n - 1) * calculateTotalMessages(n - 1); 
+            return (n - 1) + (n - 1) * calculateTotalBrMessages(n - 1); 
         }
     }
- 
+    
+    public static ArrayList<Integer> countEdgesPerLevel(int n) {
+        ArrayList<Integer> edgeCounts = new ArrayList<>();
+        
+        int currentEdges = n - 1;
+        
+        while (currentEdges > 0) {
+            if (edgeCounts.isEmpty()) {
+                edgeCounts.add(currentEdges);
+            } else {
+                edgeCounts.add(edgeCounts.get(edgeCounts.size() - 1) * currentEdges);
+            }
+            currentEdges -= 1;
+        }
+        Collections.reverse(edgeCounts);
+        return edgeCounts;
+    } 
+    
+    public static int calculateAcknowledgementMessages(int n ) {
+        ArrayList<Integer> edgeCounts = countEdgesPerLevel(n);
+        
+        int totalMessageCount = 0;
+        int previousSum = 2;
+        
+        for (int i = 0; i < edgeCounts.size(); i++) {
+            totalMessageCount += edgeCounts.get(i) * previousSum;
+            previousSum = (i + 1) * previousSum + 2;
+        }
+        return totalMessageCount;
+    }
 }
