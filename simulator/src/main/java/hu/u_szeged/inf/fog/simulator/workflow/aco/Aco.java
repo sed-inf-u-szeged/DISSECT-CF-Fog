@@ -12,12 +12,19 @@ import java.util.Map;
 public class Aco {
 
     private int numberOfClusters;    
+    
     private int numberOfNodes;
+    
     private int numberOfAnts;
+    
     private double evaporationRate;
+    
     private int maxIterations;
+    
     private double randomFactor;
+    
     private int defaultLatency;
+    
     private double[][] pheromoneMatrix;
 
     public Aco(int numberOfClusters, int numberOfNodes, int numberOfAnts,
@@ -73,7 +80,9 @@ public class Aco {
         for (SolutionAnt ant : ants) {
             double fitnessLevel = 0;
             for (int i = 0; i < numberOfNodes; i++) {
-                double heuristic = calculateHeuristics(i, workflowArchitecture, centerNodes.get(ant.solution[i]));
+                double heuristic = 
+                        
+                        calculateHeuristics(i, workflowArchitecture, centerNodes.get(ant.solution[i]));
                 fitnessLevel += heuristic / 1000;
             }
             ant.fitness = fitnessLevel;

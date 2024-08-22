@@ -98,7 +98,7 @@ public class BroadcastMessage extends StorageObject {
         return edgeCounts;
     } 
     
-    public static int calculateAcknowledgementMessages(int n ) {
+    public static int calculateAcknowledgementMessages(int n) {
         ArrayList<Integer> edgeCounts = countEdgesPerLevel(n);
         
         int totalMessageCount = 0;
