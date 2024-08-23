@@ -24,6 +24,8 @@ The project currently consists of five modules; for further details please follo
 
 The discrete-event, core [simulator module] focusing on the interoperation and analysis of IoT-Fog-Cloud systems.
 
+##### ⚠️ **Important Notice** : The core simulator can run independently without the need to install the other modules!
+
 #### 2. Web Application
 
 An Angular-based [web application module] that can be used to set up a simulation and its parameters without programming.
