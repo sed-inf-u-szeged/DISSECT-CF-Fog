@@ -14,7 +14,8 @@ public class CentralisedAntOptimiser {
      */
     private static double[][] globalPheromoneMatrix;
 
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> runOptimiser(ArrayList<WorkflowComputingAppliance> centerNodes, 
+    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> runOptimiser(
+            ArrayList<WorkflowComputingAppliance> centerNodes, 
             ArrayList<WorkflowComputingAppliance> nodesToBeClustered, 
             int numberOfAnts, int numberOfIteration, double probability, double topPercentAnts,
             double pheromoneIncrement, double evaporationRate) {
@@ -42,12 +43,13 @@ public class CentralisedAntOptimiser {
             calculateFitness(centerNodes, nodesToBeClustered, ants);
             updatePheromones(nodesToBeClustered, ants, topPercentAnts, pheromoneIncrement);
             evaporatePheromones(globalPheromoneMatrix, evaporationRate);
-            Aco.printMatrix("updated pheromone matrix: ", globalPheromoneMatrix);
+            printMatrix("updated pheromone matrix: ", globalPheromoneMatrix);
         }
         return generateClusters(globalPheromoneMatrix, nodesToBeClustered, centerNodes);
     }
     
-    private static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> generateClusters(double[][] globalPheromoneMatrix,
+    private static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> generateClusters(
+            double[][] globalPheromoneMatrix,
             ArrayList<WorkflowComputingAppliance> nodesToBeClustered,
             ArrayList<WorkflowComputingAppliance> centerNodes) {
 
@@ -125,7 +127,9 @@ public class CentralisedAntOptimiser {
     public static void printClusterAssignments(
             HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment) {
         
-        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry : clusterAssignment.entrySet()) {
+        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry :
+            clusterAssignment.entrySet()) {
+            
             WorkflowComputingAppliance center = entry.getKey();
             ArrayList<WorkflowComputingAppliance> nodes = entry.getValue();
             

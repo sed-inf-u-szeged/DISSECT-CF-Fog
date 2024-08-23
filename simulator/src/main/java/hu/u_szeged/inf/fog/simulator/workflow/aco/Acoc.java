@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
-import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
@@ -50,7 +49,7 @@ public class Acoc {
         }
 
         generateClusters();
-        Visualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, ants);
+        // AcoVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, ants);
         generateArchitectures(baseLatency);
         return workflowArchitectures;
 

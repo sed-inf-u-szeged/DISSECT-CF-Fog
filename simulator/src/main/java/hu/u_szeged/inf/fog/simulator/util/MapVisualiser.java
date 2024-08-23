@@ -6,12 +6,15 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Provides functionality to generate a map visualization in HTML format
@@ -90,6 +93,52 @@ public class MapVisualiser {
         MapVisualiser.generateMap(scriptPath, resultDirectory, devices);
     }
 
+    public static void clusterMapGenerator(
+            HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment,
+            String scriptPath, String resultDirectory) throws IOException {
+        
+        String nodeInfoForMapScript = "";
+        
+        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry :
+            clusterAssignment.entrySet()) {
+            
+            WorkflowComputingAppliance center = entry.getKey();
+            ArrayList<WorkflowComputingAppliance> nodes = entry.getValue();
+            
+
+            nodeInfoForMapScript = nodeInfoForMapScript.concat(center.name).concat(",")
+                    .concat(String.valueOf(center.geoLocation.latitude)).concat(",")
+                    .concat(String.valueOf(center.geoLocation.longitude))
+                    .concat(",");
+
+            for (WorkflowComputingAppliance node : nodes) {
+                nodeInfoForMapScript = nodeInfoForMapScript.concat(node.name).concat(",")
+                        .concat(String.valueOf(node.geoLocation.latitude)).concat(",")
+                        .concat(String.valueOf(node.geoLocation.longitude))
+                        .concat(",");
+            }
+            nodeInfoForMapScript = nodeInfoForMapScript.replaceAll(".$", ";");
+        }
+        nodeInfoForMapScript = nodeInfoForMapScript.replaceAll(".$", "");
+        //System.out.println(nodeInfoForMapScript); 
+        
+        if (System.getProperty("os.name").contains("Windows")) {
+            ProcessBuilder pb = new ProcessBuilder("python", scriptPath + "clusterMap.py", 
+                    nodeInfoForMapScript, resultDirectory);
+            // System.out.println(pb.command());
+
+            pb.redirectOutput(Redirect.INHERIT);
+            pb.redirectError(Redirect.INHERIT);
+            pb.start();
+        } else {
+            ProcessBuilder pb = new ProcessBuilder("python3", scriptPath + "clusterMap.py", 
+                    nodeInfoForMapScript, resultDirectory);
+            pb.redirectOutput(Redirect.INHERIT);
+            pb.redirectError(Redirect.INHERIT);
+            pb.start();
+        }
+    }
+    
     /**
      * The real map generator.
      *

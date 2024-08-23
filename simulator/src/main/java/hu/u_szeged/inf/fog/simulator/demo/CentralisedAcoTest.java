@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 
 public class CentralisedAcoTest {
@@ -61,8 +62,9 @@ public class CentralisedAcoTest {
         
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment;
         
-        clusterAssignment = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 10, 50, 0.9, 0.3, 0.1, 0.1);
+        clusterAssignment = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 100, 500, 0.9, 0.3, 0.1, 0.1);
         
         CentralisedAntOptimiser.printClusterAssignments(clusterAssignment);
+        MapVisualiser.clusterMapGenerator(clusterAssignment, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
     }
 }
