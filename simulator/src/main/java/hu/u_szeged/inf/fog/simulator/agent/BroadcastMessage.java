@@ -73,7 +73,7 @@ public class BroadcastMessage extends StorageObject {
         alreadyVisitedAgents.add(agent); 
     }
     
-    public static int calculateTotalBrMessages(int n) {
+    public static long calculateTotalBrMessages(int n) {
         if (n == 2) {
             return 1;
         } else {
@@ -98,10 +98,10 @@ public class BroadcastMessage extends StorageObject {
         return edgeCounts;
     } 
     
-    public static int calculateAcknowledgementMessages(int n) {
+    public static long calculateAcknowledgementMessages(int n) {
         ArrayList<Integer> edgeCounts = countEdgesPerLevel(n);
         
-        int totalMessageCount = 0;
+        long totalMessageCount = 0;
         int previousSum = 2;
         
         for (int i = 0; i < edgeCounts.size(); i++) {

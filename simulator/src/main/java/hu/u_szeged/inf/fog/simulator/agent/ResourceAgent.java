@@ -93,18 +93,18 @@ public class ResourceAgent {
     
     private void increaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, long msgSize) {
         //System.out.println(this.repo.getName() + " sends inc. to: " + agentsToBeAcknowledged);
-        for (ResourceAgent agent : agentsToBeAcknowledged) {
+        //for (ResourceAgent agent : agentsToBeAcknowledged) {
             String name = UUID.randomUUID().toString();
             StorageObject so = new StorageObject(name, msgSize / 2, false); 
             this.repo.registerObject(so);
             final long initTime = Timed.getFireCount();
             try {
                 
-                this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
+                this.repo.requestContentDelivery(name, agentsToBeAcknowledged.get(0).repo, new ConsumptionEventAdapter() {
 
                     @Override
                     public void conComplete() {
-                        agent.acknowledgement++;
+                        agentsToBeAcknowledged.get(0).acknowledgement++;
                         repo.deregisterObject(so);
                         BroadcastMessage.totalByteOnNetwork += so.size;
                         BroadcastMessage.totalTimeOnNetwork += Timed.getFireCount() - initTime;
@@ -114,31 +114,30 @@ public class ResourceAgent {
             } catch (NetworkException e) {
                 e.printStackTrace();
             }
-            
-        }
+       // }
     }
 
     private void decreaseAcknowledgement(ArrayList<ResourceAgent> agentsToBeAcknowledged, ArrayList<Pair> solution, 
             long msgSize) {
         //System.out.println(this.repo.getName() + " sends dec. to: " + agentsToBeAcknowledged);
-        for (ResourceAgent agent : agentsToBeAcknowledged) {
+        //for (ResourceAgent agent : agentsToBeAcknowledged) {
             String name = UUID.randomUUID().toString();
             StorageObject so = new StorageObject(name, msgSize / 2, false); 
             final long initTime = Timed.getFireCount();
             this.repo.registerObject(so);
             try {
-                this.repo.requestContentDelivery(name, agent.repo, new ConsumptionEventAdapter() {
+                this.repo.requestContentDelivery(name, agentsToBeAcknowledged.get(0).repo, new ConsumptionEventAdapter() {
 
                     @Override
                     public void conComplete() {
-                        agent.acknowledgement--;
+                        agentsToBeAcknowledged.get(0).acknowledgement--;
                         repo.deregisterObject(so);
                         BroadcastMessage.totalTimeOnNetwork += Timed.getFireCount() - initTime;
                         BroadcastMessage.totalMessageCount++;
                         BroadcastMessage.totalByteOnNetwork += so.size;
-                        if (solution != null && agent == agentsToBeAcknowledged.get(0)) {
+                        if (solution != null ) {
                             Orchestration.solutions.add(solution);
-                            if (agent.acknowledgement == 0) {
+                            if (agentsToBeAcknowledged.get(0).acknowledgement == 0) {
                                 Orchestration.removeDuplicates();
                             }
                         }
@@ -147,9 +146,15 @@ public class ResourceAgent {
             } catch (NetworkException e) {
                 e.printStackTrace();
             }
-        }
+        //}
     }
-
+    /*
+    @Override
+    public String toString() {
+        return "ResourceAgent [repo=" + repo.getName() + ", constraints=" + constraints + "]";
+    }
+    */
+    
     @Override
     public String toString() {
         return "RA(" + repo.getName() + ")";
