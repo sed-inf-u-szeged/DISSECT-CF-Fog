@@ -13,7 +13,13 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
+
+import java.io.IOException;
 import java.util.ArrayList;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
 
 /**
  * This component represents the physical resources (fog and cloud nodes) in the system.
@@ -26,7 +32,7 @@ public class ComputingAppliance {
     /**
      * Ensures a common virtual image file with 1 GB of disk size requirement.
      */
-    public static VirtualAppliance brokerVa = new VirtualAppliance("brokerVa", 1, 0, false, 1073741824L); // 1 GB
+    public static VirtualAppliance brokerVa = new VirtualAppliance("brokerVa", 1, 0, false, 1073741824L);
     
     /**
      * Ensures a common resource (1 CPU core, 0.001 processing speed and 1 GB of memory) requirements for the broker VM.
@@ -48,7 +54,7 @@ public class ComputingAppliance {
      * This class represents a single IaaS service responsible for maintaining
      * physical machines and scheduling VM requests.
      */
-    public final IaaSService iaas;
+    public IaaSService iaas;
 
     /**
      * The covered physical neighborhood of the node from where it accepts IoT data (in km).
@@ -103,8 +109,12 @@ public class ComputingAppliance {
      * @param geoLocation the geographical location of the computing appliance
      * @param range       the range of the computing appliance
      */
-    public ComputingAppliance(String file, String name, GeoLocation geoLocation, long range) throws Exception {
-        this.iaas = CloudLoader.loadNodes(file);
+    public ComputingAppliance(String file, String name, GeoLocation geoLocation, long range) {
+        try {
+            this.iaas = CloudLoader.loadNodes(file);
+        } catch (IOException | SAXException | ParserConfigurationException e) {
+            e.printStackTrace();
+        }
         this.name = name;
         this.geoLocation = geoLocation;
         this.range = range;

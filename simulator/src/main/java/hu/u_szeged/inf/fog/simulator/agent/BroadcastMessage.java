@@ -6,7 +6,7 @@ import java.util.Collections;
 
 public class BroadcastMessage extends StorageObject {
     
-    ArrayList<ResourceAgent> alreadyVisitedAgents;
+    ArrayList<NaiveResourceAgent> alreadyVisitedAgents;
     
     ArrayList<Pair> solution;
     
@@ -30,7 +30,7 @@ public class BroadcastMessage extends StorageObject {
     public BroadcastMessage(ArrayList<Constraint> demands, int broadcastMessageSize) {
         super("bm", broadcastMessageSize, false);
         this.solution = new ArrayList<Pair>();
-        this.alreadyVisitedAgents = new ArrayList<ResourceAgent>();
+        this.alreadyVisitedAgents = new ArrayList<NaiveResourceAgent>();
         this.demands = demands;
     }
     
@@ -38,7 +38,7 @@ public class BroadcastMessage extends StorageObject {
         super(name, other.size, false);
         
         this.alreadyVisitedAgents = new ArrayList<>();
-        for (ResourceAgent agent : other.alreadyVisitedAgents) {
+        for (NaiveResourceAgent agent : other.alreadyVisitedAgents) {
             this.alreadyVisitedAgents.add(agent);
         }
         
@@ -53,7 +53,7 @@ public class BroadcastMessage extends StorageObject {
         }
     }
 
-    public void checkFulfillment(ResourceAgent agent) {
+    public void checkFulfillment(NaiveResourceAgent agent) {
         ArrayList<Constraint> fulfilledConstrains = new ArrayList<Constraint>();
         
         for (Constraint demand : demands) {

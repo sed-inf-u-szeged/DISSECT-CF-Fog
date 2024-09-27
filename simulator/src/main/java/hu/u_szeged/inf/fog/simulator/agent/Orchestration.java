@@ -11,7 +11,7 @@ public class Orchestration {
     public static void submitApplication(boolean firstAgentAllowed, ArrayList<Constraint> demands, 
             int broadcastMessageSize) {
         Random random = new Random();
-        ResourceAgent agent = ResourceAgent.agentList.get(random.nextInt((ResourceAgent.agentList.size())));
+        NaiveResourceAgent agent = NaiveResourceAgent.agentList.get(random.nextInt((NaiveResourceAgent.agentList.size())));
         System.out.println("Starter agent: " + agent);
         BroadcastMessage bm = new BroadcastMessage(demands, broadcastMessageSize);
         agent.broadcast(bm, firstAgentAllowed); 
