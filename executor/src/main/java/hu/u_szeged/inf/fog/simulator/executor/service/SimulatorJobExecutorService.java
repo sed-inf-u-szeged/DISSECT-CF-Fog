@@ -9,13 +9,13 @@ import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
 import hu.u_szeged.inf.fog.simulator.executor.util.SimulatorJobFileUtil;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
-import hu.u_szeged.inf.fog.simulator.physical.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
-import hu.u_szeged.inf.fog.simulator.util.xmlhandler.ApplianceModel;
-import hu.u_szeged.inf.fog.simulator.util.xmlhandler.DeviceModel;
-import hu.u_szeged.inf.fog.simulator.util.xmlhandler.InstanceModel;
+import hu.u_szeged.inf.fog.simulator.util.xml.ApplianceXmlModel;
+import hu.u_szeged.inf.fog.simulator.util.xml.DeviceXmlModel;
+import hu.u_szeged.inf.fog.simulator.util.xml.InstanceXmlModel;
 
 import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.APPLIANCES_FILE;
 import static hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType.DEVICES_FILE;
@@ -68,7 +68,7 @@ public class SimulatorJobExecutorService {
         MobilityEvent.connectToNodeEventCounter = 0;
         MobilityEvent.disconnectFromNodeEventCounter = 0;
 
-        for (Provider provider : Provider.providers) {
+        for (Provider provider : Provider.allProviders) {
             provider.cost = 0;
         }
     }
@@ -81,9 +81,9 @@ public class SimulatorJobExecutorService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         try {
-            DeviceModel.loadDeviceXML(simulatorJobConfigs.getFirst(DEVICES_FILE).getPath(),simulatorJob.getDeviceCode(),Boolean.valueOf(simulatorJob.getIsDeviceCodeCustom()));
-            InstanceModel.loadInstanceXML(simulatorJobConfigs.getFirst(INSTANCES_FILE).getPath());
-            ApplianceModel.loadApplianceXML(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders, simulatorJob.getApplicationCode(),Boolean.valueOf(simulatorJob.getIsApplicationCodeCustom()));
+            DeviceXmlModel.loadDeviceXml(simulatorJobConfigs.getFirst(DEVICES_FILE).getPath(),simulatorJob.getDeviceCode(),Boolean.valueOf(simulatorJob.getIsDeviceCodeCustom()));
+            InstanceXmlModel.loadInstanceXml(simulatorJobConfigs.getFirst(INSTANCES_FILE).getPath());
+            ApplianceXmlModel.loadApplianceXml(simulatorJobConfigs.getFirst(APPLIANCES_FILE).getPath(), iaasLoaders, simulatorJob.getApplicationCode(),Boolean.valueOf(simulatorJob.getIsApplicationCodeCustom()));
         } catch (Exception e) {
             e.printStackTrace();
         }

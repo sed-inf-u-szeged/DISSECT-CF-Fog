@@ -2,7 +2,7 @@ package hu.u_szeged.inf.fog.simulator.executor.model;
 
 import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ConfigFileType;
 import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
-import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
+import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import java.io.File;
 import java.util.stream.Stream;
 import lombok.Builder;

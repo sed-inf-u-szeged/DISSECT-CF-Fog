@@ -43,7 +43,7 @@ public class ComputingAppliance {
      * A list containing references to all computing appliances.
      * Each element in the list is an instance of the {@code ComputingAppliance} class.
      */
-    private static ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>();
+    public static ArrayList<ComputingAppliance> allComputingAppliances = new ArrayList<>();
 
     /**
      * The physical position of the node.

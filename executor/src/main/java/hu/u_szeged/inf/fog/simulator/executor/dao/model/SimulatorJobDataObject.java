@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.executor.dao.model;
 
 import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJobStatus;
-import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
+import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.Builder;

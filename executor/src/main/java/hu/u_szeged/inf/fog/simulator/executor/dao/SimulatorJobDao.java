@@ -4,7 +4,7 @@ import hu.u_szeged.inf.fog.simulator.executor.dao.model.SimulatorJobDataObject;
 import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJob;
 import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJobStatus;
 import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
-import hu.u_szeged.inf.fog.simulator.result.SimulatorJobResult;
+import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Optional;
