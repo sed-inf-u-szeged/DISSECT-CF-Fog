@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    command: ["mongod", "--bind_ip_all"]
+
+  # Node.js Backend Service
+  node-backend:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    container_name: node-backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    volumes:
+      - node_backend_data:/usr/src/app  # Named volume for backend data
+
+  # Angular Frontend Service
+  angular-frontend:
+    build:
+      context: ./webapp/frontend
+      dockerfile: Dockerfile
+    container_name: angular-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - node-backend
+    volumes:
+      - angular_frontend_data:/usr/src/app  # Named volume for frontend data
+
+  # Spring Executor Service
+  spring-executor:
+    build:
+      context: ./executor
+      dockerfile: Dockerfile
+    container_name: spring-executor
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    volumes:
+      - spring_executor_data:/usr/src/app  # Named volume for executor data
+
+volumes:
+  mongo_data:          # Volume for MongoDB data
+  node_backend_data:   # Volume for Node.js backend
+  angular_frontend_data:  # Volume for Angular frontend
+  spring_executor_data: # Volume for Spring Executor

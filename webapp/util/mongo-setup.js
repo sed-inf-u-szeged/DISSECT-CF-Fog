@@ -38,8 +38,15 @@ async function uploadFile(client, database, path, name) {
  */
 async function main() {
 
+    //Check if created.lock exists, if so then the database is already set up
+    if (fs.existsSync('./created.lock')) {
+        return;
+    } else {
+        fs.writeFileSync('./created.lock', 'created');
+    }
+
     const database = 'dissect'
-    const uri = `mongodb://localhost:27017/${database}`;
+    const uri = `mongodb://mongodb:27017/${database}`;
     const client = new mongodb.MongoClient(uri, { useUnifiedTopology: true });
 
     try {
