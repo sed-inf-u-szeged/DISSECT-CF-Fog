@@ -1,0 +1,41 @@
+<mat-drawer-container hasBackdrop="false" class="drawer">
+  <!-- Info panel -->
+  <mat-drawer #drawer class="info-panel" mode="over" position="end">
+    <app-info-panel [infoData]="panelService.infoData$ | async"></app-info-panel>
+  </mat-drawer>
+  <div>
+    <!-- Configuration stepper -->
+    <mat-horizontal-stepper (animationDone)="stepperDone()" [linear]="isLinear" #stepper>
+      <mat-step>
+        <ng-template matStepLabel><span class="step-title">Quantity</span></ng-template>
+        <app-node-quantity-form></app-node-quantity-form>
+      </mat-step>
+      <mat-step>
+        <ng-template matStepLabel><span class="step-title">Instances</span></ng-template>
+        <app-list-instances></app-list-instances>
+      </mat-step>
+      <mat-step>
+        <ng-template matStepLabel><span class="step-title">Nodes</span></ng-template>
+        <ng-container ></ng-container>
+        <app-list-configurable-nodes
+          [numOfClouds]="(configurationStateService.nodesQuantity$ | async)?. numberOfClouds"
+          [numOfFogs]="(configurationStateService.nodesQuantity$ | async)?. numberOfFogs"
+        ></app-list-configurable-nodes>
+      </mat-step>
+      <mat-step>
+        <ng-template matStepLabel><span class="step-title">Devices</span></ng-template>
+        <app-list-stations [stations]="stations"></app-list-stations>
+      </mat-step>
+      <mat-step>
+        <ng-template matStepLabel><span class="step-title">Connection</span></ng-template>
+        <app-connection></app-connection>
+      </mat-step>
+      <mat-step #fifth_step>
+        <ng-template matStepLabel><span class="step-title">Result</span></ng-template>
+        <ng-container *ngIf="stepper.selected == fifth_step">
+          <app-configuration-end [showSpinner]="stepperAnimationDone$ | async"></app-configuration-end>
+        </ng-container>
+      </mat-step>
+    </mat-horizontal-stepper>
+  </div>
+</mat-drawer-container>

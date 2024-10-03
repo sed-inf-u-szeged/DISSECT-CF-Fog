@@ -1,0 +1,161 @@
+.spinner-wrapper {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 0%;
+  left: 0%;
+}
+
+@media screen and (min-width: 1000px) {
+  .spinner-wrapper{
+    left: 5%;
+  }
+}
+
+.tab{
+  padding: 1rem 0;
+}
+
+.fail-title{
+  color: red;
+  font-weight: 500;
+  line-height: 40px;
+}
+
+.fail-img{
+  width: 200px;
+  height: 200px;
+}
+
+.fail-content{
+  text-align: center;
+  height: 100%;
+  margin-top: 5rem;
+}
+
+.error{
+  outline: 1px solid black;
+  padding: 1rem;
+  margin: 0 20%;
+}
+
+.configuration-fail-header{
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.files-container{
+  display: flex;
+}
+
+.configuration-files-header{
+  text-align: center;
+  font-weight: 500;
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+  width: 70%;
+  border-bottom: 1px solid #e1e1e1a6;
+  padding-bottom: 0.2rem;
+}
+
+.files{
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 40%;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.resource-container{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.download-btn{
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  width: 125px;
+}
+
+.download-icon{
+  margin-left: 0.5rem;
+}
+
+.file{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background-color: #e6e6e685;
+  text-align: center;
+  border-radius: 5%;
+  padding: 1rem 0.5rem;
+  width: 150px;
+  margin: 0.5rem;
+}
+
+.stdout{
+  padding: 1.5rem 5rem;
+}
+
+.output-text{
+  white-space: pre-wrap;
+}
+
+::ng-deep .mat-tab-label-active{
+  color: #ff5722 !important;
+}
+
+@media screen and (max-width: 700px) {
+  .stdout{
+    padding: 1.5rem 2rem;
+  }
+}
+
+@media screen and (max-width: 475px) {
+  .file{
+    margin: 0.2rem;
+  }
+  .configuration-files-header{
+    margin-top: 0;
+  }
+}
+
+@media screen and (max-width: 350px) {
+  ::ng-deep .mat-tab-label{
+    padding: 0 !important;
+  }
+  .configuration-files-header{
+    width: 90%;
+  }
+  .stdout{
+    padding: 1.5rem 0rem;
+  }
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+#simulationName {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 0
+}
+
+#forwardButton, #prevButton {
+  margin-left: 1%; margin-right: 1%
+}

@@ -1,0 +1,88 @@
+ <mat-card class="card">
+  <form [formGroup]="nodeCardForm">
+    <div class="container">
+      <!-- Node icon / If the window is too small it will contain the status icon too-->
+      <div class="node-icon node-header">
+        <img alt="node-icon" class="node-icon-img" [src]="nodeIcon">
+        <div class="top-status">
+          <img alt="status" class="status-icon-img" [src]="statusIcon">
+        </div>
+      </div>
+      <div class="configuration-tools" layout="row" flex>
+        <!-- Resource selection with info button-->
+        <div class="resource">
+          <mat-form-field class="resource-selector">
+            <mat-label>Resource file</mat-label>
+            <mat-select [(ngModel)]="selectedResource"
+              name="selectedResource.name"
+              [ngModelOptions]="{ standalone: true }"
+              (selectionChange)="onResourceChange()">
+              <mat-option *ngFor="let resource of resources" [value]="resource"> {{ resource.name }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoPanelForResources()">
+            <i class="fas fa-info-circle fa-lg"></i>
+          </button>
+        </div>
+        <!-- Applications -->
+        <div class="configure-apps">
+          <div fxLayout="column" fxLayoutAlign="space-around center">
+            <label>Applications</label>
+            <mat-form-field appearance="outline" class="apps-quantity-input">
+              <input
+                class="setText-center"
+                matInput
+                type="number"
+                (keyup)="onChange()"
+                formControlName="numOfApplications"
+              />
+              <mat-icon [matTooltip]="errorTooltip" [matTooltipDisabled]="!showErrorTooltip"
+              matTooltipPosition="below" matSuffix>{{ appsStatusIcon }}</mat-icon>
+              <mat-error *ngIf="nodeCardForm.get('numOfApplications').hasError('min')">
+                It can't be <strong>0 or less!</strong>
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="open-dialog-pen" *ngIf="nodeCardForm.valid">
+            <button mat-icon-button (click)="openDialog()">
+              <i class="fas fa-edit fa-2x"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Node actions -->
+        <div class="quantity-container">
+          <mat-divider vertical="true"></mat-divider>
+          <button [disabled]="node.quantity === 1" mat-icon-button (click)="decrease()">
+            <i class="fas fa-minus"></i>
+          </button>
+          <input matInput class="quantity-input" type="number" readonly="true" [value]="node.quantity"/>
+          <button
+            [disabled]=" node.isCloud ?
+              quantityCounterService.getUndividedClouds() === 0 : quantityCounterService.getUndividedFogs() === 0"
+            mat-icon-button (click)="increase()">
+            <i class="fas fa-plus"></i>
+          </button>
+          <mat-divider vertical="true"></mat-divider>
+          <button mat-icon-button (click)="removeEmitter.emit(node.id)">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+          <mat-divider vertical="true"></mat-divider>
+        </div>
+        <div id="defaultValueBtn" class="setText-center margin-around">
+          <button  type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+        </div>
+        <div class="quantity-container">
+          <mat-form-field appearance="outline" class="input-size-min">
+            <mat-label>Range</mat-label>
+            <input class="setText-center" matInput type="number" formControlName="range" placeholder="100"/>
+            <mat-hint align="end">kilometer</mat-hint>
+          </mat-form-field>
+        </div>
+      </div>
+      <!-- Status icon in normal way -->
+      <div class="bottom-status">
+        <img alt="status" class="status-icon-img" [src]="statusIcon">
+      </div>
+    </div>
+  </form>
+</mat-card>

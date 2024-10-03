@@ -1,0 +1,69 @@
+<div class="container">
+    <div class="inputContainer">
+        <mat-form-field [style.width.px]=300>
+            <input #id matInput placeholder="Select Config" (keyup)="filterOptions($event.target.value)" [matAutocomplete]="auto" />
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
+              <mat-option *ngFor="let option of filteredOptions" [value]="option">
+                {{ option }}
+              </mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+    
+        <mat-form-field [style.width.px]=300>
+          <mat-label>Select Order</mat-label>
+          <mat-select [(ngModel)]="selectedOrder" (ngModelChange)="onOrderChange()">
+            <mat-option *ngFor="let option of orderOptions" [value]="option.value">
+              {{option.viewValue}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+    </div>
+    <mat-table [dataSource]="dataSource" matSort>
+    <!-- Nickname column -->
+    <ng-container matColumnDef="nickname">
+      <mat-header-cell *matHeaderCellDef mat-sort-header>Nickname</mat-header-cell>
+      <mat-cell *matCellDef="let element">{{ element.nickname }}</mat-cell>
+    </ng-container>
+
+    <!-- Created Date column -->
+    <ng-container matColumnDef="createdDate">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Created Date</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.createdDate.replace('T', ' ').substr(0, 19) }}</mat-cell>
+    </ng-container>
+      <!-- Total Energy Consumption of Nodes (W) column -->
+      <ng-container matColumnDef="totalEnergyConsumptionOfNodesInWatt">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Total Energy Consumption of Nodes (W)</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.architecture.totalEnergyConsumptionOfNodesInWatt }}</mat-cell>
+      </ng-container>
+  
+      <!-- Total Energy Consumption of Devices (W) column -->
+      <ng-container matColumnDef="totalEnergyConsumptionOfDevicesInWatt">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Total Energy Consumption of Devices (W)</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.architecture.totalEnergyConsumptionOfDevicesInWatt }}</mat-cell>
+      </ng-container>
+  
+      <ng-container matColumnDef="costAWS">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Cost (AWS)</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.cost.AWS }}</mat-cell>
+      </ng-container>
+      
+      <ng-container matColumnDef="costIBM">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Cost (IBM)</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.cost.IBM }}</mat-cell>
+      </ng-container>
+      
+      <ng-container matColumnDef="costAzure">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Cost (Azure)</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.cost.azure }}</mat-cell>
+      </ng-container>
+      
+      <ng-container matColumnDef="costTotal">
+        <mat-header-cell *matHeaderCellDef mat-sort-header>Total Cost in Euro</mat-header-cell>
+        <mat-cell *matCellDef="let element">{{ element.simulatorJobResult.cost.totalCostInEuro }}</mat-cell>
+      </ng-container>
+  
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+    </mat-table>
+  </div>
+  

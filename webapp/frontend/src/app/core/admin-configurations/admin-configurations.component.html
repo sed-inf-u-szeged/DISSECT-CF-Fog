@@ -1,0 +1,51 @@
+<div class="mat-elevation-z8">
+  <table mat-table [dataSource]="dataSource">
+
+    <ng-container matColumnDef="id">
+      <th mat-header-cell *matHeaderCellDef>ID</th>
+      <td mat-cell *matCellDef="let element">{{element._id}}</td>
+    </ng-container>
+
+    <!-- Short Description Column -->
+    <ng-container matColumnDef="shortDescription">
+      <th mat-header-cell *matHeaderCellDef style="width: 500px;">Short description</th>
+      <td mat-cell *matCellDef="let element" style="width: 500px;">{{element.shortDescription ? element.shortDescription : 'No description'}}</td>
+    </ng-container>
+
+    <!-- 	Appliances XML -->
+    <ng-container matColumnDef="appliancesId">
+      <th mat-header-cell *matHeaderCellDef>Appliances XML.</th>
+      <td mat-cell *matCellDef="let element">
+        <button mat-raised-button color="accent" color="primary" (click)="downloadFile({id: element.configFiles.APPLIANCES_FILE, fileType: 'appliances'})">
+            Appliances.xml
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- Devices XML Column -->
+    <ng-container matColumnDef="devicesId">
+      <th mat-header-cell *matHeaderCellDef>Devices XML</th>
+      <td mat-cell *matCellDef="let element">
+        <button mat-raised-button color="accent" color="primary" (click)="downloadFile({id: element.configFiles.DEVICES_FILE, fileType: 'devices'})">
+            Devices.xml
+        </button>
+      </td>
+    </ng-container>
+
+    <!-- 	Instances XML -->
+    <ng-container matColumnDef="instancesId">
+      <th mat-header-cell *matHeaderCellDef>Instances XML</th>
+      <td mat-cell *matCellDef="let element">
+        <button mat-raised-button color="accent" color="primary" (click)="downloadFile({id: element.configFiles.INSTANCES_FILE, fileType: 'instances'})">
+          Instances.xml
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons aria-label="Select page of periodic elements">
+  </mat-paginator>
+</div>

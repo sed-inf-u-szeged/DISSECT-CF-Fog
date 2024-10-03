@@ -1,0 +1,13 @@
+<mat-toolbar class="header-toolbar">
+	<button *ngIf="showItems" mat-icon-button (click)="sidenavToggle.emit()">
+      <i class="fa fa-bars" aria-hidden="true"></i>
+	</button>
+  <h1 class="header-title" 
+    [ngClass]="!!(tokenStorageService.userToken$ | async) ? (showItems ? 'header-without-side-nav':'header-with-side-nav') : 'header-without-side-nav'">
+    <a target="blank" class="github-link" href="https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog"><u>Try out on desktop!</u></a>
+    <img alt="github icon" class="github-icon" src="../../../assets/images/github.png">
+  </h1>
+
+</mat-toolbar>
+
+

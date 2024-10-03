@@ -1,0 +1,19 @@
+  <app-toolbar
+    [showItems]="(tokenStorageService.userToken$ | async) ? !isBigScreen : false"
+    [title]="title"
+    (sidenavToggle)="toggleExpanded()">
+  </app-toolbar>
+  <mat-sidenav-container class="sidenav-container" autosize>
+    <mat-sidenav #sidenav *ngIf="tokenStorageService.userToken$ | async"
+      class="sidenav"
+      role="navigation"
+      [mode]="isBigScreen ? 'side':'over'"
+      [opened]="isBigScreen" >
+      <app-sidenav-items (closeSidenav)="sidenav.close()"></app-sidenav-items>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <main>
+        <router-outlet></router-outlet>
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>

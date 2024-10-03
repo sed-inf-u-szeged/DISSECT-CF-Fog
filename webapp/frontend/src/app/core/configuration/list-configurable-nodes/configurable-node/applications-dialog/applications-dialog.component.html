@@ -1,0 +1,26 @@
+<mat-drawer-container hasBackdrop="false" class="drawer">
+  <mat-drawer #drawer class="info-panel" mode="over" position="end">
+    <app-info-panel [infoData]="panelService.infoData$ | async"></app-info-panel>
+  </mat-drawer>
+  <mat-drawer-content class="drawer-content">
+    <div class="dialog-header">
+      <h1 mat-dialog-title class="setText-center title">Configure applications ({{ data.numOfApps }})</h1>
+    </div>
+    <div class="app-container">
+      <ng-container *ngFor="let app of data.applications | keyvalue">
+        <app-application-card
+          class="app-card"
+          [application]="app.value"
+        ></app-application-card>
+      </ng-container>
+    </div>
+    <mat-divider></mat-divider>
+    <div fxLayout="row" fxLayoutAlign="center center" class="dialog-actions">
+      <button mat-raised-button matDialogClose color="accent" class="cancelButton" (click)="onNoClick()">Cancel</button>
+      <button mat-raised-button color="primary" class="okButton" [disabled]="!checkDialogIsValid()" (click)="submitApplicationCards()">
+        Ok
+      </button>
+    </div>
+  </mat-drawer-content>
+</mat-drawer-container>
+

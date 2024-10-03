@@ -1,0 +1,15 @@
+<div class="station-container">
+  <div *ngFor="let station of stations">
+    <app-configurable-station
+      (stationEmitter)="getStationFromEmitter($event)"
+      (removeEmitter)="removeStation($event)"
+      [station]="station"></app-configurable-station>
+  </div>
+</div>
+<div class="main-actions">
+  <button mat-raised-button matStepperPrevious color="accent" >Back</button>
+  <div class="plus-wrapper" (click)="addStation()">
+    <i class="fas fa-plus fa-2x plus-icon"></i>
+  </div>
+  <button mat-raised-button [disabled]="!isValidConfiguration" color="primary" (click)="checkReadyAndNext()">Next</button>
+</div>

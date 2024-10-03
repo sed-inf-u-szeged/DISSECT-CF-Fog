@@ -1,0 +1,71 @@
+<mat-card class="instance-card">
+    <mat-card-header class="header">
+        <button mat-icon-button type="button" class="info-icon" (click)="openInfoPanelForInstances()">
+            <i class="fas fa-info-circle fa-lg"></i>
+        </button>
+        <div class="title">
+            <span class="title-text">Instances</span>
+        </div>
+        <button mat-icon-button (click)="removeEmitter.emit(instance.id)">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </mat-card-header>
+    <mat-card-content>
+        <form [formGroup]="instanceFormGroup">
+            <div fxLayout="column" fxLayoutAlign="center center">
+                <div class="double-item-row space-top">
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>RAM</mat-label>
+                        <input class="setText-center app-input" matInput type="number" formControlName="ram"
+                            placeholder="4294967296" />
+                       <mat-hint align="end">byte</mat-hint>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>CPU cores</mat-label>
+                        <input class="setText-center" matInput type="number" formControlName="cpuCores"
+                            placeholder="1" />
+                            <mat-hint align="end">unit</mat-hint>
+                    </mat-form-field>
+                </div>
+                <div class="double-item-row space-top">
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>Processing power</mat-label>
+                        <input class="setText-center app-input" matInput type="number"
+                            formControlName="cpuProcessingPower" placeholder="0.001" />
+                        <mat-hint align="end">instruction/ms</mat-hint>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>Startup process</mat-label>
+                        <input class="setText-center" matInput type="number" formControlName="startupProcess"
+                            placeholder="100" />
+                            <mat-hint align="end">instruction</mat-hint>
+                    </mat-form-field>
+                </div>
+                <div class="double-item-row space-top">
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>Required disk</mat-label>
+                        <input class="setText-center" matInput type="number" formControlName="reqDisk"
+                            placeholder="1073741824" />
+                        <mat-hint align="end">byte</mat-hint>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>Cost</mat-label>
+                        <input class="setText-center app-input" matInput type="number" formControlName="hourlyPrice"
+                            placeholder="0.204" />
+                        <mat-hint align="end">hourly price</mat-hint>
+                    </mat-form-field>
+                </div>
+                <div class="double-item-row space-top">
+                    <mat-form-field appearance="outline" class="input-size-min">
+                        <mat-label>Instance name</mat-label>
+                        <input class="setText-center app-input" matInput type="string" formControlName="name"
+                            placeholder="a1.large" />
+                    </mat-form-field>
+                </div>
+            </div>
+        </form>
+      <div class="setText-center margin-around">
+        <button id="defaultValueBtn" type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+      </div>
+    </mat-card-content>
+</mat-card>

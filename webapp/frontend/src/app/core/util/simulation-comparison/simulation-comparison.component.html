@@ -1,0 +1,22 @@
+<br>
+<br>
+<div class="container">
+  <div id="chart">
+    <div id="chartNameDiv">
+      <h1 id="chartName"> {{ this.chartName }} </h1>
+    </div>
+    <div>
+      <canvas [attr.id]="this.chartId" >{{ this.chart }}</canvas>
+    </div>
+    <br>
+    <br>
+    <div id="controls">
+      <button mat-raised-button id="prevButton" (click)="stepBackward()" [disabled]="selectedChartNumber === 0" >Prev</button>
+      <button mat-raised-button id="downloadButton" (click)="this.downloadChart(this.chart)" color="primary">Download</button>
+      <button mat-raised-button id="nextButton" (click)="stepForward()" [disabled]="selectedChartNumber === 4" >Next</button>
+    </div>
+  </div>
+</div>
+<div id="back" class="actions" *ngIf="showActions">
+  <button mat-raised-button color="accent" (click)="goBack.emit()">Back</button>
+</div>

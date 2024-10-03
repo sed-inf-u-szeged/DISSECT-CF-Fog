@@ -1,0 +1,41 @@
+.container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  flex-direction: column;
+  margin: 2rem 0;
+}
+.text{
+  width: 80%;
+  text-align: center;
+}
+
+.configure-button{
+  margin: 1rem 0 2rem 0;
+}
+
+.description{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 0 2rem;
+}
+
+.github-link{
+  color: black;
+  font-weight: 500;
+}
+
+.github-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.git-icon{
+  width: 60px;
+  height: 30px;
+  margin-right: 10px;
+}

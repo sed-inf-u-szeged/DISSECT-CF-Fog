@@ -1,0 +1,41 @@
+.content{
+  text-align: center;
+  margin: 1rem 0.5rem;
+  vertical-align: middle;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  flex: 1;
+}
+
+.header{
+  background: #6ce14f;
+  display: flex;
+}
+
+.title{
+  flex:1;
+  padding-left: 1rem;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  font-weight: 500;
+}
+
+.container{
+  display:flex ;
+  flex-direction: column;
+  height: 70%;
+}
+
+.okButton{
+  margin-left: 0.5rem;
+}
+
+.cancelButton{
+  margin-right: 0.5rem;
+}
+
+.actions{
+  margin-bottom: 0.5rem;
+}

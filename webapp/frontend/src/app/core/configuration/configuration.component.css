@@ -1,0 +1,34 @@
+::ng-deep .mat-horizontal-stepper-header{
+  pointer-events: none !important;
+}
+
+.drawer{
+  height: 100%;
+  background: none;
+}
+
+.info-panel{
+  width: 400px;
+  position: fixed;
+}
+
+@media screen and (max-width: 800px) {
+  .info-panel{
+    width: 300px;
+  }
+}
+
+@media screen and (max-width: 550px) {
+  .info-panel{
+    width: 200px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .step-title{
+    display: none;
+  }
+  ::ng-deep .mat-horizontal-stepper-header{
+    width: 25px;
+  }
+}

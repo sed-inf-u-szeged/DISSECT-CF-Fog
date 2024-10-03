@@ -1,0 +1,60 @@
+<mat-card fxLayout="column" fxLayoutAlign="center center" class="app-card">
+  <mat-card-header class="header">
+    <button mat-icon-button type="button" class="info-icon" (click)="openInfoPanelForApplications()">
+      <i class="fas fa-info-circle fa-lg"></i>
+    </button>
+    <div class="title">
+      <span class="title-text">Application</span>
+    </div>
+  </mat-card-header>
+  <form [formGroup]="appFormGroup">
+    
+      <div class="double-item-row space-top">
+        <mat-form-field appearance="outline" class="input-size-min">
+          <mat-label>Task size</mat-label>
+          <input class="setText-center" matInput type="number" formControlName="tasksize" placeholder="5000"/>
+          <mat-hint align="end">byte</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="input-size-min">
+          <mat-label>Frequency</mat-label>
+          <input class="setText-center" matInput type="number" formControlName="freq" placeholder="> 6000"/>
+          <mat-hint align="end">ms</mat-hint>
+        </mat-form-field>
+      </div>
+      <div class="double-item-row space-top">
+        <mat-form-field appearance="outline" class="input-size-min">
+          <mat-label>Instruction count</mat-label>
+          <input class="setText-center" matInput type="number" formControlName="numOfInstruction" placeholder="1000"/>
+          <mat-hint align="end">unit</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="input-size-min">
+          <mat-label>Activation ratio</mat-label>
+          <input class="setText-center" matInput type="number" formControlName="activationRatio" placeholder="0.9"/>
+        </mat-form-field>
+    </div>
+    <div class="double-item-row space-top">
+      <mat-form-field appearance="outline" class="input-size-min">
+        <mat-label>Transfer devider</mat-label>
+        <input class="setText-center" matInput type="number" formControlName="transferDevider" placeholder="2.0"/>
+      </mat-form-field>
+  </div>
+    <div fxLayout="column" fxLayoutAlign="center center">
+      <mat-checkbox color="primary" [checked]="canJoin" (change)="canJoin = !canJoin">Can join</mat-checkbox>
+    </div>
+  <div class="double-item-row space-top">
+    <mat-form-field appearance="outline" class="input-size-min">
+      <mat-label>Select instances</mat-label>
+      <mat-select [(ngModel)]="instance" name="instance.name" [ngModelOptions]="{ standalone: true }">
+        <mat-option *ngFor="let instance of userInstanceInputs" [value]="instance"> {{ instance.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="input-size-min">
+      <mat-label>Strategy</mat-label>
+      <mat-select [(ngModel)]="strategy" [ngModelOptions]="{ standalone: true }" multiple>
+        <mat-option *ngFor="let strategy of resourceSelectionService.strategiesForApplications$ | async" [value]="strategy"> {{ strategy }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  </form>
+  <button id="defaultValueBtn" type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+</mat-card>

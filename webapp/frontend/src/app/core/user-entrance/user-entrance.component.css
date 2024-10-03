@@ -1,0 +1,142 @@
+.setText-center{
+  text-align: center;
+}
+
+.notification {
+  padding: 16px;
+  color: white;
+  opacity: 0.8;
+  border-radius: 8px;
+  margin-bottom: 5%;
+}
+
+.success{
+  background-color: #00c010e0;
+}
+
+.error{
+  background-color: red;
+}
+
+.register-form-containter{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 300px;
+  max-width: 600px;
+  width: 50%;
+  height: 60%;
+  margin: 1rem;
+  box-shadow: unset;
+}
+
+.page-container{
+  height: 94vh;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.btn-bottom-margin{
+  margin-bottom: 10%;
+}
+
+.divider{
+  margin: 0 2rem;
+  width: 5px;
+  background-color: blue;
+  height: 100%;
+}
+
+.form{
+  display: flex;
+  flex-direction: column;
+  min-width: 250px;
+  max-width: 450px;
+  width: 80%;
+  height: 80%;
+  justify-content: space-evenly;
+}
+
+.cover{
+  width: 55%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cover-register{
+  background-color:#ff2929e6;
+}
+
+.cover-login{
+  background-color: #2294ff;
+}
+
+.cover-title{
+  font-weight: 600;
+  line-height: 3rem;
+  font-size: 2rem;
+  color: aliceblue;
+  margin: 1.5rem;
+}
+
+.image{
+  width: 250px;
+  height: 250px;
+}
+
+.cover-content{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.attributer-text{
+  color: white;
+  font-size: 10px;
+}
+.attributer-text a{
+  color: white;
+}
+
+.title{
+  font-weight: 600;
+  line-height: 3rem;
+  font-size: 2rem;
+  color: rgb(0, 192, 16);
+  margin: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+.redirect-text{
+  text-decoration: none;
+  cursor: pointer;
+  color:rgb(0, 192, 16);
+}
+
+@media screen and (max-width: 650px) {
+  .cover{
+    display: none;
+  }
+  .page-container{
+    justify-content: center;
+  }
+}
+
+@media screen and (max-width: 350px) {
+  .register-form-containter{
+    margin: 0;
+  }
+  .form{
+    min-width: initial;
+    height: initial;
+  }
+}

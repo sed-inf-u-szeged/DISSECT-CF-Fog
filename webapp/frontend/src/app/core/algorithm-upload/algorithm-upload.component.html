@@ -1,0 +1,94 @@
+<div class="container">
+  <p>Chose your prebuilt Config by ID</p>
+  <mat-form-field [style.width.px]="200" class="example-full-width">
+    <input #id matInput placeholder="Search..." (keyup)="filterOptions($event.target.value)" [matAutocomplete]="auto" />
+    <mat-autocomplete #auto="matAutocomplete">
+      <mat-option *ngFor="let option of filteredOptions" [value]="option">
+        {{ option }}
+      </mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+  <mat-form-field>
+    <input #nickname matInput placeholder="Enter your nickname" />
+  </mat-form-field>
+
+  <div class="codeContainer">
+    <div class="DeviceContainer">
+      <div class="selectContainer">
+        <mat-form-field>
+          <mat-label>Device Strategy</mat-label>
+          <mat-select [formControl]="deviceControl"> 
+            <ng-container *ngFor="let group of deviceGroups">
+              <ng-container *ngIf="group.name === 'Custom alg'">
+                <mat-option *ngFor="let strategy of group.strategy" [value]="strategy.value">
+                  {{strategy.viewValue}}
+                </mat-option>
+              </ng-container>
+              <ng-container *ngIf="group.name !== 'Custom alg'">
+                <mat-optgroup [label]="group.name" [disabled]="group.disabled">
+                  <mat-option *ngFor="let strategy of group.strategy" [value]="strategy.value">
+                    {{strategy.viewValue}}
+                  </mat-option>
+                </mat-optgroup>
+              </ng-container>
+            </ng-container>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <p *ngIf="deviceControl.value === 'custom'" class="codeTitle">Device strategy</p>
+      <ngx-codemirror *ngIf="deviceControl.value === 'custom'"
+        #deviceCodemirror
+        [(ngModel)]="deviceCode"
+        [options]="{
+        lineNumbers: true,
+        theme: 'material',
+        mode: 'text/x-java',
+        indentWithTabs: true,
+        smartIndent: true,
+        lineWrapping: true,
+        matchBrackets: true,
+        autofocus: true,
+      }"
+      ></ngx-codemirror>
+    </div>
+    <div class="AppliactionContainer">
+      <div class="selectContainer">
+        <mat-form-field>
+          <mat-label>Application Strategy</mat-label>
+          <mat-select [formControl]="applicationControl"> 
+            <ng-container *ngFor="let group of applicationGroups">
+              <ng-container *ngIf="group.name === 'Custom alg'">
+                <mat-option *ngFor="let strategy of group.strategy" [value]="strategy.value">
+                  {{strategy.viewValue}}
+                </mat-option>
+              </ng-container>
+              <ng-container *ngIf="group.name !== 'Custom alg'">
+                <mat-optgroup [label]="group.name" [disabled]="group.disabled">
+                  <mat-option *ngFor="let strategy of group.strategy" [value]="strategy.value">
+                    {{strategy.viewValue}}
+                  </mat-option>
+                </mat-optgroup>
+              </ng-container>
+            </ng-container>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <p *ngIf="applicationControl.value === 'custom'" class="codeTitle">Appliaction strategy</p>
+      <ngx-codemirror *ngIf="applicationControl.value === 'custom'"
+        #applicationCodeMirror
+        [(ngModel)]="applicationCode"
+        [options]="{
+      lineNumbers: true,
+      theme: 'material',
+      mode: 'text/x-java',
+      indentWithTabs: true,
+      smartIndent: true,
+      lineWrapping: true,
+      matchBrackets: true,
+      autofocus: true,
+    }"
+      ></ngx-codemirror>
+    </div>
+  </div>
+  <button (click)="sendData()" mat-raised-button color="primary">Submit</button>
+</div>

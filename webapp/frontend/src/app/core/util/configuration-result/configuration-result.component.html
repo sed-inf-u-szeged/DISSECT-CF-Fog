@@ -1,0 +1,113 @@
+<br>
+<br>
+<div *ngIf="selectedSimulation && !showSpinner;" id="controls">
+  <button id="prevButton" (click)="stepBackward()" mat-raised-button>Prev</button>
+  <h1 id="simulationName"> {{ 'Simulation' + ' ' + (selectedSimulationNumber + 1)}}</h1>
+  <button id="forwardButton" (click)="stepForward()" mat-raised-button>Next</button>
+</div>
+<br>
+<ng-container *ngIf="selectedSimulation && !showSpinner; else spinnerTemp" >
+  <mat-tab-group color="warn" mat-align-tabs="center" animationDuration="0ms">
+    <mat-tab label="Timeline">
+      <div class="tab" [style.height.vh]="contentHeight">
+        <ng-container *ngIf="simulationError === false; else failedConfig">
+          <div [innerHTML]="
+          this.selectedSimulation.results.TIMELINE.substring(1, this.selectedSimulation.results.TIMELINE.length - 1) | safeHtml" appRunScripts></div>
+        </ng-container>
+        <ng-template #failedConfig>
+          <div class="fail-content">
+            <img class="fail-img" src="../../../assets/images/fail.png" alt="Ooops">
+            <div class="configuration-fail-header">
+              <h1 class="fail-title">Configuration fail!</h1>
+              <button mat-icon-button type="button" class="info-icon" (click)="openPanelInfoForConfigurationError()">
+                <i class="fas fa-info-circle fa-lg"></i>
+              </button>
+            </div>
+            <h3 *ngIf="simulationError" class="error">{{'TODO ERROR'}}</h3>
+          </div>
+        </ng-template>
+      </div>
+    </mat-tab>
+    <mat-tab [disabled]="simulationError === true" label="Devices Energy">
+      <div class="tab" [style.height.vh]="contentHeight">
+        <ng-container *ngIf="simulationError === false; else failedConfig">
+          <div [innerHTML]="selectedSimulation.results.DEVICES_ENERGY | safeHtml" appRunScripts></div>
+        </ng-container>
+      </div>
+    </mat-tab>
+    <mat-tab [disabled]="simulationError === true" label="Nodes Energy">
+      <div class="tab" [style.height.vh]="contentHeight">
+        <ng-container *ngIf="simulationError === false; else failedConfig">
+          <div [innerHTML]="selectedSimulation.results.NODES_ENERGY | safeHtml" appRunScripts></div>
+        </ng-container>
+      </div>
+    </mat-tab>
+    <mat-tab [disabled]="simulationError === true" label="Output">
+      <div class="tab stdout" [style.height.vh]="contentHeight">
+        <div class="output-text" [innerHTML]="selectedSimulationData | safeHtml" appRunScripts></div>
+      </div>
+    </mat-tab>
+    <mat-tab [disabled]="simulationError === true" label="Files">
+      <div class="tab files-container" [style.height.vh]="contentHeight">
+        <div class="resource-container">
+          <h1 class="configuration-files-header">Configuration files</h1>
+          <div class=files>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadTimeline()">
+                <span>Timeline</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadDevicesEnergy()">
+                <span>Device Energy</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadNodesEnergy()">
+                <span>Node Energy</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadInstances()">
+                <span>Instances</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadAppliances()">
+                <span>Appliances</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="file">
+              <i class="far fa-file-code fa-4x" aria-hidden="true"></i>
+              <button type="button" mat-raised-button color="primary" class="download-btn"
+                (click)="downloadDevices()">
+                <span>Devices</span>
+                <i class="fa fa-download download-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</ng-container>
+<ng-template #spinnerTemp>
+  <div class="spinner-wrapper" *ngIf="showSpinner">
+    <mat-spinner></mat-spinner>
+  </div>
+</ng-template>

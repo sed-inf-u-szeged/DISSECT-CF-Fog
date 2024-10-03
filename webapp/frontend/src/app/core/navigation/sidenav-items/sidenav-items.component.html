@@ -1,0 +1,60 @@
+
+<mat-nav-list class="nav-list">
+  <div mat-list-item routerLink="/home" class="menu-item first-menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-home fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Home</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/configure"  class="menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-cogs fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Configure</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/upload-configuration"  class="menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-solid fa-2x fa-file nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Upload Configuration</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/admin-configurations" class="menu-item first-menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-book-open fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Pre Built Configurations</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/algorithm-upload"  class="menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-solid fa-2x fa-upload nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Upload Algorithm</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/user-configurations"  class="menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-list fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Completed</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/custom-algorithm"  class="menu-item" routerLinkActive="active">
+    <div class="nav-item">
+      <i class="fa fa-chalkboard fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Custom Alg Results</span>
+    </div>
+  </div>
+  <div mat-list-item routerLink="/login"  class="menu-item"
+    (click)="tokenService.signOut()">
+    <div class="nav-item">
+      <i class="fa fa-arrow-right fa-2x nav-icon" aria-hidden="true"></i>
+      <span class="nav-label">Logout</span>
+    </div>
+  </div>
+  <div class="attributer-content">
+    <div>
+      Icons made by
+      <a href="https://www.flaticon.com/authors/pixel-perfect" target="blank" title="Pixel perfect">Pixel perfect</a>
+       from <a  href="https://www.flaticon.com/" target="blank" title="Flaticon">
+       www.flaticon.com</a>
+    </div>
+  </div>
+</mat-nav-list>

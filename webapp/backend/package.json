@@ -1,0 +1,34 @@
+{
+  "name": "dissect-cf-fog-server",
+  "version": "1.0.0",
+  "description": "This server is part of DISSECT-CF-Fog-WebApp to serve client's requests.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "author": "Rudolf Bűn",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "child-process": "^1.0.2",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "fast-xml-parser": "^3.17.4",
+    "fs-extra": "^9.0.1",
+    "he": "^1.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.20",
+    "mongodb": "^3.7.3",
+    "morgan": "^1.10.0",
+    "mysql2": "^2.2.5",
+    "node-dir": "^0.1.17",
+    "os": "^0.1.1",
+    "path": "^0.12.7",
+    "sequelize": "^6.3.5"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}

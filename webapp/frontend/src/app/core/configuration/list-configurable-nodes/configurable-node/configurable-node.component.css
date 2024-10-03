@@ -1,0 +1,136 @@
+@import '../../../../../assets/css/formStyle.css';
+
+.apps-quantity-input {
+  width: 100px;
+}
+
+.status-margin {
+  margin: 0 50px;
+}
+
+.container{
+  display: flex;
+  align-items: center;
+}
+
+.card{
+  margin-top: 2rem;
+}
+
+.configuration-tools{
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content:space-evenly;
+}
+
+.configure-apps{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 0.3;
+}
+
+.quantity-container{
+  display: flex;
+  justify-content: center;
+}
+.quantity-input{
+  width: 25px;
+  text-align: center;
+}
+
+.top-status{
+  display: none;
+}
+
+.bottom-status{
+  display: inherit;
+  width: 70px;
+  display: flex;
+  justify-content: center;
+}
+
+.resource-selector{
+  width: 130px;
+}
+
+@media screen and (max-width: 1000px) {
+  .configuration-tools {
+    width: 100%;
+  }
+
+  .container{
+    flex-direction: column;
+  }
+
+  .node-icon{
+    margin-bottom: 1rem;
+  }
+
+  .node-header{
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .top-status{
+    display: inherit;
+  }
+
+  .bottom-status{
+    display: none;
+  }
+}
+
+.open-dialog-pen{
+  margin-left: 0.5rem;
+}
+
+.resource{
+  display: flex;
+}
+
+.info-icon{
+  margin-top: 0.5rem;
+}
+
+.node-icon-img{
+  width: 65px;
+  height: 50px;
+}
+
+.status-icon-img{
+  width: 32px;
+  height: 30px;
+}
+
+.input-size-min {
+  width: 40%;
+  max-width: 200px;
+}
+
+.mat-form-field {
+  padding: 0 0.5rem;
+}
+
+@media screen and (max-width: 400px) {
+  .card{
+    margin: 2rem -2rem 0 -2rem;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .configuration-tools {
+    flex-direction: column;
+  }
+  .node-header{
+    justify-content: space-evenly;
+  }
+}
+
+#defaultValueBtn {
+  margin-left: 4rem;
+}

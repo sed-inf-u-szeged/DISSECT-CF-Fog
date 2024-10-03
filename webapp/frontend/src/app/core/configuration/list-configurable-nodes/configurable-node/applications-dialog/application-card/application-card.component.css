@@ -1,0 +1,72 @@
+@import '../../../../../../../assets/css/formStyle.css';
+
+.header{
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+::ng-deep .mat-card-header-text {
+  margin: 0 !important;
+}
+
+.title{
+  flex: 1;
+  text-align: center;
+  font-size: large;
+  font-weight: 500;
+  margin-right:40px;
+}
+
+.title-text{
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+}
+
+.input-size-min {
+  width: 40%;
+  max-width: 200px;
+}
+
+.app-card.mat-card{
+  padding: 16px 16px 0 16px;
+}
+
+.double-item-row{
+  flex-direction: row;
+  box-sizing: border-box;
+  display: flex;
+  place-content: center center;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.double-item-row .mat-form-field {
+  padding: 0 0.5rem;
+}
+
+.space-top{
+  margin-top: 1rem;
+}
+
+@media screen and (max-width: 500px) {
+  .app-card.mat-card{
+    padding: 0.5rem 3rem;
+  }
+
+  .input-size-min{
+    width: 120px;
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .app-card.mat-card{
+    padding: 0.5rem 1rem;
+  }
+}
+
+#defaultValueBtn {
+  margin-bottom: 1rem;
+}

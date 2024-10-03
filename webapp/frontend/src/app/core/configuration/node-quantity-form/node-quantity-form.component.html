@@ -1,0 +1,42 @@
+<div fxLayout="column" fxFlex fxLayoutAlign="space-between center">
+  <form [formGroup]="numOfComputingNodes">
+    <div class="center margin-around">
+      <mat-form-field appearance="outline">
+        <mat-label>Number of cloud nodes</mat-label>
+        <input class="setText-center" matInput type="number" formControlName="numOfClouds" />
+        <mat-error *ngIf="numOfComputingNodes.get('numOfClouds').hasError('required')">
+          Cloud is <strong>required</strong>
+        </mat-error>
+        <mat-error *ngIf="numOfComputingNodes.get('numOfClouds').hasError('max')">
+          Max quantity is <strong>{{configurationService.maxNumOfNodes}}</strong>
+        </mat-error>
+        <mat-error *ngIf="numOfComputingNodes.get('numOfClouds').hasError('min')">
+          The quantity can't be <strong>0 or less!</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div class="center margin-around">
+      <mat-form-field appearance="outline">
+        <mat-label>Number of fog nodes</mat-label>
+        <input class="setText-center" matInput type="number" formControlName="numOfFogs" />
+        <mat-error *ngIf="numOfComputingNodes.get('numOfFogs').hasError('max')">
+          Max quantity is <strong>{{configurationService.maxNumOfNodes}}</strong>
+        </mat-error>
+        <mat-error *ngIf="numOfComputingNodes.get('numOfFogs').hasError('min')">
+          The quantity can't be <strong>0 or less!</strong>
+        </mat-error>
+      </mat-form-field>
+    </div>
+    <div class="actions">
+      <div class="setText-center margin-around">
+        <button type="button" mat-raised-button color="warn" (click)="resetConfiguration()">Reset</button>
+      </div>
+      <div class="setText-center margin-around">
+        <button type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+      </div>
+      <div class="setText-center margin-around">
+        <button mat-raised-button color="primary" (click)="sendNodesQuantity()">Next</button>
+      </div>
+    </div>
+  </form>
+</div>

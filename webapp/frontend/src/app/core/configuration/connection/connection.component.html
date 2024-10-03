@@ -1,0 +1,52 @@
+
+<h1 class="header">
+    Set up the connections
+    <button mat-icon-button type="button" class="info-icon" (click)="openInfoPanelForConnection()">
+        <i class="fas fa-info-circle fa-lg"></i>
+    </button>
+</h1>
+<!-- Connection paper -->
+<div class="paper-wrapper">
+    <div class="clouds"></div>
+    <div id="paper" class="joint-paper"></div>
+</div>
+<!-- Paper's actions -->
+<div class="slider-container">
+    <mat-slider class="slider" [(value)]="sliderValue" (input)="onInputChange($event)"></mat-slider>
+</div>
+<form [formGroup]="simpleConnectionForm">
+    <div class="actions">
+        <div class="connection-button">
+            <button class="button-size simple-conn-btn" mat-raised-button (click)="createLinkBetweenSelectedNodes()">Add connection</button>
+        </div>
+        <div class="connection-input">
+            <mat-form-field appearance="outline" class="input-size">
+                <mat-label>Latency</mat-label>
+                <input class="setText-center" matInput type="number" formControlName="latency" />
+                <mat-error *ngIf="simpleConnectionForm.get('latency').hasError('min')">
+                    The quantity can't be <strong>0 or less!</strong>
+                </mat-error>
+            </mat-form-field>
+        </div>
+    </div>
+</form>
+<form [formGroup]="parentConnectionForm">
+    <div class="actions space-top">
+        <div class="connection-button">
+            <button class="button-size parent-conn-btn" mat-raised-button (click)="createParentLinkBetweenSelectedCloudAndFog()">Add parent</button>
+        </div>
+        <div class="connection-input">
+            <mat-form-field appearance="outline" class="input-size">
+                <mat-label>Latency</mat-label>
+                <input class="setText-center" matInput type="number" formControlName="parentLatency" />
+                <mat-error *ngIf="parentConnectionForm.get('parentLatency').hasError('min')">
+                    The quantity can't be <strong>0 or less!</strong>
+                </mat-error>
+            </mat-form-field>
+        </div>
+    </div>
+</form>
+<div class="main-actions">
+    <button mat-raised-button color="accent" (click)="stepBack()">Back</button>
+    <button mat-raised-button color="primary" (click)="save()">Configure</button>
+</div>

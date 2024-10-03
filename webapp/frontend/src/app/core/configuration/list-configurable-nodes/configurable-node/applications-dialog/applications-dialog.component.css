@@ -1,0 +1,54 @@
+.title{
+  margin: 1rem 0 0 0;
+}
+
+.app-card{
+  margin: 1rem;
+}
+
+.plus-icon{
+  opacity: 0.2;
+}
+
+.okButton{
+  margin-left: 0.5rem;
+}
+
+.cancelButton{
+  margin-right: 0.5rem;
+}
+
+.dialog-header{
+  padding-bottom: 10px;
+}
+
+.app-container{
+  flex-flow: row wrap;
+  display: flex;
+  justify-content: center;
+  height: 83%;
+  overflow: auto;
+}
+
+.drawer{
+  height: 100%;
+  background: none;
+}
+
+.info-panel{
+  width: 300px;
+}
+
+.drawer-content{
+  overflow-x: hidden;
+}
+
+.dialog-actions{
+  margin: 0.5rem 0;
+}
+
+@media screen and (max-width: 650px) {
+  .info-panel{
+    width: 200px;
+  }
+}

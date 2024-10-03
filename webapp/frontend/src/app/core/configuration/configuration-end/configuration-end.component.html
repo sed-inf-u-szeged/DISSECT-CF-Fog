@@ -1,0 +1,9 @@
+<app-configuration-result
+  [showSpinner]="showSpinner"
+  [configResultObservable]="configService.configObservable"
+  contentHeight="63"
+  (showActions)="showActionsButtons()">
+</app-configuration-result>
+<div class="actions" *ngIf="showActions">
+  <button mat-raised-button color="accent" (click)="back()">Back</button>
+</div>

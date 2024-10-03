@@ -1,0 +1,7 @@
+<strategies>
+  <strategy>CostAwareDeviceStrategy</strategy>
+  <strategy>DistanceBasedDeviceStrategy</strategy>
+  <strategy>PliantDeviceStrategy</strategy>
+  <strategy>LoadBalancedDeviceStrategy</strategy>
+  <strategy>RandomDeviceStrategy</strategy>
+</strategies>

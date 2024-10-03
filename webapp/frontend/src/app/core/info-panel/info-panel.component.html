@@ -1,0 +1,11 @@
+<div class="container">
+  <div class="header">
+    <div class="title">
+      <span>{{infoData?.title}}</span>
+    </div>
+    <button mat-icon-button (click)="panelService.close()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="content" [innerHTML]="infoData?.text | safeHtml"></div>
+</div>

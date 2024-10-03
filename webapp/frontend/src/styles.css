@@ -1,0 +1,37 @@
+@import '~@fortawesome/fontawesome-free/css/all.css';
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* For dialogs */
+.applications-dialog-panel .mat-dialog-container{
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mat-button-focus-overlay {
+  background-color: transparent!important;
+}
+
+.mat-simple-snackbar-action > button {
+  color: #ff5722;
+  font-weight: 500;
+}
+
+.mat-card{
+  border-right: 1px solid #b5b5b599 !important;
+}
+
+.cdk-global-scrollblock{
+  overflow: hidden !important;
+}
+
+@import "~codemirror/lib/codemirror.css";
+@import "~codemirror/theme/material.css";

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<cloud id="sztaki-lpds"
+	   scheduler="hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.RoundRobinScheduler"
+	   pmcontroller="hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines">
+
+
+	<machine id="plutoPM" cores="16" processing="0.001" memory="68719476736">
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="296" max="493" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<repository id="pluto" capacity="5000000000000" inBW="250000"
+			outBW="250000" diskBW="50000">
+			<powerstates kind="storage">
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+                        <!-- latencies are unknown -->
+			<latency towards="ceph" value="5" />
+		</repository>
+	</machine>
+
+<repository id="ceph" capacity="38000000000000" inBW="250000"
+		outBW="250000" diskBW="100000">
+		<powerstates kind="storage">
+			<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="65" max="90" inState="default" />
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<powerstates kind="network">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="3.4" max="3.8" inState="default" />
+			<!-- Not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<latency towards="pluto" value="5" />
+	</repository>
+
+</cloud>

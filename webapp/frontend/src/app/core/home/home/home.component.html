@@ -1,0 +1,36 @@
+<div class="container">
+  <div class="description">
+    <p class="text" style="text-align: center;">
+      <b>DISSECT-CF-Fog</b> is based on <a target="blank" href="https://github.com/kecskemeti/dissect-cf">DISSECT-CF</a>, and a direct extension of the DISSECT-CF-IoT simulator, written in Java programming language. 
+      The purpose of this simulator extension is to model fog devices and nodes, thus it is also able to model IoT-Fog-Cloud systems. 
+      The main benefit of this fog extension is offers the possibility of detailed configuration settings through XML configuration files, 
+      and it requires only minimal programming knowledge for define additional scenarios. <br/><br/>
+
+      The network operations, such as bandwidth, latency simulations and file transfers between the physical components are supported by its core simulator. <br/><br/>
+      
+      To create a physical topology, any horizontal and vertical connections are allowed, but in this web application,
+      the vertical communication supports only upward direction. 
+      The IoT layer provides the management of smart devices and those sensors with the abilities of simulating sensor measurement time, 
+      data generation frequency with size configuration.
+      Its application management layer handles the VMs and pairs the compute tasks (generated based on the received amount of data) to the VMs. 
+      The cost module is responsible for evaluating pricing methods, capable of calculating both dynamic cloud and IoT side costs based on real provider schemes.
+      Finally, the logical data-flow are defined by the physical topology by default for simplicity. <br/><br/>
+
+      The main goal of this web application is to get to know the basic functionalities of the DISSECT-CF-Fog, 
+      create own fog topologies with IoT devices and sensors and execute scenarios using the predefinded strategies. For more detailed configuration options,
+      we encurage you to use the desktop version of the simulator. <br/><br/>
+
+      For any inquiries please contact us by email to: <b>markusa (at) inf.u-szeged.hu</b> , or take a look what else we deal in the 
+      <a  target="blank" href="http://iotcloud.sed.hu/">IoT Cloud Research Group</a> at the Software Engineering Department of the Institute of Informatics of the University of Szeged, Hungary.
+    </p>
+  </div>
+  
+  <button class="configure-button" mat-raised-button color="primary" routerLink="/configure">Configure</button>
+  
+  <img alt="Dissect-cf-fog image"
+    src="../../../assets/images/dissect.jpg">
+  <div class="github-container">
+    <img alt="git" class="git-icon" src="../../../assets/images/git-logo.png">
+    <a target="blank" class="github-link" href="https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog">andrasmarkus/dissect-cf</a>
+  </div>
+</div>

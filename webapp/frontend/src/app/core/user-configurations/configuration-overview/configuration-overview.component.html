@@ -1,0 +1,13 @@
+<div class="container">
+  <div *ngIf="configId">
+    <app-configuration-result
+    showSpinner="true"
+    [configResultObservable]="this.configService.getConfig(configId)"
+    contentHeight="72"
+    (showActions)="showActionsButtons()">
+  </app-configuration-result>
+  </div>
+  <div class="actions" *ngIf="showActions">
+    <button mat-raised-button color="accent" (click)="goBack.emit()">Back</button>
+  </div>
+</div>

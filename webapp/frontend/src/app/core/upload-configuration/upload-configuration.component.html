@@ -1,0 +1,22 @@
+<div class="container">
+    <div class="description">
+      <h1 class="text" style="text-align: center;">
+       Please upload your configuration xml file with the correct parameters! 
+      </h1>
+    </div>
+    <div class="input">
+        <mat-form-field style="width: 500px;">
+          <mat-label>Short description</mat-label>
+          <input matInput [formControl]="shortDescription">
+        </mat-form-field>
+    </div>
+    <div class="file-inputs">
+      <input hidden type="file" (change)="onFileChange($event, 0)" #file1>
+      <button type="button" mat-raised-button (click)="file1.click()" [color]="fileNames[0] ? 'primary' : 'default'">{{ fileNames[0] || 'Appliences' }}</button>
+      <input hidden type="file" (change)="onFileChange($event, 1)" #file2>
+      <button type="button" mat-raised-button (click)="file2.click()" [color]="fileNames[1] ? 'primary' : 'default'">{{ fileNames[1] || 'Devices' }}</button>
+      <input hidden type="file" (change)="onFileChange($event, 2)" #file3>
+      <button type="button" mat-raised-button (click)="file3.click()" [color]="fileNames[2] ? 'primary' : 'default'">{{ fileNames[2] || 'Instances' }}</button>
+  </div>
+    <button (click)="convertFilesToStrings()" class="configure-button" mat-raised-button color="primary" [disabled]="!areAllFilesUploaded()">Upload</button>
+  </div>

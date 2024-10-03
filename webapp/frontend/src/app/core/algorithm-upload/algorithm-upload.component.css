@@ -1,0 +1,36 @@
+.container {
+  flex-direction: column;
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  gap: 10px;
+}
+
+.codeContainer{
+  display: flex;
+  gap: 10px;
+}
+
+.DeviceContainer {
+  width: 500px;
+  max-width: 500px;
+  flex: 1;
+}
+
+.AppliactionContainer {
+  width: 500px;
+  max-width: 500px;
+  flex: 1;
+}
+
+.codeTitle{
+  text-align: center;
+}
+
+.selectContainer{
+  text-align: center;;
+}
