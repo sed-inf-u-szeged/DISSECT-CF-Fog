@@ -31,8 +31,8 @@ public class SimLogger {
      *
      * @param string he message to log
      */
-    public static void logRes(String string) {
-        simLogger.warning(string);
+    public static void logRes(Object message) {
+        simLogger.warning(String.valueOf(message)); 
     }
     
     /**

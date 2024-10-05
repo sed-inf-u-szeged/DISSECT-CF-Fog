@@ -1,18 +1,19 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-import java.util.Random;
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent.Deployment;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.AgentComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 public class AgentTest {
     
     public static void main(String[] args) throws NetworkException {
+        SimLogger.setLogging(1, true);
         
         String cloudfile = ScenarioBase.resourcePath + "ELKH_original.xml";
 
@@ -35,11 +36,7 @@ public class AgentTest {
         app1.requirements.put("RAM", 4_294_967_296L);
         app1.requirements.put("Location", "EU");
 
-        // randomly submit the app 
-        int random = new Random().nextInt(ComputingAppliance.getAllComputingAppliances().size());
-        AgentComputingAppliance initalRa = (AgentComputingAppliance) ComputingAppliance.getAllComputingAppliances().get(random);
-        
-        initalRa.broadcast(app1, 100);
+        new Deployment(app1, 100);
         
         /* */
         AgentApplication app2 = new AgentApplication("app2");
@@ -47,19 +44,17 @@ public class AgentTest {
         app2.requirements.put("RAM", 4_294_967_296L);
         app2.requirements.put("Location", "US");
         
-        random = new Random().nextInt(ComputingAppliance.getAllComputingAppliances().size());
-        initalRa = (AgentComputingAppliance) ComputingAppliance.getAllComputingAppliances().get(random);
-        initalRa.broadcast(app2, 100);
+        new Deployment(app2, 100);
         
         
         Timed.simulateUntilLastEvent();
         
+        // logging
         for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            System.out.println(ca.iaas.repositories.get(0).contents());
+            for(VirtualMachine vm : ca.iaas.listVMs()) {
+                SimLogger.logRes(vm.toString());
+            }
         }
-        System.out.println(Timed.getFireCount());
+        SimLogger.logRes(Timed.getFireCount());
     }
-    
-    
-
 }
