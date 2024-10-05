@@ -1160,7 +1160,7 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	}
 	
 	/**
-     * checks if the requested resources could be hosted on the
+     * checks if the requested resources could actually be hosted on the
      * PM.
      * 
      * @param requested
@@ -1172,7 +1172,7 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
      *         <li><i>false</i> otherwise
      *         </ul>
      */
-    public boolean isReHostableRequest(final ResourceConstraints requested) {
+    public boolean isCurrentlyHostableRequest(final ResourceConstraints requested) {
         return requested.compareTo(freeCapacities) <= 0;
     }
 

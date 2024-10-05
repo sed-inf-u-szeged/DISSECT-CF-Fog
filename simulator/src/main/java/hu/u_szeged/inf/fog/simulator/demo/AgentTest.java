@@ -14,7 +14,7 @@ public class AgentTest {
     
     public static void main(String[] args) throws NetworkException {
         
-        String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+        String cloudfile = ScenarioBase.resourcePath + "ELKH_original.xml";
 
         // agents
         AgentComputingAppliance cloud1 = new AgentComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 19.04),  "EU");
@@ -31,16 +31,33 @@ public class AgentTest {
         
         // generating an application demand 
         AgentApplication app1 = new AgentApplication("app1");
-        app1.requirements.put("CPU", 4);
-        app1.requirements.put("RAM", 8);
+        app1.requirements.put("CPU", 4.0);
+        app1.requirements.put("RAM", 4_294_967_296L);
         app1.requirements.put("Location", "EU");
-        
+
         // randomly submit the app 
         int random = new Random().nextInt(ComputingAppliance.getAllComputingAppliances().size());
         AgentComputingAppliance initalRa = (AgentComputingAppliance) ComputingAppliance.getAllComputingAppliances().get(random);
-        initalRa.deploy();
+        
+        initalRa.broadcast(app1, 100);
+        
+        /* */
+        AgentApplication app2 = new AgentApplication("app2");
+        app2.requirements.put("CPU", 6.0);
+        app2.requirements.put("RAM", 4_294_967_296L);
+        app2.requirements.put("Location", "US");
+        
+        random = new Random().nextInt(ComputingAppliance.getAllComputingAppliances().size());
+        initalRa = (AgentComputingAppliance) ComputingAppliance.getAllComputingAppliances().get(random);
+        initalRa.broadcast(app2, 100);
+        
         
         Timed.simulateUntilLastEvent();
+        
+        for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
+            System.out.println(ca.iaas.repositories.get(0).contents());
+        }
+        System.out.println(Timed.getFireCount());
     }
     
     

@@ -16,5 +16,5 @@ public interface ResourceAgent {
      */
     public static final AlterableResourceConstraints agentArc = new AlterableResourceConstraints(1, 0.001, 536870912L);
     
-    public void broadcast();
+    public void broadcast(AgentApplication app, int bcastMessageSize);
 }
