@@ -1,0 +1,53 @@
+{
+    "name": "App-1",
+    "components": [
+        {
+            "name": "Comp-1",
+            "image": "1073741824",
+            "type": "compute"
+        },
+        {
+            "name": "Comp-2",
+            "image": "524288000",
+            "type": "compute"
+        },
+        {
+            "name": "Comp-3",
+            "type": "storage"
+        }
+    ],
+    "resources": [ 
+        {
+            "name": "Res-1",
+            "cpu": "4",
+            "memory": "4294967296",
+            "instances": "2",
+            "provider": "Amazon",
+            "location": "EU"
+        },
+        {
+            "name": "Res-2",
+            "cpu": "2-8",
+            "memory": "4294967296",
+            "provider": "Amazon"
+        },
+        {
+            "name": "Res-3",
+            "size": "107374182400"
+        }
+    ],
+    "mapping": [ 
+        {
+            "component": "Comp-1",
+            "resource": "Res-1"
+        },
+        {
+            "component": "Comp-2",
+            "resource": "Res-2"
+        },
+        {
+            "component": "Comp-3",
+            "resource": "Res-3"
+        }
+    ] 
+}

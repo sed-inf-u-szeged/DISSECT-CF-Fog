@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 @SuppressWarnings("unused")
-public class WorkflowSimulation {
+public class IoTWorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
     	SimLogger.setLogging(1, true);

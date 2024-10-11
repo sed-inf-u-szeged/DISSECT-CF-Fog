@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.demo;
+package hu.u_szeged.inf.fog.simulator.demo.simple;
 
 import java.util.EnumMap;
 import java.util.HashMap;

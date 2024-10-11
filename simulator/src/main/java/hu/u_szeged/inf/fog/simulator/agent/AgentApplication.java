@@ -1,31 +1,55 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import hu.u_szeged.inf.fog.simulator.node.AgentComputingAppliance;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 
 public class AgentApplication {
     
-    public String name;
+    static class Component {
+        
+        public String name;
+        public String image; 
+        public String type;
+        
+        public String toString() {
+            return "Component [name=" + name + ", image=" + image + ", type=" + type + "]";
+        }
+    }
     
-    public HashMap<String, Object> requirements; 
-    
-    public int bcastCounter;
+    static class Resource {
+        
+        public String name;
+        public String cpu; 
+        public String memory; 
+        public String instances;
+        public String provider;
+        public String location;
+        public String size;
 
-    public HashSet<AgentComputingAppliance>  offerList;
-    
-    public AgentApplication(String name) {
-        this.name = name;
-        this.requirements = new HashMap<>();
-        this.offerList = new HashSet<>();
+        public String toString() {
+            return "Resource [name=" + name + ", cpu=" + cpu + ", memory=" + memory + ", instances=" + instances
+                    + ", provider=" + provider + ", location=" + location + ", size=" + size + "]";
+        } 
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("Agent Application: " + name + "\nRequirements:\n");
-        for (HashMap.Entry<String, Object> entry : requirements.entrySet()) {
-            sb.append(" - ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+    static class Mapping {
+        
+        public String component;
+        public String resource;
+
+        public String toString() {
+            return "Mapping [component=" + component + ", resource=" + resource + "]";
         }
-        return sb.toString();
+    }
+    
+    public String name;
+    public List<Component> components;
+    public List<Resource> resources;
+    public List<Mapping> mapping;
+    
+    protected int bcastCounter;
+
+    public String toString() {
+        return "AgentApplication [name=" + name + ", components=" + components + ", resources=" + resources
+                + ", mapping=" + mapping + "]";
     }
 }

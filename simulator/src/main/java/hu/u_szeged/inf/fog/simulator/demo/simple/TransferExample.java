@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.demo;
+package hu.u_szeged.inf.fog.simulator.demo.simple;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;

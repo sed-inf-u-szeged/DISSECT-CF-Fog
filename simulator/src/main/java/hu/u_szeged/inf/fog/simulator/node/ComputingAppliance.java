@@ -46,6 +46,8 @@ public class ComputingAppliance {
      * The physical position of the node.
      */
     public final GeoLocation geoLocation;
+    
+    String location;
 
     /**
      * This class represents a single IaaS service responsible for maintaining
@@ -121,6 +123,11 @@ public class ComputingAppliance {
         ComputingAppliance.allComputingAppliances.add(this);
         this.readEnergy();
     }
+    
+    public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location)  {
+        this(file, name, geoLocation, 0);
+        this.location = location;
+    }
 
     /**
      * Calculates and returns the load of CPU resources for this computing appliance.
@@ -138,6 +145,15 @@ public class ComputingAppliance {
         }
         double requiredCpus = this.iaas.getRunningCapacities().getRequiredCPUs();
         return requiredCpus > 0 ? usedCpu / requiredCpus * 100 : 0;
+    }
+    
+    public static void setConnection(ComputingAppliance that, int latency) {
+        for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
+            if (ca != that) {
+                ca.neighbors.add(that);
+                ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
+            }
+        }
     }
 
     /**
