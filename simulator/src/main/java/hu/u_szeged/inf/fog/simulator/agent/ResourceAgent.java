@@ -160,46 +160,72 @@ public class ResourceAgent {
     "instances": "3",
     "provider": "Amazon"
     
+     for(PhysicalMachine pm : iaas.machines) {
+        pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
+        pmGetCpu +=  pm.getCapacities().getRequiredCPUs();
+     }
+     
+     if (resource.cpu.contains("-")) { // cpu range
+            String[] parts = resource.cpu.split("-");
+            double minCpu = Double.parseDouble(parts[0]);
+            double maxCpu = Double.parseDouble(parts[1]);
+            
+        }
 
 */
-    private void checkCpuAndMemory(Resource resource, ComputingAppliance ca, Capacity capacity, ResourceAgent agent) {
-        if (resource.cpu.contains("-")) { // cpu range
+    
+    private int checkHostingAbility(Resource resource, ComputingAppliance ca) {
+        double reqCpu = Double.parseDouble(resource.cpu);
+        long reqMemory = Long.parseLong(resource.memory);
             
-        } else { // no cpu range 
-            double reqCpu = (Double.parseDouble(resource.cpu) * Integer.parseInt(resource.instances));
-            long reqMemory = (Long.parseLong(resource.memory) * Integer.parseInt(resource.instances));
-            AlterableResourceConstraints arc = new AlterableResourceConstraints(reqCpu, 0.001, reqMemory);
-            if (reqCpu  <= capacity.cpu && reqMemory <= reqMemory) {
-                boolean isHostable = false;
-                for (PhysicalMachine pm : agent.computingAppliance.iaas.machines) {
-                    if (pm.isCurrentlyHostableRequest(arc)) {
-                        isHostable = true;
-                        break;
-                    }
-                }
-                if (isHostable) {
-                    System.out.println("Offer: " + agent.name + " - " + ca.name  + " - " + resource.name);
-                }
-            }
+        int isAbleToHost = 0;
+        for (PhysicalMachine pm : ca.iaas.machines) {
+            int cpuFits = (int) (pm.availableCapacities.getRequiredCPUs() / reqCpu); 
+            int memoryFits = (int) (pm.availableCapacities.getRequiredMemory() / reqMemory); 
+            isAbleToHost += Math.min(cpuFits, memoryFits);
         }
+        return isAbleToHost; 
     }
     
     private void generateOffers(AgentApplication app) {
         for (Resource resource : app.resources) {
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
+                
+                if (resource.size == null) { // compute type
+                    int totalAbleToHost = 0; 
+                    double totalCpuCapacity = 0;
+                    long totalMemoryCapacity = 0;
                     
-                    Capacity capacity = entry.getValue();
-                    ComputingAppliance ca = entry.getKey();
-                    
-                    if (resource.size == null) { // compute type
-                        this.checkCpuAndMemory(resource, ca, capacity, agent);
-                    } else { // storage type
-                        if (Long.parseLong(resource.size) <= capacity.storage) {
-                            System.out.println("Offer: " + agent.name + " - " + ca.name  + " - " + resource.name);
+                    for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
+                        ComputingAppliance ca = entry.getKey();
+                        Capacity capacity = entry.getValue();
+                        
+                        if ((resource.provider == null || resource.provider.equals(ca.provider)) 
+                                && (resource.location == null || resource.location.equals(ca.location))) {
+                            totalCpuCapacity += capacity.cpu;
+                            totalMemoryCapacity += capacity.memory;
+                            totalAbleToHost += this.checkHostingAbility(resource, ca);
                         }
                     }
+                    
+                    int instances = Integer.parseInt(resource.instances);
+                    double reqCpu = (Double.parseDouble(resource.cpu) * instances);
+                    long reqMemory = (Long.parseLong(resource.memory) * instances);
+                    
+                    if (reqCpu <= totalCpuCapacity && reqMemory <= totalMemoryCapacity && instances <= totalAbleToHost) {
+                        System.out.println("Offer: " + agent.name + " - " + resource.name);
+                    }                    
+                } else { // storage type
+                    for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
+                        Capacity capacity = entry.getValue();
+                        if (Long.parseLong(resource.size) <= capacity.storage) {
+                            System.out.println("Offer: " + agent.name + " - " + resource.name);
+                            break;
+                        }
+                    }
+                    
                 }
+                
             }
         }
     }  

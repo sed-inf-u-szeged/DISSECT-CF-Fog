@@ -30,11 +30,11 @@ public class AgentTest {
         String cloudfile = ScenarioBase.resourcePath + "ELKH_original.xml";
         
         // clouds
-        ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 19.04),  "EU");
-        ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(52.52, 13.40),  "EU");
-        ComputingAppliance cloud3 = new ComputingAppliance(cloudfile, "cloud3", new GeoLocation(48.85, 2.35),   "EU");
-        ComputingAppliance cloud4 = new ComputingAppliance(cloudfile, "cloud4", new GeoLocation(40.71, -74.00), "US");
-        ComputingAppliance cloud5 = new ComputingAppliance(cloudfile, "cloud5", new GeoLocation(43.7, -79.42),  "US");
+        ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 19.04),  "EU", "AWS");
+        ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(52.52, 13.40),  "EU", "Google");
+        ComputingAppliance cloud3 = new ComputingAppliance(cloudfile, "cloud3", new GeoLocation(48.85, 2.35),   "EU", "Azure");
+        ComputingAppliance cloud4 = new ComputingAppliance(cloudfile, "cloud4", new GeoLocation(40.71, -74.00), "US", "AWS");
+        ComputingAppliance cloud5 = new ComputingAppliance(cloudfile, "cloud5", new GeoLocation(43.7, -79.42),  "US", "Google");
         
         ComputingAppliance.setConnection(cloud1, 65);
         ComputingAppliance.setConnection(cloud2, 76);
@@ -52,7 +52,7 @@ public class AgentTest {
         HashMap<ComputingAppliance, Capacity> capacityOffer2 = new HashMap<ComputingAppliance, Capacity>(); 
         capacityOffer2.put(cloud1, new Capacity(10.0, 21474836480L, 107374182400L)); 
         capacityOffer2.put(cloud3, new Capacity(8.0, 16106127360L, 53687091200L));
-        capacityOffer2.put(cloud4, new Capacity(10.0, 21474836480L, 107374182400L));
+        capacityOffer2.put(cloud4, new Capacity(12.0, 21474836480L, 107374182400L));
         new ResourceAgent("Agent-2", capacityOffer2);
         
         HashMap<ComputingAppliance, Capacity> capacityOffer3 = new HashMap<ComputingAppliance, Capacity>(); 

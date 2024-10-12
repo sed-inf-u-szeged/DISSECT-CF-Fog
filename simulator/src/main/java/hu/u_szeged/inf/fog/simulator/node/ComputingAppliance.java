@@ -47,8 +47,6 @@ public class ComputingAppliance {
      */
     public final GeoLocation geoLocation;
     
-    String location;
-
     /**
      * This class represents a single IaaS service responsible for maintaining
      * physical machines and scheduling VM requests.
@@ -99,6 +97,10 @@ public class ComputingAppliance {
      */
     public ArrayList<TimelineEntry> timelineList = new ArrayList<TimelineEntry>();
 
+    public String provider;
+    
+    public String location;
+
     /**
      * Constructs a new {@code ComputingAppliance} with the specified parameters.
      * It also starts the energy measurement for this instance.
@@ -124,9 +126,10 @@ public class ComputingAppliance {
         this.readEnergy();
     }
     
-    public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location)  {
+    public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location, String provider)  {
         this(file, name, geoLocation, 0);
         this.location = location;
+        this.provider = provider;
     }
 
     /**
