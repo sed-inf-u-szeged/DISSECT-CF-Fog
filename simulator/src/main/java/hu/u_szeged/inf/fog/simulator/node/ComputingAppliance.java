@@ -108,7 +108,7 @@ public class ComputingAppliance {
      * @param file        the file path defining an IaaSService
      * @param name        the name of the computing appliance
      * @param geoLocation the geographical location of the computing appliance
-     * @param range       the range of the computing appliance
+     * @param range       the range of the computing appliance in km (0 or smaller means infinite range)
      */
     public ComputingAppliance(String file, String name, GeoLocation geoLocation, long range) {
         try {
@@ -118,12 +118,13 @@ public class ComputingAppliance {
         }
         this.name = name;
         this.geoLocation = geoLocation;
-        this.range = range;
-        this.neighbors = new ArrayList<ComputingAppliance>();
-        this.applications = new ArrayList<Application>();
+        this.neighbors = new ArrayList<>();
+        this.applications = new ArrayList<>();
+        this.range = range <= 0 ? Integer.MAX_VALUE : range;
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
         this.readEnergy();
+        System.out.println(this.range);
     }
     
     public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location, String provider)  {
