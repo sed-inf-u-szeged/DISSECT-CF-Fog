@@ -1,11 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -14,10 +12,13 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
       
@@ -30,6 +31,12 @@ public class ResourceAgent {
             this.cpu = cpu;
             this.memory = memory;
             this.storage = storage;
+        }
+        
+        public Capacity(Capacity other) {
+            this.cpu = other.cpu;
+            this.memory = other.memory;
+            this.storage = other.storage;
         }
     }
     
@@ -140,93 +147,134 @@ public class ResourceAgent {
         this.offerRanking();
     }
     
-    private void offerRanking() {        
+    private void offerRanking() {       
+        // To be implemented..
     }
 
     
-/* 
-    Default:
-    "name": "Res-1",
-    "cpu": "4",
-    "memory": "4294967296",
-    "instances": "3",
-    "provider": "Amazon",
-    "location": "EU"
-
-    Extreme:    
-    "name": "Res-2",
-    "cpu": "2-8",
-    "memory": "4294967296",
-    "instances": "3",
-    "provider": "Amazon"
-    
-     for(PhysicalMachine pm : iaas.machines) {
-        pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
-        pmGetCpu +=  pm.getCapacities().getRequiredCPUs();
-     }
+    /*  
+    for(PhysicalMachine pm : iaas.machines) {
+    pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
+    pmGetCpu +=  pm.getCapacities().getRequiredCPUs();
+    }
      
-     if (resource.cpu.contains("-")) { // cpu range
-            String[] parts = resource.cpu.split("-");
-            double minCpu = Double.parseDouble(parts[0]);
-            double maxCpu = Double.parseDouble(parts[1]);
-            
-        }
-
-*/
+    if (resource.cpu.contains("-")) { // cpu range
+        String[] parts = resource.cpu.split("-");
+        double minCpu = Double.parseDouble(parts[0]);
+        double maxCpu = Double.parseDouble(parts[1]);
+    }
+    */
     
-    private int checkHostingAbility(Resource resource, ComputingAppliance ca) {
-        double reqCpu = Double.parseDouble(resource.cpu);
-        long reqMemory = Long.parseLong(resource.memory);
+    private boolean checkInstanceAvailability(Resource resource, 
+            HashMap<ComputingAppliance, Capacity> copiedCapacityOfferings) {
+        if (resource.size == null) { // compute type 
+            int isAbleToHost = 0;
             
-        int isAbleToHost = 0;
-        for (PhysicalMachine pm : ca.iaas.machines) {
-            int cpuFits = (int) (pm.availableCapacities.getRequiredCPUs() / reqCpu); 
-            int memoryFits = (int) (pm.availableCapacities.getRequiredMemory() / reqMemory); 
-            isAbleToHost += Math.min(cpuFits, memoryFits);
+            int instances = resource.instances == null ? 1 : Integer.parseInt(resource.instances);
+            double reqCpu = (Double.parseDouble(resource.cpu));
+            long reqMemory = (Long.parseLong(resource.memory));
+            
+            for (int i = 0; i < instances; i++) {
+                for (Map.Entry<ComputingAppliance, Capacity> entry : copiedCapacityOfferings.entrySet()) {
+                    ComputingAppliance ca = entry.getKey();
+                    Capacity capacity = entry.getValue();
+                    
+                    if ((resource.provider == null || resource.provider.equals(ca.provider))
+                            && (resource.location == null || resource.location.equals(ca.location))
+                            && reqCpu <= capacity.cpu && reqMemory <= capacity.memory) {
+                        isAbleToHost++;
+                        capacity.cpu -= reqCpu;
+                        capacity.memory -= reqMemory;
+                        break;
+                    }
+                }
+            }
+            return instances == isAbleToHost;
+            
+        } else { // storage type
+            for (Map.Entry<ComputingAppliance, Capacity> entry : copiedCapacityOfferings.entrySet()) {
+                ComputingAppliance ca = entry.getKey();
+                Capacity capacity = entry.getValue();
+                if ((resource.provider == null || resource.provider.equals(ca.provider))
+                        && (resource.location == null || resource.location.equals(ca.location))
+                        && Long.parseLong(resource.size) <= capacity.storage) {
+                    capacity.storage -= (Long.parseLong(resource.size));
+                    return true;
+                }
+            }
+            return false;
         }
-        return isAbleToHost; 
     }
     
     private void generateOffers(AgentApplication app) {
-        for (Resource resource : app.resources) {
-            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                
-                if (resource.size == null) { // compute type
-                    int totalAbleToHost = 0; 
-                    double totalCpuCapacity = 0;
-                    long totalMemoryCapacity = 0;
-                    
-                    for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
-                        ComputingAppliance ca = entry.getKey();
-                        Capacity capacity = entry.getValue();
-                        
-                        if ((resource.provider == null || resource.provider.equals(ca.provider)) 
-                                && (resource.location == null || resource.location.equals(ca.location))) {
-                            totalCpuCapacity += capacity.cpu;
-                            totalMemoryCapacity += capacity.memory;
-                            totalAbleToHost += this.checkHostingAbility(resource, ca);
-                        }
-                    }
-                    
-                    int instances = Integer.parseInt(resource.instances);
-                    double reqCpu = (Double.parseDouble(resource.cpu) * instances);
-                    long reqMemory = (Long.parseLong(resource.memory) * instances);
-                    
-                    if (reqCpu <= totalCpuCapacity && reqMemory <= totalMemoryCapacity && instances <= totalAbleToHost) {
-                        System.out.println("Offer: " + agent.name + " - " + resource.name);
-                    }                    
-                } else { // storage type
-                    for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
-                        Capacity capacity = entry.getValue();
-                        if (Long.parseLong(resource.size) <= capacity.storage) {
-                            System.out.println("Offer: " + agent.name + " - " + resource.name);
-                            break;
-                        }
-                    }
-                    
+        List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
+        
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {   
+            
+            HashMap<ComputingAppliance, Capacity> copiedCapacityOfferings = new HashMap<>();
+            for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
+                copiedCapacityOfferings.put(entry.getKey(), new Capacity(entry.getValue()));
+            }
+            
+            for (Resource resource : app.resources) {
+                boolean isAbleToHost = this.checkInstanceAvailability(resource, copiedCapacityOfferings);
+                if (isAbleToHost) {
+                    agentResourcePairs.add(Pair.of(agent, resource));
                 }
-                
+            }
+        }
+        
+        
+        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
+            ResourceAgent agent = pair.getLeft();
+            Resource resource = pair.getRight();
+            
+            System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
+        }
+        
+        List<List<Pair<ResourceAgent, Resource>>> allCombinations = generateCombinations(agentResourcePairs, 
+                app.resources, new ArrayList<>(), new ArrayList<>(), new HashSet<>());
+
+        for (List<Pair<ResourceAgent, Resource>> combination : allCombinations) {
+            System.out.println();
+            for (Pair<ResourceAgent, Resource> pair : combination) {
+                ResourceAgent agent = pair.getLeft();
+                Resource resource = pair.getRight();
+                System.out.print("Agent: " + agent.name + ", Resource: " + resource.name + ",");
             }
         }
     }  
+    
+    private static List<List<Pair<ResourceAgent, Resource>>> generateCombinations(
+            List<Pair<ResourceAgent, Resource>> agentResourcePairs,
+            List<Resource> resources,
+            List<Pair<ResourceAgent, Resource>> currentCombination,
+            List<List<Pair<ResourceAgent, Resource>>> combinations,
+            Set<Resource> usedResources) {
+
+        // Check if the currentCombination has the same size as resources
+        if (currentCombination.size() == resources.size()) {
+            combinations.add(new ArrayList<>(currentCombination));
+            return combinations;
+        }
+
+        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
+            Resource resource = pair.getRight();
+
+            // If the resource has not been used, include it in the current combination
+            if (!usedResources.contains(resource)) {
+                usedResources.add(resource);
+                currentCombination.add(pair);
+
+                // Recursive call to continue building the combination
+                generateCombinations(agentResourcePairs, resources, currentCombination, combinations, usedResources);
+
+                // Backtrack: remove the last resource and mark it as unused
+                usedResources.remove(resource);
+                currentCombination.remove(currentCombination.size() - 1);
+            }
+        }
+
+        return combinations; // Return combinations after completion
+    }
 }

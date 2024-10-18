@@ -1,13 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.util.tosca;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AgentApplicationReader {
 

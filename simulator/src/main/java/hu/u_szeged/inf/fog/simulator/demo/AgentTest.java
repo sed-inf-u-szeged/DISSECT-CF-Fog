@@ -44,13 +44,13 @@ public class AgentTest {
                 
         // agents
         HashMap<ComputingAppliance, Capacity> capacityOffer1 = new HashMap<ComputingAppliance, Capacity>(); 
-        capacityOffer1.put(cloud1, new Capacity(10.0, 21474836480L, 107374182400L)); // 10 CPU - 20 GB memory - 100 GB storage
+        capacityOffer1.put(cloud1, new Capacity(12.0, 21474836480L, 107374182400L)); // 12 CPU - 20 GB memory - 100 GB storage
         capacityOffer1.put(cloud2, new Capacity(8.0, 16106127360L, 53687091200L));
         capacityOffer1.put(cloud3, new Capacity(10.0, 21474836480L, 107374182400L));
         new ResourceAgent("Agent-1", capacityOffer1);
         
         HashMap<ComputingAppliance, Capacity> capacityOffer2 = new HashMap<ComputingAppliance, Capacity>(); 
-        capacityOffer2.put(cloud1, new Capacity(10.0, 21474836480L, 107374182400L)); 
+        capacityOffer2.put(cloud1, new Capacity(12.0, 21474836480L, 107374182400L)); 
         capacityOffer2.put(cloud3, new Capacity(8.0, 16106127360L, 53687091200L));
         capacityOffer2.put(cloud4, new Capacity(12.0, 21474836480L, 107374182400L));
         new ResourceAgent("Agent-2", capacityOffer2);
@@ -81,7 +81,7 @@ public class AgentTest {
         Deployment.setImageRegistry(repository, 100);
         
         // generating an application demand 
-        String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "extended_app_input.json";
+        String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
         
         new Deployment(app1, 100);

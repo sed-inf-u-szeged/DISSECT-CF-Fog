@@ -19,17 +19,16 @@
     "resources": [ 
         {
             "name": "Res-1",
-            "cpu": "4",
-            "memory": "4294967296",
-            "instances": "3",
-            "provider": "Amazon",
-            "location": "EU" 
+            "cpu": "4", 
+            "memory": "4294967296", 
+            "instances": "3", 
+            "provider": "AWS", 
+            "location": "EU"
         },
         {
-            "name": "Res-2",
-            "cpu": "2-8", 
-            "memory": "4294967296", 
-            "provider": "Amazon" 
+            "name": "Res-2", 
+            "cpu": "8",  
+            "memory": "4294967296" 
         },
         {
             "name": "Res-3",
