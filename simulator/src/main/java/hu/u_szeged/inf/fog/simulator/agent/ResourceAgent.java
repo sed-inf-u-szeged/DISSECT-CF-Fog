@@ -11,6 +11,8 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -216,7 +218,9 @@ public class ResourceAgent {
                 copiedCapacityOfferings.put(entry.getKey(), new Capacity(entry.getValue()));
             }
             
-            for (Resource resource : app.resources) {
+            List<Resource> sortedResources = AgentApplication.getSortedResourcesByCpuThenSize(app.resources);
+            
+            for (Resource resource : sortedResources) {
                 boolean isAbleToHost = this.checkInstanceAvailability(resource, copiedCapacityOfferings);
                 if (isAbleToHost) {
                     agentResourcePairs.add(Pair.of(agent, resource));
@@ -224,57 +228,74 @@ public class ResourceAgent {
             }
         }
         
-        
+        // TODO: only for debugging, needs to be deleted
         for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
             ResourceAgent agent = pair.getLeft();
             Resource resource = pair.getRight();
-            
             System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
         }
         
-        List<List<Pair<ResourceAgent, Resource>>> allCombinations = generateCombinations(agentResourcePairs, 
-                app.resources, new ArrayList<>(), new ArrayList<>(), new HashSet<>());
+        List<Set<Pair<ResourceAgent, Resource>>>  combinations = generateUniqueCombinations(agentResourcePairs, app.resources);
 
-        for (List<Pair<ResourceAgent, Resource>> combination : allCombinations) {
-            System.out.println();
+        System.out.println(combinations.size());
+        
+        for (Set<Pair<ResourceAgent, Resource>> combination : combinations) {
+            Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
+
             for (Pair<ResourceAgent, Resource> pair : combination) {
                 ResourceAgent agent = pair.getLeft();
                 Resource resource = pair.getRight();
-                System.out.print("Agent: " + agent.name + ", Resource: " + resource.name + ",");
+                
+                agentResourcesMap.putIfAbsent(agent, new HashSet<>());
+                agentResourcesMap.get(agent).add(resource);
+            }
+            System.out.println("Offer:");
+            for (Map.Entry<ResourceAgent, Set<Resource>> entry : agentResourcesMap.entrySet()) {
+
+                ResourceAgent agent = entry.getKey();
+                Set<Resource> resources = entry.getValue();
+                System.out.print(agent.name + ": ");
+
+                for (Resource resource : resources) {
+                    System.out.print(resource.name + " ");
+                }
+                System.out.println();
             }
         }
-    }  
+    } 
     
-    private static List<List<Pair<ResourceAgent, Resource>>> generateCombinations(
-            List<Pair<ResourceAgent, Resource>> agentResourcePairs,
-            List<Resource> resources,
-            List<Pair<ResourceAgent, Resource>> currentCombination,
-            List<List<Pair<ResourceAgent, Resource>>> combinations,
-            Set<Resource> usedResources) {
+    public List<Set<Pair<ResourceAgent, Resource>>> generateUniqueCombinations(
+           List<Pair<ResourceAgent, Resource>> pairs, List<Resource> resources) {
+        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
+        List<Resource> resourcesList = new ArrayList<>(resources);
+        
+        generateCombinations(pairs, new HashSet<>(), uniqueCombinations, resourcesList, new HashSet<>());
+        
+        return new ArrayList<>(uniqueCombinations);
+    }
 
-        // Check if the currentCombination has the same size as resources
-        if (currentCombination.size() == resources.size()) {
-            combinations.add(new ArrayList<>(currentCombination));
-            return combinations;
+    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs,
+                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
+                                      Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
+                                      List<Resource> resources,
+                                      Set<Resource> includedResources) {
+
+        if (includedResources.size() == resources.size()) {
+            uniqueCombinations.add(new HashSet<>(currentCombination));
+            return;
         }
+        
+        for (Pair<ResourceAgent, Resource> pair : pairs) {
+            if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
 
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            Resource resource = pair.getRight();
-
-            // If the resource has not been used, include it in the current combination
-            if (!usedResources.contains(resource)) {
-                usedResources.add(resource);
                 currentCombination.add(pair);
+                includedResources.add(pair.getRight());
+                
+                generateCombinations(pairs, currentCombination, uniqueCombinations, resources, includedResources);
 
-                // Recursive call to continue building the combination
-                generateCombinations(agentResourcePairs, resources, currentCombination, combinations, usedResources);
-
-                // Backtrack: remove the last resource and mark it as unused
-                usedResources.remove(resource);
-                currentCombination.remove(currentCombination.size() - 1);
+                currentCombination.remove(pair);
+                includedResources.remove(pair.getRight());
             }
         }
-
-        return combinations; // Return combinations after completion
     }
 }

@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.util.tosca;
 
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import java.io.File;
 import java.io.IOException;
 

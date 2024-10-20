@@ -124,7 +124,6 @@ public class ComputingAppliance {
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
         this.readEnergy();
-        System.out.println(this.range);
     }
     
     public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location, String provider)  {
