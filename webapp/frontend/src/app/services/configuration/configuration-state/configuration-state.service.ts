@@ -43,7 +43,14 @@ export class ConfigurationStateService {
     }
     return stations;
   }
-
+  public getCloudsAndFogs(): ComputingNodesObject[] {
+    const cloudAndFogs: ComputingNodesObject[] = [];
+    for (const stat of Object.values(this.computingNodes)) {
+      cloudAndFogs.push(stat);
+    }
+    return cloudAndFogs;
+  }
+  
   public generateGraph(): void {
     this.generateGraphSubject.next();
   }

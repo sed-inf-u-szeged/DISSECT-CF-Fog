@@ -1,13 +1,23 @@
+<!--<div class="instance-container" *ngFor="let instance of instances">
+    <app-configurable-instance 
+        (instanceEmitter)="getInstanceFromEmitter($event)"
+        (removeEmitter)="removeInstance($event)" 
+        [instance]="instance"></app-configurable-instance>
+</div>-->
+<div class="helper">
+    <app-info-panel [infoData]="panelService.infoData$ | async"></app-info-panel>
+</div>
 <div class="instance-container" *ngFor="let instance of instances">
     <app-configurable-instance 
         (instanceEmitter)="getInstanceFromEmitter($event)"
         (removeEmitter)="removeInstance($event)" 
         [instance]="instance"></app-configurable-instance>
 </div>
+
 <div class="main-actions">
-    <button mat-raised-button matStepperPrevious color="accent" >Back</button>
+    <button mat-raised-button id="backButton" matStepperPrevious color="accent" >Back</button>
     <div class="plus-wrapper" (click)="addInstance()">
         <i class="fas fa-plus fa-2x plus-icon"></i>
     </div>
-    <button mat-raised-button [disabled]="!isValidConfiguration" color="primary" (click)="checkReadyAndNext()">Next</button>
+    <button mat-raised-button id="nextButton" [disabled]="!isValidConfiguration" color="primary" (click)="checkReadyAndNext()">Next</button>
 </div>

@@ -1,6 +1,6 @@
 import { Component, ViewChild, AfterViewChecked, ChangeDetectorRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { MatStepper } from '@angular/material/stepper';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { MatDrawer } from '@angular/material/sidenav';
 import { PanelService } from '../../services/panel/panel.service';
 import { Station } from '../../models/station';

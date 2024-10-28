@@ -26,7 +26,7 @@
   min-width: 300px;
   max-width: 600px;
   width: 50%;
-  height: 60%;
+  height: fit-content;
   margin: 1rem;
   box-shadow: unset;
 }
@@ -56,7 +56,7 @@
   min-width: 250px;
   max-width: 450px;
   width: 80%;
-  height: 80%;
+  height: fit-content;
   justify-content: space-evenly;
 }
 

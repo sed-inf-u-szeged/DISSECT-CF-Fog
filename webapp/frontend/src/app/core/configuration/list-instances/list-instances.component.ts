@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Instance } from 'src/app/models/instance';
 import { ConfigurationStateService } from 'src/app/services/configuration/configuration-state/configuration-state.service';
 import { StepperService } from 'src/app/services/configuration/stepper/stepper.service';
+import { PanelService } from 'src/app/services/panel/panel.service';
 
 @Component({
   selector: 'app-list-instances',
@@ -16,9 +17,11 @@ export class ListInstancesComponent {
 
   constructor(
     public configurationService: ConfigurationStateService,
-    public stepperService: StepperService
+    public stepperService: StepperService,
+    public panelService: PanelService,
   ) {
     this.createInstance();
+    this.panelService.getInstanceData();
    }
 
   private createInstance(): void {

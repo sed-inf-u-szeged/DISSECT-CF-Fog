@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { StepBackDialogComponent } from 'src/app/core/configuration/step-back-dialog/step-back-dialog.component';
 import { WindowSizeService } from '../../window-size/window-size.service';
 

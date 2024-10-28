@@ -5,21 +5,64 @@
         <i class="fas fa-info-circle fa-lg"></i>
     </button>
 </h1>
+<!--Leaflet map start-->
+<div class="map"
+     leaflet
+     [leafletOptions]="options"
+     (leafletMapReady)="onMapReady($event)">
+</div>
+
+<div id="tableNodes" style="">
+   <table class='table' >
+    <thead>
+        <th>Node</th>
+        <th>Range</th>
+        <th>Action</th>
+    </thead>
+    <tbody>
+        <tr *ngFor="let elem of this.nodesIDAndRangeAndNeighbours">
+           <td>{{elem.id}}</td>
+           <td>{{elem.range}}</td>
+           <td><button class="button-size simple-conn-btn"  mat-raised-button (click)="this.setData(elem.id)">Select</button></td>
+        </tr>
+    </tbody>
+   </table>
+</div>
+<div id='tableConnections' style="">
+    <table class='table' *ngIf="this.existingConnections.length > 0 ">
+        <thead>
+            <th>Connected nodes</th>
+            <th>Action</th>
+        </thead>
+     <tbody>
+         <tr *ngFor="let elem of this.existingConnections">
+            <td>{{elem}}</td>
+           
+            <td><button class="button-size simple-conn-btn"  mat-raised-button (click)="this.removeConnection(elem)">Delete</button></td>
+         </tr>
+     </tbody>
+    </table>
+ </div>
+
+<!--Leaflet map end-->
+
 <!-- Connection paper -->
-<div class="paper-wrapper">
+<!--<div class="paper-wrapper">    OLD VISUALISATION
     <div class="clouds"></div>
     <div id="paper" class="joint-paper"></div>
 </div>
-<!-- Paper's actions -->
+ --Paper's actions--
 <div class="slider-container">
     <mat-slider class="slider" [(value)]="sliderValue" (input)="onInputChange($event)"></mat-slider>
 </div>
+-->
+<div class="form">
 <form [formGroup]="simpleConnectionForm">
     <div class="actions">
-        <div class="connection-button">
+        <!--<div class="connection-button">
             <button class="button-size simple-conn-btn" mat-raised-button (click)="createLinkBetweenSelectedNodes()">Add connection</button>
-        </div>
-        <div class="connection-input">
+        </div>-->
+        <div class="connection-input" >
             <mat-form-field appearance="outline" class="input-size">
                 <mat-label>Latency</mat-label>
                 <input class="setText-center" matInput type="number" formControlName="latency" />
@@ -30,14 +73,15 @@
         </div>
     </div>
 </form>
-<form [formGroup]="parentConnectionForm">
+
+<form [formGroup]="parentConnectionForm" >
     <div class="actions space-top">
-        <div class="connection-button">
+        <!--<div class="connection-button">
             <button class="button-size parent-conn-btn" mat-raised-button (click)="createParentLinkBetweenSelectedCloudAndFog()">Add parent</button>
-        </div>
+        </div>-->
         <div class="connection-input">
             <mat-form-field appearance="outline" class="input-size">
-                <mat-label>Latency</mat-label>
+                <mat-label>Parrent Latency</mat-label>
                 <input class="setText-center" matInput type="number" formControlName="parentLatency" />
                 <mat-error *ngIf="parentConnectionForm.get('parentLatency').hasError('min')">
                     The quantity can't be <strong>0 or less!</strong>
@@ -46,7 +90,9 @@
         </div>
     </div>
 </form>
-<div class="main-actions">
-    <button mat-raised-button color="accent" (click)="stepBack()">Back</button>
-    <button mat-raised-button color="primary" (click)="save()">Configure</button>
+</div>
+<div class="main-actions" id="main-actions">
+    <button mat-raised-button color="accent" id="backButton" (click)="stepBack()">Back</button>
+    <button mat-raised-button color="warn" id="resetButton" (click)="hardResetTheMap()">Map reset</button>
+    <button mat-raised-button color="primary" id="configureButton" (click)="save(markers)">Configure</button>
 </div>

@@ -23,11 +23,11 @@ export interface ConfiguredServerSideComputingNode extends ServerSideComputingNo
   neighbours?: NeighboursObject;
 }
 
-export interface NeighboursObject {
-  [nodeId: string]: Neighbour;
+export interface NeighboursObject { //Ez tartalmazza az összekapcsolásokat
+  [id: string]: Neighbour;
 }
 
-export interface Neighbour {
+export interface Neighbour { //Ez pedig 1 db összekapcsolás
   name: string;
   latency: number;
   parent?: boolean;
@@ -35,8 +35,9 @@ export interface Neighbour {
 
 export interface Node {
   id: string;
-  nodeId: string;
+  //nodeId: string; It was used in the earlier version of the visualization, not used anymore
   nodeType: string;
+  latLANG: L.LatLng;
   parent?: string;
 }
 

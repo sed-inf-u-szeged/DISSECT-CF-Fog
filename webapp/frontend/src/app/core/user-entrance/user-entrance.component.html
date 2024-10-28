@@ -4,7 +4,7 @@
     <div class="cover-content">
       <img alt="profile" class="image" src="../../assets/images/login.png">
       <div class="cover-title">Do you have account?</div>
-      <button type="submit" class="btn-bottom-margin"
+      <button type="submit" id="loginButton" class="btn-bottom-margin"
           mat-raised-button color="primary" routerLink="/login" >
           Login
         </button>
@@ -22,30 +22,38 @@
       <div class="title">{{data.title}}</div>
       <mat-form-field appearance="outline">
           <mat-label>E-mail</mat-label>
-          <input class="setText-center" matInput type="text" formControlName="email">
+          <input #email id="email" class="setText-center" matInput type="text" formControlName="email" (focusout)="getUniversitiesWithData()">
       </mat-form-field>
       <mat-form-field appearance="outline">
           <mat-label>Password</mat-label>
-          <input class="setText-center" matInput type="password" 
+          <input #password id="password" class="setText-center" matInput type="password" 
               formControlName="password">
       </mat-form-field>
-      <div *ngIf="isRegisterFailed || isLoginFailed" class="notification error">
-        Email or password is invalid!
-      </div>
-      <button type="submit" class="btn-bottom-margin" 
+      <mat-form-field appearance="outline">
+      <mat-label>University(ies)</mat-label>
+      <mat-select #select formControlName="select" [(value)]="selected">
+        <mat-option *ngFor="let uni of allUniName" [value]="uni">
+          {{uni}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div *ngIf="isRegisterFailed || isLoginFailed" id="dataFailedText" class="notification error">
+      Email or password is invalid!
+    </div>
+      <button type="submit" id="submitButton" class="btn-bottom-margin" 
         mat-raised-button color="primary" 
         (click)="onSubmit()">
         {{data.buttonLabel}}
       </button>
-      <div *ngIf="isRegisterSuccessful && !isLogin" class="notification success">
+      <div *ngIf="isRegisterSuccessful && !isLogin" id="registrationSuccesfullText" class="notification success">
         Your registration is successful!
       </div>
     </form>
     <ng-container  *ngIf="isLogin; else registerText">
-      <div>You can register <span  class="redirect-text" routerLink="/register">here</span>!</div>
+      <div>You can register <span id="registerLink" class="redirect-text" routerLink="/register">here</span>!</div>
     </ng-container>
     <ng-template #registerText>
-      <div>You can login <span  class="redirect-text" routerLink="/login">here</span>!</div>
+      <div>You can login <span id="loginLink" class="redirect-text" routerLink="/login">here</span>!</div>
     </ng-template>
   </mat-card>
   <!-- Login cover-->
@@ -53,7 +61,7 @@
     <div class="cover-content">
       <img alt="key" class="image" src="../../assets/images/register.png">
       <div class="cover-title">Don't have an account?</div>
-      <button type="submit" class="btn-bottom-margin" 
+      <button type="submit" id="registerButton" class="btn-bottom-margin" 
           mat-raised-button color="warn" routerLink="/register" >
           Register
         </button>

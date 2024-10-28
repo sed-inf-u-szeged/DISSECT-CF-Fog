@@ -12,6 +12,7 @@ const mongodb = require('../services/mongodb-service');
  * - 500 -  other error
  */
 router.post("/signup", async (req, res) => {
+
     try {
         const user = await mongodb.getUser({ email: req.body.email })
 

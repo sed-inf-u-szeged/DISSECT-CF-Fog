@@ -29,13 +29,13 @@
     </div>
     <div class="actions">
       <div class="setText-center margin-around">
-        <button type="button" mat-raised-button color="warn" (click)="resetConfiguration()">Reset</button>
+        <button type="button" id="resetButton" mat-raised-button color="warn" (click)="resetConfiguration()">Reset</button>
       </div>
       <div class="setText-center margin-around">
-        <button type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+        <button type="button" id="defaultButton" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
       </div>
       <div class="setText-center margin-around">
-        <button mat-raised-button color="primary" (click)="sendNodesQuantity()">Next</button>
+        <button mat-raised-button id="nextButton" color="primary" (click)="sendNodesQuantity()">Next</button>
       </div>
     </div>
   </form>

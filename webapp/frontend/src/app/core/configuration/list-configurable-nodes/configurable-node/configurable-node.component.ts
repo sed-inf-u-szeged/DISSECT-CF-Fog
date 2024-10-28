@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit, OnDestroy } from '@angular/core';
 import { UntypedFormBuilder, FormGroupDirective, ControlContainer, Validators, UntypedFormGroup, UntypedFormControl } from '@angular/forms';
-import { MatLegacyDialog as MatDialog, MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ApplicationsDialogComponent } from './applications-dialog/applications-dialog.component';
 import { ApplicationsObject } from 'src/app/models/application';
 import { ComputingNode } from 'src/app/models/computing-node';

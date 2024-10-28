@@ -44,17 +44,17 @@
   <div class="double-item-row space-top">
     <mat-form-field appearance="outline" class="input-size-min">
       <mat-label>Select instances</mat-label>
-      <mat-select [(ngModel)]="instance" name="instance.name" [ngModelOptions]="{ standalone: true }">
+      <mat-select id="selectInstance" [(ngModel)]="instance" name="instance.name" [ngModelOptions]="{ standalone: true }">
         <mat-option *ngFor="let instance of userInstanceInputs" [value]="instance"> {{ instance.name }}</mat-option>
       </mat-select>
     </mat-form-field>
     <mat-form-field appearance="outline" class="input-size-min">
       <mat-label>Strategy</mat-label>
-      <mat-select [(ngModel)]="strategy" [ngModelOptions]="{ standalone: true }" multiple>
+      <mat-select id="selectStrategy"  [(ngModel)]="strategy" [ngModelOptions]="{ standalone: true }" multiple>
         <mat-option *ngFor="let strategy of resourceSelectionService.strategiesForApplications$ | async" [value]="strategy"> {{ strategy }}</mat-option>
       </mat-select>
     </mat-form-field>
   </div>
   </form>
-  <button id="defaultValueBtn" type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
+  <button id="defaultValueBtnOnApplicationCard" type="button" mat-raised-button color="accent" (click)="defaultConfiguration()">Default</button>
 </mat-card>
