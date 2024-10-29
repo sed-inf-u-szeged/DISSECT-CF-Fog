@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.util.tosca;
+package hu.u_szeged.inf.fog.simulator.util.agent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;

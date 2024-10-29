@@ -152,10 +152,8 @@ public class ComputingAppliance {
     
     public static void setConnection(ComputingAppliance that, int latency) {
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            if (ca != that) {
-                ca.neighbors.add(that);
-                ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
-            }
+            ca.neighbors.add(that);
+            ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
         }
     }
 

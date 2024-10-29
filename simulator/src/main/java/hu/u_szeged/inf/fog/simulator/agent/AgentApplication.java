@@ -26,6 +26,13 @@ public class AgentApplication {
         public String provider;
         public String location;
         public String size;
+        
+        public double getTotalReqCpu() {
+        	if ( cpu != null) {
+        		return Double.parseDouble(cpu) * (instances == null ? 1 : Double.parseDouble(instances));
+        	}
+        	return 1;
+        }
 
         public String toString() {
             return "Resource [name=" + name + ", cpu=" + cpu + ", memory=" + memory + ", instances=" + instances
@@ -47,9 +54,15 @@ public class AgentApplication {
     public List<Component> components;
     public List<Resource> resources;
     public List<Mapping> mapping;
+
+    public List<Offer> offers;
     
     protected int bcastCounter;
 
+    public AgentApplication() {
+        this.offers = new ArrayList<>();
+    }
+        
     public String toString() {
         return "AgentApplication [name=" + name + ", components=" + components + ", resources=" + resources
                 + ", mapping=" + mapping + "]";
@@ -77,7 +90,6 @@ public class AgentApplication {
             return (r1.cpu == null) ? 1 : -1;
         });
 
-        // Visszatérünk a rendezett listával
         return sortedResources;
     }
 }

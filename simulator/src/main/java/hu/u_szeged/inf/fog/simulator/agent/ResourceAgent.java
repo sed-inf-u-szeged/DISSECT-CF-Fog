@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -10,9 +11,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
+import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
+import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
+
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +54,8 @@ public class ResourceAgent {
     
     VirtualMachine service;
     
+    double hourlyPrice;
+    
     /**
      * It defines the agent's virtual image file with 0.5 GB of disk size requirement.
      */
@@ -64,9 +70,10 @@ public class ResourceAgent {
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>(); 
     
     
-    public ResourceAgent(String name, HashMap<ComputingAppliance, Capacity> capacityOfferings) {
+    public ResourceAgent(String name, HashMap<ComputingAppliance, Capacity> capacityOfferings, double hourlyPrice) {
         this.capacityOfferings = capacityOfferings;
         this.name = name;
+        this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
         this.computingAppliance = this.getRandomAppliance();
         this.startAgent();
@@ -146,11 +153,79 @@ public class ResourceAgent {
     private void deploy(AgentApplication app) {
         this.generateOffers(app);
         
-        this.offerRanking();
+        this.writeFile(app.offers);
+        
+        this.callRankingScript();
     }
     
-    private void offerRanking() {       
-        // To be implemented..
+    private void callRankingScript() {
+        
+    }
+
+	private void writeFile(List<Offer> offers) {     
+
+        List<Double> reliabilityList = new ArrayList<Double>(); 
+        List<Double> energyList = new ArrayList<Double>(); 
+        List<Double> bandwidthList = new ArrayList<Double>(); 
+        List<Double> latencyList = new ArrayList<Double>(); 
+        List<Double> priceList = new ArrayList<Double>(); 
+
+        for (Offer offer : offers) {
+            double averageLatency = 0;
+            double averageBandwidth = 0;
+            double averageEnergy = 0;
+            double averagePrice = 0;
+            
+            for (ResourceAgent agent : offer.agentResourcesMap.keySet()) {
+
+                averageLatency += agent.computingAppliance.iaas.repositories.get(0).getLatencies().get(
+                        agent.computingAppliance.iaas.repositories.get(0).getName());
+                
+
+                averageBandwidth += agent.computingAppliance.iaas.repositories.get(0).inbws.getPerTickProcessingPower() / 2.0;
+                averageBandwidth += agent.computingAppliance.iaas.repositories.get(0).outbws.getPerTickProcessingPower() / 2.0;
+
+                double energy = 0;
+                for (PhysicalMachine pm : agent.computingAppliance.iaas.machines) {
+                    energy += pm.getCurrentPowerBehavior().getConsumptionRange();
+                }
+                averageEnergy += energy / agent.computingAppliance.iaas.machines.size();
+                
+                for (Resource resource : offer.agentResourcesMap.get(agent)) {
+                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
+                }
+            }
+            
+            averageLatency /= offer.agentResourcesMap.keySet().size();
+            averageBandwidth /= offer.agentResourcesMap.keySet().size();
+            averageEnergy /= offer.agentResourcesMap.keySet().size();
+            averagePrice /= offer.agentResourcesMap.keySet().size();
+            
+            Random r = new Random();
+            reliabilityList.add(r.nextDouble());
+            
+            double epsilon = averageEnergy * 1e-10 * r.nextDouble();
+            energyList.add(averageEnergy + epsilon);
+
+            epsilon = averageBandwidth * 1e-10 * r.nextDouble();
+            bandwidthList.add(averageBandwidth + epsilon);
+            
+            epsilon = averageLatency * 1e-10 * r.nextDouble();
+            latencyList.add(averageLatency + epsilon);
+            
+            epsilon = averagePrice * 1e-10 * r.nextDouble();
+            priceList.add(averagePrice + epsilon);
+                        
+            System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: " 
+                + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
+            
+            QosPriority qosPriority = new QosPriority(r.nextDouble(), r.nextDouble(), r.nextDouble(), r.nextDouble());
+
+            JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
+            
+            AgentOfferWriter.writeOffers(jsonData);
+            
+        }
     }
 
     
@@ -234,12 +309,23 @@ public class ResourceAgent {
             Resource resource = pair.getRight();
             System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
         }
-        
-        List<Set<Pair<ResourceAgent, Resource>>>  combinations = generateUniqueCombinations(agentResourcePairs, app.resources);
 
-        System.out.println(combinations.size());
+        generateUniqueCombinations(agentResourcePairs, app);
+
+        for (Offer o : app.offers) {
+            System.out.println(o);
+        }
+    } 
+    
+    private void generateUniqueCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
+    
+        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
+        Set<Pair<ResourceAgent, Resource>> currentCombination = new HashSet<>();
+        Set<Resource> includedResources = new HashSet<>();
+
+        generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
         
-        for (Set<Pair<ResourceAgent, Resource>> combination : combinations) {
+        for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
 
             for (Pair<ResourceAgent, Resource> pair : combination) {
@@ -249,49 +335,27 @@ public class ResourceAgent {
                 agentResourcesMap.putIfAbsent(agent, new HashSet<>());
                 agentResourcesMap.get(agent).add(resource);
             }
-            System.out.println("Offer:");
-            for (Map.Entry<ResourceAgent, Set<Resource>> entry : agentResourcesMap.entrySet()) {
-
-                ResourceAgent agent = entry.getKey();
-                Set<Resource> resources = entry.getValue();
-                System.out.print(agent.name + ": ");
-
-                for (Resource resource : resources) {
-                    System.out.print(resource.name + " ");
-                }
-                System.out.println();
-            }
+            
+            app.offers.add(new Offer(agentResourcesMap));
         }
-    } 
-    
-    public List<Set<Pair<ResourceAgent, Resource>>> generateUniqueCombinations(
-           List<Pair<ResourceAgent, Resource>> pairs, List<Resource> resources) {
-        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
-        List<Resource> resourcesList = new ArrayList<>(resources);
-        
-        generateCombinations(pairs, new HashSet<>(), uniqueCombinations, resourcesList, new HashSet<>());
-        
-        return new ArrayList<>(uniqueCombinations);
     }
 
-    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs,
-                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
+    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
                                       Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
-                                      List<Resource> resources,
+                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
                                       Set<Resource> includedResources) {
 
-        if (includedResources.size() == resources.size()) {
+        if (includedResources.size() == resourceCount) {
             uniqueCombinations.add(new HashSet<>(currentCombination));
             return;
         }
         
         for (Pair<ResourceAgent, Resource> pair : pairs) {
             if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
-
                 currentCombination.add(pair);
                 includedResources.add(pair.getRight());
-                
-                generateCombinations(pairs, currentCombination, uniqueCombinations, resources, includedResources);
+
+                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources);
 
                 currentCombination.remove(pair);
                 includedResources.remove(pair.getRight());
