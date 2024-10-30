@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.demo;
+package hu.u_szeged.inf.fog.simulator.demo.simple;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
@@ -10,6 +10,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
@@ -23,7 +24,7 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import java.util.*;
 
-public class IoTSimulation {
+public class FogSimulationExample {
 
     public static void main(String[] args) throws Exception {
         SimLogger.setLogging(1, true);
@@ -78,7 +79,7 @@ public class IoTSimulation {
                         new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
             }else {
                 device  = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
-                        new RandomWalkMobilityStrategy(new GeoLocation(47 - step, 19 + - step), 0.0027, 0.0055, 10000),
+                        new RandomWalkMobilityStrategy(new GeoLocation(47 - step, 19 - step), 0.0027, 0.0055, 10000),
                         new RandomDeviceStrategy(), localMachine, 50, true);
             }
             deviceList.add(device);
