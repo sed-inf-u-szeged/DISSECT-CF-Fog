@@ -9,12 +9,20 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -159,10 +167,36 @@ public class ResourceAgent {
     }
     
     private void callRankingScript() {
-        
+        String path = "D:\\Documents\\swarm-deployment\\scripts";
+        String inputfile = ScenarioBase.resultDirectory + File.separator + "offer.json";
+        String targetDir = "D:\\Documents\\swarm-deployment\\resource_offers";
+        String targetFilePath = targetDir + File.separator + "offer.json";
+
+        try {
+            Files.copy(Path.of(inputfile), Path.of(targetFilePath), StandardCopyOption.REPLACE_EXISTING);
+
+            String command = "cd /d " + path + " && conda activate swarmchestrate && python offer_evaluator.py ";
+
+            ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
+            int exitCode = process.waitFor();
+            System.out.println("Exited with code: " + exitCode);
+        } catch (IOException | InterruptedException e) {
+            e.getStackTrace();
+        }
     }
 
-	private void writeFile(List<Offer> offers) {     
+    private void writeFile(List<Offer> offers) {     
 
         List<Double> reliabilityList = new ArrayList<Double>(); 
         List<Double> energyList = new ArrayList<Double>(); 
