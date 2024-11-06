@@ -9,20 +9,17 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.demo.AgentTest;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -75,7 +72,7 @@ public class ResourceAgent {
      */
     public static final AlterableResourceConstraints agentArc = new AlterableResourceConstraints(1, 0.001, 536870912L);
     
-    public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>(); 
+    public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
     
     
     public ResourceAgent(String name, HashMap<ComputingAppliance, Capacity> capacityOfferings, double hourlyPrice) {
@@ -161,21 +158,19 @@ public class ResourceAgent {
     private void deploy(AgentApplication app) {
         this.generateOffers(app);
         
-        this.writeFile(app.offers);
+        this.writeFile(app);
         
-        this.callRankingScript();
+        this.callRankingScript(app);
     }
     
-    private void callRankingScript() {
-        String path = "D:\\Documents\\swarm-deployment\\scripts";
-        String inputfile = ScenarioBase.resultDirectory + File.separator + "offer.json";
-        String targetDir = "D:\\Documents\\swarm-deployment\\resource_offers";
-        String targetFilePath = targetDir + File.separator + "offer.json";
+    private void callRankingScript(AgentApplication app) {
 
+        String inputfile = ScenarioBase.resultDirectory + File.separator + app.name + "-offers.json";
+        
         try {
-            Files.copy(Path.of(inputfile), Path.of(targetFilePath), StandardCopyOption.REPLACE_EXISTING);
-
-            String command = "cd /d " + path + " && conda activate swarmchestrate && python offer_evaluator.py ";
+            String command = "cd /d " + AgentTest.rankingScriptDir
+                 + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
+                 + " --offers_loc " + inputfile;
 
             ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
             processBuilder.redirectErrorStream(true);
@@ -185,18 +180,29 @@ public class ResourceAgent {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
+                    //System.out.println(line);
+                    
+                    if (line.startsWith("[")) {
+
+                        String numbers = line.substring(1, line.length() - 1); // "2 0 1"
+                        List<Integer> numberList = Arrays.stream(numbers.split("\\s+")) 
+                                                         .map(Integer::parseInt) 
+                                                         .map(n -> n + 1)
+                                                         .collect(Collectors.toList()); 
+
+                        System.out.println("Sorted offer List: " + numberList);
+                    }
+                    
                 }
             }
 
-            int exitCode = process.waitFor();
-            System.out.println("Exited with code: " + exitCode);
+            process.waitFor();
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
         }
     }
 
-    private void writeFile(List<Offer> offers) {     
+    private void writeFile(AgentApplication app) {     
 
         List<Double> reliabilityList = new ArrayList<Double>(); 
         List<Double> energyList = new ArrayList<Double>(); 
@@ -204,7 +210,7 @@ public class ResourceAgent {
         List<Double> latencyList = new ArrayList<Double>(); 
         List<Double> priceList = new ArrayList<Double>(); 
 
-        for (Offer offer : offers) {
+        for (Offer offer : app.offers) {
             double averageLatency = 0;
             double averageBandwidth = 0;
             double averageEnergy = 0;
@@ -257,7 +263,7 @@ public class ResourceAgent {
 
             JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
             
-            AgentOfferWriter.writeOffers(jsonData);
+            AgentOfferWriter.writeOffers(jsonData, app.name);
             
         }
     }

@@ -43,13 +43,12 @@ public class AgentOfferWriter {
         }
     }
 
-    public static void writeOffers(JsonOfferData jsonOfferData) {
+    public static void writeOffers(JsonOfferData jsonOfferData, String appName) {
         ObjectMapper objectMapper = new ObjectMapper();
        
         try {
-            //objectMapper.writeValue(new File(ScenarioBase.resultDirectory + File.separator + "offer.json"), jsonOfferData);
-        	objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(ScenarioBase.resultDirectory + File.separator + "offer.json"), jsonOfferData);
-            
+            objectMapper.writer(new DefaultPrettyPrinter()).writeValue(
+                new File(ScenarioBase.resultDirectory + File.separator + appName + "-offers.json"), jsonOfferData);
         } catch (IOException e) {
             e.printStackTrace();
         }

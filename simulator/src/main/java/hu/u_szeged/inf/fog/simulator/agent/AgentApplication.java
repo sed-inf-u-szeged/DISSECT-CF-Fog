@@ -28,10 +28,10 @@ public class AgentApplication {
         public String size;
         
         public double getTotalReqCpu() {
-        	if ( cpu != null) {
-        		return Double.parseDouble(cpu) * (instances == null ? 1 : Double.parseDouble(instances));
-        	}
-        	return 1;
+            if (cpu != null) {
+                return Double.parseDouble(cpu) * (instances == null ? 1 : Double.parseDouble(instances));
+            }
+            return 1;
         }
 
         public String toString() {

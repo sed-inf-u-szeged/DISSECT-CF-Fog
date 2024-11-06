@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
@@ -13,7 +12,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent.Capacity;
@@ -23,6 +21,13 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 
 public class AgentTest {
+	
+    public static String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
+    
+    public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+    
+    public static String rankingMethodName = "vote_wo_reliability";
+    
     
     public static void main(String[] args) throws NetworkException {
         
@@ -68,7 +73,6 @@ public class AgentTest {
         Deployment.setImageRegistry(repository, 100);
         
         // generating an application demand 
-        String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
         
         new Deployment(app1, 100);
