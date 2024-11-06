@@ -23,9 +23,10 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 public class AgentTest {
 	
     public static String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
+   // public static String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
     
-    public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-    
+    //public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+    public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
     public static String rankingMethodName = "vote_wo_reliability";
     
     
@@ -74,8 +75,10 @@ public class AgentTest {
         
         // generating an application demand 
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
+      //  AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
         
         new Deployment(app1, 100);
+       // new Deployment(app1, 150);
         
         Timed.simulateUntilLastEvent();
         

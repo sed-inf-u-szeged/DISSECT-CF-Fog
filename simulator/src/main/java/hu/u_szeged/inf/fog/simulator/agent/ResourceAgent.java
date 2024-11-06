@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
@@ -168,19 +170,32 @@ public class ResourceAgent {
         String inputfile = ScenarioBase.resultDirectory + File.separator + app.name + "-offers.json";
         
         try {
-            String command = "cd /d " + AgentTest.rankingScriptDir
-                 + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
-                 + " --offers_loc " + inputfile;
+            String command;
+            ProcessBuilder processBuilder;
 
-            ProcessBuilder processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+            // TODO: revise these commands
+            if (SystemUtils.IS_OS_WINDOWS) {
+                command = "cd /d " + AgentTest.rankingScriptDir
+                    + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
+                    + " --offers_loc " + inputfile;
+                processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+            } else if (SystemUtils.IS_OS_LINUX) {
+                command = "cd " + AgentTest.rankingScriptDir
+                    + " && python3 call_ranking_func.py --method_name " + AgentTest.rankingMethodName
+                    + " --offers_loc " + inputfile;
+
+                processBuilder = new ProcessBuilder("bash", "-c", command);
+            } else {
+                throw new UnsupportedOperationException("Unsupported operating system");
+            }
+
             processBuilder.redirectErrorStream(true);
-
             Process process = processBuilder.start();
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    //System.out.println(line);
+                   // System.out.println(line);
                     
                     if (line.startsWith("[")) {
 
@@ -190,12 +205,10 @@ public class ResourceAgent {
                                                          .map(n -> n + 1)
                                                          .collect(Collectors.toList()); 
 
-                        System.out.println("Sorted offer List: " + numberList);
+                        System.out.println("Sorted offer list: " + numberList);
                     }
-                    
                 }
             }
-
             process.waitFor();
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
@@ -244,17 +257,11 @@ public class ResourceAgent {
             Random r = new Random();
             reliabilityList.add(r.nextDouble());
             
-            double epsilon = averageEnergy * 1e-10 * r.nextDouble();
-            energyList.add(averageEnergy + epsilon);
-
-            epsilon = averageBandwidth * 1e-10 * r.nextDouble();
-            bandwidthList.add(averageBandwidth + epsilon);
-            
-            epsilon = averageLatency * 1e-10 * r.nextDouble();
-            latencyList.add(averageLatency + epsilon);
-            
-            epsilon = averagePrice * 1e-10 * r.nextDouble();
-            priceList.add(averagePrice + epsilon);
+            //double epsilon = averageEnergy * 1e-10 * r.nextDouble();
+            energyList.add(averageEnergy);
+            bandwidthList.add(averageBandwidth);
+            latencyList.add(averageLatency);
+            priceList.add(averagePrice);
                         
             System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: " 
                 + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
@@ -269,7 +276,7 @@ public class ResourceAgent {
     }
 
     
-    /*  
+    /*
     for(PhysicalMachine pm : iaas.machines) {
     pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
     pmGetCpu +=  pm.getCapacities().getRequiredCPUs();
