@@ -54,7 +54,7 @@ public class ScenarioBase {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         Date date = new Date(System.currentTimeMillis());
         String path = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
-                .append("sim_res/" + formatter.format(date)).toString();
+                .append("sim_res").append(File.separator) + formatter.format(date).toString();
         resultDirectory = path;
         new File(resultDirectory).mkdirs();
     }
