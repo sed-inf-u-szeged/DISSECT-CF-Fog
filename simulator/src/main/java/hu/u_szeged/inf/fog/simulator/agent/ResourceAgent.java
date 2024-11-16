@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.AgentTest;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -29,39 +30,22 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
-      
-    public static class Capacity {
-        double cpu;
-        long memory;
-        long storage;
-        
-        public Capacity(double cpu, long memory, long storage) {
-            this.cpu = cpu;
-            this.memory = memory;
-            this.storage = storage;
-        }
-        
-        public Capacity(Capacity other) {
-            this.cpu = other.cpu;
-            this.memory = other.memory;
-            this.storage = other.storage;
-        }
-    }
-    
-    HashMap<ComputingAppliance, Capacity> capacityOfferings; 
     
     public String name;
     
-    ComputingAppliance computingAppliance;
+    ComputingAppliance hostNode;
     
     VirtualMachine service;
     
     double hourlyPrice;
+    
+    public List<Capacity> capacities;
+    
+    AgentStrategy agentStrategy;
     
     /**
      * It defines the agent's virtual image file with 0.5 GB of disk size requirement.
@@ -77,95 +61,165 @@ public class ResourceAgent {
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
     
     
-    public ResourceAgent(String name, HashMap<ComputingAppliance, Capacity> capacityOfferings, double hourlyPrice) {
-        this.capacityOfferings = capacityOfferings;
+    public ResourceAgent(String name, double hourlyPrice, AgentStrategy agentStrategy, Capacity ...capacities) {
+        this.capacities = new ArrayList<>();
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
-        this.computingAppliance = this.getRandomAppliance();
+        this.agentStrategy = agentStrategy;
+        this.capacities.addAll(Arrays.asList(capacities));
         this.startAgent();
+    }
+    
+    public void registerCapacity(Capacity capacity) {
+        this.capacities.add(capacity);
     }
     
     private void startAgent() {
         try {
+            this.hostNode = this.capacities.get(new Random().nextInt(this.capacities.size())).node;
             VirtualAppliance va = ResourceAgent.agentVa.newCopy(this.name + "-VA");
-            this.computingAppliance.iaas.repositories.get(0).registerObject(va);
-            VirtualMachine vm = this.computingAppliance.iaas.requestVM(va, ResourceAgent.agentArc,
-                    this.computingAppliance.iaas.repositories.get(0), 1)[0];
+            this.hostNode.iaas.repositories.get(0).registerObject(va);
+            VirtualMachine vm = this.hostNode.iaas.requestVM(va, ResourceAgent.agentArc,
+                    this.hostNode.iaas.repositories.get(0), 1)[0];
             this.service = vm;
-            
-            SimLogger.logRun(name + " agent was turned on at: " + Timed.getFireCount() 
-                + ", hosted on: " + this.computingAppliance.name);
+                
+            SimLogger.logRun(name + " agent started working at: " + Timed.getFireCount() 
+                    + ", hosted on: " + this.hostNode.name);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
-    private ComputingAppliance getRandomAppliance() {
-        Object[] keys = this.capacityOfferings.keySet().toArray();
-        Random random = new Random();
-        int randomIndex = random.nextInt(keys.length);
-        return (ComputingAppliance) keys[randomIndex];
-    }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
+        /*
         List<ResourceAgent> filteredAgents = ResourceAgent.resourceAgents.stream()
                 .filter(agent -> agent.service.getState().equals(VirtualMachine.State.RUNNING))
                 .filter(agent -> !agent.equals(this))
                 .collect(Collectors.toList());
+        */
+        
+        if (ResourceAgent.resourceAgents.size() > 0) {
+            for (ResourceAgent neighbor : ResourceAgent.resourceAgents) {
+                String reqName = this.name + "-" + neighbor.name + "-" + app.name + "-req";
+                StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
+                this.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
+                try {
+                    this.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                            reqName, neighbor.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
 
-        for (ResourceAgent neighbor : filteredAgents) {
-            String reqName = this.name + "-" + neighbor.name + "-" + app.name + "-req";
-            StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
-            this.computingAppliance.iaas.repositories.get(0).registerObject(reqMessage);
-            try {
-                this.computingAppliance.iaas.repositories.get(0).requestContentDelivery(
-                        reqName, neighbor.computingAppliance.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-
-                            @Override
-                            public void conComplete() {
-                                computingAppliance.iaas.repositories.get(0).deregisterObject(reqName);
-                                String resName = neighbor.name + "-" + name + "-" + app.name + "-res";
-                                StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
-                                neighbor.computingAppliance.iaas.repositories.get(0).registerObject(resMessage);
-                                app.bcastCounter++;
-                                try {
-                                    neighbor.computingAppliance.iaas.repositories.get(0).requestContentDelivery(
-                                            resName, computingAppliance.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-                                                
-                                                @Override
-                                                public void conComplete() {
-                                                    neighbor.computingAppliance.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                    neighbor.computingAppliance.iaas.repositories.get(0).deregisterObject(reqMessage);
-                                                    computingAppliance.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                    app.bcastCounter--;
-                                                    if (app.bcastCounter == 0) {
-                                                        deploy(app);
+                                @Override
+                                public void conComplete() {
+                                    hostNode.iaas.repositories.get(0).deregisterObject(reqName);
+                                    String resName = neighbor.name + "-" + name + "-" + app.name + "-res";
+                                    StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
+                                    neighbor.hostNode.iaas.repositories.get(0).registerObject(resMessage);
+                                    app.bcastCounter++;
+                                    try {
+                                        neighbor.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                                                resName, hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
+                                                    
+                                                    @Override
+                                                    public void conComplete() {
+                                                        neighbor.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                        neighbor.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
+                                                        hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                        app.bcastCounter--;
+                                                        if (app.bcastCounter == 0) {
+                                                            deploy(app);
+                                                        }
                                                     }
-                                                }
-                                            });
-                                } catch (NetworkException e) {
-                                    e.printStackTrace();
+                                                });
+                                    } catch (NetworkException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
-                        }
-                );
-            } catch (NetworkException e) {
-                e.printStackTrace();
+                    );
+                } catch (NetworkException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            deploy(app);
+        }
+    }
+    
+    private void deploy(AgentApplication app) {
+        this.generateOffers(app);
+        this.writeFile(app);
+        this.callRankingScript(app);
+        
+    }
+    
+    private void generateOffers(AgentApplication app) {
+        List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
+
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {               
+            agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
+        }
+        
+        // TODO: only for debugging, needs to be deleted
+        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
+            ResourceAgent agent = pair.getLeft();
+            Resource resource = pair.getRight();
+            System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
+        }
+
+        generateUniqueCombinations(agentResourcePairs, app);
+
+        for (Offer o : app.offers) {
+            System.out.println(o);
+        }
+    } 
+    
+    private void generateUniqueCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
+        
+        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
+        Set<Pair<ResourceAgent, Resource>> currentCombination = new HashSet<>();
+        Set<Resource> includedResources = new HashSet<>();
+
+        generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
+        
+        for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
+            Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
+
+            for (Pair<ResourceAgent, Resource> pair : combination) {
+                ResourceAgent agent = pair.getLeft();
+                Resource resource = pair.getRight();
+                
+                agentResourcesMap.putIfAbsent(agent, new HashSet<>());
+                agentResourcesMap.get(agent).add(resource);
+            }
+            
+            app.offers.add(new Offer(agentResourcesMap, app.offers.size() + 1));
+        }
+    }
+
+    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
+                                      Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
+                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
+                                      Set<Resource> includedResources) {
+
+        if (includedResources.size() == resourceCount) {
+            uniqueCombinations.add(new HashSet<>(currentCombination));
+            return;
+        }
+        
+        for (Pair<ResourceAgent, Resource> pair : pairs) {
+            if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
+                currentCombination.add(pair);
+                includedResources.add(pair.getRight());
+
+                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources);
+
+                currentCombination.remove(pair);
+                includedResources.remove(pair.getRight());
             }
         }
     }
     
-        
-    private void deploy(AgentApplication app) {
-        this.generateOffers(app);
-        
-        this.writeFile(app);
-        
-        this.callRankingScript(app);
-    }
-    
-    private void callRankingScript(AgentApplication app) {
+    private int callRankingScript(AgentApplication app) {
 
         String inputfile = ScenarioBase.resultDirectory + File.separator + app.name + "-offers.json";
         
@@ -179,6 +233,7 @@ public class ResourceAgent {
                     + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
                     + " --offers_loc " + inputfile;
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
+                System.out.println(command);
             } else if (SystemUtils.IS_OS_LINUX) {
                 command = "cd " + AgentTest.rankingScriptDir
                     + " && python3 call_ranking_func.py --method_name " + AgentTest.rankingMethodName
@@ -195,17 +250,20 @@ public class ResourceAgent {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                   // System.out.println(line);
+                    // System.out.println(line);
                     
                     if (line.startsWith("[")) {
 
-                        String numbers = line.substring(1, line.length() - 1); // "2 0 1"
+                        String numbers = line.substring(1, line.length() - 1);
                         List<Integer> numberList = Arrays.stream(numbers.split("\\s+")) 
                                                          .map(Integer::parseInt) 
                                                          .map(n -> n + 1)
                                                          .collect(Collectors.toList()); 
 
-                        System.out.println("Sorted offer list: " + numberList);
+                        SimLogger.logRun("Ranked " + app.offers.size() + " offers of " 
+                                + app.name + " at: " + Timed.getFireCount() + " is: " + numberList);
+                        
+                        return numberList.get(0);
                     }
                 }
             }
@@ -213,6 +271,7 @@ public class ResourceAgent {
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
         }
+        return -1;
     }
 
     private void writeFile(AgentApplication app) {     
@@ -231,18 +290,17 @@ public class ResourceAgent {
             
             for (ResourceAgent agent : offer.agentResourcesMap.keySet()) {
 
-                averageLatency += agent.computingAppliance.iaas.repositories.get(0).getLatencies().get(
-                        agent.computingAppliance.iaas.repositories.get(0).getName());
+                averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
+                        agent.hostNode.iaas.repositories.get(0).getName());
                 
-
-                averageBandwidth += agent.computingAppliance.iaas.repositories.get(0).inbws.getPerTickProcessingPower() / 2.0;
-                averageBandwidth += agent.computingAppliance.iaas.repositories.get(0).outbws.getPerTickProcessingPower() / 2.0;
+                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower() / 2.0;
+                averageBandwidth += agent.hostNode.iaas.repositories.get(0).outbws.getPerTickProcessingPower() / 2.0;
 
                 double energy = 0;
-                for (PhysicalMachine pm : agent.computingAppliance.iaas.machines) {
+                for (PhysicalMachine pm : agent.hostNode.iaas.machines) {
                     energy += pm.getCurrentPowerBehavior().getConsumptionRange();
                 }
-                averageEnergy += energy / agent.computingAppliance.iaas.machines.size();
+                averageEnergy += energy / agent.hostNode.iaas.machines.size();
                 
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
                     averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
@@ -271,11 +329,9 @@ public class ResourceAgent {
             JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
             
             AgentOfferWriter.writeOffers(jsonData, app.name);
-            
         }
     }
 
-    
     /*
     for(PhysicalMachine pm : iaas.machines) {
     pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
@@ -288,125 +344,4 @@ public class ResourceAgent {
         double maxCpu = Double.parseDouble(parts[1]);
     }
     */
-    
-    private boolean checkInstanceAvailability(Resource resource, 
-            HashMap<ComputingAppliance, Capacity> copiedCapacityOfferings) {
-        if (resource.size == null) { // compute type 
-            int isAbleToHost = 0;
-            
-            int instances = resource.instances == null ? 1 : Integer.parseInt(resource.instances);
-            double reqCpu = (Double.parseDouble(resource.cpu));
-            long reqMemory = (Long.parseLong(resource.memory));
-            
-            for (int i = 0; i < instances; i++) {
-                for (Map.Entry<ComputingAppliance, Capacity> entry : copiedCapacityOfferings.entrySet()) {
-                    ComputingAppliance ca = entry.getKey();
-                    Capacity capacity = entry.getValue();
-                    
-                    if ((resource.provider == null || resource.provider.equals(ca.provider))
-                            && (resource.location == null || resource.location.equals(ca.location))
-                            && reqCpu <= capacity.cpu && reqMemory <= capacity.memory) {
-                        isAbleToHost++;
-                        capacity.cpu -= reqCpu;
-                        capacity.memory -= reqMemory;
-                        break;
-                    }
-                }
-            }
-            return instances == isAbleToHost;
-            
-        } else { // storage type
-            for (Map.Entry<ComputingAppliance, Capacity> entry : copiedCapacityOfferings.entrySet()) {
-                ComputingAppliance ca = entry.getKey();
-                Capacity capacity = entry.getValue();
-                if ((resource.provider == null || resource.provider.equals(ca.provider))
-                        && (resource.location == null || resource.location.equals(ca.location))
-                        && Long.parseLong(resource.size) <= capacity.storage) {
-                    capacity.storage -= (Long.parseLong(resource.size));
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-    
-    private void generateOffers(AgentApplication app) {
-        List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-        
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {   
-            
-            HashMap<ComputingAppliance, Capacity> copiedCapacityOfferings = new HashMap<>();
-            for (Map.Entry<ComputingAppliance, Capacity> entry : agent.capacityOfferings.entrySet()) {
-                copiedCapacityOfferings.put(entry.getKey(), new Capacity(entry.getValue()));
-            }
-            
-            List<Resource> sortedResources = AgentApplication.getSortedResourcesByCpuThenSize(app.resources);
-            
-            for (Resource resource : sortedResources) {
-                boolean isAbleToHost = this.checkInstanceAvailability(resource, copiedCapacityOfferings);
-                if (isAbleToHost) {
-                    agentResourcePairs.add(Pair.of(agent, resource));
-                }
-            }
-        }
-        
-        // TODO: only for debugging, needs to be deleted
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            ResourceAgent agent = pair.getLeft();
-            Resource resource = pair.getRight();
-            System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
-        }
-
-        generateUniqueCombinations(agentResourcePairs, app);
-
-        for (Offer o : app.offers) {
-            System.out.println(o);
-        }
-    } 
-    
-    private void generateUniqueCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
-    
-        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
-        Set<Pair<ResourceAgent, Resource>> currentCombination = new HashSet<>();
-        Set<Resource> includedResources = new HashSet<>();
-
-        generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
-        
-        for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
-            Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
-
-            for (Pair<ResourceAgent, Resource> pair : combination) {
-                ResourceAgent agent = pair.getLeft();
-                Resource resource = pair.getRight();
-                
-                agentResourcesMap.putIfAbsent(agent, new HashSet<>());
-                agentResourcesMap.get(agent).add(resource);
-            }
-            
-            app.offers.add(new Offer(agentResourcesMap));
-        }
-    }
-
-    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
-                                      Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
-                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
-                                      Set<Resource> includedResources) {
-
-        if (includedResources.size() == resourceCount) {
-            uniqueCombinations.add(new HashSet<>(currentCombination));
-            return;
-        }
-        
-        for (Pair<ResourceAgent, Resource> pair : pairs) {
-            if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
-                currentCombination.add(pair);
-                includedResources.add(pair.getRight());
-
-                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources);
-
-                currentCombination.remove(pair);
-                includedResources.remove(pair.getRight());
-            }
-        }
-    }
 }

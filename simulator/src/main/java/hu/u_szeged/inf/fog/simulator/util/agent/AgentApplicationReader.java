@@ -15,6 +15,7 @@ public class AgentApplicationReader {
 
         try {
             agentApplication = objectMapper.readValue(new File(filepath), AgentApplication.class);
+            agentApplication.reName();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -6,14 +6,12 @@ import java.util.Set;
 
 public class Offer {
 
-    private static int counter = 1;
-
-    public int id;
-
     Map<ResourceAgent, Set<Resource>> agentResourcesMap;
+    
+    int id;
 
-    public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap) {
-        this.id = counter++;
+    public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap, int id) {
+        this.id = id;
         this.agentResourcesMap = agentResourcesMap;
     }
     

@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
-import java.util.Arrays;
-
 /**
  * An agent to build a solution.
  */

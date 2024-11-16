@@ -29,7 +29,7 @@ public class SimLogger {
     /**
      * Logs event occurring after (i.e. logging results).
      *
-     * @param string he message to log
+     * @param message he message to log
      */
     public static void logRes(Object message) {
         simLogger.warning(String.valueOf(message)); 
