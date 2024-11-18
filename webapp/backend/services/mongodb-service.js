@@ -28,6 +28,26 @@ async function getUser(userid) {
     }
 }
 
+// Update user's role
+async function updateUserRole(userId, role) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    role: role
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserRole() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
 // Return the list of all users in the database
 async function getAllUsers() {
     const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
@@ -35,6 +55,166 @@ async function getAllUsers() {
         return await client.db(config.databaseName).collection(config.userCollectionName).find();
     } catch (e) {
         console.log('mongodb-service: getAllUsers() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update the default reset period a user can submit a job per day
+async function updateDefaultResetPeriod(periodInDays) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.configurationAdminCollectionName).updateOne(
+            { _id: new mongodb.ObjectId("user_job_configurations") },
+            {
+                $set: {
+                    defaultResetPeriod: periodInDays
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateDefaultResetPeriod() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update the default job count a user can submit per the reset period
+async function updateDefaultMaxSimulations(count) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.configurationAdminCollectionName).updateOne(
+            { _id: new mongodb.ObjectId("user_job_configurations") },
+            {
+                $set: {
+                    defaultMaxSimulations: count
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateDefaultMaxSimulations() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update the default maximum runtime a user can submit per the reset period
+async function updateDefaultMaxRuntime(runtimeInSeconds) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.configurationAdminCollectionName).updateOne(
+            { _id: new mongodb.ObjectId("user_job_configurations") },
+            {
+                $set: {
+                    defaultMaxRuntime: runtimeInSeconds
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateDefaultMaxRuntime() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update user's reset period
+async function updateUserResetPeriod(userId, periodInDays) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    resetPeriod: periodInDays
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserResetPeriod() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update user's maximum simulations
+async function updateUserMaxSimulations(userId, count) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    maxSimulations: count
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserMaxSimulations() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update user's maximum runtime
+async function updateUserMaxRuntime(userId, runtimeInSeconds) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    maxRuntime: runtimeInSeconds
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserMaxRuntime() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update user's current simulations count
+async function updateUserSimulationsCount(userId, count) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    simulationsRun: count
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserSimulationsCount() error:' + e.message);
+        throw e;
+    } finally {
+        await client.close();
+    }
+}
+
+// Update user's total runtime
+async function updateUserTotalRuntime(userId, runtimeInSeconds) {
+    const client = await mongodb.MongoClient(config.connectionString, { useUnifiedTopology: true }).connect();
+    try {
+        return await client.db(config.databaseName).collection(config.userCollectionName).updateOne(
+            { _id: new mongodb.ObjectId(userId) },
+            {
+                $set: {
+                    totalRuntime: runtimeInSeconds
+                }
+            }
+        );
+    } catch (e) {
+        console.log('mongodb-service: updateUserTotalRuntime() error:' + e.message);
         throw e;
     } finally {
         await client.close();
