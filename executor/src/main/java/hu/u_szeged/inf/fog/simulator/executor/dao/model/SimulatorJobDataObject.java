@@ -34,7 +34,6 @@ public class SimulatorJobDataObject {
     private String isDeviceCodeCustom;
     private String applicationCode;
     private String isApplicationCodeCustom;
-    private Long runTime;
 
     @CreatedDate
     private LocalDateTime createdDate;
