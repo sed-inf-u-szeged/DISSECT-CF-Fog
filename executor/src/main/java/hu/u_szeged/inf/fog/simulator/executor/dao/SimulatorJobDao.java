@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.executor.dao;
 
 import hu.u_szeged.inf.fog.simulator.executor.dao.model.SimulatorJobDataObject;
+import hu.u_szeged.inf.fog.simulator.executor.dao.model.User;
 import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJob;
 import hu.u_szeged.inf.fog.simulator.executor.model.SimulatorJobStatus;
 import hu.u_szeged.inf.fog.simulator.executor.model.filetype.ResultFileType;
@@ -44,14 +45,23 @@ public class SimulatorJobDao {
         return convertJobDataObjectToDomain(simulatorJobDo);
     }
 
-    public void saveSimulatorJobResult(@NonNull String id, @NonNull HashMap<ResultFileType, File> resultFiles,
+    public void saveSimulatorJobResult(@NonNull SimulatorJob job, @NonNull HashMap<ResultFileType, File> resultFiles,
             @NonNull SimulatorJobResult simulatorJobResult) {
         var savedDbFiles = saverGridFsDao.saveFiles(resultFiles);
-        var query = Query.query(Criteria.where(ID_FIELD_NAME).is(id));
+        var query = Query.query(Criteria.where(ID_FIELD_NAME).is(job.getId()));
         var update = Update.update("results", savedDbFiles).set("simulatorJobResult", simulatorJobResult)
                 .set(JOB_STATUS_FIELD_NAME, SimulatorJobStatus.PROCESSED);
 
         mongoTemplate.updateFirst(query, update, SimulatorJobDataObject.class);
+
+        // Append to user's simulations run and total runtime
+        var userQuery = Query.query(Criteria.where("email").is(job.getUser()));
+        long additionalRuntime = simulatorJobResult.getRuntime();
+        var userUpdate = new Update()
+            .inc("simulationsRun", 1)
+            .inc("totalRuntime", additionalRuntime);
+
+        mongoTemplate.updateFirst(userQuery, userUpdate, User.class);
     }
 
     // TODO: refactor this method!
