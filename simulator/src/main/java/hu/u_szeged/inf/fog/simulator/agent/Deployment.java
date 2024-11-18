@@ -26,7 +26,8 @@ public class Deployment extends Timed {
         this.app = app;
         this.bcastMessageSize = bcastMessageSize;
         int random = new Random().nextInt(ResourceAgent.resourceAgents.size());
-        this.agent = ResourceAgent.resourceAgents.get(random);
+        //this.agent = ResourceAgent.resourceAgents.get(random);
+        this.agent = ResourceAgent.resourceAgents.get(2);
         this.registerImages(app.components);
         subscribe(1);
     }

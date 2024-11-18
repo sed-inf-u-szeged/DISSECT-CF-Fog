@@ -55,7 +55,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
                 if (instances != reservedCapacity.size() && reservedCapacity.size() > 0) {
                     for (Capacity capacity : reservedCapacity) {   
-                        capacity.releaseCapacity(resource);
+                        capacity.releaseCapacity(resource, null);
                     }
                 } else if (instances == reservedCapacity.size()) {
                     agentResourcePairs.add(Pair.of(agent, resource));

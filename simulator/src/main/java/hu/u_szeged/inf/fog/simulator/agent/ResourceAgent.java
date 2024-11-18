@@ -5,10 +5,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.AgentTest;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
@@ -92,29 +94,29 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        /*
         List<ResourceAgent> filteredAgents = ResourceAgent.resourceAgents.stream()
                 .filter(agent -> agent.service.getState().equals(VirtualMachine.State.RUNNING))
                 .filter(agent -> !agent.equals(this))
                 .collect(Collectors.toList());
-        */
         
-        if (ResourceAgent.resourceAgents.size() > 0) {
-            for (ResourceAgent neighbor : ResourceAgent.resourceAgents) {
+        
+       if (ResourceAgent.resourceAgents.size() != 1) {
+            for (ResourceAgent neighbor : filteredAgents) {
                 String reqName = this.name + "-" + neighbor.name + "-" + app.name + "-req";
                 StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
                 this.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
+                app.bcastCounter++;
                 try {
                     this.hostNode.iaas.repositories.get(0).requestContentDelivery(
                             reqName, neighbor.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
 
                                 @Override
                                 public void conComplete() {
+                                    
                                     hostNode.iaas.repositories.get(0).deregisterObject(reqName);
                                     String resName = neighbor.name + "-" + name + "-" + app.name + "-res";
                                     StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
                                     neighbor.hostNode.iaas.repositories.get(0).registerObject(resMessage);
-                                    app.bcastCounter++;
                                     try {
                                         neighbor.hostNode.iaas.repositories.get(0).requestContentDelivery(
                                                 resName, hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
@@ -126,7 +128,7 @@ public class ResourceAgent {
                                                         hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
                                                         app.bcastCounter--;
                                                         if (app.bcastCounter == 0) {
-                                                            deploy(app);
+                                                            deploy(app, bcastMessageSize);
                                                         }
                                                     }
                                                 });
@@ -141,17 +143,79 @@ public class ResourceAgent {
                 }
             }
         } else {
-            deploy(app);
+            deploy(app, bcastMessageSize);
         }
     }
     
-    private void deploy(AgentApplication app) {
+    private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
         this.writeFile(app);
-        this.callRankingScript(app);
-        
+        int preferredIndex = this.callRankingScript(app);
+        sendAcknowledgements(app, app.offers.get(preferredIndex), bcastMessageSize);
     }
     
+    private void sendAcknowledgements(AgentApplication app, Offer offer, int bcastMessageSize) {
+        for (Map.Entry<ResourceAgent, Set<Resource>> entry : offer.agentResourcesMap.entrySet()) {
+            ResourceAgent agent = entry.getKey();  
+            // Set<Resource> resources = entry.getValue(); 
+            
+            if (agent != this) {
+                String reqName = this.name + "-" + agent.name + "-" + app.name + "-ack_req";
+                StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
+                this.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
+                app.bcastCounter++;
+                try {
+                    this.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                            reqName, agent.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
+
+                                @Override
+                                public void conComplete() {
+                                    hostNode.iaas.repositories.get(0).deregisterObject(reqName);
+                                    String resName = agent.name + "-" + name + "-" + app.name + "-ack_res";
+                                    StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
+                                    agent.hostNode.iaas.repositories.get(0).registerObject(resMessage);
+                                    for (Capacity capacity : agent.capacities) {
+                                        capacity.assignCapacity(entry.getValue());
+                                        capacity.releaseCapacity(null, app.name);
+                                    }
+                                    
+                                    try {
+                                        agent.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                                                resName, hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
+                                                    
+                                                    @Override
+                                                    public void conComplete() {
+                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
+                                                        hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                        app.bcastCounter--;
+                                                        if (app.bcastCounter == 0) {
+                                                            SimLogger.logRun("All ack. messages receieved for " + app.name
+                                                                    + " at: " + Timed.getFireCount());
+                                                            
+                                                            deploySwarmAgent();
+                                                        }
+                                                    }
+                                                });
+                                    } catch (NetworkException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                    );
+                } catch (NetworkException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                for (Capacity capacity : this.capacities) {
+                    // TODO: revise!
+                    capacity.assignCapacity(entry.getValue());
+                    capacity.releaseCapacity(null, app.name);
+                }
+            }
+        }
+    }
+
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
@@ -192,7 +256,7 @@ public class ResourceAgent {
                 agentResourcesMap.get(agent).add(resource);
             }
             
-            app.offers.add(new Offer(agentResourcesMap, app.offers.size() + 1));
+            app.offers.add(new Offer(agentResourcesMap, app.offers.size()));
         }
     }
 
@@ -233,7 +297,6 @@ public class ResourceAgent {
                     + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
                     + " --offers_loc " + inputfile;
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
-                System.out.println(command);
             } else if (SystemUtils.IS_OS_LINUX) {
                 command = "cd " + AgentTest.rankingScriptDir
                     + " && python3 call_ranking_func.py --method_name " + AgentTest.rankingMethodName
@@ -255,13 +318,13 @@ public class ResourceAgent {
                     if (line.startsWith("[")) {
 
                         String numbers = line.substring(1, line.length() - 1);
-                        List<Integer> numberList = Arrays.stream(numbers.split("\\s+")) 
+                        List<Integer> numberList = Arrays.stream(numbers.trim().split("\\s+")) 
                                                          .map(Integer::parseInt) 
-                                                         .map(n -> n + 1)
-                                                         .collect(Collectors.toList()); 
-
-                        SimLogger.logRun("Ranked " + app.offers.size() + " offers of " 
-                                + app.name + " at: " + Timed.getFireCount() + " is: " + numberList);
+                                                         //.map(n -> n + 1)
+                                                         .collect(Collectors.toList());   
+                        
+                        SimLogger.logRun(app.offers.size() + " offers were ranked for " 
+                                + app.name + " at: " + Timed.getFireCount() + " as follows: " + numberList);
                         
                         return numberList.get(0);
                     }
@@ -329,6 +392,17 @@ public class ResourceAgent {
             JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
             
             AgentOfferWriter.writeOffers(jsonData, app.name);
+        }
+    }
+    
+    private void deploySwarmAgent() {
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            for (Capacity cap : agent.capacities) {
+                System.out.println(cap);
+                for (Utilisation util : cap.utilisations) {
+                    System.out.println(util);
+                }
+            }
         }
     }
 

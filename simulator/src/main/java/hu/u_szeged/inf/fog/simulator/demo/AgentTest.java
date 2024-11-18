@@ -45,7 +45,7 @@ public class AgentTest {
         ComputingAppliance cloud4 = new ComputingAppliance(cloudfile, "cloud4", new GeoLocation(40.71, -74.00), "US", "AWS");
         ComputingAppliance cloud5 = new ComputingAppliance(cloudfile, "cloud5", new GeoLocation(43.7, -79.42),  "US", "Google");
         
-        ComputingAppliance.setConnection(cloud1, 65);
+        ComputingAppliance.setConnection(cloud1, 1165);
         ComputingAppliance.setConnection(cloud2, 76);
         ComputingAppliance.setConnection(cloud3, 95);
         ComputingAppliance.setConnection(cloud4, 51);
@@ -76,7 +76,7 @@ public class AgentTest {
         AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
 
         new Deployment(app1, 100);
-        new Deployment(app2, 150);
+        // new Deployment(app2, 150);
         
         Timed.simulateUntilLastEvent();
         

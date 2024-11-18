@@ -4,6 +4,7 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Capacity {
    
@@ -69,21 +70,27 @@ public class Capacity {
         this.storage -= storage;
     }
     
-    public void releaseCapacity(Resource resource) {
+    public void releaseCapacity(Resource resource, String appName) {
         List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
         for (Utilisation utilisation : utilisations) {
-            if (utilisation.resource == resource) {
-                this.cpu += Double.parseDouble(resource.cpu);
-                this.memory += Long.parseLong(resource.memory);
-                this.storage += resource.size == null ? 0 : Long.parseLong(resource.size);
+            if (utilisation.resource == resource || utilisation.resource.name.contains(appName) && utilisation.state.equals(Utilisation.State.RESERVED)) {
+                this.cpu += utilisation.resource.cpu == null ? 0 : Double.parseDouble(utilisation.resource.cpu);
+                this.memory += utilisation.resource.memory == null ? 0 : Long.parseLong(utilisation.resource.memory);
+                this.storage += utilisation.resource.size == null ? 0 : Long.parseLong(utilisation.resource.size);
                 utilisationsToBeRemoved.add(utilisation);
             }
         }
         utilisations.removeAll(utilisationsToBeRemoved);
     }
     
-    public void assignCapacity() {
-        // to be implemented
+    public void assignCapacity(Set<Resource> set) {
+        for (Resource resource : set) {
+            for (Utilisation util : utilisations) {
+                if (util.resource == resource) {
+                    util.state = Utilisation.State.ASSIGNED;
+                }
+            }
+        }
     }
     
     public void allocateCapacity() {
