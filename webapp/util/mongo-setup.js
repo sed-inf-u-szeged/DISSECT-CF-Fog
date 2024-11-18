@@ -74,6 +74,16 @@ async function main() {
         await createFileReference(client, database, 'strategies', application_strategies._id, application_strategies.filename);
         await createFileReference(client, database, 'strategies', device_strategies._id, device_strategies.filename);
 
+        // Add default user job configurations
+        await db.collection('admin_configuration').updateOne(
+            { "_id": "user_job_configurations" },
+            { $set: {
+                "defaultResetPeriod": 7,        // 7 days
+                "defaultMaxSimulations": 100,   // 100 simulations per the reset period
+                "defaultMaxRuntime": 86400      // 24 hours (in seconds)
+            }}
+        );
+
     } catch (e) {
         console.error(e);
     } finally {
