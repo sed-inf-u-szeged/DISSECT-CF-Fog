@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
@@ -20,15 +21,22 @@ public class Deployment extends Timed {
     
     int bcastMessageSize;
 
+    private int delay;
+
     public static Repository imageRegistry;
     
-    public Deployment(AgentApplication app, int bcastMessageSize) {
+    public Deployment(AgentApplication app, int bcastMessageSize, int delay) {
+        
+        if (ResourceAgent.resourceAgents.size() < 2) {
+            SimLogger.logError("Only one RA is available in the system!");
+        }
+        
         this.app = app;
         this.bcastMessageSize = bcastMessageSize;
         int random = new Random().nextInt(ResourceAgent.resourceAgents.size());
-        //this.agent = ResourceAgent.resourceAgents.get(random);
-        this.agent = ResourceAgent.resourceAgents.get(2);
+        this.agent = ResourceAgent.resourceAgents.get(random);
         this.registerImages(app.components);
+        this.delay = delay;
         subscribe(1);
     }
    
@@ -65,9 +73,17 @@ public class Deployment extends Timed {
     @Override
     public void tick(long fires) {
         if (this.checkRaStatus()) {
-            SimLogger.logRun(agent.name + " picked up " + app.name + " at: " + Timed.getFireCount());
-            this.agent.broadcast(this.app, 100);
             unsubscribe();
+            new DeferredEvent(this.delay) {
+
+                @Override
+                protected void eventAction() {
+                    SimLogger.logRun(agent.name + " picked up " + app.name + " at: " + Timed.getFireCount());
+                    agent.broadcast(app, 100);
+                   
+                }
+            };
+            
         }
     }
 }

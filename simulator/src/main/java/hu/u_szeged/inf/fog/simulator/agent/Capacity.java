@@ -70,10 +70,10 @@ public class Capacity {
         this.storage -= storage;
     }
     
-    public void releaseCapacity(Resource resource, String appName) {
+    public void releaseCapacity(Resource resource) {
         List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
         for (Utilisation utilisation : utilisations) {
-            if (utilisation.resource == resource || utilisation.resource.name.contains(appName) && utilisation.state.equals(Utilisation.State.RESERVED)) {
+            if (utilisation.resource == resource && utilisation.state.equals(Utilisation.State.RESERVED)) {
                 this.cpu += utilisation.resource.cpu == null ? 0 : Double.parseDouble(utilisation.resource.cpu);
                 this.memory += utilisation.resource.memory == null ? 0 : Long.parseLong(utilisation.resource.memory);
                 this.storage += utilisation.resource.size == null ? 0 : Long.parseLong(utilisation.resource.size);

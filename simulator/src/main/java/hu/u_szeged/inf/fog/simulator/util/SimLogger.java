@@ -41,8 +41,7 @@ public class SimLogger {
      * @param string he error message to log
      */
     public static void logError(String string) {
-        simLogger.severe(string);
-        simLogger.severe("ERROR");
+        simLogger.severe("ERROR: " + string);
         System.exit(0);
     }
     

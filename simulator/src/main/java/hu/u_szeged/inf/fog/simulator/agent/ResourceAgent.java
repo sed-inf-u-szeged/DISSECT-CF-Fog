@@ -4,10 +4,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
-import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
@@ -94,126 +90,16 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        List<ResourceAgent> filteredAgents = ResourceAgent.resourceAgents.stream()
-                .filter(agent -> agent.service.getState().equals(VirtualMachine.State.RUNNING))
-                .filter(agent -> !agent.equals(this))
-                .collect(Collectors.toList());
-        
-        
-       if (ResourceAgent.resourceAgents.size() != 1) {
-            for (ResourceAgent neighbor : filteredAgents) {
-                String reqName = this.name + "-" + neighbor.name + "-" + app.name + "-req";
-                StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
-                this.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
-                app.bcastCounter++;
-                try {
-                    this.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                            reqName, neighbor.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-
-                                @Override
-                                public void conComplete() {
-                                    
-                                    hostNode.iaas.repositories.get(0).deregisterObject(reqName);
-                                    String resName = neighbor.name + "-" + name + "-" + app.name + "-res";
-                                    StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
-                                    neighbor.hostNode.iaas.repositories.get(0).registerObject(resMessage);
-                                    try {
-                                        neighbor.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                                                resName, hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-                                                    
-                                                    @Override
-                                                    public void conComplete() {
-                                                        neighbor.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        neighbor.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
-                                                        hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        app.bcastCounter--;
-                                                        if (app.bcastCounter == 0) {
-                                                            deploy(app, bcastMessageSize);
-                                                        }
-                                                    }
-                                                });
-                                    } catch (NetworkException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                    );
-                } catch (NetworkException e) {
-                    e.printStackTrace();
-                }
-            }
-        } else {
+        MessageHandler.executeMessaging(this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
-        }
+        });
     }
-    
+
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
         this.writeFile(app);
         int preferredIndex = this.callRankingScript(app);
         sendAcknowledgements(app, app.offers.get(preferredIndex), bcastMessageSize);
-    }
-    
-    private void sendAcknowledgements(AgentApplication app, Offer offer, int bcastMessageSize) {
-        for (Map.Entry<ResourceAgent, Set<Resource>> entry : offer.agentResourcesMap.entrySet()) {
-            ResourceAgent agent = entry.getKey();  
-            // Set<Resource> resources = entry.getValue(); 
-            
-            if (agent != this) {
-                String reqName = this.name + "-" + agent.name + "-" + app.name + "-ack_req";
-                StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
-                this.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
-                app.bcastCounter++;
-                try {
-                    this.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                            reqName, agent.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-
-                                @Override
-                                public void conComplete() {
-                                    hostNode.iaas.repositories.get(0).deregisterObject(reqName);
-                                    String resName = agent.name + "-" + name + "-" + app.name + "-ack_res";
-                                    StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
-                                    agent.hostNode.iaas.repositories.get(0).registerObject(resMessage);
-                                    for (Capacity capacity : agent.capacities) {
-                                        capacity.assignCapacity(entry.getValue());
-                                        capacity.releaseCapacity(null, app.name);
-                                    }
-                                    
-                                    try {
-                                        agent.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                                                resName, hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-                                                    
-                                                    @Override
-                                                    public void conComplete() {
-                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
-                                                        hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        app.bcastCounter--;
-                                                        if (app.bcastCounter == 0) {
-                                                            SimLogger.logRun("All ack. messages receieved for " + app.name
-                                                                    + " at: " + Timed.getFireCount());
-                                                            
-                                                            deploySwarmAgent();
-                                                        }
-                                                    }
-                                                });
-                                    } catch (NetworkException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                    );
-                } catch (NetworkException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                for (Capacity capacity : this.capacities) {
-                    // TODO: revise!
-                    capacity.assignCapacity(entry.getValue());
-                    capacity.releaseCapacity(null, app.name);
-                }
-            }
-        }
     }
 
     private void generateOffers(AgentApplication app) {
@@ -395,6 +281,34 @@ public class ResourceAgent {
         }
     }
     
+    private void sendAcknowledgements(AgentApplication app, Offer offer, int bcastMessageSize) {
+        MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
+            SimLogger.logRun("All ack. messages receieved for " + app.name
+                    + " at: " + Timed.getFireCount());
+            
+            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                for (Capacity capacity : agent.capacities) {
+                    
+                    if (offer.agentResourcesMap.containsKey(agent)) {
+                        capacity.assignCapacity(offer.agentResourcesMap.get(agent));
+                    }
+                    
+                    List<Resource> resourcesToBeRemoved = new ArrayList<>();
+                    for (Utilisation util : capacity.utilisations) {
+                        if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
+                            resourcesToBeRemoved.add(util.resource);
+                        }
+                    }
+                    for (Resource r : resourcesToBeRemoved) {
+                        capacity.releaseCapacity(r);
+                    }
+                }
+            }
+
+            deploySwarmAgent();
+        });
+    }
+    
     private void deploySwarmAgent() {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             for (Capacity cap : agent.capacities) {
@@ -405,17 +319,4 @@ public class ResourceAgent {
             }
         }
     }
-
-    /*
-    for(PhysicalMachine pm : iaas.machines) {
-    pmAavailableCpu += pm.availableCapacities.getRequiredCPUs() ;
-    pmGetCpu +=  pm.getCapacities().getRequiredCPUs();
-    }
-     
-    if (resource.cpu.contains("-")) { // cpu range
-        String[] parts = resource.cpu.split("-");
-        double minCpu = Double.parseDouble(parts[0]);
-        double maxCpu = Double.parseDouble(parts[1]);
-    }
-    */
 }
