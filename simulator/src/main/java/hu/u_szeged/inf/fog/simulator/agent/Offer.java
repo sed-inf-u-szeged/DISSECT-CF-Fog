@@ -1,18 +1,27 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class Offer {
 
     Map<ResourceAgent, Set<Resource>> agentResourcesMap;
     
+    List<Pair<ComputingAppliance, Utilisation>> utilisations;
+        
     int id;
 
     public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap, int id) {
         this.id = id;
         this.agentResourcesMap = agentResourcesMap;
+        this.utilisations = new ArrayList<>();
     }
     
     @Override

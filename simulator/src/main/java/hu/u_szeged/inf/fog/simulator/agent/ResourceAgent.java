@@ -48,13 +48,13 @@ public class ResourceAgent {
     /**
      * It defines the agent's virtual image file with 0.5 GB of disk size requirement.
      */
-    public static final VirtualAppliance agentVa = new VirtualAppliance("agentVa", 1, 0, false, 536870912L); 
+    public static final VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 1, 0, false, 536870912L); 
     
     /**
      * It defines the agent's resource requirements for 
      * (1 CPU core, 0.001 processing speed and 0.5 GB of memory) the agent VM.
      */
-    public static final AlterableResourceConstraints agentArc = new AlterableResourceConstraints(1, 0.001, 536870912L);
+    public static final AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 0.001, 536870912L);
     
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
     
@@ -66,19 +66,19 @@ public class ResourceAgent {
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
         this.capacities.addAll(Arrays.asList(capacities));
-        this.startAgent();
+        this.initResourceAgent();
     }
     
     public void registerCapacity(Capacity capacity) {
         this.capacities.add(capacity);
     }
     
-    private void startAgent() {
+    private void initResourceAgent() {
         try {
             this.hostNode = this.capacities.get(new Random().nextInt(this.capacities.size())).node;
-            VirtualAppliance va = ResourceAgent.agentVa.newCopy(this.name + "-VA");
+            VirtualAppliance va = ResourceAgent.resourceAgentVa.newCopy(this.name + "-VA");
             this.hostNode.iaas.repositories.get(0).registerObject(va);
-            VirtualMachine vm = this.hostNode.iaas.requestVM(va, ResourceAgent.agentArc,
+            VirtualMachine vm = this.hostNode.iaas.requestVM(va, ResourceAgent.resourceAgentArc,
                     this.hostNode.iaas.repositories.get(0), 1)[0];
             this.service = vm;
                 
@@ -99,7 +99,7 @@ public class ResourceAgent {
         this.generateOffers(app);
         this.writeFile(app);
         int preferredIndex = this.callRankingScript(app);
-        sendAcknowledgements(app, app.offers.get(preferredIndex), bcastMessageSize);
+        acknowledgeAndInitSwarmAgent(app, app.offers.get(preferredIndex), bcastMessageSize);
     }
 
     private void generateOffers(AgentApplication app) {
@@ -116,14 +116,14 @@ public class ResourceAgent {
             System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
         }
 
-        generateUniqueCombinations(agentResourcePairs, app);
+        generateUniqueOfferCombinations(agentResourcePairs, app);
 
         for (Offer o : app.offers) {
             System.out.println(o);
         }
     } 
     
-    private void generateUniqueCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
+    private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
         
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
         Set<Pair<ResourceAgent, Resource>> currentCombination = new HashSet<>();
@@ -281,7 +281,7 @@ public class ResourceAgent {
         }
     }
     
-    private void sendAcknowledgements(AgentApplication app, Offer offer, int bcastMessageSize) {
+    private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
             SimLogger.logRun("All ack. messages receieved for " + app.name
                     + " at: " + Timed.getFireCount());
@@ -290,7 +290,7 @@ public class ResourceAgent {
                 for (Capacity capacity : agent.capacities) {
                     
                     if (offer.agentResourcesMap.containsKey(agent)) {
-                        capacity.assignCapacity(offer.agentResourcesMap.get(agent));
+                        capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
                     }
                     
                     List<Resource> resourcesToBeRemoved = new ArrayList<>();
@@ -305,18 +305,23 @@ public class ResourceAgent {
                 }
             }
 
-            deploySwarmAgent();
+            Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
+            
+            new Deployment(leadResource, offer, app);
         });
     }
     
-    private void deploySwarmAgent() {
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-            for (Capacity cap : agent.capacities) {
-                System.out.println(cap);
-                for (Utilisation util : cap.utilisations) {
-                    System.out.println(util);
-                }
+    private Pair<ComputingAppliance, Utilisation> findLeadResource(List<Pair<ComputingAppliance, Utilisation>> utilisations) {
+        Pair<ComputingAppliance, Utilisation> leadResource = null;
+        double maxCpu = Integer.MIN_VALUE;
+        
+        for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {
+            if (pair.getRight().utilisedCpu > maxCpu) {
+                maxCpu = pair.getRight().utilisedCpu;
+                leadResource = pair;
             }
         }
+        
+        return leadResource;
     }
 }

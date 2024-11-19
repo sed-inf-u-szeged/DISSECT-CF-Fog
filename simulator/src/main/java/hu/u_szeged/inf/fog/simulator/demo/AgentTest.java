@@ -14,6 +14,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
+import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -65,18 +66,19 @@ public class AgentTest {
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(20, 200, 300, 10, 20);
         HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
-        Repository repository = new Repository(Long.MAX_VALUE, "Image Service", 125_000, 125_000, 125_000, latencyMap, 
+        
+        Deployment.registryService = new Repository(Long.MAX_VALUE, "Image Service", 125_000, 125_000, 125_000, latencyMap, 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network));
         
-        Deployment.setImageRegistry(repository, 100);
+        Submission.setImageRegistry(Deployment.registryService, 100);
         
         // generating an application demand 
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
         AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
 
-        new Deployment(app1, 100, 50);
-        new Deployment(app2, 150, 0);
+        new Submission(app1, 100, 50);
+        // new Submission(app2, 150, 0);
         
         Timed.simulateUntilLastEvent();
         
@@ -94,7 +96,7 @@ public class AgentTest {
         }
         
         SimLogger.logRes("Image Registry's contents");
-        for(StorageObject so : Deployment.imageRegistry.contents()) {
+        for(StorageObject so : Submission.imageRegistry.contents()) {
             SimLogger.logRes("\t" + so);
         }
         

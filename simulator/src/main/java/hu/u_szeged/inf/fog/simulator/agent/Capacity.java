@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 public class Capacity {
    
     public static class Utilisation {
@@ -22,9 +24,9 @@ public class Capacity {
         
         Resource resource;
         
-        double utilisedCpu;
+        public double utilisedCpu;
         
-        long utilisedMemory;
+        public long utilisedMemory;
         
         long utilisedStorage;
         
@@ -83,11 +85,12 @@ public class Capacity {
         utilisations.removeAll(utilisationsToBeRemoved);
     }
     
-    public void assignCapacity(Set<Resource> set) {
+    public void assignCapacity(Set<Resource> set, Offer offer) {
         for (Resource resource : set) {
             for (Utilisation util : utilisations) {
                 if (util.resource == resource) {
                     util.state = Utilisation.State.ASSIGNED;
+                    offer.utilisations.add(Pair.of(this.node, util));
                 }
             }
         }
