@@ -321,6 +321,7 @@ public class ResourceAgent {
                 leadResource = pair;
             }
         }
+        leadResource.getRight().type = "LR";
         
         return leadResource;
     }

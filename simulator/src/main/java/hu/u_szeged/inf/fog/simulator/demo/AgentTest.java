@@ -28,8 +28,8 @@ public class AgentTest {
     public static String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
     
     public static String rankingMethodName = "vote_wo_reliability";
-    public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-    // public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+    //public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+    public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
     
     
     public static void main(String[] args) throws NetworkException {
@@ -78,7 +78,7 @@ public class AgentTest {
         AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
 
         new Submission(app1, 100, 50);
-        // new Submission(app2, 150, 0);
+        new Submission(app2, 150, 0);
         
         Timed.simulateUntilLastEvent();
         

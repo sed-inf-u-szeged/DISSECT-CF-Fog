@@ -1,11 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Capacity {
@@ -30,6 +30,10 @@ public class Capacity {
         
         long utilisedStorage;
         
+        String type;
+        
+        public VirtualMachine vm;
+        
         private Utilisation(Resource resource, double cpu, long memory, long storage, State state) {
             this.resource = resource;
             this.utilisedCpu = cpu;
@@ -37,11 +41,17 @@ public class Capacity {
             this.utilisedStorage = storage;
             this.state = state;
         }
+        
+        public void setToAllocated() {
+            this.state = Utilisation.State.ALLOCATED;
+        }
 
+        
         @Override
         public String toString() {
             return "Utilisation [state=" + state + ", resource=" + resource.name + ", utilisedCpu=" + utilisedCpu
-                    + ", utilisedMemory=" + utilisedMemory + ", utilisedStorage=" + utilisedStorage + "]";
+                    + ", utilisedMemory=" + utilisedMemory + ", utilisedStorage=" + utilisedStorage 
+                    + ", type=" + type + ", vm=" + vm + "]";
         }
     }
     
@@ -94,10 +104,6 @@ public class Capacity {
                 }
             }
         }
-    }
-    
-    public void allocateCapacity() {
-       // to be implemented 
     }
 
     @Override

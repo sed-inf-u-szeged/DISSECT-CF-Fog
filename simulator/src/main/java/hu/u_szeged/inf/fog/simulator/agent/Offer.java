@@ -3,7 +3,6 @@ package hu.u_szeged.inf.fog.simulator.agent;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

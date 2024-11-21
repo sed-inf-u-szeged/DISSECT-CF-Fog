@@ -3,8 +3,6 @@ package hu.u_szeged.inf.fog.simulator.agent;
 import java.util.ArrayList;
 import java.util.List;
 
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Mapping;
-
 public class AgentApplication {
     
     static class Component {
@@ -82,7 +80,7 @@ public class AgentApplication {
         }
     }
     
-    public String getComponentForResource(String resource) {
+    public String getComponent(String resource) {
         for (Mapping m : this.mapping) {
             if (m.resource.equals(resource)) {
                 return m.component;
