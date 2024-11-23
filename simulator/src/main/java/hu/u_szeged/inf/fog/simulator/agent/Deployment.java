@@ -10,6 +10,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -94,6 +95,9 @@ public class Deployment extends Timed {
                 @Override
                 protected void eventAction() {
                     SimLogger.logRun("30 minutes of running " + app.name  + " completed: " + Timed.getFireCount());
+                    for (EnergyCollector ec : EnergyCollector.energyCollectors) {
+                        ec.stop();
+                    }
                 }
             };
         }

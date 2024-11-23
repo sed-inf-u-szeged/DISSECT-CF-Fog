@@ -6,11 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
@@ -20,6 +18,7 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 
@@ -52,7 +51,11 @@ public class AgentTest {
         ComputingAppliance.setConnection(cloud3, 95);
         ComputingAppliance.setConnection(cloud4, 51);
         ComputingAppliance.setConnection(cloud5, 74);
-                
+        
+        new EnergyCollector(cloud1.iaas, 60 * 1000);
+        new EnergyCollector(cloud2.iaas, 60 * 1000);
+        new EnergyCollector(cloud3.iaas, 60 * 1000);
+        
         // agents - https://aws.amazon.com/ec2/pricing/on-demand/ 
         new ResourceAgent("Agent-1", 0.0116, new FirstFitAgentStrategy(true), 
                 new Capacity(cloud1, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L)); // 12 CPU - 20 GB memory - 100 GB storage
@@ -107,6 +110,13 @@ public class AgentTest {
         for (AgentApplication app : AgentApplication.agentApplications) {
             SimLogger.logRes(app.name + " deployment time (min.): " + app.deploymentTime / 1000 / 60);
         }
+        
+        double totalEnergy = 0;
+        for (EnergyCollector ec : EnergyCollector.energyCollectors) {
+            totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
+        }
+        SimLogger.logRes("Total energy (kWh): " + totalEnergy);
+        
         /*
         for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes(ca.name + ":");
