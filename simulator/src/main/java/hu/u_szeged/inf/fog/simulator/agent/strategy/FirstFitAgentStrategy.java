@@ -18,17 +18,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
-        
-        // TODO: only for debugging, needs to be deleted
-        /*
-        for (Capacity cap : agent.capacities) {
-            System.out.println(cap);
-            for (Utilisation util : cap.utilisations) {
-                System.out.println(util);
-            }
-        }
-        */
-        
+
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
         
         for (Resource resource : sortedResources) {

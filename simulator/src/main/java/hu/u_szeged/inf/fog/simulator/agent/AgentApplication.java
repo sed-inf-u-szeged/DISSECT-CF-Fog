@@ -57,9 +57,14 @@ public class AgentApplication {
     public List<Offer> offers;
         
     protected int bcastCounter;
+    
+    public double deploymentTime;
+    
+    public static List<AgentApplication> agentApplications = new ArrayList<>();
 
     public AgentApplication() {
         this.offers = new ArrayList<>();
+        agentApplications.add(this);
     }
         
     public String toString() {

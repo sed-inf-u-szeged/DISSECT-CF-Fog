@@ -34,6 +34,8 @@ public class Capacity {
         
         public VirtualMachine vm;
         
+        public long initTime;
+        
         private Utilisation(Resource resource, double cpu, long memory, long storage, State state) {
             this.resource = resource;
             this.utilisedCpu = cpu;
@@ -51,7 +53,7 @@ public class Capacity {
         public String toString() {
             return "Utilisation [state=" + state + ", resource=" + resource.name + ", utilisedCpu=" + utilisedCpu
                     + ", utilisedMemory=" + utilisedMemory + ", utilisedStorage=" + utilisedStorage 
-                    + ", type=" + type + ", vm=" + vm + "]";
+                    + ", type=" + type + ", initTime=" + initTime + ", vm=" + vm + "]";
         }
     }
     

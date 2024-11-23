@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -28,8 +29,8 @@ public class AgentTest {
     public static String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
     
     public static String rankingMethodName = "vote_wo_reliability";
-    //public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-    public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+    public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+    //public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
     
     
     public static void main(String[] args) throws NetworkException {
@@ -83,6 +84,30 @@ public class AgentTest {
         Timed.simulateUntilLastEvent();
         
         // logging
+        SimLogger.logRes("\nSimulation completed.");
+        
+        SimLogger.logRes("\nCapacity usage: ");
+        double totalCost = 0;
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            double runtime = 0;
+            for (Capacity cap : agent.capacities) {
+                SimLogger.logRes("\t" + cap);
+                for (Utilisation util : cap.utilisations) {
+                   SimLogger.logRes("\t\t" + util);
+                   runtime += (Timed.getFireCount() - util.initTime);
+                }
+            }
+            totalCost += agent.hourlyPrice * (runtime / 1000 / 60 / 60);
+        }
+
+        SimLogger.logRes("\nSimulation time (min.): " + Timed.getFireCount() / 1000.0 / 60.0);
+        SimLogger.logRes("Total price (EUR): " + totalCost);
+        
+        
+        for (AgentApplication app : AgentApplication.agentApplications) {
+            SimLogger.logRes(app.name + " deployment time (min.): " + app.deploymentTime / 1000 / 60);
+        }
+        /*
         for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes(ca.name + ":");
             SimLogger.logRes("\t Contents:");
@@ -99,7 +124,6 @@ public class AgentTest {
         for(StorageObject so : Submission.imageRegistry.contents()) {
             SimLogger.logRes("\t" + so);
         }
-        
-        SimLogger.logRes("Completed at: " + Timed.getFireCount());
+        */
     }
 }

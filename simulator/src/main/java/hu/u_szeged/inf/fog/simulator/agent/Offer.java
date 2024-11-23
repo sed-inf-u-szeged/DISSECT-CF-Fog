@@ -16,6 +16,8 @@ public class Offer {
     List<Pair<ComputingAppliance, Utilisation>> utilisations;
         
     int id;
+    
+    boolean isRemainingDeploymentStarted;
 
     public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap, int id) {
         this.id = id;

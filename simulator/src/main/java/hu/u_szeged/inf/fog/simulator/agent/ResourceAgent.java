@@ -39,7 +39,7 @@ public class ResourceAgent {
     
     VirtualMachine service;
     
-    double hourlyPrice;
+    public double hourlyPrice;
     
     public List<Capacity> capacities;
     
@@ -108,16 +108,10 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {               
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-        
-        // TODO: only for debugging, needs to be deleted
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            ResourceAgent agent = pair.getLeft();
-            Resource resource = pair.getRight();
-            System.out.println("Agent: " + agent.name + ", Resource: " + resource.name);
-        }
 
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
+        // TODO: only for debugging, needs to be deleted
         for (Offer o : app.offers) {
             System.out.println(o);
         }

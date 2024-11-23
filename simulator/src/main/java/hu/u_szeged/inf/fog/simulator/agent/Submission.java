@@ -84,7 +84,7 @@ public class Submission extends Timed {
                 protected void eventAction() {
                     SimLogger.logRun(agent.name + " picked up " + app.name + " at: " + Timed.getFireCount());
                     agent.broadcast(app, 100);
-                   
+                    app.deploymentTime = Timed.getFireCount();
                 }
             };
         }

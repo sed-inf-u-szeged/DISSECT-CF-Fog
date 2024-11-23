@@ -26,22 +26,8 @@ public class Deployment extends Timed {
     public Deployment(Pair<ComputingAppliance, Utilisation> leadResource, Offer offer, AgentApplication app) {
         this.app = app;
         this.offer = offer;
-        
-        if (leadResource != null) {
-            this.leadResource = leadResource;
-            this.deployResource(this.leadResource);
-        } else {
-            this.deployRemainingResources();
-        }
+        this.leadResource = leadResource;
         subscribe(1);
-    }
-    
-    private void deployRemainingResources() {
-        for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
-            if (util.getRight().utilisedCpu > 0) {
-                this.deployResource(util);
-            }
-        }
     }
 
     private void deployResource(Pair<ComputingAppliance, Utilisation> resource) {
@@ -61,6 +47,7 @@ public class Deployment extends Timed {
                 
         try {
             utilisation.vm = node.iaas.requestVM(va, arc, registryService, 1)[0];
+            utilisation.initTime = Timed.getFireCount();
         } catch (VMManagementException e) {
             e.printStackTrace();
         }
@@ -78,33 +65,35 @@ public class Deployment extends Timed {
     }
 
     @Override
-    public void tick(long fires) {
-        if (this.leadResource != null && this.leadResource.getRight().vm.getState().equals(VirtualMachine.State.RUNNING)) {
+    public void tick(long fires) {        
+        if (leadResource != null && this.leadResource.getRight().vm == null) {
+            this.deployResource(this.leadResource);
+        } else if (leadResource != null && this.leadResource.getRight().vm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.leadResource.getRight().setToAllocated();
             SimLogger.logRun("Lead Resource for " + this.app.name + " was initilised at: " + Timed.getFireCount());
             unsubscribe();
 
             new Deployment(null, this.offer, this.app);
-        } 
+        }
         
-        if (this.leadResource == null && checkRemainingDeployment() == true) {
-            SimLogger.logRun("Remaining Resource for " + this.app.name + " were initilised at: " + Timed.getFireCount());
+        
+        if (this.leadResource == null && offer.isRemainingDeploymentStarted == false) {
+            offer.isRemainingDeploymentStarted = true;
+            for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
+                if (util.getRight().utilisedCpu > 0 && util.getRight().type == null) {
+                    this.deployResource(util);
+                } 
+            }
+        } else if (this.leadResource == null && checkRemainingDeployment() == true) {
+            SimLogger.logRun("Remaining resources for " + this.app.name + " were initilised at: " + Timed.getFireCount());
+            app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
             unsubscribe();
             
-            new DeferredEvent(1 * 60 * 60 * 1000) {
+            new DeferredEvent(30 * 60 * 1000) {
 
                 @Override
                 protected void eventAction() {
-                    SimLogger.logRun(app.name + " was terminated at: " + Timed.getFireCount());
-                    for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                        for (Capacity cap : agent.capacities) {
-                            System.out.println(cap);
-                            for (Utilisation util : cap.utilisations) {
-                                System.out.println(util);
-                            }
-                        }    
-                    }
-                   
+                    SimLogger.logRun("30 minutes of running " + app.name  + " completed: " + Timed.getFireCount());
                 }
             };
         }
