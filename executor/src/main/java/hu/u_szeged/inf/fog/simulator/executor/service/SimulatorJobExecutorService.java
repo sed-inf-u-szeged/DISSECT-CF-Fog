@@ -97,7 +97,7 @@ public class SimulatorJobExecutorService {
             var resultFiles = new HashMap<ResultFileType, File>();
             var timeline = TimelineVisualiser.generateTimeline(SimulatorJobFileUtil.WORKING_DIR_BASE_PATH);
             resultFiles.put(ResultFileType.TIMELINE, timeline);
-            simulatorJobDao.saveSimulatorJobResult(simulatorJob.getId(), resultFiles, result);
+            simulatorJobDao.saveSimulatorJobResult(simulatorJob, resultFiles, result);
         } catch (IOException e) {
             simulatorJobDao.saveSimulatorJobError(simulatorJob.getId(), 1);
             throw new IllegalStateException("Couldn't save simulator result onto the filesystem!", e);
