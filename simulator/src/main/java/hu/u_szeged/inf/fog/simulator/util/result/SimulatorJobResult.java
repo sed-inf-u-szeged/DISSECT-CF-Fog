@@ -30,4 +30,8 @@ public class SimulatorJobResult {
         this.dataVolume = dataVolume;
         this.runtime = runtime;
     }
+
+    public long getRuntime() {
+        return runtime;
+    }
 }
