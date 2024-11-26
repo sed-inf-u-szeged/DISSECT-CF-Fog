@@ -8,7 +8,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
-import hu.u_szeged.inf.fog.simulator.demo.AgentTest;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -33,6 +32,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
     
+    public static String rankingMethodName;
+    
+    public static String rankingScriptDir;
+    
     public String name;
     
     ComputingAppliance hostNode;
@@ -45,40 +48,30 @@ public class ResourceAgent {
     
     AgentStrategy agentStrategy;
     
-    /**
-     * It defines the agent's virtual image file with 0.5 GB of disk size requirement.
-     */
-    public static final VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 1, 0, false, 536870912L); 
-    
-    /**
-     * It defines the agent's resource requirements for 
-     * (1 CPU core, 0.001 processing speed and 0.5 GB of memory) the agent VM.
-     */
-    public static final AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 0.001, 536870912L);
-    
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
     
     
-    public ResourceAgent(String name, double hourlyPrice, AgentStrategy agentStrategy, Capacity ...capacities) {
+    public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
+            AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity ...capacities) {
         this.capacities = new ArrayList<>();
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
         this.capacities.addAll(Arrays.asList(capacities));
-        this.initResourceAgent();
+        this.initResourceAgent(resourceAgentVa, resourceAgentArc);
     }
     
     public void registerCapacity(Capacity capacity) {
         this.capacities.add(capacity);
     }
     
-    private void initResourceAgent() {
+    private void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
         try {
             this.hostNode = this.capacities.get(new Random().nextInt(this.capacities.size())).node;
-            VirtualAppliance va = ResourceAgent.resourceAgentVa.newCopy(this.name + "-VA");
+            VirtualAppliance va = resourceAgentVa.newCopy(this.name + "-VA");
             this.hostNode.iaas.repositories.get(0).registerObject(va);
-            VirtualMachine vm = this.hostNode.iaas.requestVM(va, ResourceAgent.resourceAgentArc,
+            VirtualMachine vm = this.hostNode.iaas.requestVM(va, resourceAgentArc,
                     this.hostNode.iaas.repositories.get(0), 1)[0];
             this.service = vm;
                 
@@ -97,9 +90,13 @@ public class ResourceAgent {
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
-        this.writeFile(app);
-        int preferredIndex = this.callRankingScript(app);
-        acknowledgeAndInitSwarmAgent(app, app.offers.get(preferredIndex), bcastMessageSize);
+        if (!app.offers.isEmpty()) {
+            this.writeFile(app);
+            int preferredIndex = this.callRankingScript(app);
+            acknowledgeAndInitSwarmAgent(app, app.offers.get(preferredIndex), bcastMessageSize);
+        } else {  
+            SimLogger.logError(app.name + "'s requirements cannot be fulfilled!");
+        }
     }
 
     private void generateOffers(AgentApplication app) {
@@ -108,7 +105,7 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {               
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-
+        
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
         // TODO: only for debugging, needs to be deleted
@@ -173,13 +170,13 @@ public class ResourceAgent {
 
             // TODO: revise these commands
             if (SystemUtils.IS_OS_WINDOWS) {
-                command = "cd /d " + AgentTest.rankingScriptDir
-                    + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + AgentTest.rankingMethodName
+                command = "cd /d " + rankingScriptDir
+                    + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
                     + " --offers_loc " + inputfile;
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
             } else if (SystemUtils.IS_OS_LINUX) {
-                command = "cd " + AgentTest.rankingScriptDir
-                    + " && python3 call_ranking_func.py --method_name " + AgentTest.rankingMethodName
+                command = "cd " + rankingScriptDir
+                    + " && python3 call_ranking_func.py --method_name " + rankingMethodName
                     + " --offers_loc " + inputfile;
 
                 processBuilder = new ProcessBuilder("bash", "-c", command);
@@ -193,14 +190,13 @@ public class ResourceAgent {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    // System.out.println(line);
+                    System.out.println(line);
                     
                     if (line.startsWith("[")) {
 
                         String numbers = line.substring(1, line.length() - 1);
                         List<Integer> numberList = Arrays.stream(numbers.trim().split("\\s+")) 
                                                          .map(Integer::parseInt) 
-                                                         //.map(n -> n + 1)
                                                          .collect(Collectors.toList());   
                         
                         SimLogger.logRun(app.offers.size() + " offers were ranked for " 
@@ -255,19 +251,20 @@ public class ResourceAgent {
             averageEnergy /= offer.agentResourcesMap.keySet().size();
             averagePrice /= offer.agentResourcesMap.keySet().size();
             
-            Random r = new Random();
-            reliabilityList.add(r.nextDouble());
+            reliabilityList.add(1.0);
             
             //double epsilon = averageEnergy * 1e-10 * r.nextDouble();
             energyList.add(averageEnergy);
             bandwidthList.add(averageBandwidth);
             latencyList.add(averageLatency);
             priceList.add(averagePrice);
-                        
+            
+            /*
             System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: " 
                 + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
+            */
             
-            QosPriority qosPriority = new QosPriority(r.nextDouble(), r.nextDouble(), r.nextDouble(), r.nextDouble());
+            QosPriority qosPriority = new QosPriority(app.energyPriority, app.bandwidthPriority, app.latencyPriority, app.pricePriority);
 
             JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
             

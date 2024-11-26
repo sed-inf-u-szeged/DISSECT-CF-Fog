@@ -6,9 +6,15 @@ import java.util.HashMap;
 import java.util.Map;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
+import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
@@ -18,66 +24,80 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyCollector;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 
 public class AgentTest {
-	
-    public static String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
-    public static String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
-    
-    public static String rankingMethodName = "vote_wo_reliability";
-    public static String rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-    //public static String rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
-    
-    
+
     public static void main(String[] args) throws NetworkException {
         
         SimLogger.setLogging(1, true);
+
+        /** ranking config */
+        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+                
+        // ResourceAgent.rankingMethodName = "random";
+        // ResourceAgent.rankingMethodName = "rank_no_re";
+         ResourceAgent.rankingMethodName = "rank_re_add";
+        //ResourceAgent.rankingMethodName = "rank_re_mul";
+        // ResourceAgent.rankingMethodName = "vote_wo_reliability";
+        // ResourceAgent.rankingMethodName = "vote_w_reliability";
+        // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
-        String cloudfile = ScenarioBase.resourcePath + "ELKH_original.xml";
+        /** applications */
+        String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
+        String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
         
-        // clouds
-        ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 19.04),  "EU", "AWS");
-        ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(52.52, 13.40),  "EU", "Google");
-        ComputingAppliance cloud3 = new ComputingAppliance(cloudfile, "cloud3", new GeoLocation(48.85, 2.35),   "EU", "Azure");
+        /** clouds */
+        Map<String, Integer> latencyMap = new HashMap<>();        
         
-        ComputingAppliance cloud4 = new ComputingAppliance(cloudfile, "cloud4", new GeoLocation(40.71, -74.00), "US", "AWS");
-        ComputingAppliance cloud5 = new ComputingAppliance(cloudfile, "cloud5", new GeoLocation(43.7, -79.42),  "US", "Google");
+        ComputingAppliance cloud1 = new ComputingAppliance(
+                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 125_000, 40, 200, 340, latencyMap), 
+                "cloud1", 65, new GeoLocation(47.45, 19.04), "EU", "AWS");
+        ComputingAppliance cloud2 = new ComputingAppliance(
+                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 187_500, 30, 220, 300, latencyMap),
+                "cloud2", 76, new GeoLocation(48.85, 2.35), "EU", "Azure");        
+        ComputingAppliance cloud3 = new ComputingAppliance(
+                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 250_000, 20, 240, 420, latencyMap),
+                "cloud3", 95, new GeoLocation(40.71, -74.00), "US", "AWS");
+        ComputingAppliance cloud4 = new ComputingAppliance(
+                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 225_000, 25, 190, 425, latencyMap),
+                "cloud4", 89, new GeoLocation(40.71, -74.00), "US", "Azure");
         
-        ComputingAppliance.setConnection(cloud1, 65);
-        ComputingAppliance.setConnection(cloud2, 76);
-        ComputingAppliance.setConnection(cloud3, 95);
-        ComputingAppliance.setConnection(cloud4, 51);
-        ComputingAppliance.setConnection(cloud5, 74);
+        new EnergyDataCollector(cloud1.iaas, 60 * 1000);
+        new EnergyDataCollector(cloud2.iaas, 60 * 1000);
+        new EnergyDataCollector(cloud3.iaas, 60 * 1000);
+        new EnergyDataCollector(cloud4.iaas, 60 * 1000);
         
-        new EnergyCollector(cloud1.iaas, 60 * 1000);
-        new EnergyCollector(cloud2.iaas, 60 * 1000);
-        new EnergyCollector(cloud3.iaas, 60 * 1000);
+        /** agents */
+        VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
+        AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
-        // agents - https://aws.amazon.com/ec2/pricing/on-demand/ 
-        new ResourceAgent("Agent-1", 0.0116, new FirstFitAgentStrategy(true), 
-                new Capacity(cloud1, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L)); // 12 CPU - 20 GB memory - 100 GB storage
+        new ResourceAgent("Agent-1", 0.0117, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
+                new Capacity(cloud1, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
         
-        new ResourceAgent("Agent-2", 0.0110, new FirstFitAgentStrategy(true),
+        new ResourceAgent("Agent-2", 0.0115, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(cloud2, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
 
-        new ResourceAgent("Agent-3", 0.0115, new FirstFitAgentStrategy(true),
+        new ResourceAgent("Agent-3", 0.0113, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(cloud3, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
-                
-        // image registry service
+
+        new ResourceAgent("Agent-4", 0.0111, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(cloud4, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
+
+        /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                PowerTransitionGenerator.generateTransitions(20, 200, 300, 10, 20);
-        HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+                PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
         
-        Deployment.registryService = new Repository(Long.MAX_VALUE, "Image Service", 125_000, 125_000, 125_000, latencyMap, 
+        Deployment.registryService = new Repository(Long.MAX_VALUE, "Image_Service", 125_000, 125_000, 125_000, new HashMap<>(), 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network));
         
-        Submission.setImageRegistry(Deployment.registryService, 100);
-        
-        // generating an application demand 
+        Deployment.setImageRegistry(Deployment.registryService, 200);
+
+        /** submitting applications */
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
         AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
 
@@ -86,7 +106,7 @@ public class AgentTest {
         
         Timed.simulateUntilLastEvent();
         
-        // logging
+        /** results */
         SimLogger.logRes("\nSimulation completed.");
         
         SimLogger.logRes("\nCapacity usage: ");
@@ -112,7 +132,7 @@ public class AgentTest {
         }
         
         double totalEnergy = 0;
-        for (EnergyCollector ec : EnergyCollector.energyCollectors) {
+        for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
             totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
         }
         SimLogger.logRes("Total energy (kWh): " + totalEnergy);
@@ -135,5 +155,39 @@ public class AgentTest {
             SimLogger.logRes("\t" + so);
         }
         */
+    }
+    
+    private static IaaSService createCloud(double cpu, long memory, long storage, long bandwidth,
+            double minpower, double idlepower, double maxpower, Map<String, Integer> latencyMap) {
+        
+        IaaSService iaas = null;
+        
+        try {
+             iaas = new IaaSService(FirstFitScheduler.class, AlwaysOnMachines.class);     
+             final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
+                     PowerTransitionGenerator.generateTransitions(minpower, idlepower, maxpower, 10, 10);
+             
+             // PM
+             Repository pmRepo1 = new Repository(storage, "localRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+                     transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
+                     transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+
+             PhysicalMachine pm1 = new PhysicalMachine(cpu, 1, memory, pmRepo1, 60_000, 60_000, 
+                     transitions.get(PowerTransitionGenerator.PowerStateKind.host));
+
+             iaas.registerHost(pm1);
+             
+             // Repository
+             Repository cloudRepo = new Repository(storage, "cloudRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+                     transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
+                     transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+             
+             iaas.registerRepository(cloudRepo);
+             cloudRepo.addLatencies("localRepo", 20);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return iaas;
     }
 }

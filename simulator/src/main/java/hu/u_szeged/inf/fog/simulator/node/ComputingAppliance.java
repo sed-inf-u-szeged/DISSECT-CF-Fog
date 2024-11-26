@@ -68,7 +68,7 @@ public class ComputingAppliance {
      * A list of neighboring {@code ComputingAppliance} instances. These nodes are
      * considered a cluster, and can be used for various strategies (e.g. load balancing).
      */
-    public ArrayList<ComputingAppliance> neighbors;
+    public ArrayList<ComputingAppliance> neighbors; // TODO: it should be a Set, not a List
 
     /**
      * The name of the node, strongly recommended to be unique during an evaluation.
@@ -123,13 +123,20 @@ public class ComputingAppliance {
         this.range = range <= 0 ? Integer.MAX_VALUE : range;
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
-        this.readEnergy();
+        this.readEnergy(); // TODO: use the global EnergyDataMeter class instead
     }
     
-    public ComputingAppliance(String file, String name, GeoLocation geoLocation, String location, String provider)  {
-        this(file, name, geoLocation, 0);
+    public ComputingAppliance(IaaSService iaas, String name, int latency, GeoLocation geoLocation, String location, String provider) {
+        this.iaas = iaas;
+        this.name = name;
+        this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
+        this.iaas.repositories.get(0).addLatencies(this.iaas.repositories.get(0).getName(), latency);
+        this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
+        this.neighbors = new ArrayList<>();
+        this.range = Integer.MAX_VALUE;
+        ComputingAppliance.allComputingAppliances.add(this);
     }
 
     /**
@@ -152,11 +159,13 @@ public class ComputingAppliance {
     
     public static void setConnection(ComputingAppliance that, int latency) {
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            ca.neighbors.add(that);
-            ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
+            if (ca != that) {
+                ca.neighbors.add(that);
+                ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
+            }
         }
     }
-
+    
     /**
      * Reads and monitors energy consumption of the computing appliance.
      * Energy consumption data is collected periodically using an {@code IaaSEnergyMeter}.

@@ -60,6 +60,14 @@ public class AgentApplication {
     
     public double deploymentTime;
     
+    public double energyPriority;
+    
+    public double pricePriority;
+    
+    public double latencyPriority;
+    
+    public double bandwidthPriority;
+        
     public static List<AgentApplication> agentApplications = new ArrayList<>();
 
     public AgentApplication() {

@@ -8,9 +8,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnergyCollector extends Timed {
+public class EnergyDataCollector extends Timed {
     
-    public static List<EnergyCollector> energyCollectors = new ArrayList<>();
+    public static List<EnergyDataCollector> energyCollectors = new ArrayList<>();
         
     public double energyConsumption;
     
@@ -18,14 +18,14 @@ public class EnergyCollector extends Timed {
     
     IaaSEnergyMeter iaasEnergyMeter;
     
-    public EnergyCollector(IaaSService iaas, long freq) {
+    public EnergyDataCollector(IaaSService iaas, long freq) {
         subscribe(freq);
         energyCollectors.add(this);
         this.iaasEnergyMeter = new IaaSEnergyMeter(iaas);
         this.iaasEnergyMeter.startMeter(freq, true);
     }
     
-    public EnergyCollector(PhysicalMachine pm, long freq) {
+    public EnergyDataCollector(PhysicalMachine pm, long freq) {
         subscribe(freq);
         energyCollectors.add(this);
         this.pmEnergyMeter = new PhysicalMachineEnergyMeter(pm);

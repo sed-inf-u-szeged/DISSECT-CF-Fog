@@ -14,6 +14,7 @@ public class MessageHandler {
         
         List<ResourceAgent> filteredAgents = ResourceAgent.resourceAgents.stream()
                 .filter(agent -> agent.service.getState().equals(VirtualMachine.State.RUNNING))
+                .filter(agent -> agent.hostNode != gateway.hostNode)
                 .filter(agent -> !agent.equals(gateway))
                 .collect(Collectors.toList());
         
