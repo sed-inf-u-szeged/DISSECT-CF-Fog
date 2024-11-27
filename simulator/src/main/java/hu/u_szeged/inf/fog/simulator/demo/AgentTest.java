@@ -48,7 +48,7 @@ public class AgentTest {
         
         /** applications */
         String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
-        String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input2.json";
+        String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "App-401656782.json";
         
         /** clouds */
         Map<String, Integer> latencyMap = new HashMap<>();        
@@ -101,7 +101,7 @@ public class AgentTest {
         AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
         AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
 
-        new Submission(app1, 100, 50);
+        //new Submission(app1, 100, 50);
         new Submission(app2, 150, 0);
         
         Timed.simulateUntilLastEvent();
@@ -126,9 +126,9 @@ public class AgentTest {
         SimLogger.logRes("\nSimulation time (min.): " + Timed.getFireCount() / 1000.0 / 60.0);
         SimLogger.logRes("Total price (EUR): " + totalCost);
         
-        
         for (AgentApplication app : AgentApplication.agentApplications) {
-            SimLogger.logRes(app.name + " deployment time (min.): " + app.deploymentTime / 1000 / 60);
+            SimLogger.logRes(app.name + " deployment time (min.): " + app.deploymentTime / 1000 / 60 +
+                    " Available offers: " + app.offers.size());
         }
         
         double totalEnergy = 0;

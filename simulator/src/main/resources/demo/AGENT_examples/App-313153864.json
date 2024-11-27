@@ -1,0 +1,136 @@
+{
+  "name" : "App-313153864",
+  "energyPriority" : 0.7,
+  "pricePriority" : 0.7,
+  "latencyPriority" : 0.1,
+  "bandwidthPriority" : 0.1,
+  "components" : [ {
+    "name" : "Comp-1",
+    "type" : "compute",
+    "image" : "3221225472"
+  }, {
+    "name" : "Comp-2",
+    "type" : "compute",
+    "image" : "6442450944"
+  }, {
+    "name" : "Comp-3",
+    "type" : "compute",
+    "image" : "3221225472"
+  }, {
+    "name" : "Comp-4",
+    "type" : "compute",
+    "image" : "9663676416"
+  }, {
+    "name" : "Comp-5",
+    "type" : "compute",
+    "image" : "8589934592"
+  }, {
+    "name" : "Comp-6",
+    "type" : "compute",
+    "image" : "2147483648"
+  }, {
+    "name" : "Comp-7",
+    "type" : "compute",
+    "image" : "10737418240"
+  }, {
+    "name" : "Comp-8",
+    "type" : "compute",
+    "image" : "1073741824"
+  }, {
+    "name" : "Comp-9",
+    "type" : "compute",
+    "image" : "8589934592"
+  }, {
+    "name" : "Comp-10",
+    "type" : "compute",
+    "image" : "8589934592"
+  } ],
+  "resources" : [ {
+    "name" : "Res-1",
+    "cpu" : "8",
+    "memory" : "6442450944",
+    "instances" : "3"
+  }, {
+    "name" : "Res-2",
+    "cpu" : "4",
+    "memory" : "3221225472"
+  }, {
+    "name" : "Res-3",
+    "cpu" : "3",
+    "memory" : "13958643712",
+    "provider" : "AWS",
+    "location" : "US"
+  }, {
+    "name" : "Res-4",
+    "cpu" : "6",
+    "memory" : "11811160064",
+    "provider" : "AWS",
+    "location" : "EU"
+  }, {
+    "name" : "Res-5",
+    "cpu" : "5",
+    "memory" : "7516192768",
+    "instances" : "1",
+    "provider" : "Azure",
+    "location" : "EU"
+  }, {
+    "name" : "Res-6",
+    "cpu" : "3",
+    "memory" : "10737418240",
+    "instances" : "4",
+    "location" : "EU"
+  }, {
+    "name" : "Res-7",
+    "cpu" : "1",
+    "memory" : "12884901888"
+  }, {
+    "name" : "Res-8",
+    "cpu" : "1",
+    "memory" : "10737418240",
+    "provider" : "Azure",
+    "location" : "EU"
+  }, {
+    "name" : "Res-9",
+    "cpu" : "2",
+    "memory" : "17179869184",
+    "provider" : "Azure"
+  }, {
+    "name" : "Res-10",
+    "cpu" : "2",
+    "memory" : "17179869184",
+    "instances" : "5",
+    "provider" : "Azure",
+    "location" : "US"
+  } ],
+  "mapping" : [ {
+    "component" : "Comp-1",
+    "resource" : "Res-1"
+  }, {
+    "component" : "Comp-2",
+    "resource" : "Res-2"
+  }, {
+    "component" : "Comp-3",
+    "resource" : "Res-3"
+  }, {
+    "component" : "Comp-4",
+    "resource" : "Res-4"
+  }, {
+    "component" : "Comp-5",
+    "resource" : "Res-5"
+  }, {
+    "component" : "Comp-6",
+    "resource" : "Res-6"
+  }, {
+    "component" : "Comp-7",
+    "resource" : "Res-7"
+  }, {
+    "component" : "Comp-8",
+    "resource" : "Res-8"
+  }, {
+    "component" : "Comp-9",
+    "resource" : "Res-9"
+  }, {
+    "component" : "Comp-10",
+    "resource" : "Res-10"
+  } ]
+}

@@ -95,7 +95,8 @@ public class ResourceAgent {
             int preferredIndex = this.callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(preferredIndex), bcastMessageSize);
         } else {  
-            SimLogger.logError(app.name + "'s requirements cannot be fulfilled!");
+            acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
+            app.deploymentTime = 0.0;
         }
     }
 
@@ -277,28 +278,46 @@ public class ResourceAgent {
             SimLogger.logRun("All ack. messages receieved for " + app.name
                     + " at: " + Timed.getFireCount());
             
-            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                for (Capacity capacity : agent.capacities) {
-                    
-                    if (offer.agentResourcesMap.containsKey(agent)) {
-                        capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
-                    }
-                    
-                    List<Resource> resourcesToBeRemoved = new ArrayList<>();
-                    for (Utilisation util : capacity.utilisations) {
-                        if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
-                            resourcesToBeRemoved.add(util.resource);
+            if (offer.id == -1) {
+                SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
+                // TODO: if none of the applications reaches the deployment phase, the sim. won't terminate due to the energy metering
+                for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                    for (Capacity capacity : agent.capacities) {                        
+                        List<Resource> resourcesToBeRemoved = new ArrayList<>();
+                        for (Utilisation util : capacity.utilisations) {
+                            if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
+                                resourcesToBeRemoved.add(util.resource);
+                            }
+                        }
+                        for (Resource r : resourcesToBeRemoved) {
+                            capacity.releaseCapacity(r);
                         }
                     }
-                    for (Resource r : resourcesToBeRemoved) {
-                        capacity.releaseCapacity(r);
+                }
+            } else {
+                for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                    for (Capacity capacity : agent.capacities) {
+                        
+                        if (offer.agentResourcesMap.containsKey(agent)) {
+                            capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
+                        }
+                        
+                        List<Resource> resourcesToBeRemoved = new ArrayList<>();
+                        for (Utilisation util : capacity.utilisations) {
+                            if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
+                                resourcesToBeRemoved.add(util.resource);
+                            }
+                        }
+                        for (Resource r : resourcesToBeRemoved) {
+                            capacity.releaseCapacity(r);
+                        }
                     }
                 }
-            }
 
-            Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
-            
-            new Deployment(leadResource, offer, app);
+                Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
+                
+                new Deployment(leadResource, offer, app);
+            }
         });
     }
     
