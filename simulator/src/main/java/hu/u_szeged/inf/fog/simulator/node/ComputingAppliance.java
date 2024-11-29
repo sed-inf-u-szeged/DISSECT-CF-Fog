@@ -126,11 +126,9 @@ public class ComputingAppliance {
         this.readEnergy(); // TODO: use the global EnergyDataMeter class instead
     }
     
-    public ComputingAppliance(IaaSService iaas, String name, int latency, GeoLocation geoLocation, String location, String provider) {
+    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
         this.iaas = iaas;
-        this.name = name;
-        this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
-        this.iaas.repositories.get(0).addLatencies(this.iaas.repositories.get(0).getName(), latency);
+        this.name = Integer.toHexString(this.hashCode());
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;

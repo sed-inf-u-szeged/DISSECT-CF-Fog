@@ -92,8 +92,8 @@ public class ResourceAgent {
         this.generateOffers(app);
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            int preferredIndex = this.callRankingScript(app);
-            acknowledgeAndInitSwarmAgent(app, app.offers.get(preferredIndex), bcastMessageSize);
+            app.winningOffer = this.callRankingScript(app);
+            acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {  
             acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
             app.deploymentTime = 0.0;
@@ -191,12 +191,13 @@ public class ResourceAgent {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
+                    // System.out.println(line);
                     
                     if (line.startsWith("[")) {
 
                         String numbers = line.substring(1, line.length() - 1);
-                        List<Integer> numberList = Arrays.stream(numbers.trim().split("\\s+")) 
+                        List<Integer> numberList = Arrays.stream(numbers.trim().split("\\s+"))
+                                                         .filter(token -> !"...".equals(token))
                                                          .map(Integer::parseInt) 
                                                          .collect(Collectors.toList());   
                         

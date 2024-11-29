@@ -55,7 +55,9 @@ public class AgentApplication {
     public List<Mapping> mapping;
 
     public List<Offer> offers;
-        
+    
+    public int winningOffer;
+    
     protected int bcastCounter;
     
     public double deploymentTime;

@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
@@ -33,19 +32,13 @@ public class Deployment extends Timed {
         subscribe(1);
     }
     
-    public static void setImageRegistry(Repository repository, int latency) {
+    public static void setImageRegistry(Repository repository) {
         registryService = repository;
         try {
             registryService.setState(NetworkNode.State.RUNNING);
         } catch (NetworkException e) {
             e.printStackTrace();
         }
-        for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            registryService.addLatencies(ca.iaas.repositories.get(0).getName(), latency);
-            for (PhysicalMachine pm : ca.iaas.machines) {
-                registryService.addLatencies(pm.localDisk.getName(), latency);
-            }
-        }   
     }
 
     private void deployResource(Pair<ComputingAppliance, Utilisation> resource) {

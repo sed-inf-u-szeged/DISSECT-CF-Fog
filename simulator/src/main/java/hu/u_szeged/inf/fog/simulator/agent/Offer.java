@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -11,13 +12,17 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Offer {
 
-    Map<ResourceAgent, Set<Resource>> agentResourcesMap;
+    @JsonIgnore
+    public Map<ResourceAgent, Set<Resource>> agentResourcesMap;
     
     List<Pair<ComputingAppliance, Utilisation>> utilisations;
-        
-    int id;
+    
+    @JsonIgnore
+    public int id;
     
     boolean isRemainingDeploymentStarted;
+    
+
 
     public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap, int id) {
         this.id = id;

@@ -1,6 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,79 +34,78 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 
 public class AgentTest {
 
-    public static void main(String[] args) throws NetworkException {
+    public static void main(String[] args) throws NetworkException, IOException {
         
         SimLogger.setLogging(1, true);
 
         /** ranking config */
-        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        //ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
         // ResourceAgent.rankingMethodName = "random";
         // ResourceAgent.rankingMethodName = "rank_no_re";
-         ResourceAgent.rankingMethodName = "rank_re_add";
-        //ResourceAgent.rankingMethodName = "rank_re_mul";
+        // ResourceAgent.rankingMethodName = "rank_re_add";
+        // ResourceAgent.rankingMethodName = "rank_re_mul";
         // ResourceAgent.rankingMethodName = "vote_wo_reliability";
-        // ResourceAgent.rankingMethodName = "vote_w_reliability";
-        // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
+        //ResourceAgent.rankingMethodName = "vote_w_reliability";
+         ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
         /** applications */
-        String appInputFile = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "app_input.json";
-        String appInputFile2 = ScenarioBase.resourcePath + "AGENT_examples" + File.separator + "App-401656782.json";
-        
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+
         /** clouds */
-        Map<String, Integer> latencyMap = new HashMap<>();        
+        Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
         ComputingAppliance cloud1 = new ComputingAppliance(
-                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 125_000, 40, 200, 340, latencyMap), 
-                "cloud1", 65, new GeoLocation(47.45, 19.04), "EU", "AWS");
+                createCloud("cloud1", 1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 125_000, 40, 200, 340, sharedLatencyMap, 65),
+                new GeoLocation(47.45, 19.04), "EU", "AWS");
         ComputingAppliance cloud2 = new ComputingAppliance(
-                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 187_500, 30, 220, 300, latencyMap),
-                "cloud2", 76, new GeoLocation(48.85, 2.35), "EU", "Azure");        
+                createCloud("cloud2", 1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 187_500, 30, 220, 300, sharedLatencyMap, 76),
+                new GeoLocation(48.85, 2.35), "EU", "Azure");        
         ComputingAppliance cloud3 = new ComputingAppliance(
-                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 250_000, 20, 240, 420, latencyMap),
-                "cloud3", 95, new GeoLocation(40.71, -74.00), "US", "AWS");
+                createCloud("cloud3", 1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 250_000, 20, 240, 420, sharedLatencyMap, 95),
+                new GeoLocation(40.71, -74.00), "US", "AWS");
         ComputingAppliance cloud4 = new ComputingAppliance(
-                createCloud(1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 225_000, 25, 190, 425, latencyMap),
-                "cloud4", 89, new GeoLocation(40.71, -74.00), "US", "Azure");
+                createCloud("cloud4", 1000, 1000 * 1_073_741_824L, 1000 * 1_073_741_824L, 225_000, 25, 190, 425, sharedLatencyMap, 89),
+                new GeoLocation(40.71, -74.00), "US", "Azure");
         
         new EnergyDataCollector(cloud1.iaas, 60 * 1000);
         new EnergyDataCollector(cloud2.iaas, 60 * 1000);
         new EnergyDataCollector(cloud3.iaas, 60 * 1000);
         new EnergyDataCollector(cloud4.iaas, 60 * 1000);
-        
+
         /** agents */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
         new ResourceAgent("Agent-1", 0.0117, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
-                new Capacity(cloud1, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
+                new Capacity(cloud1, 1000.0, 1000 * 1_073_741_824L, 150 * 1_073_741_824L));
         
         new ResourceAgent("Agent-2", 0.0115, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud2, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
+                new Capacity(cloud2, 1000.0, 1000 * 1_073_741_824L, 150 * 1_073_741_824L));
 
         new ResourceAgent("Agent-3", 0.0113, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(cloud3, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
+                new Capacity(cloud3, 1000.0, 1000 * 1_073_741_824L, 150 * 1_073_741_824L));
 
         new ResourceAgent("Agent-4", 0.0111, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud4, 40.0, 40 * 1_073_741_824L, 200 * 1_073_741_824L));
+                new Capacity(cloud4, 1000.0, 1000 * 1_073_741_824L, 150 * 1_073_741_824L));
 
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
         
-        Deployment.registryService = new Repository(Long.MAX_VALUE, "Image_Service", 125_000, 125_000, 125_000, new HashMap<>(), 
+        Deployment.registryService = new Repository(Long.MAX_VALUE, "Image_Service", 125_000, 125_000, 125_000, sharedLatencyMap, 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage), 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network));
         
-        Deployment.setImageRegistry(Deployment.registryService, 200);
+        Deployment.setImageRegistry(Deployment.registryService);
 
         /** submitting applications */
-        AgentApplication app1 = AgentApplicationReader.readAgentApplications(appInputFile);
-        AgentApplication app2 = AgentApplicationReader.readAgentApplications(appInputFile2);
-
-        //new Submission(app1, 100, 50);
-        new Submission(app2, 150, 0);
+            Files.list(inputDir)
+                .filter(file -> file.toString().endsWith(".json"))
+                .forEach(file -> {
+                         new Submission(AgentApplicationReader.readAgentApplications(file.toString()), 2048, 0);
+                 });
         
         Timed.simulateUntilLastEvent();
         
@@ -127,8 +130,16 @@ public class AgentTest {
         SimLogger.logRes("Total price (EUR): " + totalCost);
         
         for (AgentApplication app : AgentApplication.agentApplications) {
-            SimLogger.logRes(app.name + " deployment time (min.): " + app.deploymentTime / 1000 / 60 +
-                    " Available offers: " + app.offers.size());
+            SimLogger.logRes(app.name + " deployment: ");
+            SimLogger.logRes("\tTime (min.): " + app.deploymentTime / 1000 / 60);
+            SimLogger.logRes("\tAvailable offers: " + app.offers.size());
+            if(app.offers.size() > 0) {
+                StringBuilder str = new StringBuilder();
+                for(ResourceAgent ra : app.offers.get((app.winningOffer)).agentResourcesMap.keySet()) {
+                    str.append(ra.name + " ");
+                }
+                SimLogger.logRes("\tWinning offer: " + app.offers.get((app.winningOffer)).id + " ( " + str.toString() + ")");
+            }
         }
         
         double totalEnergy = 0;
@@ -157,8 +168,8 @@ public class AgentTest {
         */
     }
     
-    private static IaaSService createCloud(double cpu, long memory, long storage, long bandwidth,
-            double minpower, double idlepower, double maxpower, Map<String, Integer> latencyMap) {
+    private static IaaSService createCloud(String name, double cpu, long memory, long storage, long bandwidth,
+            double minpower, double idlepower, double maxpower, Map<String, Integer> latencyMap, int latency) { 
         
         IaaSService iaas = null;
         
@@ -168,7 +179,7 @@ public class AgentTest {
                      PowerTransitionGenerator.generateTransitions(minpower, idlepower, maxpower, 10, 10);
              
              // PM
-             Repository pmRepo1 = new Repository(storage, "localRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+             Repository pmRepo1 = new Repository(storage, name + "-localRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
                      transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                      transitions.get(PowerTransitionGenerator.PowerStateKind.network));
 
@@ -178,12 +189,13 @@ public class AgentTest {
              iaas.registerHost(pm1);
              
              // Repository
-             Repository cloudRepo = new Repository(storage, "cloudRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+             Repository cloudRepo = new Repository(storage, name + "-cloudRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
                      transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                      transitions.get(PowerTransitionGenerator.PowerStateKind.network));
              
              iaas.registerRepository(cloudRepo);
-             cloudRepo.addLatencies("localRepo", 20);
+             latencyMap.put(name + "-localRepo", latency);
+             latencyMap.put(name + "-cloudRepo", latency);
         } catch (Exception e) {
             e.printStackTrace();
         }

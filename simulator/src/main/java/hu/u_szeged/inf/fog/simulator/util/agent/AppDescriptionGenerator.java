@@ -12,16 +12,17 @@ public class AppDescriptionGenerator {
     
     private static final String[] PROVIDERS = {"AWS", "Azure"};
     private static final String[] LOCATIONS = {"EU", "US"};
-    private static final String[] COMPONENT_TYPES = {"compute", "storage"};
     private static final Random RANDOM = new Random();
     private static final long GIGABYTE = 1_073_741_824L;
 
     public static void main(String[] args) throws IOException {
         String appName = "App-" + RANDOM.nextInt(Integer.MAX_VALUE);
-        generateAppDescription(10, 0, appName, ScenarioBase.resourcePath + "AGENT_examples" + File.separator + appName + ".json");
+        generateAppDescription(6, 2, 500, 6, 10, appName, ScenarioBase.resourcePath + "AGENT_examples");
     }
 
-    public static void generateAppDescription(int numCompute, int numStorage, String appName, String outputFile) throws IOException {
+    public static void generateAppDescription(int numCompute, int numStorage, int imageSizeScaler, int cpuAndMemoryScaler, 
+            int storageScaler, String appName, String outputDir) throws IOException {
+        
         ObjectMapper mapper = new ObjectMapper();
 
         ObjectNode appNode = mapper.createObjectNode();
@@ -30,7 +31,7 @@ public class AppDescriptionGenerator {
         appNode.put("pricePriority", 0.7);
         appNode.put("latencyPriority", 0.1);
         appNode.put("bandwidthPriority", 0.1);
-        
+       
         ArrayNode components = mapper.createArrayNode();
         ArrayNode resources = mapper.createArrayNode();
         ArrayNode mappings = mapper.createArrayNode();
@@ -42,14 +43,14 @@ public class AppDescriptionGenerator {
             ObjectNode component = mapper.createObjectNode();
             component.put("name", "Comp-" + componentIndex);
             component.put("type", "compute");
-            component.put("image", String.valueOf(GIGABYTE * (RANDOM.nextInt(10) + 1)));
+            component.put("image", String.valueOf((GIGABYTE / 1024) * (RANDOM.nextInt(imageSizeScaler) + 1)));
 
             ObjectNode resource = mapper.createObjectNode();
             resource.put("name", "Res-" + componentIndex);
-            resource.put("cpu", String.valueOf(RANDOM.nextInt(8) + 1));
-            resource.put("memory", String.valueOf(GIGABYTE * (RANDOM.nextInt(16) + 1)));
+            resource.put("cpu", String.valueOf(RANDOM.nextInt(cpuAndMemoryScaler) + 1));
+            resource.put("memory", String.valueOf(GIGABYTE * (RANDOM.nextInt(cpuAndMemoryScaler) + 1)));
             if (RANDOM.nextBoolean()) {
-                resource.put("instances", String.valueOf(RANDOM.nextInt(5) + 1));
+                resource.put("instances", String.valueOf(RANDOM.nextInt(cpuAndMemoryScaler / 2) + 1));
             }
             if (RANDOM.nextBoolean()) {
                 resource.put("provider", PROVIDERS[RANDOM.nextInt(PROVIDERS.length)]);
@@ -76,8 +77,14 @@ public class AppDescriptionGenerator {
 
             ObjectNode resource = mapper.createObjectNode();
             resource.put("name", "Res-" + componentIndex);
-            resource.put("size", String.valueOf(GIGABYTE * (RANDOM.nextInt(100) + 10))); // 10-109 GB között
-
+            resource.put("size", String.valueOf(GIGABYTE * (RANDOM.nextInt(storageScaler) + 10)));
+            if (RANDOM.nextBoolean()) {
+                resource.put("provider", PROVIDERS[RANDOM.nextInt(PROVIDERS.length)]);
+            }
+            if (RANDOM.nextBoolean()) {
+                resource.put("location", LOCATIONS[RANDOM.nextInt(LOCATIONS.length)]);
+            }
+            
             components.add(component);
             resources.add(resource);
 
@@ -92,8 +99,6 @@ public class AppDescriptionGenerator {
         appNode.set("resources", resources);
         appNode.set("mapping", mappings);
 
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(outputFile), appNode);
-
-        System.out.println("App description generated: " + outputFile);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(outputDir + File.separator + appName + ".json"), appNode);
     }
 }
