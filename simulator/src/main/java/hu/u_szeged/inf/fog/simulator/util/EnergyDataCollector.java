@@ -5,6 +5,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.energy.specialized.IaaSEnergyMeter;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.specialized.PhysicalMachineEnergyMeter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +43,7 @@ public class EnergyDataCollector extends Timed {
             this.iaasEnergyMeter.stopMeter();
         }
     }
-
+    
     @Override
     public void tick(long fires) {
         energyConsumption = iaasEnergyMeter.getTotalConsumption();

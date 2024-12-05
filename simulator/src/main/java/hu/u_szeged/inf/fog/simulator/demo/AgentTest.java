@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,15 +38,15 @@ public class AgentTest {
         SimLogger.setLogging(1, true);
 
         /** ranking config */
-        ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        //ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
         // ResourceAgent.rankingMethodName = "random";
         // ResourceAgent.rankingMethodName = "rank_no_re";
         // ResourceAgent.rankingMethodName = "rank_re_add";
         // ResourceAgent.rankingMethodName = "rank_re_mul";
         // ResourceAgent.rankingMethodName = "vote_wo_reliability";
-        //ResourceAgent.rankingMethodName = "vote_w_reliability";
+        // ResourceAgent.rankingMethodName = "vote_w_reliability";
          ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
         /** applications */
@@ -131,7 +130,7 @@ public class AgentTest {
         
         for (AgentApplication app : AgentApplication.agentApplications) {
             SimLogger.logRes(app.name + " deployment: ");
-            SimLogger.logRes("\tTime (min.): " + app.deploymentTime / 1000 / 60);
+            SimLogger.logRes("\tTime (min.): " + (app.deploymentTime != -1 ? app.deploymentTime / 1000 / 60 : -1));
             SimLogger.logRes("\tAvailable offers: " + app.offers.size());
             if(app.offers.size() > 0) {
                 StringBuilder str = new StringBuilder();

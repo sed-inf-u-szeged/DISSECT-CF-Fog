@@ -96,7 +96,7 @@ public class ResourceAgent {
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {  
             acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
-            app.deploymentTime = 0.0;
+            app.deploymentTime = -1;
         }
     }
 
@@ -148,7 +148,7 @@ public class ResourceAgent {
             return;
         }
         
-        for (Pair<ResourceAgent, Resource> pair : pairs) {
+        for (Pair<ResourceAgent, Resource> pair : pairs) {      
             if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
                 currentCombination.add(pair);
                 includedResources.add(pair.getRight());
@@ -187,28 +187,33 @@ public class ResourceAgent {
 
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-
+            process.waitFor(); 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
+                StringBuilder arrayContent = new StringBuilder();
+                 
                 while ((line = reader.readLine()) != null) {
-                    // System.out.println(line);
-                    
-                    if (line.startsWith("[")) {
-
-                        String numbers = line.substring(1, line.length() - 1);
-                        List<Integer> numberList = Arrays.stream(numbers.trim().split("\\s+"))
-                                                         .filter(token -> !"...".equals(token))
-                                                         .map(Integer::parseInt) 
-                                                         .collect(Collectors.toList());   
-                        
-                        SimLogger.logRun(app.offers.size() + " offers were ranked for " 
-                                + app.name + " at: " + Timed.getFireCount() + " as follows: " + numberList);
-                        
-                        return numberList.get(0);
-                    }
+                    System.out.println(line);
+                    arrayContent.append(line).append(" ");
                 }
+                
+                String content = arrayContent.toString();
+                
+                content = content.replaceAll("[^0-9\\s]", ""); 
+                
+                List<Integer> numberList = Arrays.stream(content.split("\\s+"))
+                        .filter(token -> !token.isEmpty()) 
+                        .map(Integer::parseInt) 
+                        .collect(Collectors.toList());
+                
+                int firstNumber = numberList.get(0);
+                int lastNumber = numberList.get(numberList.size() - 1);
+                
+                SimLogger.logRun(app.offers.size() + " offers were ranked for " 
+                        + app.name + " at: " + Timed.getFireCount() 
+                        + " as follows: first = " + firstNumber + ", last = " + lastNumber);
+                return firstNumber;
             }
-            process.waitFor();
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
         }

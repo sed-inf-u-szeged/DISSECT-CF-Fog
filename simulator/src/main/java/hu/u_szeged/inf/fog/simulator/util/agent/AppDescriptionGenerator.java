@@ -17,7 +17,7 @@ public class AppDescriptionGenerator {
 
     public static void main(String[] args) throws IOException {
         String appName = "App-" + RANDOM.nextInt(Integer.MAX_VALUE);
-        generateAppDescription(6, 2, 500, 6, 10, appName, ScenarioBase.resourcePath + "AGENT_examples");
+        generateAppDescription(5, 1, 500, 6, 10, appName, ScenarioBase.resourcePath + "AGENT_examples");
     }
 
     public static void generateAppDescription(int numCompute, int numStorage, int imageSizeScaler, int cpuAndMemoryScaler, 

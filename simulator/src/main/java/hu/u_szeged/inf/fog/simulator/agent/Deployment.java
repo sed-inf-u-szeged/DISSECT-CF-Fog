@@ -5,6 +5,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
@@ -17,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Deployment extends Timed {
     
+    private static int taskNum = 0;
     public static Repository registryService;
     
     Pair<ComputingAppliance, Utilisation> leadResource;
@@ -91,16 +94,35 @@ public class Deployment extends Timed {
             app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
             unsubscribe();
             
-            new DeferredEvent(30 * 60 * 1000) {
-
-                @Override
-                protected void eventAction() {
-                    SimLogger.logRun("30 minutes of running " + app.name  + " completed: " + Timed.getFireCount());
-                    for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
-                        ec.stop();
+            for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
+                if (util.getRight().utilisedCpu > 0) {
+                    
+                    long actualTime = Timed.getFireCount();
+                    taskNum++;
+                    try {
+                        util.getRight().vm.newComputeTask(30 * 60 * 1000, ResourceConsumption.unlimitedProcessing, 
+                                new ConsumptionEventAdapter() {
+                            
+                                @Override
+                                public void conComplete() {
+                                    SimLogger.logRun(
+                                            util.getRight().resource.name + " completed at: " + Timed.getFireCount() 
+                                            + " in " + (Timed.getFireCount() - actualTime) / 1000 / 60 + " min.");
+                                    taskNum--;
+                                    if (taskNum == 0) {
+                                        for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
+                                            ec.stop();
+                                        }
+                                    }
+                                }
+                        
+                            });
+                    } catch (NetworkException e) {
+                        e.printStackTrace();
                     }
+            
                 }
-            };
+            }
         }
     }
 }
