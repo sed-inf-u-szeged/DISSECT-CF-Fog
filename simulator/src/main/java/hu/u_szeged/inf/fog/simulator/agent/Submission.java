@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.List;
@@ -28,7 +29,7 @@ public class Submission extends Timed {
         
         this.app = app;
         this.bcastMessageSize = bcastMessageSize;
-        int random = new Random().nextInt(ResourceAgent.resourceAgents.size());
+        int random = SeedSyncer.centralRnd.nextInt(ResourceAgent.resourceAgents.size());
         this.agent = ResourceAgent.resourceAgents.get(random);
         this.registerImages(app.components);
         this.delay = delay;

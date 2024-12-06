@@ -212,7 +212,7 @@ public class ResourceAgent {
                 SimLogger.logRun(app.offers.size() + " offers were ranked for " 
                         + app.name + " at: " + Timed.getFireCount() 
                         + " as follows: first = " + firstNumber + ", last = " + lastNumber);
-                return firstNumber;
+                return lastNumber;
             }
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
@@ -234,29 +234,31 @@ public class ResourceAgent {
             double averageEnergy = 0;
             double averagePrice = 0;
             
+            // TODO: the aggregation needs refactoring
             for (ResourceAgent agent : offer.agentResourcesMap.keySet()) {
 
                 averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
                         agent.hostNode.iaas.repositories.get(0).getName());
                 
-                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower() / 2.0;
-                averageBandwidth += agent.hostNode.iaas.repositories.get(0).outbws.getPerTickProcessingPower() / 2.0;
+                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
+                // averageBandwidth += agent.hostNode.iaas.repositories.get(0).outbws.getPerTickProcessingPower();
 
-                double energy = 0;
-                for (PhysicalMachine pm : agent.hostNode.iaas.machines) {
-                    energy += pm.getCurrentPowerBehavior().getConsumptionRange();
-                }
-                averageEnergy += energy / agent.hostNode.iaas.machines.size();
+                //double energy = 0;
+                //for (PhysicalMachine pm : agent.hostNode.iaas.machines) {
+                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption() 
+                        + agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange();
+                //}
+                //averageEnergy += energy / agent.hostNode.iaas.machines.size();
                 
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
                     averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
                 }
             }
             
-            averageLatency /= offer.agentResourcesMap.keySet().size();
-            averageBandwidth /= offer.agentResourcesMap.keySet().size();
-            averageEnergy /= offer.agentResourcesMap.keySet().size();
-            averagePrice /= offer.agentResourcesMap.keySet().size();
+            //averageLatency /= offer.agentResourcesMap.keySet().size();
+            //averageBandwidth /= offer.agentResourcesMap.keySet().size();
+            //averageEnergy /= offer.agentResourcesMap.keySet().size();
+            //averagePrice /= offer.agentResourcesMap.keySet().size();
             
             reliabilityList.add(1.0);
             
