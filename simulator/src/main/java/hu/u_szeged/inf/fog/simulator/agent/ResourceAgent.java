@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -90,6 +89,7 @@ public class ResourceAgent {
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
+
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
             app.winningOffer = this.callRankingScript(app);
@@ -212,7 +212,9 @@ public class ResourceAgent {
                 SimLogger.logRun(app.offers.size() + " offers were ranked for " 
                         + app.name + " at: " + Timed.getFireCount() 
                         + " as follows: first = " + firstNumber + ", last = " + lastNumber);
-                return lastNumber;
+                
+                return firstNumber;
+                //return lastNumber;
             }
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
@@ -233,24 +235,20 @@ public class ResourceAgent {
             double averageBandwidth = 0;
             double averageEnergy = 0;
             double averagePrice = 0;
-            
-            // TODO: the aggregation needs refactoring
+
             for (ResourceAgent agent : offer.agentResourcesMap.keySet()) {
 
                 averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
                         agent.hostNode.iaas.repositories.get(0).getName());
                 
                 averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
-                // averageBandwidth += agent.hostNode.iaas.repositories.get(0).outbws.getPerTickProcessingPower();
 
-                //double energy = 0;
-                //for (PhysicalMachine pm : agent.hostNode.iaas.machines) {
-                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption() 
-                        + agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange();
-                //}
-                //averageEnergy += energy / agent.hostNode.iaas.machines.size();
-                
+                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();
+
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
+                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() 
+                            * (resource.getTotalReqCpu() / agent.capacities.get(0).cpu);
+                    
                     averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
                 }
             }
@@ -288,7 +286,6 @@ public class ResourceAgent {
             
             if (offer.id == -1) {
                 SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
-                // TODO: if none of the applications reaches the deployment phase, the sim. won't terminate due to the energy metering
                 for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                     for (Capacity capacity : agent.capacities) {                        
                         List<Resource> resourcesToBeRemoved = new ArrayList<>();

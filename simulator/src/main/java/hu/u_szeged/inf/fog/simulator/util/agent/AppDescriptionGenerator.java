@@ -27,10 +27,10 @@ public class AppDescriptionGenerator {
 
         ObjectNode appNode = mapper.createObjectNode();
         appNode.put("name", appName);
-        appNode.put("energyPriority", 0.7);
-        appNode.put("pricePriority", 0.7);
-        appNode.put("latencyPriority", 0.1);
-        appNode.put("bandwidthPriority", 0.1);
+        appNode.put("energyPriority", 1.0);
+        appNode.put("pricePriority", 0.0);
+        appNode.put("latencyPriority", 0.0);
+        appNode.put("bandwidthPriority", 0.0);
        
         ArrayNode components = mapper.createArrayNode();
         ArrayNode resources = mapper.createArrayNode();
@@ -77,7 +77,7 @@ public class AppDescriptionGenerator {
 
             ObjectNode resource = mapper.createObjectNode();
             resource.put("name", "Res-" + componentIndex);
-            resource.put("size", String.valueOf(GIGABYTE * (RANDOM.nextInt(storageScaler) + 10)));
+            resource.put("size", String.valueOf(GIGABYTE * (RANDOM.nextInt(storageScaler) + 1)));
             if (RANDOM.nextBoolean()) {
                 resource.put("provider", PROVIDERS[RANDOM.nextInt(PROVIDERS.length)]);
             }

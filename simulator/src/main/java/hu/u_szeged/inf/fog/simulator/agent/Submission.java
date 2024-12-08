@@ -8,7 +8,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.List;
-import java.util.Random;
 
 public class Submission extends Timed {
 

@@ -128,7 +128,9 @@ public class ComputingAppliance {
     
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
         this.iaas = iaas;
-        this.name = Integer.toHexString(this.hashCode());
+        this.name = iaas.repositories.get(0).getName().contains("-") 
+                ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
+                : iaas.repositories.get(0).getName();
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
