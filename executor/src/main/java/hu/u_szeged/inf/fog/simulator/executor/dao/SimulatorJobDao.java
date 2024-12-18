@@ -54,8 +54,23 @@ public class SimulatorJobDao {
 
         mongoTemplate.updateFirst(query, update, SimulatorJobDataObject.class);
 
-        // Append to user's simulations run and total runtime
+
         var userQuery = Query.query(Criteria.where("email").is(job.getUser()));
+        User user = mongoTemplate.findOne(userQuery, User.class);
+        if (user == null) {
+            return;
+        }
+        long lastResetTimestamp = user.getLastReset();
+        long resetPeriodDays = user.getResetPeriod();
+
+        //if the last reset time was more than resetPeriodDays ago, reset the totalRuntime
+        if (System.currentTimeMillis() - lastResetTimestamp > resetPeriodDays * 24 * 60 * 60 * 1000) {
+            var resetUpdate = new Update().set("totalRuntime", 0).set("simulationsRun", 0).set("lastReset", System.currentTimeMillis());
+            mongoTemplate.updateFirst(userQuery, resetUpdate, User.class);
+        }
+
+
+        // Append to user's simulations run and total runtime
         long additionalRuntime = simulatorJobResult.getRuntime();
         var userUpdate = new Update()
             .inc("simulationsRun", 1)
