@@ -37,13 +37,13 @@ import { ListInstancesComponent } from './core/configuration/list-instances/list
 import { ConfigurableInstanceComponent } from './core/configuration/list-instances/configurable-instance/configurable-instance.component';
 import { SimulationComparisonComponent } from './core/util/simulation-comparison/simulation-comparison.component';
 import { UploadConfigurationComponent } from './core/upload-configuration/upload-configuration.component';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdminConfigurationsComponent } from './core/admin-configurations/admin-configurations.component';
 import { AlgorithmUploadComponent } from './core/algorithm-upload/algorithm-upload.component';
-import { CodemirrorModule } from '@ctrl/ngx-codemirror';
 import { CustomAlgorithmsComponent } from './core/custom-algorithms/custom-algorithms.component';
 
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
+import { CodemirrorModule } from '@ctrl/ngx-codemirror';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -75,7 +75,7 @@ import { LeafletModule } from '@asymmetrik/ngx-leaflet';
     UploadConfigurationComponent,
     AdminConfigurationsComponent,
     AlgorithmUploadComponent,
-    CustomAlgorithmsComponent,
+    CustomAlgorithmsComponent
   ],
   imports: [
     BrowserModule,
@@ -86,13 +86,15 @@ import { LeafletModule } from '@asymmetrik/ngx-leaflet';
     ReactiveFormsModule,
     FlexLayoutModule,
     HttpClientModule,
-    LeafletModule
+    LeafletModule,
+    MatSnackBarModule,
+    CodemirrorModule
   ],
   providers: [
     UserConfigurationService,
     ResourceSelectionService,
     authInterceptorProviders,
-    {provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: {floatLabel: 'always'}}
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { floatLabel: 'always' } }
   ],
   bootstrap: [AppComponent]
 })

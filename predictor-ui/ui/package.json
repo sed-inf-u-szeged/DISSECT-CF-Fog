@@ -24,6 +24,7 @@
     "@types/socket.io-client": "^3.0.0",
     "chart.js": "^4.3.0",
     "chartjs-plugin-annotation": "^3.0.1",
+    "dissect-cf-predictor-ui": "file:",
     "python-shell": "^5.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
