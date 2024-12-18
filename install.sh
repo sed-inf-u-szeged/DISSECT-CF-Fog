@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Use the JAVA_CMD environment variable if defined, otherwise try JAVA_HOME
 if [ -n "$JAVACMD" ]; then
   _JAVACMD="$JAVACMD"

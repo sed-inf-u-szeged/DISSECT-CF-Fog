@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 cd /usr/src/app/util
 
 npm install
