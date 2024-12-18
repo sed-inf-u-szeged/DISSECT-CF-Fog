@@ -40,9 +40,8 @@ async function main() {
 
     //Check if created.lock exists, if so then the database is already set up
     if (fs.existsSync('./created.lock')) {
+        console.log('Database already set up');
         return;
-    } else {
-        fs.writeFileSync('./created.lock', 'created');
     }
 
     const database = 'dissect'
@@ -75,7 +74,7 @@ async function main() {
         await createFileReference(client, database, 'strategies', device_strategies._id, device_strategies.filename);
 
         // Add default user job configurations
-        await db.collection('admin_configuration').updateOne(
+        await client.db(database).collection('admin_configuration').updateOne(
             { "_id": "user_job_configurations" },
             { $set: {
                 "defaultResetPeriod": 7,        // 7 days
@@ -87,9 +86,10 @@ async function main() {
     } catch (e) {
         console.error(e);
     } finally {
-
+        await client.close();
     }
-    await client.close();
+    fs.writeFileSync('./created.lock', 'created');
+    console.log('Database setup completed');
 }
 
 main().catch(console.error);
