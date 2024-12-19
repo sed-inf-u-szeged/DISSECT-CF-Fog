@@ -126,7 +126,7 @@
                 <app-group name="Hyperparameters" formGroupName="hyperparameters"
                     *ngIf="hyperparameters && hyperparameters.length > 0">
                     <div *ngFor="let hyperparameter of hyperparameters">
-                        <div [ngSwitch]="hyperparameter.type">
+                        <div [ngSwitch]="hyperparameter.type.type">
                             <div *ngSwitchCase="'text'">
                                 <app-input-container>
                                     <label>{{ hyperparameter.label }} <app-required-symbol

@@ -10,6 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import lombok.Getter;
 import org.json.JSONObject;
 
 /**
@@ -19,6 +22,7 @@ import org.json.JSONObject;
 public class FeatureManager {
     
     private static FeatureManager featureManager;
+    @Getter
     private List<Feature> features;
 
     /**
@@ -204,7 +208,7 @@ public class FeatureManager {
      * @param windowSize the size of the window for prediction
      * @return the list of predictions
      */
-    public List<Prediction> predict(List<Feature> features, int windowSize) throws Exception {
+    public List<Prediction> predict(List<Feature> features) throws Exception {
         PredictionLogger.info("FeatureManager-sendFeatures", "Send features for prediction");
         List<Prediction> predictions = new ArrayList<>();
         for (Feature feature : features) {
@@ -213,7 +217,7 @@ public class FeatureManager {
                     SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
                     new SocketMessage(
                             "predict-feature",
-                            new JSONObject().put("feature", feature.toJson(windowSize))
+                            new JSONObject().put("feature", JsonParser.toJson(feature, Feature.class))
                     )
             );
 
@@ -222,7 +226,7 @@ public class FeatureManager {
                 continue;
             }
 
-            Prediction result = new Prediction(message.getData().getJSONObject("prediction"));
+            Prediction result = JsonParser.fromJsonObject(message.getData().getJSONObject("prediction"), Prediction.class, null);
             feature.addPrediction(result);
             predictions.add(result);
         }
@@ -234,7 +238,7 @@ public class FeatureManager {
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
                         new SocketMessage(
                                 "prediction",
-                                new JSONObject().put("prediction", prediction.toJson())
+                                new JSONObject().put("prediction", JsonParser.toJson(prediction, Prediction.class))
                         )
                 );
             }
@@ -322,9 +326,5 @@ public class FeatureManager {
             }
         }
         return result;
-    }
-    
-    public List<Feature> getFeatures() {
-        return features;
     }
 }

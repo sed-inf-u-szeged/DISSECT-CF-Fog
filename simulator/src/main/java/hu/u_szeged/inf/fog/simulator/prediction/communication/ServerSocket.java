@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.prediction.communication;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictorTemplate;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.net.Socket;
@@ -63,7 +64,7 @@ public class ServerSocket {
             try {
                 sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-                        new SocketMessage("set-ui-predictors", PredictorTemplate.getAllAsJson())
+                        new SocketMessage("set-ui-predictors", new JSONObject().put("predictors", JsonParser.toJsonArray(PredictorTemplate.getAll(), List.class) /*PredictorTemplate.getAllAsJson()*/))
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -97,7 +98,7 @@ public class ServerSocket {
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
                         new SocketMessage("get-simulation-settings", new JSONObject().put("get", "settings"))
                 );
-                SimulationSettings.set(new SimulationSettings(message.getData().getJSONObject("simulation-settings")));
+                SimulationSettings.set(JsonParser.fromJsonObject(message.getData().getJSONObject("simulation-settings"), SimulationSettings.class, null));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -108,7 +109,7 @@ public class ServerSocket {
             sendAndGet(
                     SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
                     new SocketMessage("simulation-settings", 
-                           new JSONObject().put("simulation-settings", SimulationSettings.get().toJson()))
+                           new JSONObject().put("simulation-settings", JsonParser.toJson(SimulationSettings.get(), SimulationSettings.class)))
             );
         } catch (Exception e) {
             e.printStackTrace();

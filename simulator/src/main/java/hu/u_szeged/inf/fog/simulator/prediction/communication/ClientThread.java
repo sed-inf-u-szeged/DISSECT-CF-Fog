@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import org.json.JSONObject;
 
+//TODO: Could add @Getter lombok annotation to name (needs to change getSocketName() to getName() on usages
 public class ClientThread extends Thread {
     private Socket socket;
     private String name;

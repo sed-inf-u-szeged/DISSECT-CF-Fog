@@ -1,10 +1,16 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@Setter
+@Getter
 public class SocketMessage {
 
+    @AllArgsConstructor
     public enum SocketApplication {
 
         UNKNOWN("UNKNOWN"),
@@ -12,10 +18,6 @@ public class SocketMessage {
         APPLICATION_PREDICTOR("APPLICATION_PREDICTOR"),
         APPLICATION_INTERFACE("APPLICATION_INTERFACE");
         public final String value;
-
-        SocketApplication(final String value) {
-            this.value = value;
-        }
     }
 
     private String event;
@@ -54,22 +56,6 @@ public class SocketMessage {
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public String getEvent() {
-        return event;
-    }
-
-    public void setEvent(String event) {
-        this.event = event;
-    }
-
-    public JSONObject getData() {
-        return data;
-    }
-
-    public void setData(JSONObject data) {
-        this.data = data;
     }
 
     public boolean hasError() {

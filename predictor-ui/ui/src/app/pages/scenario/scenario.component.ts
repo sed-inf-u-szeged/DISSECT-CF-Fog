@@ -185,7 +185,7 @@ export class ScenarioComponent implements OnInit {
         return param.defaultValue;
       }
 
-      switch (param.type) {
+      switch (param.type.type) {
         case 'select': return param.options?.[0].id;
         case 'text': return '';
         case 'openFile': return '';
@@ -208,7 +208,7 @@ export class ScenarioComponent implements OnInit {
       });
 
       this.hyperparameters.forEach(hyperparameter => {
-        if (hyperparameter.type === 'openFile') {
+        if (hyperparameter.type.type === 'openFile') {
           this.electron.receive(`open-file-result-${hyperparameter.id}`).subscribe((res: any) => {
             hyperparametersForm.controls[hyperparameter.id].setValue(res.result || '');
             this.changeDetectorRef.detectChanges();
@@ -221,7 +221,7 @@ export class ScenarioComponent implements OnInit {
     Object.keys(optionsForm.controls).forEach(key => optionsForm.removeControl(key));
     if (this.options) {
       this.options.forEach(option => {
-        if (option.type !== 'button') {
+        if (option.type.type !== 'button') {
           optionsForm.addControl(option.id,
             new FormControl(
               getFormValue(option),
