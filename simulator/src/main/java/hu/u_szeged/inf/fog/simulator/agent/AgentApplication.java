@@ -95,10 +95,19 @@ public class AgentApplication {
         }
     }
     
-    public String getComponent(String resource) {
+    public String getComponentName(String resource) {
         for (Mapping m : this.mapping) {
             if (m.resource.equals(resource)) {
                 return m.component;
+            }
+        }
+        return null;
+    }
+    
+    public Component getComponent(String name) {
+        for (Component component : this.components) {
+            if (component.name.equals(name)) {
+                return component;
             }
         }
         return null;

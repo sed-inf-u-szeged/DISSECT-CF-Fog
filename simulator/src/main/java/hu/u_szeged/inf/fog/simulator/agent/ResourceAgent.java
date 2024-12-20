@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
@@ -20,7 +21,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -67,7 +68,7 @@ public class ResourceAgent {
     
     private void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
         try {
-            this.hostNode = this.capacities.get(new Random().nextInt(this.capacities.size())).node;
+            this.hostNode = this.capacities.get(SeedSyncer.centralRnd.nextInt(this.capacities.size())).node;
             VirtualAppliance va = resourceAgentVa.newCopy(this.name + "-VA");
             this.hostNode.iaas.repositories.get(0).registerObject(va);
             VirtualMachine vm = this.hostNode.iaas.requestVM(va, resourceAgentArc,
@@ -110,6 +111,7 @@ public class ResourceAgent {
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
         // TODO: only for debugging, needs to be deleted
+        System.out.println(app.name);
         for (Offer o : app.offers) {
             System.out.println(o);
         }
@@ -117,9 +119,9 @@ public class ResourceAgent {
     
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
         
-        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new HashSet<>();
-        Set<Pair<ResourceAgent, Resource>> currentCombination = new HashSet<>();
-        Set<Resource> includedResources = new HashSet<>();
+        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
+        Set<Pair<ResourceAgent, Resource>> currentCombination = new LinkedHashSet<>();
+        Set<Resource> includedResources = new LinkedHashSet<>();
 
         generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
         
@@ -130,7 +132,7 @@ public class ResourceAgent {
                 ResourceAgent agent = pair.getLeft();
                 Resource resource = pair.getRight();
                 
-                agentResourcesMap.putIfAbsent(agent, new HashSet<>());
+                agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
                 agentResourcesMap.get(agent).add(resource);
             }
             
@@ -144,7 +146,7 @@ public class ResourceAgent {
                                       Set<Resource> includedResources) {
 
         if (includedResources.size() == resourceCount) {
-            uniqueCombinations.add(new HashSet<>(currentCombination));
+            uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
             return;
         }
         
@@ -240,22 +242,29 @@ public class ResourceAgent {
 
                 averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
                         agent.hostNode.iaas.repositories.get(0).getName());
-                
-                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
 
-                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();
-
+                double cores = 0;
+                long size = 0;
+                long image = 0;
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
-                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() 
-                            * (resource.getTotalReqCpu() / agent.capacities.get(0).cpu);
-                    
                     averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
+                    
+                    cores += resource.getTotalReqCpu();
+                    size += resource.size != null ? Long.parseLong(resource.size) : 0;
+                    image += app.getComponent(app.getComponentName(resource.name)).image != null 
+                            ? Long.parseLong(app.getComponent(app.getComponentName(resource.name)).image) : 0;
                 }
-            }
+
+                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
+                
+                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();     
+                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() * (cores / 100);
+                averageEnergy += (size + image) / averageBandwidth / 100;
+            }     
             
             //averageLatency /= offer.agentResourcesMap.keySet().size();
             //averageBandwidth /= offer.agentResourcesMap.keySet().size();
-            //averageEnergy /= offer.agentResourcesMap.keySet().size();
+            // averageEnergy /= offer.agentResourcesMap.keySet().size();
             //averagePrice /= offer.agentResourcesMap.keySet().size();
             
             reliabilityList.add(1.0);

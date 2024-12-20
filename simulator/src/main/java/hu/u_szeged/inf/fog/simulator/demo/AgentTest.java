@@ -17,6 +17,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
@@ -37,18 +38,20 @@ public class AgentTest {
     public static void main(String[] args) throws NetworkException, IOException {
         
         SimLogger.setLogging(1, true);
+        
+        SeedSyncer.modifySeed(9876543210L);
 
         /** ranking config */
-        ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        //ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
         // ResourceAgent.rankingMethodName = "random";
         // ResourceAgent.rankingMethodName = "rank_no_re";
         // ResourceAgent.rankingMethodName = "rank_re_add";
         // ResourceAgent.rankingMethodName = "rank_re_mul";
         // ResourceAgent.rankingMethodName = "vote_wo_reliability";
-        // ResourceAgent.rankingMethodName = "vote_w_reliability";
-         ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
+         ResourceAgent.rankingMethodName = "vote_w_reliability";
+        // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
         /** applications */
         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
