@@ -42,56 +42,56 @@ public class AgentTest {
         SeedSyncer.modifySeed(9876543210L);
 
         /** ranking config */
-        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        //ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
-        // ResourceAgent.rankingMethodName = "random";
+         ResourceAgent.rankingMethodName = "random";
         // ResourceAgent.rankingMethodName = "rank_no_re";
         // ResourceAgent.rankingMethodName = "rank_re_add";
         // ResourceAgent.rankingMethodName = "rank_re_mul";
         // ResourceAgent.rankingMethodName = "vote_wo_reliability";
-         ResourceAgent.rankingMethodName = "vote_w_reliability";
+        // ResourceAgent.rankingMethodName = "vote_w_reliability";
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
         /** applications */
         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
-
+         
         /** clouds */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
         double capacity = 100; 
         
         ComputingAppliance cloud1 = new ComputingAppliance(
-                createCloud("cloud1", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 12_500, 30, 180, 300, sharedLatencyMap, 100),
-                new GeoLocation(47.50, 19.08), "EU", "AWS"); // Budapest
+            createCloud("cloud1", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 12_500, 30, 180, 300, sharedLatencyMap, 100),
+            new GeoLocation(47.50, 19.08), "EU", "AWS"); // Budapest
 
-            ComputingAppliance cloud2 = new ComputingAppliance(
-                createCloud("cloud2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 25_000, 40, 225, 330, sharedLatencyMap, 50),
-                new GeoLocation(48.86, 2.35), "EU", "Azure"); // Paris
+        ComputingAppliance cloud2 = new ComputingAppliance(
+            createCloud("cloud2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 25_000, 40, 225, 330, sharedLatencyMap, 50),
+            new GeoLocation(48.86, 2.35), "EU", "Azure"); // Paris
 
-            ComputingAppliance cloud3 = new ComputingAppliance(
-                createCloud("cloud3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 62_500, 50, 170, 340, sharedLatencyMap, 20),
-                new GeoLocation(52.52, 13.40), "EU", "AWS"); // Berlin
+        ComputingAppliance cloud3 = new ComputingAppliance(
+            createCloud("cloud3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 62_500, 50, 170, 340, sharedLatencyMap, 20),
+            new GeoLocation(52.52, 13.40), "EU", "AWS"); // Berlin
             
-            ComputingAppliance cloud4 = new ComputingAppliance(
-                createCloud("cloud4", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 125_000, 55, 210, 320, sharedLatencyMap, 30),
-                new GeoLocation(41.90, 12.50), "EU", "Azure"); // Rome
+        ComputingAppliance cloud4 = new ComputingAppliance(
+            createCloud("cloud4", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 125_000, 55, 210, 320, sharedLatencyMap, 30),
+            new GeoLocation(41.90, 12.50), "EU", "Azure"); // Rome
             
-            ComputingAppliance cloud5 = new ComputingAppliance(
-                createCloud("cloud5", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 6_250, 45, 190, 370, sharedLatencyMap, 80),
-                new GeoLocation(40.71, -74.00), "US", "AWS"); // New York
+        ComputingAppliance cloud5 = new ComputingAppliance(
+            createCloud("cloud5", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 6_250, 45, 190, 370, sharedLatencyMap, 80),
+            new GeoLocation(40.71, -74.00), "US", "AWS"); // New York
 
-            ComputingAppliance cloud6 = new ComputingAppliance(
-                createCloud("cloud6", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 100_000, 35, 175, 355, sharedLatencyMap, 15),
-                new GeoLocation(34.05, -118.25), "US", "Azure"); // Los Angeles
+        ComputingAppliance cloud6 = new ComputingAppliance(
+            createCloud("cloud6", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 100_000, 35, 175, 355, sharedLatencyMap, 15),
+            new GeoLocation(34.05, -118.25), "US", "Azure"); // Los Angeles
 
-            ComputingAppliance cloud7 = new ComputingAppliance(
-                createCloud("cloud7", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 37_500, 30, 150, 300, sharedLatencyMap, 70),
-                new GeoLocation(37.77, -122.42), "US", "AWS"); // San Francisco
+        ComputingAppliance cloud7 = new ComputingAppliance(
+            createCloud("cloud7", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 37_500, 30, 150, 300, sharedLatencyMap, 70),
+            new GeoLocation(37.77, -122.42), "US", "AWS"); // San Francisco
 
-            ComputingAppliance cloud8 = new ComputingAppliance(
-                createCloud("cloud8", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 150_000, 40, 200, 340, sharedLatencyMap, 60),
-                new GeoLocation(41.88, -87.63), "US", "Azure"); // Chicago
+        ComputingAppliance cloud8 = new ComputingAppliance(
+            createCloud("cloud8", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 150_000, 40, 200, 340, sharedLatencyMap, 60),
+            new GeoLocation(41.88, -87.63), "US", "Azure"); // Chicago
         
         new EnergyDataCollector(cloud1.iaas, 60 * 1000);
         new EnergyDataCollector(cloud2.iaas, 60 * 1000);
@@ -156,21 +156,18 @@ public class AgentTest {
         double totalCost = 0;
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             double runtime = 0;
+            double cores = 0;
             for (Capacity cap : agent.capacities) {
                 SimLogger.logRes("\t" + cap);
                 for (Utilisation util : cap.utilisations) {
                    SimLogger.logRes("\t\t" + util);
                    runtime += (Timed.getFireCount() - util.initTime);
+                   cores += util.utilisedCpu;
                 }
             }
-            totalCost += agent.hourlyPrice * (runtime / 1000 / 60 / 60);
+            totalCost += cores * agent.hourlyPrice * (runtime / 1000 / 60 / 60);
         }
 
-        SimLogger.logRes("\nSimulation time (min.): " + Timed.getFireCount() / 1000.0 / 60.0);
-        DecimalFormat df = new DecimalFormat("#.####");
-        SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
-        
-        
         double avgDeploymentTime = 0.0;
         double avgOffers = 0.0;
         for (AgentApplication app : AgentApplication.agentApplications) {
@@ -191,13 +188,20 @@ public class AgentTest {
                 SimLogger.logRes("\tWinning offer: " + app.offers.get((app.winningOffer)).id + " ( " + str.toString() + ")");
             }
         }
+        
+        SimLogger.logRes("\nSimulation time (min.): " + Timed.getFireCount() / 1000.0 / 60.0);
+        
+        DecimalFormat df = new DecimalFormat("#.####");
+        SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
         SimLogger.logRes("Average deployment time (min.): " + (avgDeploymentTime / AgentApplication.agentApplications.size() / 1000 / 60));
-        SimLogger.logRes("Average number of offers (pc.): " + (avgOffers / AgentApplication.agentApplications.size()));
+        
         double totalEnergy = 0;
         for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
             totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
         }
         SimLogger.logRes("Total energy (kWh): " + totalEnergy);
+        
+        SimLogger.logRes("Average number of offers (pc.): " + (avgOffers / AgentApplication.agentApplications.size()));
         
         /*
         for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
@@ -243,28 +242,20 @@ public class ResourceAgent {
                 averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
                         agent.hostNode.iaas.repositories.get(0).getName());
 
-                double cores = 0;
-                long size = 0;
-                long image = 0;
-                for (Resource resource : offer.agentResourcesMap.get(agent)) {
-                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
-                    
-                    cores += resource.getTotalReqCpu();
-                    size += resource.size != null ? Long.parseLong(resource.size) : 0;
-                    image += app.getComponent(app.getComponentName(resource.name)).image != null 
-                            ? Long.parseLong(app.getComponent(app.getComponentName(resource.name)).image) : 0;
-                }
-
                 averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
                 
                 averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();     
-                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() * (cores / 100);
-                averageEnergy += (size + image) / averageBandwidth / 100;
-            }     
+                for (Resource resource : offer.agentResourcesMap.get(agent)) {
+                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() 
+                            * (resource.getTotalReqCpu() / agent.capacities.get(0).cpu);
+                    
+                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
+                }
+            } 
             
             //averageLatency /= offer.agentResourcesMap.keySet().size();
             //averageBandwidth /= offer.agentResourcesMap.keySet().size();
-            // averageEnergy /= offer.agentResourcesMap.keySet().size();
+            //averageEnergy /= offer.agentResourcesMap.keySet().size();
             //averagePrice /= offer.agentResourcesMap.keySet().size();
             
             reliabilityList.add(1.0);
