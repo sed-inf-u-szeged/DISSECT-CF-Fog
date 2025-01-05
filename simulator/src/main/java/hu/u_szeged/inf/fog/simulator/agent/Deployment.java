@@ -99,7 +99,7 @@ public class Deployment extends Timed {
                     long actualTime = Timed.getFireCount();
                     taskNum++;
                     try {
-                        util.getRight().vm.newComputeTask(30 * 60 * 1000, ResourceConsumption.unlimitedProcessing, 
+                        util.getRight().vm.newComputeTask(30 * 60 * 1000 , ResourceConsumption.unlimitedProcessing, 
                                 new ConsumptionEventAdapter() {
                             
                                 @Override

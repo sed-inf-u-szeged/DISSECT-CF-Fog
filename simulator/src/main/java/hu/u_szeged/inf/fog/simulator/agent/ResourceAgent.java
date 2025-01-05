@@ -245,18 +245,20 @@ public class ResourceAgent {
                 averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
                 
                 averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();     
+                
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
                     averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() 
-                            * (resource.getTotalReqCpu() / agent.capacities.get(0).cpu);
-                    
-                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
+                            * (resource.getTotalReqCpu() / 100);
+                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();   
                 }
             } 
             
-            //averageLatency /= offer.agentResourcesMap.keySet().size();
-            //averageBandwidth /= offer.agentResourcesMap.keySet().size();
-            //averageEnergy /= offer.agentResourcesMap.keySet().size();
-            //averagePrice /= offer.agentResourcesMap.keySet().size();
+            /*
+            averageLatency /= offer.agentResourcesMap.keySet().size();
+            averageBandwidth /= offer.agentResourcesMap.keySet().size();
+            averageEnergy /= offer.agentResourcesMap.keySet().size();
+            averagePrice /= offer.agentResourcesMap.keySet().size();
+            */
             
             reliabilityList.add(1.0);
             
