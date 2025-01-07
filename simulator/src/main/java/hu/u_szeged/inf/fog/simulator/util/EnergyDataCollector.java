@@ -82,7 +82,7 @@ public class EnergyDataCollector extends Timed {
             
             fw.write("Timestamp");
             for (String key : readings.keySet()) {
-                fw.write("," + key);
+                fw.write("; " + key);
             }
             fw.write("\n");
 
@@ -95,7 +95,7 @@ public class EnergyDataCollector extends Timed {
                 fw.write(timestamp.toString()); 
                 for (String key : readings.keySet()) {
                     Double value = readings.get(key).get(timestamp);
-                    fw.write("," + (value != null ? Math.round(value / 1000 / 3_600_000) : "")); 
+                    fw.write(";" + (value != null ? String.format("%.3f", value / 1000 / 3_600_000) : "")); 
                 }
                 fw.write("\n");
             }

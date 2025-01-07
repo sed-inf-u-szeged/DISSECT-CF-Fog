@@ -42,12 +42,12 @@ public class AgentTest {
         SeedSyncer.modifySeed(9876543210L);
 
         /** ranking config */
-        ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        //ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
-         ResourceAgent.rankingMethodName = "random";
-        // ResourceAgent.rankingMethodName = "rank_no_re";
+        // ResourceAgent.rankingMethodName = "random";
         // ResourceAgent.rankingMethodName = "vote_wo_reliability";
+        ResourceAgent.rankingMethodName = "rank_no_re";
          
         // ResourceAgent.rankingMethodName = "rank_re_add";
         // ResourceAgent.rankingMethodName = "rank_re_mul";
@@ -55,83 +55,85 @@ public class AgentTest {
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         
         /** applications */
-        //  Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_bandwidth");
         // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_energy");
-         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_latency");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_price");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_latency");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_bandwidth");
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
         
-        /** clouds */
+        /** nodes */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
         double capacity = 100; 
         
-        ComputingAppliance cloud1 = new ComputingAppliance(
-                createCloud("cloud1", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 3000, 12_500, 100, sharedLatencyMap),
+        ComputingAppliance node1 = new ComputingAppliance(
+                createNode("node1", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
                 new GeoLocation(47.50, 19.08), "EU", "AWS"); // Budapest
 
-            ComputingAppliance cloud2 = new ComputingAppliance(
-                createCloud("cloud2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+            ComputingAppliance node2 = new ComputingAppliance(
+                createNode("node2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
                 new GeoLocation(48.86, 2.35), "EU", "Azure"); // Paris
 
-            ComputingAppliance cloud3 = new ComputingAppliance(
-                createCloud("cloud3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
+            ComputingAppliance node3 = new ComputingAppliance(
+                createNode("node3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
                 new GeoLocation(52.52, 13.40), "EU", "AWS"); // Berlin
                 
-            ComputingAppliance cloud4 = new ComputingAppliance(
-                createCloud("cloud4", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
+            ComputingAppliance node4 = new ComputingAppliance(
+                createNode("node4", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
                 new GeoLocation(41.90, 12.50), "EU", "Azure"); // Rome
                 
-            ComputingAppliance cloud5 = new ComputingAppliance(
-                createCloud("cloud5", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 3700, 6_250, 80, sharedLatencyMap),
+            ComputingAppliance node5 = new ComputingAppliance(
+                createNode("node5", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
                 new GeoLocation(40.71, -74.00), "US", "AWS"); // New York
 
-            ComputingAppliance cloud6 = new ComputingAppliance(
-                createCloud("cloud6", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+            ComputingAppliance node6 = new ComputingAppliance(
+                createNode("node6", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
                 new GeoLocation(34.05, -118.25), "US", "Azure"); // Los Angeles
 
-            ComputingAppliance cloud7 = new ComputingAppliance(
-                createCloud("cloud7", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 3000, 37_500, 70, sharedLatencyMap),
+            ComputingAppliance node7 = new ComputingAppliance(
+                createNode("node7", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
                 new GeoLocation(37.77, -122.42), "US", "AWS"); // San Francisco
 
-            ComputingAppliance cloud8 = new ComputingAppliance(
-                createCloud("cloud8", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 340, 150_000, 60, sharedLatencyMap),
+            ComputingAppliance node8 = new ComputingAppliance(
+                createNode("node8", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
                 new GeoLocation(41.88, -87.63), "US", "Azure"); // Chicago
         
-        new EnergyDataCollector("cloud1", cloud1.iaas, true);
-        new EnergyDataCollector("cloud2", cloud2.iaas, true);
-        new EnergyDataCollector("cloud3", cloud3.iaas, true);
-        new EnergyDataCollector("cloud4", cloud4.iaas, true);
-        new EnergyDataCollector("cloud5", cloud5.iaas, true);
-        new EnergyDataCollector("cloud6", cloud6.iaas, true);
-        new EnergyDataCollector("cloud7", cloud7.iaas, true);
-        new EnergyDataCollector("cloud8", cloud8.iaas, true);
+        new EnergyDataCollector("node-1", node1.iaas, true);
+        new EnergyDataCollector("node-2", node2.iaas, true);
+        new EnergyDataCollector("node-3", node3.iaas, true);
+        new EnergyDataCollector("node-4", node4.iaas, true);
+        new EnergyDataCollector("node-5", node5.iaas, true);
+        new EnergyDataCollector("node-6", node6.iaas, true);
+        new EnergyDataCollector("node-7", node7.iaas, true);
+        new EnergyDataCollector("node-8", node8.iaas, true);
 
         /** agents */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
-        new ResourceAgent("Agent-1", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
-                new Capacity(cloud1, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
+                new Capacity(node1, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
-        new ResourceAgent("Agent-2", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud2, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node2, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 
         new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(cloud3, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+                new Capacity(node3, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 
         new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud4, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+                new Capacity(node4, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
         new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(cloud5, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+                new Capacity(node5, 16, (long) 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
         
         new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+                new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
-        new ResourceAgent("Agent-7", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(cloud7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
-        new ResourceAgent("Agent-8", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(cloud8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
@@ -228,7 +230,7 @@ public class AgentTest {
         */
     }
     
-    private static IaaSService createCloud(String name, double cpu, long memory, long storage, double minpower, 
+    private static IaaSService createNode(String name, double cpu, long memory, long storage, double minpower, 
             double idlepower, double maxpower, long bandwidth, int latency, Map<String, Integer> latencyMap) { 
         
         IaaSService iaas = null;
@@ -249,13 +251,13 @@ public class AgentTest {
              iaas.registerHost(pm1);
              
              // Repository
-             Repository cloudRepo = new Repository(storage, name + "-cloudRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+             Repository nodeRepo = new Repository(storage, name + "-nodeRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
                      transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                      transitions.get(PowerTransitionGenerator.PowerStateKind.network));
              
-             iaas.registerRepository(cloudRepo);
+             iaas.registerRepository(nodeRepo);
              latencyMap.put(name + "-localRepo", latency);
-             latencyMap.put(name + "-cloudRepo", latency);
+             latencyMap.put(name + "-nodeRepo", latency);
              
         } catch (Exception e) {
             e.printStackTrace();
