@@ -24,16 +24,10 @@ public class Solar extends EnergySource{
 
     @Override
     public float Production(long time, long frequency) {
-        return output * panels * Multiplier(getTime(time)) * ( (float) frequency / 3_600_000);
+        return output * panels * Multiplier(this.getTime(time)) * ( (float) frequency / 3_600_000);
     }
 
-    private int getTime(long timePassed) {
 
-        int hours = round( (float) timePassed / 3_600_000 );
-        double hoursPastDay = Math.floor( (double) timePassed / 86_400_000 ) * 24;
-
-        return (int) (hours - hoursPastDay);
-    }
 
     //TODO do something more refined
 
