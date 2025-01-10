@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,8 @@ public class CentralisedAntOptimiser {
         globalPheromoneMatrix = new double[nodesToBeClustered.size()][centerNodes.size()];
         for (int i = 0; i < nodesToBeClustered.size(); i++) {
             for (int j = 0; j < centerNodes.size(); j++) {
-                globalPheromoneMatrix[i][j] = Math.random();
+                double noise = SeedSyncer.centralRnd.nextDouble() * 0.1;
+                globalPheromoneMatrix[i][j] = 0.5 - (0.1 / 2) + noise;
             }
         }
         printMatrix("Init pheromone: ", globalPheromoneMatrix);
@@ -33,7 +35,7 @@ public class CentralisedAntOptimiser {
             
             CentralisedAnt[] ants = new CentralisedAnt[numberOfAnts];
             for (int j = 0; j < numberOfAnts; j++) {
-                ants[j] = new CentralisedAnt();
+                ants[j] = new CentralisedAnt(j);
             }
             
             for (CentralisedAnt ant : ants) {
@@ -41,6 +43,9 @@ public class CentralisedAntOptimiser {
             }
             
             calculateFitness(centerNodes, nodesToBeClustered, ants);
+            for (CentralisedAnt ant : ants) {
+                System.out.println(ant.id + ": " + Arrays.toString(ant.solution) + " " + ant.fitness);
+            }
             updatePheromones(nodesToBeClustered, ants, topPercentAnts, pheromoneIncrement);
             evaporatePheromones(globalPheromoneMatrix, evaporationRate);
             printMatrix("updated pheromone matrix: ", globalPheromoneMatrix);
@@ -79,6 +84,7 @@ public class CentralisedAntOptimiser {
     }
 
     private static void evaporatePheromones(double[][] globalPheromoneMatrix, double evaporationRate) {
+       
         for (int i = 0; i < globalPheromoneMatrix.length; i++) {
             for (int j = 0; j < globalPheromoneMatrix[i].length; j++) {
                 globalPheromoneMatrix[i][j] *= (1 - evaporationRate);
@@ -88,13 +94,20 @@ public class CentralisedAntOptimiser {
 
     private static void updatePheromones(ArrayList<WorkflowComputingAppliance> nodesToBeClustered, 
             CentralisedAnt[] ants, double topPercentAnts, double pheromoneIncrement) {
+        
         Arrays.sort(ants);
         int number = (int) Math.ceil(ants.length * topPercentAnts);
+        double maxFitness = 1.0 / ants[0].fitness; 
+
+        System.out.print("Best: ");
         for (int i = 0; i < number; i++) {
+            System.out.print(ants[i].id + " ");
+            double relativeFitness = (1.0 / ants[i].fitness) / maxFitness; 
             for (int j = 0; j < nodesToBeClustered.size(); j++) {
-                globalPheromoneMatrix[j][ants[i].solution[j]] += pheromoneIncrement;
+                globalPheromoneMatrix[j][ants[i].solution[j]] += pheromoneIncrement * relativeFitness;
             }
         }
+        System.out.println();
     }
 
     private static void calculateFitness(ArrayList<WorkflowComputingAppliance> centerNodes, 
@@ -110,9 +123,9 @@ public class CentralisedAntOptimiser {
     }
     
     private static double calculateHeuristic(WorkflowComputingAppliance node, WorkflowComputingAppliance center) {
-        //System.out.println(node.name + " " + center.name);
-        return center.geoLocation.calculateDistance(node.geoLocation);
+        return center.geoLocation.calculateDistance(node.geoLocation) / 1000;
     }
+
 
     public static void printMatrix(String title, double[][] matrix) {
         System.out.println(title);

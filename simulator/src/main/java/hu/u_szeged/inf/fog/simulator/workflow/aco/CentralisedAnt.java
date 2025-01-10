@@ -1,14 +1,22 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+
 /**
  * An agent to build a solution.
  */
 public class CentralisedAnt implements Comparable<CentralisedAnt> {
-
+    
+    int id;
+    
     int[] solution;
     
     double fitness;
     
+    public CentralisedAnt(int id) {
+        this.id = id;
+    }
+
     @Override
     public int compareTo(CentralisedAnt other) {
         if (this.fitness < other.fitness) {
@@ -21,11 +29,13 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
     }
 
     public void generateSolution(double[][] pheromoneMatrix, int numberOfNodes, double probability) {
-        int[] solution = new int[numberOfNodes];
+        int[] localSolution = new int[numberOfNodes];
+        
         double[] randomSolution = new double[numberOfNodes];
         for (int i = 0; i < numberOfNodes; i++) {
-            randomSolution[i] = Math.random();
+            randomSolution[i] = SeedSyncer.centralRnd.nextDouble();
         }
+        
         int maxIndex = 0;
         for (int i = 0; i < numberOfNodes; i++) {
             if (randomSolution[i] < probability) {
@@ -38,9 +48,11 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
                     }
                 }
             } else {
+                maxIndex = (int) (SeedSyncer.centralRnd.nextInt(pheromoneMatrix[i].length));
+                /*
                 double sum = 0;
                
-                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
+                for (int j = 0; j < ; j++) {
                     sum += pheromoneMatrix[i][j];
                 }
 
@@ -56,10 +68,11 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
                         break;  
                     }
                 }
+                */
             }
-            solution[i] = maxIndex;
+            localSolution[i] = maxIndex;
         }
         //System.out.println(Arrays.toString(solution));
-        this.solution = solution;
+        this.solution = localSolution;
     }
 }

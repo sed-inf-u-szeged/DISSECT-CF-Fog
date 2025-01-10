@@ -37,6 +37,7 @@ public class Acoc {
     public ArrayList<LinkedHashMap<WorkflowComputingAppliance, Instance>> runAcoc(
             LinkedHashMap<WorkflowComputingAppliance, Instance> workflowArchitecture,
                         ArrayList<Actuator> actuatorArchitecutre) throws IOException {
+        
         numberOfNodes = workflowArchitecture.size();
         for (Map.Entry<WorkflowComputingAppliance, Instance> entry : workflowArchitecture.entrySet()) {
             Ant ant = new Ant(numberOfNodes, entry.getKey(), entry.getValue());
