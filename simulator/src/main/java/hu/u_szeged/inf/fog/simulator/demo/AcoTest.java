@@ -7,8 +7,9 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.DistributedAntOptimiser;
 
-public class CentralisedAcoTest {
+public class AcoTest {
 
     public static void main(String[] args) throws Exception {
 
@@ -37,7 +38,10 @@ public class CentralisedAcoTest {
         WorkflowComputingAppliance fog19 = new WorkflowComputingAppliance(cloudfile, "fog19", new GeoLocation(55.9533, -3.1883), 0); 
         WorkflowComputingAppliance fog20 = new WorkflowComputingAppliance(cloudfile, "fog20", new GeoLocation(51.1657, 10.4515), 0); 
 
-
+        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments;
+        
+        // Centralised approach
+        /*
         ArrayList<WorkflowComputingAppliance> centerNodes = new ArrayList<WorkflowComputingAppliance>();
         centerNodes.add(fog4);
         centerNodes.add(fog13);
@@ -62,12 +66,15 @@ public class CentralisedAcoTest {
         nodesToBeClustered.add(fog17);
         nodesToBeClustered.add(fog18);
         nodesToBeClustered.add(fog20);
+
+        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 200, 10, 0.75, 0.75, 0.25, 0.15);
+        */
         
-        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment;
+        // Decentralised approach
+        System.out.println(WorkflowComputingAppliance.allComputingAppliances.size());
         
-        clusterAssignment = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 200, 10, 0.75, 0.75, 0.25, 0.15);
-        
-        CentralisedAntOptimiser.printClusterAssignments(clusterAssignment);
-        MapVisualiser.clusterMapGenerator(clusterAssignment, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
+        clusterAssignments = DistributedAntOptimiser.runOptimiser(WorkflowComputingAppliance.allComputingAppliances, 10, 10, 0.75, 0.15);
+        CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
+        MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
     }
 }
