@@ -6,6 +6,7 @@ import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 
 public class DistributedAntOptimiser {
     
@@ -46,9 +47,7 @@ public class DistributedAntOptimiser {
             CentralisedAntOptimiser.printMatrix("", globalPheromoneMatrix);
         }
         
-        int[] res = assignClusters(globalPheromoneMatrix);
-        System.out.println(Arrays.toString(res));
-        return createClusters(res);
+        return createClusters(globalPheromoneMatrix);
     }
     
     private static void evaporatePheromones(double[] globalPheromoneMatrix, double evaporationRate) {
@@ -84,29 +83,58 @@ public class DistributedAntOptimiser {
         return clusterAssignments;
     }
     
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> createClusters(int[] resultVector) {
+    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> createClusters(double[][] globalPheromoneMatrix) {
+        int[] resultVector = assignClusters(globalPheromoneMatrix);
+
+        System.out.println(Arrays.toString(resultVector));
+
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters = new HashMap<>();
         boolean[] visited = new boolean[resultVector.length]; 
 
         for (int i = 0; i < resultVector.length; i++) {
-            if (!visited[i]) {
+            if (!visited[i]) { // ha még nincs cluster-ben
+                
                 ArrayList<WorkflowComputingAppliance> cluster = new ArrayList<>();
                 int currentNode = i;
 
-                while (!visited[currentNode]) {
-                    visited[currentNode] = true;
+                while (!visited[currentNode]) { // amig nem találunk egy klaszerben lévőt
+                    visited[currentNode] = true; // az aktuálisat tegyük látogatottá
 
                     if (currentNode != i) {
                         cluster.add((WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(currentNode));
                     }
                     currentNode = resultVector[currentNode];
                 }
-
-                WorkflowComputingAppliance firstNode = (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i);
-                clusters.put(firstNode, cluster);
+                if (cluster.isEmpty()) {
+                    addToCluster(clusters, 
+                            (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i),
+                               (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(resultVector[i]));
+                    System.out.println("AAAAAAAAAAAAAAAAAAAAAA " + ComputingAppliance.allComputingAppliances.get(i).name  + " "
+                            + resultVector[i] + " " + ComputingAppliance.allComputingAppliances.get(resultVector[i]).name);
+                } else { 
+                    WorkflowComputingAppliance firstNode = (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i);
+                    clusters.put(firstNode, cluster);
+                }
+                
+                
             }
         }
 
+
         return clusters;
+    }
+    
+    public static void addToCluster(HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters, 
+            WorkflowComputingAppliance solo, WorkflowComputingAppliance referred) {
+        if (clusters.containsKey(referred)) {
+            clusters.get(referred).add(solo);
+        } else {
+            for (ArrayList<WorkflowComputingAppliance> list : clusters.values()) {
+                if (list.contains(referred)) {
+                    list.add(solo);
+                    break;
+                }
+            }
+        }
     }
 }

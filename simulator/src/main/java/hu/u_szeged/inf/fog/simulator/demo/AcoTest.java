@@ -29,7 +29,7 @@ public class AcoTest {
         WorkflowComputingAppliance fog10 = new WorkflowComputingAppliance(cloudfile, "fog10", new GeoLocation(50.8503, 4.3517), 0);  
         WorkflowComputingAppliance fog11 = new WorkflowComputingAppliance(cloudfile, "fog11", new GeoLocation(46.7762, 23.6213), 0);  
         WorkflowComputingAppliance fog12 = new WorkflowComputingAppliance(cloudfile, "fog12", new GeoLocation(48.1351, 11.5820), 0);  
-        WorkflowComputingAppliance fog13 = new WorkflowComputingAppliance(cloudfile, "fog13", new GeoLocation(55.7558, 37.6173), 0);  
+        WorkflowComputingAppliance fog13 = new WorkflowComputingAppliance(cloudfile, "fog13", new GeoLocation(53.9076, 27.5754), 0);  
         WorkflowComputingAppliance fog14 = new WorkflowComputingAppliance(cloudfile, "fog14", new GeoLocation(60.1695, 24.9354), 0); 
         WorkflowComputingAppliance fog15 = new WorkflowComputingAppliance(cloudfile, "fog15", new GeoLocation(39.9334, 32.8597), 0); 
         WorkflowComputingAppliance fog16 = new WorkflowComputingAppliance(cloudfile, "fog16", new GeoLocation(40.4168, -3.7038), 0);  
