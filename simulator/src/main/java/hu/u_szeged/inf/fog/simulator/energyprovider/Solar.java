@@ -27,10 +27,8 @@ public class Solar extends EnergySource{
         return output * panels * Multiplier(this.getTime(time)) * ( (float) frequency / 3_600_000);
     }
 
-
-
     //TODO do something more refined
-
+    //TODO simulate random days with less sun
     float Multiplier(int time){
         switch (time) {
             case 0:

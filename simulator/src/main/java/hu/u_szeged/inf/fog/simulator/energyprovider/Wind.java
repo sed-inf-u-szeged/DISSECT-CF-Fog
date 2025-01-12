@@ -14,6 +14,7 @@ public class Wind extends EnergySource{
     }
 
     //TODO summer-winter simulation
+    //TODO better predicted output instead of full random
     @Override
     float Production(long time, long frequency) {
         Random rand = new Random();
