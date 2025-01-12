@@ -109,8 +109,6 @@ public class DistributedAntOptimiser {
                     addToCluster(clusters, 
                             (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i),
                                (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(resultVector[i]));
-                    System.out.println("AAAAAAAAAAAAAAAAAAAAAA " + ComputingAppliance.allComputingAppliances.get(i).name  + " "
-                            + resultVector[i] + " " + ComputingAppliance.allComputingAppliances.get(resultVector[i]).name);
                 } else { 
                     WorkflowComputingAppliance firstNode = (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i);
                     clusters.put(firstNode, cluster);

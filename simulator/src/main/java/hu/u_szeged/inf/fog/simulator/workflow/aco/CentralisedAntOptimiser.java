@@ -154,4 +154,43 @@ public class CentralisedAntOptimiser {
             System.out.println(); 
         }
     }
+    
+    public static WorkflowComputingAppliance calculateAveragePairwiseDistance(
+            HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters) {
+        
+        WorkflowComputingAppliance clusterWithSmallestAvg = null;
+        double smallestAvgDistance = Double.MAX_VALUE;
+        
+        for (HashMap.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry : clusters.entrySet()) {
+            WorkflowComputingAppliance key = entry.getKey();
+            ArrayList<WorkflowComputingAppliance> value = entry.getValue();
+
+            ArrayList<WorkflowComputingAppliance> mergedList = new ArrayList<>();
+            mergedList.add(key);
+            mergedList.addAll(value);
+
+            double totalDistance = 0.0;
+            int totalPairs = 0;
+
+            for (int i = 0; i < mergedList.size(); i++) {
+                for (int j = i + 1; j < mergedList.size(); j++) {
+                    WorkflowComputingAppliance node1 = mergedList.get(i);
+                    WorkflowComputingAppliance node2 = mergedList.get(j);
+                    totalDistance += calculateHeuristic(node1, node2);
+                    totalPairs++; 
+                }
+            }
+
+            double avgDistance = totalPairs == 0 ? 0.0 : totalDistance / totalPairs;
+            
+            if (avgDistance < smallestAvgDistance) {
+                smallestAvgDistance = avgDistance;
+                clusterWithSmallestAvg = key;
+            }
+
+            System.out.println("Cluster " + key.name + " Average Pairwise Distance: " + avgDistance + " (km)");
+        }
+        System.out.println(clusterWithSmallestAvg.name);
+        return clusterWithSmallestAvg;
+    }
 }

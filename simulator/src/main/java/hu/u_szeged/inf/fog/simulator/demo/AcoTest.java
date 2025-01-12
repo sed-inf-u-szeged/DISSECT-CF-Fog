@@ -43,23 +43,24 @@ public class AcoTest {
         // Centralised approach
         /*
         ArrayList<WorkflowComputingAppliance> centerNodes = new ArrayList<WorkflowComputingAppliance>();
-        centerNodes.add(fog4);
+
+        centerNodes.add(fog5);
+        centerNodes.add(fog12);
         centerNodes.add(fog13);
         centerNodes.add(fog19);
-        
+       
         ArrayList<WorkflowComputingAppliance> nodesToBeClustered = new ArrayList<WorkflowComputingAppliance>();
         
         nodesToBeClustered.add(fog1);
         nodesToBeClustered.add(fog2);
         nodesToBeClustered.add(fog3);
-        nodesToBeClustered.add(fog5);
+        nodesToBeClustered.add(fog4);
         nodesToBeClustered.add(fog6);
         nodesToBeClustered.add(fog7);
         nodesToBeClustered.add(fog8);
         nodesToBeClustered.add(fog9);
         nodesToBeClustered.add(fog10);
         nodesToBeClustered.add(fog11);
-        nodesToBeClustered.add(fog12);
         nodesToBeClustered.add(fog14);
         nodesToBeClustered.add(fog15);
         nodesToBeClustered.add(fog16);
@@ -67,12 +68,14 @@ public class AcoTest {
         nodesToBeClustered.add(fog18);
         nodesToBeClustered.add(fog20);
 
-        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 200, 10, 0.75, 0.75, 0.25, 0.15);
+        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 50, 50, 0.75, 0.75, 0.25, 0.15);
         */
         
         // Decentralised approach    
         clusterAssignments = DistributedAntOptimiser.runOptimiser(WorkflowComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
+        
         CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
+        CentralisedAntOptimiser.calculateAveragePairwiseDistance(clusterAssignments);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
     }
 }
