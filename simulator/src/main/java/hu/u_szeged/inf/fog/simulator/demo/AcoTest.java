@@ -27,7 +27,7 @@ public class AcoTest {
         WorkflowComputingAppliance fog8 = new WorkflowComputingAppliance(cloudfile, "fog8", new GeoLocation(59.3293, 18.0686), 0);  
         WorkflowComputingAppliance fog9 = new WorkflowComputingAppliance(cloudfile, "fog9", new GeoLocation(48.2082, 16.3738), 0); 
         WorkflowComputingAppliance fog10 = new WorkflowComputingAppliance(cloudfile, "fog10", new GeoLocation(50.8503, 4.3517), 0);  
-        WorkflowComputingAppliance fog11 = new WorkflowComputingAppliance(cloudfile, "fog11", new GeoLocation(51.1657, 10.4515), 0);  
+        WorkflowComputingAppliance fog11 = new WorkflowComputingAppliance(cloudfile, "fog11", new GeoLocation(46.7762, 23.6213), 0);  
         WorkflowComputingAppliance fog12 = new WorkflowComputingAppliance(cloudfile, "fog12", new GeoLocation(48.1351, 11.5820), 0);  
         WorkflowComputingAppliance fog13 = new WorkflowComputingAppliance(cloudfile, "fog13", new GeoLocation(55.7558, 37.6173), 0);  
         WorkflowComputingAppliance fog14 = new WorkflowComputingAppliance(cloudfile, "fog14", new GeoLocation(60.1695, 24.9354), 0); 
@@ -70,10 +70,8 @@ public class AcoTest {
         clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 200, 10, 0.75, 0.75, 0.25, 0.15);
         */
         
-        // Decentralised approach
-        System.out.println(WorkflowComputingAppliance.allComputingAppliances.size());
-        
-        clusterAssignments = DistributedAntOptimiser.runOptimiser(WorkflowComputingAppliance.allComputingAppliances, 10, 10, 0.75, 0.15);
+        // Decentralised approach    
+        clusterAssignments = DistributedAntOptimiser.runOptimiser(WorkflowComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
         CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
     }
