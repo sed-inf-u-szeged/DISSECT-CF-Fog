@@ -39,4 +39,16 @@ public class WorkflowComputingAppliance extends ComputingAppliance {
     public WorkflowComputingAppliance(String file, String name, GeoLocation geoLocation, long range) throws Exception {
         super(file, name, geoLocation, range);
     }
+
+    public static void setDistanceBasedLatency() {
+        for (ComputingAppliance ca1 : ComputingAppliance.allComputingAppliances) {
+            for (ComputingAppliance ca2 : ComputingAppliance.allComputingAppliances) {
+                if (ca1 != ca2) {
+                    int distance = (int) ca1.geoLocation.calculateDistance(ca2.geoLocation) / 10_000;
+                    ca1.iaas.repositories.get(0).addLatencies(ca2.iaas.repositories.get(0).getName(), distance);
+                    ca2.iaas.repositories.get(0).addLatencies(ca1.iaas.repositories.get(0).getName(), distance);
+                }
+            }
+        }
+    }
 }

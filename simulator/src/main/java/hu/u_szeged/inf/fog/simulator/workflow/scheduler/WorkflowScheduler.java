@@ -1,14 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.StateChangeException;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
-import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
@@ -17,11 +9,25 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public abstract class WorkflowScheduler {
+    
+    public static ArrayList<WorkflowScheduler> schedulers = new ArrayList<WorkflowScheduler>();
+    
+    public HashMap<Integer, Integer> vmTaskLogger = new HashMap<Integer, Integer>();
 
-    public static HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture;
+    public ArrayList<WorkflowComputingAppliance> computeArchitecture;
 
-    public static ArrayList<Actuator> actuatorArchitecture;
+    public ArrayList<Actuator> actuatorArchitecture;
+    
+    public ArrayList<WorkflowJob> jobs;
 
+    public Instance instance;
+    
+    public long startTime;
+    
+    public long stopTime;
+
+    public String appName;
+    // 
     WorkflowExecutor workflowExecutor;
 
     public int defaultLatency;
@@ -29,6 +35,8 @@ public abstract class WorkflowScheduler {
     public abstract void schedule(WorkflowJob workflowJob);
 
     public abstract void init();
+    
+    /*
 
     public void jobReAssign(WorkflowJob workflowJob, ComputingAppliance futureAppliance) {
 
@@ -84,7 +92,7 @@ public abstract class WorkflowScheduler {
     }
 
     public void addVm(WorkflowComputingAppliance ca) {
-        Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
+        Instance i = WorkflowScheduler.computeArchitecture.get(ca);
         try {
             ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
         } catch (VMManagementException e) {
@@ -106,5 +114,5 @@ public abstract class WorkflowScheduler {
         }
 
     }
-
+     */
 }

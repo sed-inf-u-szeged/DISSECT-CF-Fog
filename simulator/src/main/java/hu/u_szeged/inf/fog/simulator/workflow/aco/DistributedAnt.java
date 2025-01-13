@@ -3,7 +3,7 @@ package hu.u_szeged.inf.fog.simulator.workflow.aco;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
-public class DistributedAnt  {
+public class DistributedAnt {
     
     int id;
     
@@ -45,5 +45,4 @@ public class DistributedAnt  {
         double u = x / h;
         return (1 / (Math.sqrt(2 * Math.PI) * h)) * Math.exp(-0.5 * Math.pow(u, 2));
     }
-
 }

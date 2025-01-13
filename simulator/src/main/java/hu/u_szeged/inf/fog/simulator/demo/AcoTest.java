@@ -2,18 +2,33 @@ package hu.u_szeged.inf.fog.simulator.demo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
+import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
+import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
+import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
+import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
+import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.DistributedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 public class AcoTest {
 
     public static void main(String[] args) throws Exception {
 
         SeedSyncer.modifySeed(System.currentTimeMillis());
+        
+        SimLogger.setLogging(1, true);
         
         String cloudfile = ScenarioBase.resourcePath+"LPDS_original.xml";
 
@@ -37,6 +52,8 @@ public class AcoTest {
         WorkflowComputingAppliance fog18 = new WorkflowComputingAppliance(cloudfile, "fog18", new GeoLocation(52.3702, 4.8952), 0);  
         WorkflowComputingAppliance fog19 = new WorkflowComputingAppliance(cloudfile, "fog19", new GeoLocation(55.9533, -3.1883), 0); 
         WorkflowComputingAppliance fog20 = new WorkflowComputingAppliance(cloudfile, "fog20", new GeoLocation(51.1657, 10.4515), 0); 
+        
+        WorkflowComputingAppliance.setDistanceBasedLatency();
 
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments;
         
@@ -75,7 +92,28 @@ public class AcoTest {
         clusterAssignments = DistributedAntOptimiser.runOptimiser(WorkflowComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
         
         CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
-        CentralisedAntOptimiser.calculateAveragePairwiseDistance(clusterAssignments);
+        List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiser.sortClustersByAveragePairwiseDistance(clusterAssignments);
+                
+        // Creating the executor engine
+        WorkflowExecutor executor = WorkflowExecutor.getIstance();
+        
+        // Importing and submitting the workflow jobs to a cluster with the corresponding scheduler
+        String workflowFile = ScenarioBase.resourcePath + "/WORKFLOW_examples/IoT_CyberShake_100.xml";
+        
+        VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
+        AlterableResourceConstraints arc = new AlterableResourceConstraints(4, 0.001, 4294967296L);
+        Instance instance = new Instance("instance", va, arc, 0.102 / 60 / 60 / 1000, 1);
+        
+        for (int i = 0; i < clusterList.size(); i++) {
+            Pair<String, ArrayList<WorkflowJob>> jobs = WorkflowJobModel.loadWorkflowXml(workflowFile, "-" + i);
+            executor.submitJobs(new MaxMinScheduler(clusterList.get(i), instance, null, jobs));
+            //break;
+        }
+        
+        Timed.simulateUntilLastEvent();
+        ScenarioBase.logStreamProcessing();
+        WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
+        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
     }
 }

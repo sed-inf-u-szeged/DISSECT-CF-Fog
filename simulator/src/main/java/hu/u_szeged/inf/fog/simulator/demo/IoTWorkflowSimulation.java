@@ -1,5 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.demo;
-
+/*
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -92,3 +92,4 @@ public class IoTWorkflowSimulation {
         return workflowArchitecture;
     }
 }
+*/

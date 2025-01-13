@@ -4,16 +4,15 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 public class DistributedAntOptimiser {
     
     private static double[][] globalPheromoneMatrix;
     
     public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> runOptimiser(
-            ArrayList<ComputingAppliance> allComputingAppliances, int numberOfAnts, int numberOfIteration,double propability, double evaporationRate) {
+            ArrayList<ComputingAppliance> allComputingAppliances, int numberOfAnts, 
+            int numberOfIteration, double propability, double evaporationRate) {
         
         globalPheromoneMatrix = new double[allComputingAppliances.size()][allComputingAppliances.size()];
         for (int i = 0; i < allComputingAppliances.size(); i++) {
@@ -23,14 +22,12 @@ public class DistributedAntOptimiser {
             }
         }
         
-        CentralisedAntOptimiser.printMatrix("Init pheromone: ", globalPheromoneMatrix);
+        //CentralisedAntOptimiser.printMatrix("Init pheromone: ", globalPheromoneMatrix);
  
-
         for (int caNum = 0; caNum < allComputingAppliances.size(); caNum++) {
             
             for (int i = 0; i < numberOfIteration; i++) {
-                System.out.println(allComputingAppliances.get(caNum).name + "-iteration: " + i);
-                
+                // System.out.println(allComputingAppliances.get(caNum).name + "-iteration: " + i);
                 
                 DistributedAnt[] ants = new DistributedAnt[numberOfAnts];
                 for (int j = 0; j < numberOfAnts; j++) {
@@ -44,7 +41,7 @@ public class DistributedAntOptimiser {
                 evaporatePheromones(globalPheromoneMatrix[caNum], evaporationRate);
              
             }
-            CentralisedAntOptimiser.printMatrix("", globalPheromoneMatrix);
+            // CentralisedAntOptimiser.printMatrix("", globalPheromoneMatrix);
         }
         
         return createClusters(globalPheromoneMatrix);
@@ -83,22 +80,24 @@ public class DistributedAntOptimiser {
         return clusterAssignments;
     }
     
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> createClusters(double[][] globalPheromoneMatrix) {
+    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> 
+        createClusters(double[][] globalPheromoneMatrix) {
+        
         int[] resultVector = assignClusters(globalPheromoneMatrix);
 
-        System.out.println(Arrays.toString(resultVector));
+        // System.out.println(Arrays.toString(resultVector));
 
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters = new HashMap<>();
         boolean[] visited = new boolean[resultVector.length]; 
 
         for (int i = 0; i < resultVector.length; i++) {
-            if (!visited[i]) { // ha még nincs cluster-ben
+            if (!visited[i]) { 
                 
                 ArrayList<WorkflowComputingAppliance> cluster = new ArrayList<>();
                 int currentNode = i;
 
-                while (!visited[currentNode]) { // amig nem találunk egy klaszerben lévőt
-                    visited[currentNode] = true; // az aktuálisat tegyük látogatottá
+                while (!visited[currentNode]) { 
+                    visited[currentNode] = true; 
 
                     if (currentNode != i) {
                         cluster.add((WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(currentNode));
@@ -113,11 +112,8 @@ public class DistributedAntOptimiser {
                     WorkflowComputingAppliance firstNode = (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i);
                     clusters.put(firstNode, cluster);
                 }
-                
-                
             }
         }
-
 
         return clusters;
     }

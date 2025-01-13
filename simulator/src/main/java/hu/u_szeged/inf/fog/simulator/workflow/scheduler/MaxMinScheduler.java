@@ -1,72 +1,66 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.PriorityQueue;
-
-
+import org.apache.commons.lang3.tuple.Pair;
 
 public class MaxMinScheduler extends WorkflowScheduler {
-    int cloudIndex;
+    
+    static class MaxMinComperator implements Comparator<WorkflowJob> {
 
-    public MaxMinScheduler(HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture) {
-        WorkflowScheduler.workflowArchitecture = workflowArchitecture;
-    }
-
-    @Override
-    public void schedule(WorkflowJob workflowJob) {
-
-        if (workflowJob.ca == null) {
-            workflowJob.ca = (WorkflowComputingAppliance) ComputingAppliance
-                    .getAllComputingAppliances().get(cloudIndex);
-            if (cloudIndex == WorkflowScheduler.workflowArchitecture.keySet().size() - 1) {
-                cloudIndex = 0;
-            } else {
-                cloudIndex++;
-            }
-        }
-        if (workflowJob.inputs.get(0).amount == 0) {
-            workflowJob.ca.workflowQueue.add(workflowJob);
-        }
-
-        if (Timed.getFireCount() > 0) {
-            this.jobReAssign(workflowJob, ComputingAppliance.getAllComputingAppliances().get(0));
-
-            if (workflowJob.ca.workflowVms.size() < 2) {
-                addVm(workflowJob.ca);
-            }
+        @Override
+        public int compare(WorkflowJob o1, WorkflowJob o2) {
+            return (int) Math.round(o2.runtime - o1.runtime);
         }
     }
 
+    public MaxMinScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance, 
+            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs) {
+        this.computeArchitecture = computeArchitecture;
+        this.instance = instance;
+        this.jobs = jobs.getRight();
+        this.appName = jobs.getLeft();
+        WorkflowScheduler.schedulers.add(this);
+    }
+    
     @Override
     public void init() {
-        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
-            Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
-            ca.iaas.repositories.get(0).registerObject(i.va);
+        for (WorkflowComputingAppliance ca : this.computeArchitecture) {
+            ca.workflowQueue = new PriorityQueue<WorkflowJob>(new MaxMinComperator());
+            ca.iaas.repositories.get(0).registerObject(this.instance.va);
             try {
-                ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
+                ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
             } catch (VMManagementException e) {
                 e.printStackTrace();
             }
         }
-
-        for (WorkflowComputingAppliance ca : WorkflowScheduler.workflowArchitecture.keySet()) {
-            ca.workflowQueue = new PriorityQueue<WorkflowJob>(new MaxMinComperator());
+        
+        int nodeIndex = 0;
+        for (WorkflowJob workflowJob : this.jobs) {
+            workflowJob.ca = this.computeArchitecture.get(nodeIndex);
+            if (nodeIndex == this.computeArchitecture.size() - 1) {
+                nodeIndex = 0;
+            } else {
+                nodeIndex++;
+            }
+            
+            if (workflowJob.inputs.get(0).amount == 0) {
+                workflowJob.ca.workflowQueue.add(workflowJob);
+            }
         }
     }
 
-}
-
-class MaxMinComperator implements Comparator<WorkflowJob> {
-
     @Override
-    public int compare(WorkflowJob o1, WorkflowJob o2) {
-        return (int) Math.round(o2.runtime - o1.runtime);
+    public void schedule(WorkflowJob workflowJob) {
+        if (workflowJob.inputs.get(0).amount == 0) {
+            workflowJob.ca.workflowQueue.add(workflowJob);
+        }
     }
+    
 }

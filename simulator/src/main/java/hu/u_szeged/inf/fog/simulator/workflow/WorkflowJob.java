@@ -1,9 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.workflow;
 
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
 import java.util.ArrayList;
 
 public class WorkflowJob {
@@ -15,11 +13,11 @@ public class WorkflowJob {
 
     public static int numberOfStartedWorkflowJobs = 0;
 
-    public long fileRecieved;
+    public long bytesRecieved;
 
-    public int fileRecievedByAssigning;
+    //public int fileRecievedByAssigning;
 
-    public ArrayList<StorageObject> filesRecieved;
+    //public ArrayList<StorageObject> filesRecieved;
 
     /**
      * Unique identifier or a job.
@@ -58,7 +56,7 @@ public class WorkflowJob {
 
     @Override
     public String toString() {
-        return "WorkflowJob [id=" + id + ", state=" + state + ", runtime=" + runtime + ", longitude=" + longitude
+        return "WorkflowJob [id=" + id + ", state=" + state + ", ca=" + ca.name +  ", runtime=" + runtime + ", longitude=" + longitude
                 + ", latitude=" + latitude + ", inputs=" + inputs + ", outputs=" + outputs + "]";
     }
 
@@ -71,23 +69,9 @@ public class WorkflowJob {
         this.outputs = outputs;
         this.longitude = longitude;
         this.latitude = latitude;
-        this.fileRecieved = 0;
-        this.filesRecieved = new ArrayList<StorageObject>();
+        this.bytesRecieved = 0;
+        //this.filesRecieved = new ArrayList<StorageObject>();
         WorkflowJob.workflowJobs.add(this);
-    }
-    
-    public WorkflowJob(String id, double runtime, double longitude, double latitude, State state,
-                       ArrayList<Uses> inputs, ArrayList<Uses> outputs, DecentralizedWorkflowScheduler dws) {
-        this.id = id;
-        this.runtime = runtime;
-        this.state = WorkflowJob.State.SUBMITTED;
-        this.inputs = inputs;
-        this.outputs = outputs;
-        this.longitude = longitude;
-        this.latitude = latitude;
-        this.fileRecieved = 0;
-        this.filesRecieved = new ArrayList<StorageObject>();
-        dws.workflowJobs.add(this);
     }
 
     public static class Uses {
@@ -128,7 +112,5 @@ public class WorkflowJob {
             return "Uses [type=" + type + ", size=" + size + ", runtime=" + runtime + ", activate=" + activate
                     + ", amount=" + amount + ", id=" + id + "]";
         }
-
     }
-
 }

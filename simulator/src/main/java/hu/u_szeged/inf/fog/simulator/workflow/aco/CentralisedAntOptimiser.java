@@ -2,10 +2,14 @@ package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CentralisedAntOptimiser {
 
@@ -155,42 +159,39 @@ public class CentralisedAntOptimiser {
         }
     }
     
-    public static WorkflowComputingAppliance calculateAveragePairwiseDistance(
+    public static List<ArrayList<WorkflowComputingAppliance>> sortClustersByAveragePairwiseDistance(
             HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters) {
-        
-        WorkflowComputingAppliance clusterWithSmallestAvg = null;
-        double smallestAvgDistance = Double.MAX_VALUE;
-        
-        for (HashMap.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry : clusters.entrySet()) {
-            WorkflowComputingAppliance key = entry.getKey();
-            ArrayList<WorkflowComputingAppliance> value = entry.getValue();
 
-            ArrayList<WorkflowComputingAppliance> mergedList = new ArrayList<>();
-            mergedList.add(key);
-            mergedList.addAll(value);
+        return clusters.entrySet().stream()
+            .map(entry -> {
+                WorkflowComputingAppliance key = entry.getKey();
+                ArrayList<WorkflowComputingAppliance> value = entry.getValue();
 
-            double totalDistance = 0.0;
-            int totalPairs = 0;
+                ArrayList<WorkflowComputingAppliance> mergedList = new ArrayList<>();
+                mergedList.add(key);
+                mergedList.addAll(value);
 
-            for (int i = 0; i < mergedList.size(); i++) {
-                for (int j = i + 1; j < mergedList.size(); j++) {
-                    WorkflowComputingAppliance node1 = mergedList.get(i);
-                    WorkflowComputingAppliance node2 = mergedList.get(j);
-                    totalDistance += calculateHeuristic(node1, node2);
-                    totalPairs++; 
+                double totalDistance = 0.0;
+                int totalPairs = 0;
+
+                for (int i = 0; i < mergedList.size(); i++) {
+                    for (int j = i + 1; j < mergedList.size(); j++) {
+                        WorkflowComputingAppliance node1 = mergedList.get(i);
+                        WorkflowComputingAppliance node2 = mergedList.get(j);
+                        totalDistance += calculateHeuristic(node1, node2);
+                        totalPairs++;
+                    }
                 }
-            }
 
-            double avgDistance = totalPairs == 0 ? 0.0 : totalDistance / totalPairs;
-            
-            if (avgDistance < smallestAvgDistance) {
-                smallestAvgDistance = avgDistance;
-                clusterWithSmallestAvg = key;
-            }
+                double avgDistance = totalPairs == 0 ? 0.0 : totalDistance / totalPairs;
+                
+                System.out.println("Cluster " + key.name + " Average Pairwise Distance: " + avgDistance + " (km)");
 
-            System.out.println("Cluster " + key.name + " Average Pairwise Distance: " + avgDistance + " (km)");
-        }
-        System.out.println(clusterWithSmallestAvg.name);
-        return clusterWithSmallestAvg;
+                return new AbstractMap.SimpleEntry<>(mergedList, avgDistance);
+            })
+            .sorted(Comparator.comparingDouble(Map.Entry::getValue)) 
+            .map(Map.Entry::getKey) 
+            .collect(Collectors.toList());
     }
+
 }
