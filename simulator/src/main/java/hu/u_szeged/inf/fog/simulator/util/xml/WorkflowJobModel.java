@@ -76,6 +76,7 @@ public class WorkflowJobModel {
         String appName = job.name + name;
         ArrayList<WorkflowJob> jobs = new ArrayList<WorkflowJob>();
         System.out.print("Loading " + appName + " workflow..");
+        int jobCount = 0;
         for (int repeatIndex = 0; repeatIndex < job.repeat; repeatIndex++) {
 
             for (int jobIndex = 0; jobIndex < job.jobList.size(); jobIndex++) {
@@ -98,10 +99,11 @@ public class WorkflowJobModel {
                 }
                 WorkflowJob wj = new WorkflowJob(repeatIndex + "_" + wjModel.id, wjModel.runtime, wjModel.longitude, wjModel.latitude,
                         WorkflowJob.State.SUBMITTED, inputs, outputs);
+                jobCount++;
                 jobs.add(wj);
             }
         }
-        System.out.println(WorkflowJob.workflowJobs.size() + " jobs loaded.");
+        System.out.println(jobCount + " jobs loaded.");
         return Pair.of(appName, jobs);
     }
     

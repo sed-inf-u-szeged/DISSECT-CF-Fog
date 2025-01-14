@@ -27,6 +27,10 @@ public abstract class WorkflowScheduler {
     public long stopTime;
 
     public String appName;
+    
+    public long timeOnNetwork;
+
+    public long bytesOnNetwork;
     // 
     WorkflowExecutor workflowExecutor;
 

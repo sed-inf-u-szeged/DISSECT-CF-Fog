@@ -52,7 +52,7 @@ public class ComputingAppliance {
      * physical machines and scheduling VM requests.
      */
     public IaaSService iaas;
-
+    
     /**
      * The covered physical neighborhood of the node from where it accepts IoT data (in km).
      */
@@ -87,11 +87,6 @@ public class ComputingAppliance {
     public AppVm broker;
 
     /**
-     * The energy consumed by this physical resource.
-     */
-    public double energyConsumption;
-
-    /**
      * A helper variable to store every important event of the runtime of 
      * this computing appliance.
      */
@@ -123,7 +118,6 @@ public class ComputingAppliance {
         this.range = range <= 0 ? Integer.MAX_VALUE : range;
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
-        this.readEnergy(); // TODO: use the global EnergyDataMeter class instead
     }
     
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
@@ -164,52 +158,6 @@ public class ComputingAppliance {
                 ca.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
             }
         }
-    }
-    
-    /**
-     * Reads and monitors energy consumption of the computing appliance.
-     * Energy consumption data is collected periodically using an {@code IaaSEnergyMeter}.
-     * The time period is set to 1 minute.
-     */
-    public void readEnergy() {
-        final IaaSEnergyMeter iaasEnergyMeter = new IaaSEnergyMeter(this.iaas);
-        
-        /**
-         * A helper class which is able to periodically log the energy consumption.
-         */
-        class EnergyDataCollector extends Timed {
-            
-            /**
-             * Starts the data collection process.
-             */
-            public void start() {
-                subscribe(1 * 60 * 1000);
-            }
-
-            /**
-             * Stops the data collection process.
-             */
-            public void stop() {
-                unsubscribe();
-            }
-
-            /**
-             * It updates the energy consumption info in every minute until the IoT applications
-             * are running.
-             */
-            @Override
-            public void tick(final long fires) {
-                energyConsumption = iaasEnergyMeter.getTotalConsumption();
-                if (checkApplicationStatus() /* TODO: && Timed.getFireCount() > Device.longestRunningDevice*/) {
-                    this.stop();
-                    iaasEnergyMeter.stopMeter();
-                }
-            }
-        }
-        
-        final EnergyDataCollector dc = new EnergyDataCollector();
-        iaasEnergyMeter.startMeter(1 * 60 * 1000, true);
-        dc.start();
     }
 
     /**

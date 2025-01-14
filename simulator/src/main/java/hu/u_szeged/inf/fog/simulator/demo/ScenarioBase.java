@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.provider.AwsProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
 import hu.u_szeged.inf.fog.simulator.provider.IbmProvider;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.result.ActuatorEvents;
 import hu.u_szeged.inf.fog.simulator.util.result.Architecture;
@@ -22,6 +23,7 @@ import hu.u_szeged.inf.fog.simulator.util.result.Cost;
 import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
 import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
 import java.math.BigDecimal;
@@ -47,7 +49,7 @@ public class ScenarioBase {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         Date date = new Date(System.currentTimeMillis());
         String path = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
-                .append("sim_res").append(File.separator) + formatter.format(date).toString();
+                .append("sim_res").append(File.separator) + formatter.format(date);
         resultDirectory = path;
         new File(resultDirectory).mkdirs();
     }
@@ -68,9 +70,9 @@ public class ScenarioBase {
 
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes("Computing Appliance: " + ca.name);
-            SimLogger.logRes("\tEnergy consumption (kWh): " + ca.energyConsumption / 1000 / 3_600_000);
+            //SimLogger.logRes("\tEnergy consumption (kWh): " + ca.energyConsumption / 1000 / 3_600_000);
             SimLogger.logRes("\tBroker: " + ca.broker);
-            totalEnergyConsumption += ca.energyConsumption;
+            //totalEnergyConsumption += ca.energyConsumption;
 
             for (PhysicalMachine pm : ca.iaas.machines) {
                 if (pm.localDisk.getMaxStorageCapacity() - pm.localDisk.getFreeStorageCapacity() != 0) {
@@ -202,6 +204,7 @@ public class ScenarioBase {
             
             double cost = 0.0;
             long vmTime = 0;
+            double energyConsumption = 0.0;
             for(WorkflowComputingAppliance ca : scheduler.computeArchitecture) {
                 SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
                 for (VirtualMachine vm : ca.workflowVms) {
@@ -209,9 +212,15 @@ public class ScenarioBase {
                 }
                 cost += scheduler.instance.calculateCloudCost(ca.vmTime);
                 vmTime += ca.vmTime;
+                energyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
             }
 
             SimLogger.logRes("Cost: " + cost + " VM time: " + vmTime + " Price: " + scheduler.instance.pricePerTick);
+            SimLogger.logRes("Total energy (kWh): " + energyConsumption / 1000 / 3_600_000);
+            SimLogger.logRes("Total time on network (seconds): "
+                    + TimeUnit.SECONDS.convert(scheduler.timeOnNetwork, TimeUnit.MILLISECONDS));
+            SimLogger.logRes("Total bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
+            SimLogger.logRes("Average Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
             
             int completed = 0;
             for (WorkflowJob wj : scheduler.jobs) {
@@ -221,7 +230,7 @@ public class ScenarioBase {
             }
             SimLogger.logRes("Completed: " + completed + "/" + scheduler.jobs.size());
             SimLogger.logRes("Execution time: " 
-                    + (scheduler.stopTime - scheduler.startTime) + "ms (~"
+                    + (scheduler.stopTime - scheduler.startTime) + " ms (~"
                     + (scheduler.stopTime - scheduler.startTime) / 1000 / 60 + " min.)");
             
             SimLogger.logRes("");

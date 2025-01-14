@@ -159,6 +159,22 @@ public class CentralisedAntOptimiser {
         }
     }
     
+    public static double calculateAvgPairwiseDistance(ArrayList<WorkflowComputingAppliance> list) {
+        double totalDistance = 0.0;
+        int totalPairs = 0;
+
+        for (int i = 0; i < list.size(); i++) {
+            for (int j = i + 1; j < list.size(); j++) {
+                WorkflowComputingAppliance node1 = list.get(i);
+                WorkflowComputingAppliance node2 = list.get(j);
+                totalDistance += calculateHeuristic(node1, node2);
+                totalPairs++;
+            }
+        }
+
+        return totalPairs == 0 ? 0.0 : totalDistance / totalPairs;
+    }
+    
     public static List<ArrayList<WorkflowComputingAppliance>> sortClustersByAveragePairwiseDistance(
             HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters) {
 
@@ -171,21 +187,7 @@ public class CentralisedAntOptimiser {
                 mergedList.add(key);
                 mergedList.addAll(value);
 
-                double totalDistance = 0.0;
-                int totalPairs = 0;
-
-                for (int i = 0; i < mergedList.size(); i++) {
-                    for (int j = i + 1; j < mergedList.size(); j++) {
-                        WorkflowComputingAppliance node1 = mergedList.get(i);
-                        WorkflowComputingAppliance node2 = mergedList.get(j);
-                        totalDistance += calculateHeuristic(node1, node2);
-                        totalPairs++;
-                    }
-                }
-
-                double avgDistance = totalPairs == 0 ? 0.0 : totalDistance / totalPairs;
-                
-                System.out.println("Cluster " + key.name + " Average Pairwise Distance: " + avgDistance + " (km)");
+                double avgDistance = calculateAvgPairwiseDistance(mergedList);
 
                 return new AbstractMap.SimpleEntry<>(mergedList, avgDistance);
             })

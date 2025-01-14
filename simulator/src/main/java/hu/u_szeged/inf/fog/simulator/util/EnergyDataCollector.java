@@ -27,6 +27,10 @@ public class EnergyDataCollector extends Timed {
     
     IaaSEnergyMeter iaasEnergyMeter;
     
+    IaaSService iaas;
+    
+    PhysicalMachine pm;
+    
     boolean logging;
     
     String name;
@@ -35,6 +39,7 @@ public class EnergyDataCollector extends Timed {
         this.name = name;
         subscribe(freq);
         energyCollectors.add(this);
+        this.iaas = iaas;
         this.logging = logging;
         this.iaasEnergyMeter = new IaaSEnergyMeter(iaas);
         this.iaasEnergyMeter.startMeter(freq, true);
@@ -44,6 +49,7 @@ public class EnergyDataCollector extends Timed {
         this.name = name;
         subscribe(freq);
         energyCollectors.add(this);
+        this.pm = pm;
         this.logging = logging;
         this.pmEnergyMeter = new PhysicalMachineEnergyMeter(pm);
         this.pmEnergyMeter.startMeter(freq, true);
@@ -71,6 +77,24 @@ public class EnergyDataCollector extends Timed {
             readings.computeIfAbsent(this.name, k -> new TreeMap<>()).put(Timed.getFireCount(), energyConsumption);
         }
       
+    }
+    
+    public static EnergyDataCollector getEnergyCollector(IaaSService iaas) {
+        for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+            if (edc.iaas == iaas) {
+                return edc;
+            }
+        }
+        return null;
+    }
+    
+    public static EnergyDataCollector getEnergyCollector(PhysicalMachine pm) {
+        for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+            if (edc.pm == pm) {
+                return edc;
+            }
+        }
+        return null;
     }
     
     public static void writeToFile(String resultDirectory) {

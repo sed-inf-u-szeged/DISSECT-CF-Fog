@@ -7,7 +7,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAda
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
@@ -97,6 +99,10 @@ public class WorkflowExecutor {
                             workflowJob.state = WorkflowJob.State.COMPLETED;
                             if (isAllJobCompleted(workflowScheduler)) {
                                 workflowScheduler.stopTime = Timed.getFireCount();
+                                
+                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
+                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                }
                             }
 
                             if (workflowScheduler.vmTaskLogger.get(vm.hashCode()) == null) {
@@ -140,7 +146,9 @@ public class WorkflowExecutor {
                     if (childWorkflowJob.id.equals(uses.id)) {
                         StorageObject so = new StorageObject(uses.id + "-" + currentJob.id, uses.size, false);
                         currentJob.ca.iaas.repositories.get(0).registerObject(so);
-
+                        
+                        long time = Timed.getFireCount();
+                        
                         System.out.println(currentJob.id + " sends " + uses.size + " bytes to " + childWorkflowJob.id
                                 + " at " + Timed.getFireCount());
                         
@@ -163,6 +171,8 @@ public class WorkflowExecutor {
                                                 childWorkflowJob.underRecieving--;
                                                 childWorkflowJob.inputs.get(0).amount--;
                                                 childWorkflowJob.bytesRecieved += uses.size;
+                                                workflowScheduler.timeOnNetwork += Timed.getFireCount() - time;
+                                                workflowScheduler.bytesOnNetwork += uses.size;
                                                 
                                                 workflowScheduler.schedule(childWorkflowJob);
                                                 execute(workflowScheduler);
