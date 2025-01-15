@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
@@ -61,6 +62,29 @@ public class MaxMinScheduler extends WorkflowScheduler {
         if (workflowJob.inputs.get(0).amount == 0) {
             workflowJob.ca.workflowQueue.add(workflowJob);
         }
+        
+        for (WorkflowComputingAppliance wca : this.computeArchitecture) {
+            int vmCount = 0;
+            int jobCount = 0;
+            for (VirtualMachine vm : wca.iaas.listVMs()) {
+                jobCount += vm.underProcessing.size();
+                vmCount++;
+            }
+            if (jobCount / vmCount > 1) {
+                this.addVm(wca);
+            } else if (countRunningVms(wca) > 1) {
+                this.shutdownVm(wca);
+            }
+        }
     }
     
+    private int countRunningVms(WorkflowComputingAppliance wca) {
+        int count = 0;
+        for (VirtualMachine vm : wca.iaas.listVMs()) {
+            if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
+                count++;
+            }
+        }
+        return count;
+    }
 }

@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.node;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.energy.specialized.IaaSEnergyMeter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
@@ -10,7 +9,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.io.IOException;
@@ -160,16 +161,26 @@ public class ComputingAppliance {
         }
     }
 
-    /**
-     * Returns true if all applications are stopped.
-     */
-    private boolean checkApplicationStatus() {
-        for (Application a : this.applications) {
-            if (a.isSubscribed()) {
-                return false;
+    public static void stopEnergyMetering() {
+        boolean devicesDown = true;
+        boolean applicationsDown = true;
+        
+        for (Device device : Device.allDevices) {
+            if (device.isSubscribed()) {
+                devicesDown = false;
             }
         }
-        return true;
+        for (Application app : Application.allApplications) {
+            if (app.isSubscribed()) {
+                applicationsDown = false;
+            }
+        }
+       
+        if (devicesDown && applicationsDown) {
+            for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+                edc.stop();
+            }
+        }
     }
 
     /**

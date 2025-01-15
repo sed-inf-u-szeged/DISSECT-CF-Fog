@@ -2,18 +2,29 @@ package hu.u_szeged.inf.fog.simulator.workflow;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
+import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.iot.Actuator;
+import hu.u_szeged.inf.fog.simulator.iot.Sensor;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 public class WorkflowExecutor {
     
@@ -45,6 +56,7 @@ public class WorkflowExecutor {
                 if (checkComputingAppliances(workflowScheduler)) {
                     workflowScheduler.startTime = Timed.getFireCount();
                     execute(workflowScheduler);
+                    startSensors(workflowScheduler);
                 } else {
                     checkVmState(workflowScheduler);
                 }
@@ -67,28 +79,56 @@ public class WorkflowExecutor {
     }
 
     public static void execute(WorkflowScheduler workflowScheduler) {
+        if (workflowScheduler.actuatorArchitecture != null) {
+            for (Actuator actuator : workflowScheduler.actuatorArchitecture) {
+                WorkflowJob workflowJob = actuator.actuatorWorkflowQueue.poll();
+                if (workflowJob != null && actuator.isWorking == false) {
+                    workflowJob.state = WorkflowJob.State.STARTED;
+                    actuator.isWorking = true;
+                    long actuatorStartTime = Timed.getFireCount();
+                    new DeferredEvent(actuator.delay) {
+
+                        @Override
+                        protected void eventAction() {
+                            workflowJob.state = WorkflowJob.State.COMPLETED;
+                            if (isAllJobCompleted(workflowScheduler)) {
+                                workflowScheduler.stopTime = Timed.getFireCount();
+                                
+                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
+                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                }
+                            }
+                            actuator.isWorking = false;
+                            actuator.actuatorEventList
+                                    .add(new TimelineEntry(actuatorStartTime, Timed.getFireCount(), workflowJob.id));
+                            execute(workflowScheduler);
+                        }
+                    };
+                } else if (workflowJob != null && actuator.isWorking) {
+                    actuator.actuatorWorkflowQueue.add(workflowJob);
+                }
+            }
+        }
+        
         for (WorkflowComputingAppliance ca : workflowScheduler.computeArchitecture) {
             int size = ca.workflowQueue.size();
             for (int i = 0; i < size; i++) {
                 WorkflowJob workflowJob = ca.workflowQueue.poll();
                 workflowJob.state = WorkflowJob.State.STARTED;                
                 VirtualMachine vm = findVm(ca);
-
-                System.out.println(workflowJob.id + " is peeked at " + Timed.getFireCount());
+                long vmStartTime = Timed.getFireCount();
+                double noi;
+                if (workflowJob.runtime == 0) {
+                    noi = workflowJob.bytesRecieved * workflowScheduler.instance.processingRatio;
+                } else {
+                    noi = 1000 * workflowJob.runtime * vm.getResourceAllocation().allocated.getRequiredCPUs()
+                                * vm.getResourceAllocation().allocated.getRequiredProcessingPower();
+                }
+                
+                SimLogger.logRun(workflowScheduler.appName + "-" + workflowJob.id + " started running on:  " + workflowJob.ca.name
+                        + " at: " + Timed.getFireCount());
                 
                 try {
-                    WorkflowJob.numberOfStartedWorkflowJobs++;
-                    long vmStartTime = Timed.getFireCount();
-                    System.out.println(workflowJob.id + " is running at " + Timed.getFireCount() + " on "
-                                + workflowJob.ca.name);
-                    double noi;
-                    if (workflowJob.runtime == 0) {
-                        noi = workflowJob.bytesRecieved * workflowScheduler.instance.processingRatio;
-                    } else {
-                        noi = 1000 * workflowJob.runtime * vm.getResourceAllocation().allocated.getRequiredCPUs()
-                                    * vm.getResourceAllocation().allocated.getRequiredProcessingPower();
-                    }
-
                     vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
 
                         @Override
@@ -104,17 +144,17 @@ public class WorkflowExecutor {
                                     EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
                                 }
                             }
-
-                            if (workflowScheduler.vmTaskLogger.get(vm.hashCode()) == null) {
-                                workflowScheduler.vmTaskLogger.put(vm.hashCode(), 1);
+                            String id = workflowJob.ca.name + "-" + Integer.toString(vm.hashCode());
+                            if (workflowScheduler.vmTaskLogger.get(id) == null) {
+                                workflowScheduler.vmTaskLogger.put(id, 1);
                             } else {
-                                workflowScheduler.vmTaskLogger.put(vm.hashCode(), workflowScheduler.vmTaskLogger.get(vm.hashCode()) + 1);
+                                workflowScheduler.vmTaskLogger.put(id, workflowScheduler.vmTaskLogger.get(id) + 1);
                             }
                                 
                             sendFileToChildren(workflowScheduler, workflowJob);
-                                
-                            System.out.println(workflowJob.id + " is finished at " + Timed.getFireCount() + " on "
-                                            + workflowJob.ca.name);
+                            
+                            SimLogger.logRun(workflowScheduler.appName + "-" + workflowJob.id + " finished on: " + workflowJob.ca.name 
+                                + " at: " + Timed.getFireCount());
                             }
                         });
                 } catch (NetworkException e) {
@@ -140,7 +180,10 @@ public class WorkflowExecutor {
     private static void sendFileToChildren(WorkflowScheduler workflowScheduler, WorkflowJob currentJob) {
         for (Uses uses : currentJob.outputs) {
             if (uses.type.equals(Uses.Type.ACTUATE)) {
-                // TODO: refactor
+                WorkflowJob wj = findWorkflowJob(uses.id);
+                wj.inputs.get(0).amount--;        
+                workflowScheduler.schedule(wj);
+                execute(workflowScheduler);
             } else if (uses.type.equals(Uses.Type.DATA)) {
                 for (WorkflowJob childWorkflowJob : workflowScheduler.jobs) {
                     if (childWorkflowJob.id.equals(uses.id)) {
@@ -149,8 +192,8 @@ public class WorkflowExecutor {
                         
                         long time = Timed.getFireCount();
                         
-                        System.out.println(currentJob.id + " sends " + uses.size + " bytes to " + childWorkflowJob.id
-                                + " at " + Timed.getFireCount());
+                        SimLogger.logRun(workflowScheduler.appName + "-" + currentJob.id + " sent " + uses.size + " bytes to: " 
+                                + childWorkflowJob.id + " at: " + Timed.getFireCount());
                         
                         if (childWorkflowJob.ca == currentJob.ca) {
                             childWorkflowJob.inputs.get(0).amount--;
@@ -158,8 +201,6 @@ public class WorkflowExecutor {
                             
                             workflowScheduler.schedule(childWorkflowJob);
                             execute(workflowScheduler);
-                            
-                            System.out.println(childWorkflowJob.id + " amount: " + childWorkflowJob.inputs.get(0).amount);
                         } else {
                             try {
                                 childWorkflowJob.underRecieving++;
@@ -176,9 +217,6 @@ public class WorkflowExecutor {
                                                 
                                                 workflowScheduler.schedule(childWorkflowJob);
                                                 execute(workflowScheduler);
-                                                
-                                                System.out.println(childWorkflowJob.id + " amount: "
-                                                        + childWorkflowJob.inputs.get(0).amount);
                                             }
                                         });
                             } catch (NetworkException e) {
@@ -201,51 +239,11 @@ public class WorkflowExecutor {
         return true;
     }
     
-    /*
-    public static HashMap<WorkflowJob, Integer> actuatorReassigns = new HashMap<WorkflowJob, Integer>();
-
-    public static HashMap<WorkflowJob, Integer> jobReassigns = new HashMap<WorkflowJob, Integer>();
-
-    public static void execute() {
-        if (WorkflowScheduler.actuatorArchitecture != null) {
-            for (Actuator a : WorkflowScheduler.actuatorArchitecture) {
-                WorkflowJob workflowJob = a.actuatorWorkflowQueue.poll();
-                if (workflowJob != null && a.isWorking == false) {
-                    workflowJob.state = WorkflowJob.State.STARTED;
-                    a.isWorking = true;
-                    long actuatorStartTime = Timed.getFireCount();
-                    new DeferredEvent(a.delay) {
-
-                        @Override
-                        protected void eventAction() {
-                            workflowJob.state = WorkflowJob.State.COMPLETED;
-                            a.isWorking = false;
-                            a.actuatorEventList
-                                    .add(new TimelineEntry(actuatorStartTime, Timed.getFireCount(), workflowJob.id));
-                            execute();
-                        }
-                    };
-                } else if (workflowJob != null && a.isWorking) {
-                    a.actuatorWorkflowQueue.add(workflowJob);
-                }
-            }
-        }
-    }
-
-    private static WorkflowJob findWorkflowJob(String id) {
-        for (WorkflowJob workflowJob : WorkflowJob.workflowJobs) {
-            if (workflowJob.id.equals(id)) {
-                return workflowJob;
-            }
-        }
-        return null;
-    }
-
-    private void startSensors() {
-        for (WorkflowJob workflowJob : WorkflowJob.workflowJobs) {
+    private static void startSensors(WorkflowScheduler workflowScheduler) {
+        for (WorkflowJob workflowJob : workflowScheduler.jobs) {
             if (workflowJob.id.contains("sensor")) {
 
-                HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+                HashMap<String, Integer> latencyMap = new HashMap<>();
                 EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = null;
 
                 transitions = PowerTransitionGenerator.generateTransitions(0, 0, 0, 0, 0);
@@ -254,31 +252,30 @@ public class WorkflowExecutor {
                 final Map<String, PowerState> nwTransitions = transitions
                         .get(PowerTransitionGenerator.PowerStateKind.network);
 
-                // TODO: refactor!
-                Repository repo = new Repository(1024, "repo" + workflowJob.id, 1024, 1024, 1024, latencyMap,
+                Repository repo = new Repository(1024, "repo-" + workflowJob.id, 1024, 1024, 1024, latencyMap,
                         stTransitions, nwTransitions);
                 try {
                     repo.setState(NetworkNode.State.RUNNING);
                 } catch (NetworkException e1) {
                     e1.printStackTrace();
                 }
+                
                 for (Uses uses : workflowJob.outputs) {
                     workflowJob.state = WorkflowJob.State.STARTED;
+                    
                     new DeferredEvent(uses.activate) {
 
                         @Override
                         protected void eventAction() {
                             StorageObject so = new StorageObject(workflowJob.id + "_" + uses.id, uses.size, false);
-
                             repo.registerObject(so);
                             WorkflowJob childWorkflowJob = findWorkflowJob(uses.id);
-                            GeoLocation gl = new GeoLocation(workflowJob.latitude, workflowJob.longitude);
-                            int finalLatency = (int) (WorkflowExecutor.workflowScheduler.defaultLatency
-                                    + gl.calculateDistance(childWorkflowJob.ca.geoLocation) / 1000);
-
+                            GeoLocation location = new GeoLocation(workflowJob.latitude, workflowJob.longitude);
+                            int finalLatency = (int) (workflowScheduler.defaultLatency
+                                    + location.calculateDistance(childWorkflowJob.ca.geoLocation) / 1000);
                             latencyMap.put(childWorkflowJob.ca.iaas.repositories.get(0).getName(), finalLatency);
+                            
                             try {
-
                                 long sensorStartTime = Timed.getFireCount();
                                 repo.requestContentDelivery(workflowJob.id + "_" + uses.id,
                                         childWorkflowJob.ca.iaas.repositories.get(0), new ConsumptionEventAdapter() {
@@ -289,12 +286,10 @@ public class WorkflowExecutor {
                                                         Timed.getFireCount(), workflowJob.id));
                                                 workflowJob.state = WorkflowJob.State.COMPLETED;
                                                 childWorkflowJob.inputs.get(0).amount--;
-                                                childWorkflowJob.fileRecieved += uses.size;
-                                                childWorkflowJob.filesRecieved.add(so);
-                                                System.out.println(childWorkflowJob.id + " amount: "
-                                                        + childWorkflowJob.inputs.get(0).amount);
-                                                WorkflowExecutor.workflowScheduler.schedule(childWorkflowJob);
-                                                WorkflowExecutor.execute();
+                                                childWorkflowJob.bytesRecieved += uses.size;
+
+                                                workflowScheduler.schedule(childWorkflowJob);
+                                                execute(workflowScheduler);
                                             }
                                         });
                             } catch (NetworkException e) {
@@ -302,10 +297,23 @@ public class WorkflowExecutor {
                             }
                         }
                     };
-
                 }
             }
         }
     }
+    
+    private static WorkflowJob findWorkflowJob(String id) {
+        for (WorkflowJob workflowJob : WorkflowJob.workflowJobs) {
+            if (workflowJob.id.equals(id)) {
+                return workflowJob;
+            }
+        }
+        return null;
+    }
+    
+    /*
+    public static HashMap<WorkflowJob, Integer> actuatorReassigns = new HashMap<WorkflowJob, Integer>();
+
+    public static HashMap<WorkflowJob, Integer> jobReassigns = new HashMap<WorkflowJob, Integer>();
     */
 }

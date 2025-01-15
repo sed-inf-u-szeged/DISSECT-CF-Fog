@@ -24,7 +24,7 @@ import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.DistributedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
-public class AcoTest {
+public class WorkflowSimulation {
 
     public static void main(String[] args) throws Exception {
 
@@ -81,7 +81,7 @@ public class AcoTest {
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
         
         
-        /** --- Single Cluster Approach        
+        /** --- Single Cluster Approach 
         ArrayList<WorkflowComputingAppliance> nodes = new ArrayList<>(List.of(
             node2, node3, node4, node5, node6, node7, node8, node9, node10, 
             node11, node12, node13, node14, node15, node16, node17, node18, node19, node20
@@ -122,12 +122,14 @@ public class AcoTest {
         --- */
         
         
-        /** --- Adaptive Clustering Approach --- */
+        /** --- Adaptive Clustering Approach  --- */
         clusterAssignments = DistributedAntOptimiser.runOptimiser(ComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
+        
         
         // The result of the clustering
         CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
         List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiser.sortClustersByAveragePairwiseDistance(clusterAssignments);
+       
         
         // Creating the executor engine
         WorkflowExecutor executor = WorkflowExecutor.getIstance();

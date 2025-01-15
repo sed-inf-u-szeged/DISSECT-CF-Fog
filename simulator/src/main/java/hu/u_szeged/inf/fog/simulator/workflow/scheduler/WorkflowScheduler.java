@@ -1,18 +1,21 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.StateChangeException;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.TreeMap;
 
 public abstract class WorkflowScheduler {
     
     public static ArrayList<WorkflowScheduler> schedulers = new ArrayList<WorkflowScheduler>();
     
-    public HashMap<Integer, Integer> vmTaskLogger = new HashMap<Integer, Integer>();
+    public TreeMap<String, Integer> vmTaskLogger = new TreeMap<>();
 
     public ArrayList<WorkflowComputingAppliance> computeArchitecture;
 
@@ -31,7 +34,7 @@ public abstract class WorkflowScheduler {
     public long timeOnNetwork;
 
     public long bytesOnNetwork;
-    // 
+
     WorkflowExecutor workflowExecutor;
 
     public int defaultLatency;
@@ -40,8 +43,28 @@ public abstract class WorkflowScheduler {
 
     public abstract void init();
     
-    /*
+    public void addVm(WorkflowComputingAppliance ca) {
+        try {
+            ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
+        } catch (VMManagementException e) {
+            e.printStackTrace();
+        }
+    }
 
+    public void shutdownVm(WorkflowComputingAppliance ca) {
+        for (VirtualMachine vm : ca.iaas.listVMs()) {
+            if (vm.getState().equals(VirtualMachine.State.RUNNING) && vm.underProcessing.isEmpty()) {
+                try {
+                    vm.switchoff(false);
+                } catch (StateChangeException e) {
+                    e.printStackTrace();
+                }
+                break;
+            }
+        }
+    }
+    
+    /*
     public void jobReAssign(WorkflowJob workflowJob, ComputingAppliance futureAppliance) {
 
         if (workflowJob.state.equals(WorkflowJob.State.SUBMITTED) && workflowJob.ca != futureAppliance
@@ -93,30 +116,6 @@ public abstract class WorkflowScheduler {
                         WorkflowExecutor.actuatorReassigns.get(workflowJob) + 1);
             }
         }
-    }
-
-    public void addVm(WorkflowComputingAppliance ca) {
-        Instance i = WorkflowScheduler.computeArchitecture.get(ca);
-        try {
-            ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
-        } catch (VMManagementException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void shutdownVm(ComputingAppliance ca) {
-        for (VirtualMachine vm : ca.iaas.listVMs()) {
-
-            if (!vm.underProcessing.isEmpty()) {
-                try {
-                    vm.switchoff(false);
-                } catch (StateChangeException e) {
-                    e.printStackTrace();
-                }
-            }
-            break;
-        }
-
     }
      */
 }

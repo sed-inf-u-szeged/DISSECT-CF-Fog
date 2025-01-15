@@ -8,6 +8,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayList;
 
@@ -114,6 +115,7 @@ public class SmartDevice extends Device {
                             + "IoT data are still stuck in " + this.localMachine.localDisk.getName() 
                             + "'s local storage (the device's actual position are not covered by any node.)");
                     this.stopMeter();
+                    ComputingAppliance.stopEnergyMetering();
                     SmartDevice.stuckData += calculateStuckData();
                 }     
             }

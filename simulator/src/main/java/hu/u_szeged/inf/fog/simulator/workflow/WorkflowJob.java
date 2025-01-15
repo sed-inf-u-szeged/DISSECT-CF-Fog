@@ -11,8 +11,6 @@ public class WorkflowJob {
      */
     public static ArrayList<WorkflowJob> workflowJobs = new ArrayList<>();
 
-    public static int numberOfStartedWorkflowJobs = 0;
-
     public long bytesRecieved;
 
     //public int fileRecievedByAssigning;
@@ -80,8 +78,6 @@ public class WorkflowJob {
             DATA,
 
             COMPUTE,
-
-            TRIGGER,
 
             ACTUATE
         }

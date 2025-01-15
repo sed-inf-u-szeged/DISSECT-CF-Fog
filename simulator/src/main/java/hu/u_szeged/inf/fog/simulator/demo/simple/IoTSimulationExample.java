@@ -17,6 +17,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
@@ -43,6 +44,9 @@ public class IoTSimulationExample {
         ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 21.3), 0);
         ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(47.6, 17.9), 0);
 
+        new EnergyDataCollector("cloud1", cloud1.iaas, true);
+        new EnergyDataCollector("cloud2", cloud2.iaas, true);
+        
         // applications' settings - a fully loaded task requires 1 minute to be processed
         long appFreq = 60 * 1000; 
         long taskSize = 100;
@@ -93,5 +97,6 @@ public class IoTSimulationExample {
         ScenarioBase.logBatchProcessing(stoptime - starttime);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
     }
 }
