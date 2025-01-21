@@ -1,7 +1,6 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
+package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils;
 
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy.CryptoStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.DistributedLedger;
 
 public class Utils {
 
@@ -16,7 +15,7 @@ public class Utils {
     }
 
     public static long instructionsPoW(DistributedLedger distributedLedger){
-        double hash = distributedLedger.digestStrategy.hash();
+//        double hash = distributedLedger.digestStrategy.hash();
         int difficulty = distributedLedger.getDifficulty();
         //distributedLedger.getDifficulty();
         //need a formula to calculate the number of instructions needed to find the nonce
@@ -30,4 +29,5 @@ public class Utils {
     public static int merkleRoot(int numberOfLeaves){
         return 2 * numberOfLeaves - 1;
     }
+
 }
