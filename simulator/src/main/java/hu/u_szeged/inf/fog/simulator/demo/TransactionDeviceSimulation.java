@@ -15,8 +15,9 @@ import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.BlockValidator;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.DistributedLedger;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Mempool;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.TransactionDevice;
+import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.consensus_strategy.PoWConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy.RSAStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.SHA256DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.SHA256Strategy;
 
 import java.util.*;
 
@@ -27,7 +28,8 @@ public class TransactionDeviceSimulation {
 
         // For now the read and write operations of transactions won't be modeled
         Mempool mempool = new Mempool();
-        DistributedLedger distributedLedger = new DistributedLedger(20, 1000,2, new RSAStrategy(), new SHA256DigestStrategy());
+        DistributedLedger distributedLedger = new DistributedLedger(20, 1000,2,
+                new RSAStrategy(4096), new SHA256Strategy(), new PoWConsensusStrategy());
 
         long storageSize = 107_374_182_400L; // 100 GB
         long bandwidth = 12_500; // 100 Mbps
@@ -56,21 +58,22 @@ public class TransactionDeviceSimulation {
         repo.registerObject(va);
 
         AlterableResourceConstraints arc = new AlterableResourceConstraints(4, 1, 4_294_967_296L);
-        VirtualMachine[] vm = pm.requestVM(va, arc, repo, 2);
+        VirtualMachine[] vm = pm.requestVM(va, arc, repo, 1);
 
-        BlockValidator blockValidator = new BlockValidator(vm[0], mempool, 3000);
+        Timed.simulateUntilLastEvent();
 
 
+        BlockValidator blockValidator = new BlockValidator(vm[0], mempool, 3000, distributedLedger);
 
         List<TransactionDevice> deviceList = new ArrayList<>();
 
         long stopTime = 10 * 60 * 60 * 1000;
-        long deviceFreq = 60 * 1000;
+        long deviceFreq = 60 * 100;
         long transactionSize = 100;
         int latency = 0;
 
         // Start Transaction Devices
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 2; i++) {
             EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> deviceTransitions =
                     PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
 
