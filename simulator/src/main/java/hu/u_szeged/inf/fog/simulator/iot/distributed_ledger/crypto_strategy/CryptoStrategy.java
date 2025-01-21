@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy;
 
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.DigestStrategy;
-
 /**
  * The cryptographic algorithm for the Public Key Infrastructure
  */
@@ -9,13 +7,16 @@ public abstract class CryptoStrategy {
     private String name;
     private int keySize;
 
-    private DigestStrategy digest;
-    public abstract void sign();
+    public abstract double sign();
 
-    public abstract void validateSignature();
+    public abstract double verify();
 
     public int getKeySize() {
         return this.keySize;
+    }
+
+    public void setKeySize(int keySize) {
+        this.keySize = keySize;
     }
 
     public String getName() {
