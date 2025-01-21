@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.consensus_strategy.ConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.DigestStrategy;
 
@@ -11,8 +12,9 @@ public class DistributedLedger extends Timed {
     private final int difficultyAdjustmentBlock;
     private final int blockSize;
 
-    final public CryptoStrategy cryptoStrategy;
-    final public DigestStrategy digestStrategy;
+    public final CryptoStrategy cryptoStrategy;
+    public final DigestStrategy digestStrategy;
+    public final ConsensusStrategy consensusStrategy;
 
     public int getBlockSize() {
         return blockSize;
@@ -23,10 +25,11 @@ public class DistributedLedger extends Timed {
     }
 
     public DistributedLedger(int difficultyAdjustmentBlock, int blockSize, int difficulty,
-                             CryptoStrategy cryptoStrategy, DigestStrategy digestStrategy) {
-        subscribe(1);
+                             CryptoStrategy cryptoStrategy, DigestStrategy digestStrategy, ConsensusStrategy consensusStrategy) {
+        //subscribe(1); //should be adjusted only if it reaches the adjustment block size, and should not check each ms
         this.cryptoStrategy = cryptoStrategy;
         this.digestStrategy = digestStrategy;
+        this.consensusStrategy = consensusStrategy;
         this.numberOfBlocks = 0;
         this.blockSize = blockSize; //in bytes
         this.difficultyAdjustmentBlock = difficultyAdjustmentBlock;

@@ -21,7 +21,7 @@ public class Transaction {
     }
 
     public long getSize() {
-        return size;
+        return this.size;
     }
 
     public String getId() {
