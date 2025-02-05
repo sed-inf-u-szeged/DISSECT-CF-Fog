@@ -6,11 +6,11 @@ import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class DistributedAntOptimiser {
+public class DecentralisedAntOptimiser {
     
     private static double[][] globalPheromoneMatrix;
     
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> runOptimiser(
+    public static double[][] runOptimiser(
             ArrayList<ComputingAppliance> allComputingAppliances, int numberOfAnts, 
             int numberOfIteration, double propability, double evaporationRate) {
         
@@ -29,12 +29,12 @@ public class DistributedAntOptimiser {
             for (int i = 0; i < numberOfIteration; i++) {
                 // System.out.println(allComputingAppliances.get(caNum).name + "-iteration: " + i);
                 
-                DistributedAnt[] ants = new DistributedAnt[numberOfAnts];
+                DecentralisedAnt[] ants = new DecentralisedAnt[numberOfAnts];
                 for (int j = 0; j < numberOfAnts; j++) {
-                    ants[j] = new DistributedAnt(j);
+                    ants[j] = new DecentralisedAnt(j);
                 }
                 
-                for (DistributedAnt ant : ants) {
+                for (DecentralisedAnt ant : ants) {
                     ant.generateSolution(globalPheromoneMatrix[caNum], caNum, propability, evaporationRate);
                     
                 }
@@ -44,7 +44,7 @@ public class DistributedAntOptimiser {
             // CentralisedAntOptimiser.printMatrix("", globalPheromoneMatrix);
         }
         
-        return createClusters(globalPheromoneMatrix);
+        return globalPheromoneMatrix;
     }
     
     private static void evaporatePheromones(double[] globalPheromoneMatrix, double evaporationRate) {
@@ -56,7 +56,7 @@ public class DistributedAntOptimiser {
         }
     }
     
-    private static int[] assignClusters(double[][] globalPheromoneMatrix) {
+    public static int[] assignClusters(double[][] globalPheromoneMatrix) {
         int[] clusterAssignments = new int[globalPheromoneMatrix.length];
 
         for (int i = 0; i < globalPheromoneMatrix.length; i++) {
@@ -78,44 +78,6 @@ public class DistributedAntOptimiser {
         }
 
         return clusterAssignments;
-    }
-    
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> 
-        createClusters(double[][] globalPheromoneMatrix) {
-        
-        int[] resultVector = assignClusters(globalPheromoneMatrix);
-
-        // System.out.println(Arrays.toString(resultVector));
-
-        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters = new HashMap<>();
-        boolean[] visited = new boolean[resultVector.length]; 
-
-        for (int i = 0; i < resultVector.length; i++) {
-            if (!visited[i]) { 
-                
-                ArrayList<WorkflowComputingAppliance> cluster = new ArrayList<>();
-                int currentNode = i;
-
-                while (!visited[currentNode]) { 
-                    visited[currentNode] = true; 
-
-                    if (currentNode != i) {
-                        cluster.add((WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(currentNode));
-                    }
-                    currentNode = resultVector[currentNode];
-                }
-                if (cluster.isEmpty()) {
-                    addToCluster(clusters, 
-                            (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i),
-                               (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(resultVector[i]));
-                } else { 
-                    WorkflowComputingAppliance firstNode = (WorkflowComputingAppliance) ComputingAppliance.allComputingAppliances.get(i);
-                    clusters.put(firstNode, cluster);
-                }
-            }
-        }
-
-        return clusters;
     }
     
     public static void addToCluster(HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters, 
