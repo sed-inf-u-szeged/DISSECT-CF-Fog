@@ -1,24 +1,23 @@
-package hu.u_szeged.inf.fog.simulator.energyprovider;
+package hu.u_szeged.inf.fog.simulator.energyprovider.tests;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Battery;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Solar;
 
 import java.util.ArrayList;
 
-public class Test {
+public class SolarChargeTest {
 
     public static void main(String[] args) {
 
         Solar solar1 = new Solar(3, 500);
-        Wind wind1 = new Wind(1,4000);
 
         Battery battery1 = new Battery(500_000_000, 1500, 0, 100);
 
         Provider provider = new Provider(battery1, new ArrayList<>(),3_600_000);
 
         provider.addEnergySource(solar1);
-        provider.addEnergySource(wind1);
-
-        new SingeDischarge(3_600_000*10,provider,10);
 
         Timed.simulateUntilLastEvent();
 

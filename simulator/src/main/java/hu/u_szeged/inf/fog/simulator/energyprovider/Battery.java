@@ -7,7 +7,7 @@ public class Battery {
     float batteryLevel;
     float condition;
 
-    Battery(float capacity, float outputCapacity, float batteryLevel, float condition) {
+    public Battery(float capacity, float outputCapacity, float batteryLevel, float condition) {
         this.capacity = capacity;
         this.outputCapacity = outputCapacity;
         this.batteryLevel = batteryLevel;
