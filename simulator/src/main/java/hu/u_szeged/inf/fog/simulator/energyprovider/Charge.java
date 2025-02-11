@@ -25,7 +25,7 @@ public class Charge extends Timed {
             try {
                 new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
                 PrintStream out = new PrintStream(
-                        new FileOutputStream("src/main/java/hu/u_szeged/inf/fog/simulator/energyprovider/output.txt", true), true);
+                        new FileOutputStream("src/main/java/hu/u_szeged/inf/fog/simulator/energyprovider/tests/output.txt", true), true);
                 System.setOut(out);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
