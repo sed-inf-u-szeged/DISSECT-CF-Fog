@@ -7,7 +7,10 @@ import java.util.ArrayList;
 public class Provider {
 
     ArrayList<EnergySource> renewableSources;
+    EnergySource fossilSource;
     Battery renewableBattery;
+    float renewablePrice;
+    float fossilPrice;
 
     public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,long chargeFreq) {
         this.renewableSources = renewableSources;
@@ -18,5 +21,9 @@ public class Provider {
     public void addEnergySource(EnergySource energySource) {
         this.renewableSources.add(energySource);
     }
+
+    //TODO calculate max output of a provider
+    //TODO changing price based on battery level
+
 
 }
