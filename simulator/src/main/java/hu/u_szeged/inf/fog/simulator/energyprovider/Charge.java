@@ -9,6 +9,7 @@ import java.util.List;
 public class Charge extends Timed {
 
     Provider provider;
+    float lastTotalAdded;
 
     Charge(long freq, Provider provider) {
         subscribe(freq);
@@ -20,8 +21,8 @@ public class Charge extends Timed {
         if (Timed.getFireCount() > 3_600_000 * 24) {
             unsub();
         }
-
-        if (getTotalProduction() > 0) {
+        this.lastTotalAdded = getTotalProduction();
+        if (this.lastTotalAdded > 0) {
             try {
                 new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
                 PrintStream out = new PrintStream(
@@ -31,7 +32,7 @@ public class Charge extends Timed {
                 throw new RuntimeException(e);
             }
             System.out.print("Current energy: " + provider.renewableBattery.getBatteryLevel() + " Wh");
-            System.out.print("  -------  Added energy: " + getTotalProduction() + " Wh");
+            System.out.print("  -------  Added energy: " + this.lastTotalAdded + " Wh");
             System.out.println("  -------  Energy after charge: " + chargeUp() + " Wh");
         }
 
@@ -43,7 +44,7 @@ public class Charge extends Timed {
     }
 
     private float chargeUp() {
-        return this.provider.renewableBattery.chargeUp(getTotalProduction());
+        return this.provider.renewableBattery.chargeUp(this.lastTotalAdded);
     }
 
     private float getTotalProduction() {
