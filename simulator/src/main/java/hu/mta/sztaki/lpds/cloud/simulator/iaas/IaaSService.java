@@ -324,8 +324,6 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine>, Phy
 		final int size = newPMs.size();
 		final ResourceConstraints[] caps = new ResourceConstraints[size];
 		double maxPcPP = totalCapacity.getRequiredProcessingPower();
-
-		//integrating storage into capacity or storing it an other way
 		double storage = 0;
 
 		for (int i = 0; i < size; i++) {
@@ -336,15 +334,10 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine>, Phy
 			pm.subscribeStateChangeEvents(this);
 			caps[i] = pm.getCapacities();
 			maxPcPP = Math.max(caps[i].getRequiredProcessingPower(), maxPcPP);
-
-			//!
 			storage += pm.localDisk.getFreeStorageCapacity();
 		}
 
-
 		totalCapacity.add(caps);
-
-
 		totalCapacity.scaleProcessingPower(maxPcPP / totalCapacity.getRequiredProcessingPower());
 		capacityListenerManager.notifyListeners(newPMs);
 	}
