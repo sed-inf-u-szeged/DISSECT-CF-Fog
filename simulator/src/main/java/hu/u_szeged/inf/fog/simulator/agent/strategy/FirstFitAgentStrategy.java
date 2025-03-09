@@ -24,9 +24,9 @@ public class FirstFitAgentStrategy extends AgentStrategy {
         for (Resource resource : sortedResources) {
             if (resource.size == null) { // compute type 
                 
-                int instances = resource.instances == null ? 1 : Integer.parseInt(resource.instances);
-                double reqCpu = (Double.parseDouble(resource.cpu));
-                long reqMemory = (Long.parseLong(resource.memory));
+                int instances = resource.instances == null ? 1 : resource.instances;
+                double reqCpu = resource.cpu;
+                long reqMemory = resource.memory;
 
                 List<Capacity> reservedCapacity = new ArrayList<>();
                 
@@ -55,9 +55,9 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 for (Capacity capacity : agent.capacities) {
                     if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                             && (resource.location == null || resource.location.equals(capacity.node.location))
-                            && Long.parseLong(resource.size) <= capacity.storage) {
+                            && resource.size <= capacity.storage) {
 
-                        capacity.reserveCapacity(resource, 0, 0, Long.parseLong(resource.size));
+                        capacity.reserveCapacity(resource, 0, 0, resource.size);
                         agentResourcePairs.add(Pair.of(agent, resource));
                     }
                 }
@@ -72,18 +72,18 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
         Collections.sort(sortedResources, (r1, r2) -> {
             if (r1.cpu != null && r2.cpu != null) {
-                double cpu1 = Double.parseDouble(r1.cpu);
-                double cpu2 = Double.parseDouble(r2.cpu);
+                double cpu1 = r1.cpu;
+                double cpu2 = r2.cpu;
                 if (r1.instances != null) {
-                    cpu1 *= Double.parseDouble(r1.instances);
+                    cpu1 *= r1.instances;
                 }
                 if (r2.instances != null) {
-                    cpu2 *= Double.parseDouble(r2.instances);
+                    cpu2 *= r2.instances;
                 }
                 return descending ? Double.compare(cpu2, cpu1) : Double.compare(cpu1, cpu2);
             } else if (r1.cpu == null && r2.cpu == null) {
-                double size1 = Double.parseDouble(r1.size);
-                double size2 = Double.parseDouble(r2.size);
+                double size1 = r1.size;
+                double size2 = r2.size;
                 return descending ? Double.compare(size2, size1) : Double.compare(size1, size2);
             }
             return (r1.cpu == null) ? 1 : -1;
