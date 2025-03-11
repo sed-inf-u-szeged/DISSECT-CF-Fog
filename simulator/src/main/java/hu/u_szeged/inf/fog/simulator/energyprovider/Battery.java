@@ -35,6 +35,15 @@ public class Battery {
         return removeBatteryLevel(discharge);
     }
 
+    public float getCurrentMaxOutput () {
+
+        if (this.outputCapacity < this.batteryLevel) {
+            return this.outputCapacity;
+        }else {
+            return  this.batteryLevel;
+        }
+    }
+
     private float removeBatteryLevel(float batteryLevel) {
         if (this.batteryLevel - batteryLevel < 0) {
             this.batteryLevel = 0;

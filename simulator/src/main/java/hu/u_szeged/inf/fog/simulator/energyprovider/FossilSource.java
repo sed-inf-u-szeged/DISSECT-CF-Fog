@@ -1,16 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
-public class FossilSource extends EnergySource{
+public class FossilSource {
 
     float production;
 
-    FossilSource(float production) {
-        super(false);
+    public FossilSource(float production) {
         this.production = production;
     }
 
-    @Override
-    float Production(long time, long frequency) {
+    float Production() {
         return this.production;
     }
 }
