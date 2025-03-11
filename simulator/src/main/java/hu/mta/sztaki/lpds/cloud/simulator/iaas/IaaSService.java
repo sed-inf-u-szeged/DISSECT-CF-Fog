@@ -324,8 +324,6 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine>, Phy
 		final int size = newPMs.size();
 		final ResourceConstraints[] caps = new ResourceConstraints[size];
 		double maxPcPP = totalCapacity.getRequiredProcessingPower();
-		double storage = 0;
-
 		for (int i = 0; i < size; i++) {
 			final PhysicalMachine pm = newPMs.get(i);
 			if (PhysicalMachine.State.RUNNING.equals(pm.getState())) {
@@ -334,9 +332,7 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine>, Phy
 			pm.subscribeStateChangeEvents(this);
 			caps[i] = pm.getCapacities();
 			maxPcPP = Math.max(caps[i].getRequiredProcessingPower(), maxPcPP);
-			storage += pm.localDisk.getFreeStorageCapacity();
 		}
-
 		totalCapacity.add(caps);
 		totalCapacity.scaleProcessingPower(maxPcPP / totalCapacity.getRequiredProcessingPower());
 		capacityListenerManager.notifyListeners(newPMs);
@@ -460,20 +456,6 @@ public class IaaSService implements VMManager<IaaSService, PhysicalMachine>, Phy
 	 */
 	public ResourceConstraints getCapacities() {
 		return publicTCap;
-	}
-
-	/**
-	 * returns with the total available storage (cumulative value for all
-	 * its PMs)
-	 */
-	public double getAvailableStorage(){
-		double storage = 0;
-		for (final PhysicalMachine pm : internalMachines
-			 ) {
-			storage += pm.localDisk.getFreeStorageCapacity();
-		}
-
-		return storage;
 	}
 
 	/**

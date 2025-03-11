@@ -269,4 +269,13 @@ public class ComputingAppliance {
     public static ArrayList<ComputingAppliance> getAllComputingAppliances() {
         return allComputingAppliances;
     }
+
+    /**
+     * Returns the available storage in the repositories.
+     */
+    public long getAvailableStorage() {
+        return iaas.repositories.stream()
+                .mapToLong(Repository::getFreeStorageCapacity).
+                sum();
+    }
 }

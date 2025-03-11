@@ -58,6 +58,8 @@ public class Capacity {
     }
 
     public static class CapacityHandlingException extends RuntimeException {
+        private static final long serialVersionUID = -474479716001109155L;
+
         CapacityHandlingException(final String s){super(s);}
     }
 
@@ -79,7 +81,7 @@ public class Capacity {
         if (memory > node.iaas.getCapacities().getRequiredMemory()) {
             throw new CapacityHandlingException("Memory allocation exceeds the available memory of the ComputingAppliance");
         }
-        if (storage > node.iaas.getAvailableStorage()) {
+        if (storage > node.getAvailableStorage()) {
             throw new CapacityHandlingException("Storage allocation exceeds the available storage of the ComputingAppliance");
         }
 
