@@ -9,16 +9,26 @@ public class Provider {
     ArrayList<EnergySource> renewableSources;
     FossilSource fossilSource;
     Battery renewableBattery;
+    float renewableBasePrice;
     float renewablePrice;
-    float fossilPrice;
-    float chargeFreq;
+    float fossilBasePrice;
+    long chargeFreq;
+    long priceFreq;
 
-    public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,long chargeFreq) {
+    public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
+                    long chargeFreq, long priceFreq,
+                    float renewableBasePrice, float fossilBasePrice)
+        {
         this.renewableSources = renewableSources;
         this.renewableBattery = renewableBattery;
         this.fossilSource = fossilSource;
         this.chargeFreq = chargeFreq;
+        this.priceFreq = priceFreq;
+        this.renewableBasePrice = renewableBasePrice;
+        this.renewablePrice = renewableBasePrice;
+        this.fossilBasePrice = fossilBasePrice;
         new Charge(chargeFreq,this);
+        new ChangePrice(this, 75);
     }
 
     public void addEnergySource(EnergySource energySource) {
@@ -45,8 +55,6 @@ public class Provider {
         return sum;
     }
 
-    //TODO calculate max output of a provider
-    //TODO changing price based on battery level
 
 
 }

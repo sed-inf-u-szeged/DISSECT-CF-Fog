@@ -16,7 +16,7 @@ public class SolarChargeTest {
 
         Battery battery1 = new Battery(500_000_000, 1500, 0, 100);
 
-        Provider provider = new Provider(battery1, new ArrayList<>(),new FossilSource(2000),3_600_000);
+        Provider provider = new Provider(battery1, new ArrayList<>(),new FossilSource(2000),3_600_000,3_600_001,1,1.2F);
 
         provider.addEnergySource(solar1);
 

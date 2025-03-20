@@ -27,6 +27,10 @@ public class Battery {
         return this.batteryLevel;
     }
 
+    public float getBatteryPercentage() {
+        return this.batteryLevel / this.capacity * 100;
+    }
+
     public float chargeUp(float charge) {
         return addBatteryLevel(charge);
     }
