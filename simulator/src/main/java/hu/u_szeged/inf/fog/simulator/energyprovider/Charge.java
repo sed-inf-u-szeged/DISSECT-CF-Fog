@@ -11,17 +11,15 @@ public class Charge extends Timed {
     Provider provider;
     float lastTotalAdded;
 
-    Charge(long freq, Provider provider) {
-        subscribe(freq);
+    Charge(Provider provider) {
         this.provider = provider;
+        subscribe(this.provider.chargeFreq);
     }
 
     @Override
     public void tick(long fires) {
-        if (Timed.getFireCount() > 3_600_000 * 24) {
-            unsub();
-        }
         this.lastTotalAdded = getTotalProduction();
+
         if (this.lastTotalAdded > 0) {
             try {
                 new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
@@ -37,10 +35,8 @@ public class Charge extends Timed {
         }
 
 
-    }
 
-    public void unsub() {
-        unsubscribe();
+
     }
 
     private float chargeUp() {
@@ -53,6 +49,10 @@ public class Charge extends Timed {
             sum += source.Production(Timed.getFireCount(), getFrequency());
         }
         return sum;
+    }
+
+    public boolean stop() {
+        return unsubscribe();
     }
 
 }

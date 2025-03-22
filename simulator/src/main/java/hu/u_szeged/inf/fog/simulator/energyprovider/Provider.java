@@ -14,6 +14,8 @@ public class Provider {
     float fossilBasePrice;
     long chargeFreq;
     long priceFreq;
+    Charge charge;
+    ChangePrice changePrice;
 
     public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
@@ -27,8 +29,8 @@ public class Provider {
         this.renewableBasePrice = renewableBasePrice;
         this.renewablePrice = renewableBasePrice;
         this.fossilBasePrice = fossilBasePrice;
-        new Charge(chargeFreq,this);
-        new ChangePrice(this, 75);
+        this.charge = new Charge(this);
+        this.changePrice = new ChangePrice(this, 75);
     }
 
     public void addEnergySource(EnergySource energySource) {
@@ -55,6 +57,9 @@ public class Provider {
         return sum;
     }
 
-
+    public void stopProcessing() {
+        this.charge.stop();
+        this.changePrice.stop();
+    }
 
 }

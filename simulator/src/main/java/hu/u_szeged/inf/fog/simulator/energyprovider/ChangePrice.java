@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import java.io.*;
 
 public class ChangePrice extends Timed {
 
@@ -25,10 +26,17 @@ public class ChangePrice extends Timed {
 
     @Override
     public void tick(long fires) {
-        setEnergyPrice();
-        if (Timed.getFireCount() > 3_600_000 * 24) {
-            unsubscribe();
+        try {
+            new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
+            PrintStream out = new PrintStream(
+                    new FileOutputStream("src/main/java/hu/u_szeged/inf/fog/simulator/energyprovider/tests/output.txt", true), true);
+            System.setOut(out);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
+        System.out.print("Price before change: " + this.provider.renewablePrice);
+        setEnergyPrice();
+        System.out.println("  -------  Price after change: " + this.provider.renewablePrice);
     }
 
     private void setEnergyPrice() {
@@ -38,5 +46,9 @@ public class ChangePrice extends Timed {
     public float calculateEnergyPrice() {
         double multiplier = this.maxChange / 100.0;
         return (float) (this.provider.renewableBasePrice * (1 + multiplier * ((50 - this.provider.renewableBattery.getBatteryPercentage()) / 50.0)));
+    }
+
+    public boolean stop() {
+        return unsubscribe();
     }
 }
