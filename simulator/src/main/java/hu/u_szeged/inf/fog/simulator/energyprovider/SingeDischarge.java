@@ -15,7 +15,7 @@ public class SingeDischarge extends DeferredEvent {
 
     @Override
     protected void eventAction() {
-        this.provider.renewableBattery.discharge(this.ammount);
+        this.provider.renewableBattery.removeBatteryLevel(this.ammount);
         System.out.print("Ammount discharged: " + this.ammount);
         System.out.println("  -------  Energy after discharge: "+ this.provider.renewableBattery.batteryLevel);
     }

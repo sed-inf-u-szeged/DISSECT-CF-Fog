@@ -1,6 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
+
 import java.io.*;
 
 public class ChangePrice extends Timed {
@@ -29,7 +31,7 @@ public class ChangePrice extends Timed {
         try {
             new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
             PrintStream out = new PrintStream(
-                    new FileOutputStream("src/main/java/hu/u_szeged/inf/fog/simulator/energyprovider/tests/output.txt", true), true);
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/output.txt", true), true);
             System.setOut(out);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
