@@ -10,6 +10,12 @@ public class ChangePrice extends Timed {
     Provider provider;
     int maxChange;
 
+    /**
+     * A recurring timed event Class that changes the renewable energy price of a Provider
+     * @param provider          the provider that we want its price changes
+     * @param maxChange         the maximum ammount that the price changes by in percentages compared to the base price
+     */
+
     public ChangePrice(Provider provider, int maxChange) {
         this.provider = provider;
         subscribe(this.provider.priceFreq);
@@ -41,14 +47,28 @@ public class ChangePrice extends Timed {
         System.out.println("  -------  Price after change: " + this.provider.renewablePrice);
     }
 
+    /**
+     * Sets the energy price according to the Battery level
+     */
+
     private void setEnergyPrice() {
         this.provider.renewablePrice = calculateEnergyPrice();
     }
+
+    /**
+     * Calculates the energy price according to the Battery level
+     * @return  The calculated price
+     */
 
     public float calculateEnergyPrice() {
         double multiplier = this.maxChange / 100.0;
         return (float) (this.provider.renewableBasePrice * (1 + multiplier * ((50 - this.provider.renewableBattery.getBatteryPercentage()) / 50.0)));
     }
+
+    /**
+     * Stops the timed event
+     * @return Whether stopping was succesful or not
+     */
 
     public boolean stop() {
         return unsubscribe();
