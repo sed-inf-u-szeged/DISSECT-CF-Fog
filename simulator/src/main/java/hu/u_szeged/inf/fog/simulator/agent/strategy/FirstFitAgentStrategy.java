@@ -25,18 +25,15 @@ public class FirstFitAgentStrategy extends AgentStrategy {
             if (resource.size == null) { // compute type 
                 
                 int instances = resource.instances == null ? 1 : resource.instances;
-                double reqCpu = resource.cpu;
-                long reqMemory = resource.memory;
 
                 List<Capacity> reservedCapacity = new ArrayList<>();
-                
                 for (int i = 0; i < instances; i++) {
                     for (Capacity capacity : agent.capacities) {                   
                         if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                                 && (resource.location == null || resource.location.equals(capacity.node.location))
-                                && reqCpu <= capacity.cpu && reqMemory <= capacity.memory) {
+                                && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory) {
 
-                            capacity.reserveCapacity(resource, reqCpu, reqMemory, 0);
+                            capacity.reserveCapacity(resource);
                             reservedCapacity.add(capacity);
                             break;
                         }
@@ -56,7 +53,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                     if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                             && (resource.location == null || resource.location.equals(capacity.node.location))
                             && resource.size <= capacity.storage) {
-                        capacity.reserveCapacity(resource, 0, 0, resource.size);
+                        capacity.reserveCapacity(resource);
                         agentResourcePairs.add(Pair.of(agent, resource));
                     }
                 }

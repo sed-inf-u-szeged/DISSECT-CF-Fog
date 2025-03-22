@@ -36,11 +36,11 @@ public class Capacity {
 
         public long initTime;
 
-        private Utilisation(Resource resource, double cpu, long memory, long storage, State state) {
+        private Utilisation(Resource resource, State state) {
             this.resource = resource;
-            this.utilisedCpu = cpu;
-            this.utilisedMemory = memory;
-            this.utilisedStorage = storage;
+            this.utilisedCpu = safe(resource.cpu, 0);
+            this.utilisedMemory = safe(resource.memory, 0L);
+            this.utilisedStorage = safe(resource.size, 0L);
             this.state = state;
         }
 
@@ -73,7 +73,6 @@ public class Capacity {
 
     public List<Utilisation> utilisations;
 
-
     public Capacity(ComputingAppliance node, double cpu, long memory, long storage) throws CapacityHandlingException {
         if (cpu > node.iaas.getCapacities().getRequiredCPUs()) {
             throw new CapacityHandlingException("CPU allocation exceeds the available CPUs of the ComputingAppliance");
@@ -91,21 +90,21 @@ public class Capacity {
         this.storage = storage;
         this.utilisations = new ArrayList<>();
     }
-    public void reserveCapacity(Resource resource, double cpu, long memory, long storage) {
-        Utilisation utilision = new Utilisation(resource, cpu, memory, storage, Utilisation.State.RESERVED);
-        this.utilisations.add(utilision);
-        this.cpu -= cpu;
-        this.memory -= memory;
-        this.storage -= storage;
+    public void reserveCapacity(Resource resource) {
+        Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
+        this.utilisations.add(utilisation);
+        this.cpu -= safe(resource.cpu, 0);
+        this.memory -= safe(resource.memory, 0L);
+        this.storage -= safe(resource.size, 0L);
     }
 
     public void releaseCapacity(Resource resource) {
         List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
         for (Utilisation utilisation : utilisations) {
             if (utilisation.resource == resource && utilisation.state.equals(Utilisation.State.RESERVED)) {
-                this.cpu += utilisation.resource.cpu == null ? 0 : utilisation.resource.cpu;
-                this.memory += utilisation.resource.memory == null ? 0 : utilisation.resource.memory;
-                this.storage += utilisation.resource.size == null ? 0 : utilisation.resource.size;
+                this.cpu += utilisation.utilisedCpu;
+                this.memory += utilisation.utilisedMemory;
+                this.storage += utilisation.utilisedStorage;
                 utilisationsToBeRemoved.add(utilisation);
             }
         }
@@ -127,4 +126,17 @@ public class Capacity {
     public String toString() {
         return "Capacity [node=" + node.name + ", cpu=" + cpu + ", memory=" + memory + ", storage=" + storage + "]";
     }
+
+    /**
+     * Returns the given value if it is not null; otherwise, returns the default value.
+     *
+     * @param <T>           The type of the number (e.g., Integer, Double, Long).
+     * @param value         The value to check.
+     * @param defaultValue  The default value to return if {@code value} is null.
+     * @return The value if it is not null; otherwise, the default value.
+     */
+    private static <T extends Number> T safe(T value, T defaultValue) {
+        return value != null ? value : defaultValue;
+    }
+
 }
