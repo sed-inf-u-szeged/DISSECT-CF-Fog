@@ -1,24 +1,24 @@
 /*
  *  ========================================================================
- *  DIScrete event baSed Energy Consumption simulaTor 
+ *  DIScrete event baSed Energy Consumption simulaTor
  *    					             for Clouds and Federations (DISSECT-CF)
  *  ========================================================================
- *  
+ *
  *  This file is part of DISSECT-CF.
- *  
+ *
  *  DISSECT-CF is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or (at
  *  your option) any later version.
- *  
+ *
  *  DISSECT-CF is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with DISSECT-CF.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *
  *  (C) Copyright 2014, Gabor Kecskemeti (gkecskem@dps.uibk.ac.at,
  *   									  kecskemeti.gabor@sztaki.mta.hu)
  */
@@ -40,11 +40,11 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
  * that together are responsible to introduce and simulate network delays in the
  * system. The instances of this class are always present and represent the
  * general network capabilities in the hosts.
- * 
+ *
  * @author "Gabor Kecskemeti, Distributed and Parallel Systems Group, University
  *         of Innsbruck (c) 2013" "Gabor Kecskemeti, Laboratory of Parallel and
  *         Distributed Systems, MTA SZTAKI (c) 2012,2014-"
- * 
+ *
  */
 public class NetworkNode {
 
@@ -61,22 +61,22 @@ public class NetworkNode {
 	 * system. The visibility of the class and its members are defined so the
 	 * compiler does not need to generate access methods for the members thus
 	 * allowing fast and prompt changes in its contents.
-	 * 
+	 *
 	 * To create a new instance of this class, one must use the initTransfer method
 	 * of the NetworkNode.
-	 * 
+	 *
 	 * <i>WARNING</i> this is an internal representation of the transfer. This class
 	 * is not supposed to be used outside of the context of the NetworkNode.
-	 * 
+	 *
 	 * @author "Gabor Kecskemeti, Distributed and Parallel Systems Group, University
 	 *         of Innsbruck (c) 2013"
-	 * 
+	 *
 	 */
 	static class SingleTransfer extends ResourceConsumption {
 
 		/**
 		 * This constructor describes the basic properties of an individual transfer.
-		 * 
+		 *
 		 * @param tottr The amount of data to be transferred during the lifetime of the
 		 *              just created object
 		 * @param e     Specify here the event to be fired when the just created object
@@ -84,7 +84,7 @@ public class NetworkNode {
 		 *              notify the entity who initiated the transfer.
 		 */
 		private SingleTransfer(final int latency, final long tottr, final double limit, final MaxMinConsumer in,
-				final MaxMinProvider out, final ResourceConsumption.ConsumptionEvent e) {
+							   final MaxMinProvider out, final ResourceConsumption.ConsumptionEvent e) {
 			super(tottr, limit, in, out, e);
 			new DeferredEvent(latency) {
 				@Override
@@ -103,10 +103,10 @@ public class NetworkNode {
 
 	/**
 	 * Represents the possible states of the network nodes modeled in the system
-	 * 
+	 *
 	 * @author "Gabor Kecskemeti, Department of Computer Science, Liverpool John
 	 *         Moores University, (c) 2017"
-	 * 
+	 *
 	 */
 	public enum State {
 		/**
@@ -153,10 +153,10 @@ public class NetworkNode {
 	 * for the simulation at hand).
 	 */
 	private String name;
-	
+
 	/**
 	 * The direct network connections of this network node.
-	 * 
+	 *
 	 * Contents of the map:
 	 * <ul>
 	 * <li>The key of this map lists the names of the network nodes to which this
@@ -164,7 +164,7 @@ public class NetworkNode {
 	 * <li>The value of this map lists the latencies in ticks between this network
 	 * node and the node named in the key.
 	 * </ul>
-	 * 
+	 *
 	 */
 	private final Map<String, Integer> latencies;
 	/**
@@ -181,14 +181,14 @@ public class NetworkNode {
 	/**
 	 * This function initializes the bandwidth spreaders for the node to ensure
 	 * equal network share for each transfer occurring on the node.
-	 * 
+	 *
 	 * @param maxInBW  the input bw of the node
 	 * @param maxOutBW the output bw of the node
 	 * @param diskBW   the disk bw of the node
 	 */
 	public NetworkNode(final String id, final long maxInBW, final long maxOutBW, final long diskBW,
-			final Map<String, Integer> latencymap, Map<String, PowerState> diskPowerTransitions,
-			Map<String, PowerState> networkPowerTransitions) {
+					   final Map<String, Integer> latencymap, Map<String, PowerState> diskPowerTransitions,
+					   Map<String, PowerState> networkPowerTransitions) {
 		if (diskPowerTransitions == null || networkPowerTransitions == null) {
 			throw new IllegalStateException("Cannot initialize network node without a complete power behavior set");
 		}
@@ -211,7 +211,7 @@ public class NetworkNode {
 
 	/**
 	 * Determines the total output bandwidth available for the node
-	 * 
+	 *
 	 * @return the maximum bandwidth with this network node can send data to the
 	 *         outside world
 	 */
@@ -221,7 +221,7 @@ public class NetworkNode {
 
 	/**
 	 * Determines the total input bandwidth available for the node
-	 * 
+	 *
 	 * @return the maximum bandwidth with this network node can receive data from
 	 *         the outside world
 	 */
@@ -230,22 +230,29 @@ public class NetworkNode {
 	}
 
 	/**
-     * Determines the latency values of the nodes
-     */
-    public Map<String, Integer> getLatencies() {
-        return this.latencies;
-    }
-    
-    /**
-     * Updates or adds a new latency connection 
-     */
-    public void addLatencies(String repository,int latencyValue) {
-        this.latencies.put(repository, latencyValue);
-    }
-    
+	 * Determines the latency values of the nodes
+	 */
+	public Map<String, Integer> getLatencies() {
+		return this.latencies;
+	}
+
+	/**
+	 * Updates or adds a new latency connection
+	 */
+	public void addLatencies(String repository,int latencyValue) {
+		this.latencies.put(repository, latencyValue);
+	}
+
+	/**
+	 * Deletes an existing connection
+	 */
+	public void removeLatencies(String repository) {
+		this.latencies.remove(repository);
+	}
+
 	/**
 	 * The bandwidth available when duplicating local disk contents.
-	 * 
+	 *
 	 * @return the maximal bandwidth usable by the network node while copying a file
 	 *         or raw disk blocks on its storage subsystem
 	 */
@@ -255,7 +262,7 @@ public class NetworkNode {
 
 	/**
 	 * This function ensures the proper initialization of an individual transfer.
-	 * 
+	 *
 	 * @param size defines the size of the transfer to be simulated
 	 * @param from defines the source of the transfer
 	 * @param to   defines the destination of the transfer
@@ -266,7 +273,7 @@ public class NetworkNode {
 	 *         observation of its state.
 	 */
 	public static ResourceConsumption initTransfer(final long size, final double limit, final NetworkNode from,
-			final NetworkNode to, final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
+												   final NetworkNode to, final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
 		from.ensureRunning();
 		to.ensureRunning();
 		if (from == to) {
@@ -286,7 +293,7 @@ public class NetworkNode {
 	 * This function allows the simplified creation of singletransfer objects for
 	 * modeling the operation of writing data to the disk/network of this node from
 	 * its memory.
-	 * 
+	 *
 	 * @param size   the amount of data to be transferred from the memory to the
 	 *               disk/network (in bytes)
 	 * @param limit  the maximum bandwidth allowed to be available for this
@@ -304,7 +311,7 @@ public class NetworkNode {
 	 *         observation of its state.
 	 */
 	public ResourceConsumption pushFromMemory(final long size, final double limit, boolean toDisk,
-			final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
+											  final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
 		ensureRunning();
 		return new SingleTransfer(0, size, limit, toDisk ? diskinbws : inbws, memoutbws, e);
 	}
@@ -313,7 +320,7 @@ public class NetworkNode {
 	 * This function allows the simplified creation of singletransfer objects for
 	 * modeling the operation of reading data from the disk/network of this node to
 	 * its memory.
-	 * 
+	 *
 	 * @param size     the amount of data to be transferred to the memory from the
 	 *                 disk/network (in bytes)
 	 * @param limit    the maximum bandwidth allowed to be available for this
@@ -331,7 +338,7 @@ public class NetworkNode {
 	 *         observation of its state.
 	 */
 	public ResourceConsumption readToMemory(final long size, final double limit, boolean fromDisk,
-			final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
+											final ResourceConsumption.ConsumptionEvent e) throws NetworkException {
 		ensureRunning();
 		return new SingleTransfer(0, size, limit, meminbws, fromDisk ? diskoutbws : outbws, e);
 	}
@@ -339,7 +346,7 @@ public class NetworkNode {
 	/**
 	 * Determines if there is direct network connection possible between two network
 	 * nodes
-	 * 
+	 *
 	 * @param from the network node which is expected to send some data
 	 * @param to   the network node which is expected to receive the sent data
 	 * @return the network latency of the connection between the two
@@ -358,21 +365,21 @@ public class NetworkNode {
 
 	/**
 	 * Allows to query the networknode's name
-	 * 
+	 *
 	 * @return the name of the node
 	 */
 	public String getName() {
 		return name;
 	}
-	
+
 	/**
-     * Allows to modify the networknode's name. If the name is changed, it may be necessary to update the corresponding
-     * latencyMaps as well.
-     * @param name the new name of the node
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
+	 * Allows to modify the networknode's name. If the name is changed, it may be necessary to update the corresponding
+	 * latencyMaps as well.
+	 * @param name the new name of the node
+	 */
+	public void setName(String name) {
+		this.name = name;
+	}
 
 	/**
 	 * provides an overview of the network node concentrating on the network's
@@ -387,7 +394,7 @@ public class NetworkNode {
 	public void setState(State newState) throws NetworkException {
 		if (!currState.equals(newState)) {
 			if (currState.equals(State.RUNNING) &&
-				Arrays.stream(allSpreaders).anyMatch(rs -> rs.toBeAdded.size() + rs.underProcessing.size() > 0)) {
+					Arrays.stream(allSpreaders).anyMatch(rs -> rs.toBeAdded.size() + rs.underProcessing.size() > 0)) {
 				throw new NetworkException(
 						"There is still some network activity in progress, cannot transition to a non-running state");
 			}
