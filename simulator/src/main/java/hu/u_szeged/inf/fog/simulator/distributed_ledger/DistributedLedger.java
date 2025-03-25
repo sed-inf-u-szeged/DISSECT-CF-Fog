@@ -1,7 +1,7 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.consensus_strategy.ConsensusStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
 
 import java.util.HashMap;
 import java.util.HashSet;

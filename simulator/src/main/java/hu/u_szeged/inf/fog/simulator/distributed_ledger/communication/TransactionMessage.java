@@ -1,7 +1,7 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.communication;
 
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Transaction;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 
 public class TransactionMessage extends StorageObject {
 

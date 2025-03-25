@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.utils;
 
 import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;

@@ -1,7 +1,7 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.communication;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.BlockValidator;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.BlockValidator;
 
 public class BlockTransferEvent implements ResourceConsumption.ConsumptionEvent {
 

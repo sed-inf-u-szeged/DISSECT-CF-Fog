@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.fork;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 
 import java.util.ArrayList;
 import java.util.List;

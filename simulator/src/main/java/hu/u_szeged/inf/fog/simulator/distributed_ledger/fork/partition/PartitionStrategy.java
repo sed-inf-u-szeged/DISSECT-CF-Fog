@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.fork.partition;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.partition;
 
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 

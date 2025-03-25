@@ -1,8 +1,8 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy;
 
 
-import static hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils.InterpolationUtils.createSplineFunction;
-import static hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils.InterpolationUtils.interpolate;
+import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.InterpolationUtils.createSplineFunction;
+import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.InterpolationUtils.interpolate;
 
 public class SHA512Strategy extends DigestStrategy {
 

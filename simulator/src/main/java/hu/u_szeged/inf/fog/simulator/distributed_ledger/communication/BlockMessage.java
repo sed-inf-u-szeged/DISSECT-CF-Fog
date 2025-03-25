@@ -1,7 +1,7 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.communication;
 
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Block;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 
 public class BlockMessage extends StorageObject {
     private final Block block;

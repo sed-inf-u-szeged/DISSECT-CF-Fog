@@ -1,9 +1,9 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.utils;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Block;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.DistributedLedger;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy.DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.DistributedLedger;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 
 import java.util.Random;
 

@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
@@ -9,12 +9,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication.BlockMessage;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication.BlockTransferEvent;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication.TransactionMessage;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.communication.TransactionTransferEvent;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.utils.Utils;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockTransferEvent;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionTransferEvent;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
 import java.util.*;

@@ -1,6 +1,6 @@
-//package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.find_node_strategy;
+//package hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy;
 //
-//import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.BlockValidator;
+//import hu.u_szeged.inf.fog.simulator.distributed_ledger.BlockValidator;
 //import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 //
 //public class NearestNodeStrategy implements FindNodeStrategy{

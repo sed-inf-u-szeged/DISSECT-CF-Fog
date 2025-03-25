@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import java.util.LinkedList;
 

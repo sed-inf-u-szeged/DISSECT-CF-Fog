@@ -1,11 +1,10 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
-import hu.u_szeged.inf.fog.simulator.iot.Sensor;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.find_node_strategy.FindNodeStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.FindNodeStrategy;
 
 import java.util.Random;
 

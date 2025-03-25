@@ -1,8 +1,8 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.fork;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.BlockValidator;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.BlockValidator;
 
 import java.util.ArrayList;
 import java.util.List;

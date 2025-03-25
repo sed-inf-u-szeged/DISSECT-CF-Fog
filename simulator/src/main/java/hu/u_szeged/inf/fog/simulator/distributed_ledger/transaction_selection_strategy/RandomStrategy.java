@@ -1,8 +1,8 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.transaction_selection_strategy;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Mempool;
-import hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.Transaction;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Mempool;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 
 import java.util.Random;
 

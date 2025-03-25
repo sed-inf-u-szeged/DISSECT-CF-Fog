@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 public class ECDSAStrategy extends CryptoStrategy {
 

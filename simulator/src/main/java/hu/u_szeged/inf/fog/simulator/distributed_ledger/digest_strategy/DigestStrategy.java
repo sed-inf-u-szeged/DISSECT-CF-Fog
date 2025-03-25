@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.digest_strategy;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy;
 
 /**
  * The cryptographic algorithm to hash

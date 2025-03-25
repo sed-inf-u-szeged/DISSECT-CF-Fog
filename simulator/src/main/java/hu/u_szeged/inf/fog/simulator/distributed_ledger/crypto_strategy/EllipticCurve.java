@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.iot.distributed_ledger.crypto_strategy;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 // TODO: in the future, these measurements should come from an aggregated configuration file, e.g. json
 public enum EllipticCurve {
