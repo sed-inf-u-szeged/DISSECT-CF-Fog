@@ -19,16 +19,16 @@ public class AgentApplication {
     public static class Resource {
         
         public String name;
-        public String cpu; 
-        public String memory; 
-        public String instances;
+        public Integer cpu;
+        public Long memory;
+        public Integer instances;
         public String provider;
         public String location;
-        public String size;
+        public Long size;
         
         public double getTotalReqCpu() {
             if (cpu != null) {
-                return Double.parseDouble(cpu) * (instances == null ? 1 : Double.parseDouble(instances));
+                return cpu * (instances == null ? 1 : instances);
             }
             return 1;
         }
