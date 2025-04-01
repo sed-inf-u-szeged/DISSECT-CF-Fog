@@ -12,6 +12,10 @@ public class Charge extends Timed {
     Provider provider;
     float lastTotalAdded;
 
+    /**
+     * Recurring Timed event that charges the battery of a Provider with the given renewable sources
+     * @param provider The provider to be charged
+     */
     Charge(Provider provider) {
         this.provider = provider;
         subscribe(this.provider.chargeFreq);
@@ -34,10 +38,6 @@ public class Charge extends Timed {
             System.out.print("  -------  Added energy: " + this.lastTotalAdded + " Wh");
             System.out.println("  -------  Energy after charge: " + chargeUp() + " Wh");
         }
-
-
-
-
     }
 
     private float chargeUp() {

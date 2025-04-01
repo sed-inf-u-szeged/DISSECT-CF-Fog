@@ -11,7 +11,11 @@ public class ChangePrice extends Timed {
     int maxChange;
 
     /**
-     * A recurring timed event Class that changes the renewable energy price of a Provider
+     * A recurring timed event Class that changes the renewable energy price of a Provider <br>
+     * At 50% battery power the price is at the base price <br>
+     * at 100% battery power the price decreases by the maximum value given <br>
+     * at 0% battery power the price increases by the maximum value given
+     * the price changes accordingly in between
      * @param provider          the provider that we want its price changes
      * @param maxChange         the maximum ammount that the price changes by in percentages compared to the base price
      */

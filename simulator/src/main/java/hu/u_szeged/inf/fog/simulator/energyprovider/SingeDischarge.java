@@ -7,6 +7,12 @@ public class SingeDischarge extends DeferredEvent {
     Provider provider;
     float ammount;
 
+    /**
+     * A one time event that removes the given ammount of renewable energy from a provider
+     * @param delay
+     * @param provider
+     * @param ammount
+     */
     public SingeDischarge(long delay, Provider provider, float ammount) {
         super(delay);
         this.provider = provider;
