@@ -112,10 +112,10 @@ public class AgentTest {
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
         new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node1, 2, 4294967296L * 3 , 107374182400L));
+                new Capacity(node1, 12, 4294967296L * 3 , 107374182400L));
 
         new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node2, 2, 4294967296L, 107374182400L*2));
+                new Capacity(node2, 4, 4294967296L, 107374182400L*2));
 
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
