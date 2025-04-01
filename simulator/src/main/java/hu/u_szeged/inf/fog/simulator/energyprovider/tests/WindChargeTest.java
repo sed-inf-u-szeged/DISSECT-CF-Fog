@@ -5,20 +5,35 @@ import hu.u_szeged.inf.fog.simulator.energyprovider.*;
 
 import java.util.ArrayList;
 
-public class WindChargeTest {
+public class WindChargeTest extends Timed{
+
+    Provider provider;
+
+    WindChargeTest() {
+        subscribe(3_500_000);
+
+        Wind wind = new Wind(1,500);
+        Battery battery = new Battery(10_000,500,0,100);
+        FossilSource fossilSource = new FossilSource(1000);
+
+        this.provider = new Provider(battery,new ArrayList<EnergySource>(),fossilSource,3_600_000,3_600_001, 1,1, 75);
+
+        provider.addEnergySource(wind);
+
+        Timed.simulateUntilLastEvent();
+    }
 
     public static void main(String[] args) {
 
-        Wind wind1 = new Wind(1, 500);
-
-        Battery battery1 = new Battery(500_000_000, 1500, 0, 100);
-
-        Provider provider = new Provider(battery1, new ArrayList<>(),new FossilSource(2000),3_600_000,3_600_001,1,1.2F);
-
-        provider.addEnergySource(wind1);
-
-        Timed.simulateUntilLastEvent();
+        WindChargeTest test = new WindChargeTest();
 
     }
 
+    @Override
+    public void tick(long fires) {
+        if (Timed.getFireCount() > 3_600_000 * 48) {
+            provider.stopProcessing();
+            unsubscribe();
+        }
+    }
 }

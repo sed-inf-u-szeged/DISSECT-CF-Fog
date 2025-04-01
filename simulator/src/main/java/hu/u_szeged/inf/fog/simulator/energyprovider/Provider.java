@@ -19,7 +19,8 @@ public class Provider {
 
     public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
-                    float renewableBasePrice, float fossilBasePrice)
+                    float renewableBasePrice, float fossilBasePrice,
+                    int maxPriceChange)
         {
         this.renewableSources = renewableSources;
         this.renewableBattery = renewableBattery;
@@ -27,10 +28,11 @@ public class Provider {
         this.chargeFreq = chargeFreq;
         this.priceFreq = priceFreq;
         this.renewableBasePrice = renewableBasePrice;
-        this.renewablePrice = renewableBasePrice;
+        double multiplier = (maxPriceChange / 100.0);
+        this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));;
         this.fossilBasePrice = fossilBasePrice;
         this.charge = new Charge(this);
-        this.changePrice = new ChangePrice(this, 75);
+        this.changePrice = new ChangePrice(this, maxPriceChange);
     }
 
     public void addEnergySource(EnergySource energySource) {
