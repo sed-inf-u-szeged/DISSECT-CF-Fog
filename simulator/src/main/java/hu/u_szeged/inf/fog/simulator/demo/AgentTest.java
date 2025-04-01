@@ -71,8 +71,8 @@ public class AgentTest {
                 new GeoLocation(47.50, 19.08), "EU", "AWS"); // Budapest
 
             ComputingAppliance node2 = new ComputingAppliance(
-                createNode("node2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
-                new GeoLocation(48.86, 2.35), "EU", "Azure"); // Paris
+                createNode("node2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L*2, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+                new GeoLocation(48.86, 2.35), "EU", "AWS"); // Paris
 
             ComputingAppliance node3 = new ComputingAppliance(
                 createNode("node3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
@@ -111,29 +111,11 @@ public class AgentTest {
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
-        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
-                new Capacity(node1, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node2, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node1, 2, 4294967296L * 3 , 107374182400L));
 
-        new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node3, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-
-        new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node4, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node5, 16, (long) 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node2, 2, 4294967296L, 107374182400L*2));
 
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =

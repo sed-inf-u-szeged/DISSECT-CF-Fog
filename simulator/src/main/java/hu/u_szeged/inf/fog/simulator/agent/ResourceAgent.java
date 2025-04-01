@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
@@ -11,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
@@ -48,6 +50,8 @@ public class ResourceAgent {
     AgentStrategy agentStrategy;
     
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
+
+    public static int broadcastCounter;
     
     
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
@@ -82,6 +86,9 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
+        broadcastCounter++;
+        SimLogger.logRes("Broadcast "+ broadcastCounter);
+
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
@@ -90,13 +97,26 @@ public class ResourceAgent {
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
 
+
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = this.callRankingScript(app);
+            app.winningOffer = 0;
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
-        } else {  
-            acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
-            app.deploymentTime = -1;
+        } else {
+            new DeferredEvent(10000) {
+                @Override
+                protected void eventAction() {
+                    if(broadcastCounter-AgentApplicationReader.appCount < AgentApplicationReader.appCount) {
+                        SimLogger.logRes("Rebroadcast");
+
+                        broadcast(app, bcastMessageSize);
+
+                    }
+                }
+            };
+            handleUnfulfilledResources(app,bcastMessageSize);
+
+
         }
     }
 
@@ -106,7 +126,7 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {               
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-        
+
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
         // TODO: only for debugging, needs to be deleted
@@ -121,6 +141,7 @@ public class ResourceAgent {
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
         Set<Pair<ResourceAgent, Resource>> currentCombination = new LinkedHashSet<>();
         Set<Resource> includedResources = new LinkedHashSet<>();
+
 
         generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
         
@@ -280,58 +301,46 @@ public class ResourceAgent {
             AgentOfferWriter.writeOffers(jsonData, app.name);
         }
     }
-    
+
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
-            SimLogger.logRun("All ack. messages receieved for " + app.name
-                    + " at: " + Timed.getFireCount());
-            
-            if (offer.id == -1) {
-                SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
-                for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                    for (Capacity capacity : agent.capacities) {                        
-                        List<Resource> resourcesToBeRemoved = new ArrayList<>();
-                        for (Utilisation util : capacity.utilisations) {
-                            if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
-                                resourcesToBeRemoved.add(util.resource);
-                            }
-                        }
-                        for (Resource r : resourcesToBeRemoved) {
-                            capacity.releaseCapacity(r);
-                        }
-                    }
-                }
-            } else {
-                for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                    for (Capacity capacity : agent.capacities) {
-                        
-                        if (offer.agentResourcesMap.containsKey(agent)) {
-                            capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
-                        }
-                        
-                        List<Resource> resourcesToBeRemoved = new ArrayList<>();
-                        for (Utilisation util : capacity.utilisations) {
-                            if (util.resource.name.contains(app.name) && util.state.equals(Utilisation.State.RESERVED)) {
-                                resourcesToBeRemoved.add(util.resource);
-                            }
-                        }
-                        for (Resource r : resourcesToBeRemoved) {
-                            capacity.releaseCapacity(r);
-                        }
-                    }
-                }
+            SimLogger.logRun("All ack. messages received for " + app.name + " at: " + Timed.getFireCount());
 
-                Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
-                
-                new Deployment(leadResource, offer, app);
-            }
+
+            assignAndReleaseResources(offer, app.name);
+            Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
+            new Deployment(leadResource, offer, app);
         });
     }
-    
+
+    private void assignAndReleaseResources(Offer offer, String appName) {
+        final List<Capacity> capacitiesToRelease = new ArrayList<>();
+
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            for (Capacity capacity : agent.capacities) {
+                if (offer.agentResourcesMap.containsKey(agent)) {
+                    capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
+                }
+                capacitiesToRelease.add(capacity);
+            }
+        }
+        releaseReservedResources(appName);
+    }
+
+    private void releaseReservedResources(String appName) {
+        for(ResourceAgent resourceAgent: ResourceAgent.resourceAgents) {
+            for (Capacity capacity : resourceAgent.capacities) {
+                capacity.utilisations.removeIf(util -> util.resource.name.contains(appName)
+                        && util.state.equals(Utilisation.State.RESERVED));
+            }
+        }
+    }
+
+
     private Pair<ComputingAppliance, Utilisation> findLeadResource(List<Pair<ComputingAppliance, Utilisation>> utilisations) {
         Pair<ComputingAppliance, Utilisation> leadResource = null;
         double maxCpu = Integer.MIN_VALUE;
-        
+
         for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {
             if (pair.getRight().utilisedCpu > maxCpu) {
                 maxCpu = pair.getRight().utilisedCpu;
@@ -339,7 +348,18 @@ public class ResourceAgent {
             }
         }
         leadResource.getRight().type = "LR";
-        
+
         return leadResource;
+    }
+
+    private void handleUnfulfilledResources(AgentApplication app, int bcastMessageSize) {
+        MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
+            SimLogger.logRun("All ack. messages received for " + app.name + " at: " + Timed.getFireCount());
+            SimLogger.logRun(app.name + "'s resources cannot be fulfilled!");
+
+            releaseReservedResources(app.name);
+
+            app.deploymentTime = -1;
+        });
     }
 }

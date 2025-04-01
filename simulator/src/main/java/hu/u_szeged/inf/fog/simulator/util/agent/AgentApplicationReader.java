@@ -7,11 +7,14 @@ import java.io.IOException;
 
 public class AgentApplicationReader {
 
+    public static int appCount = 0;
+
     public static AgentApplication readAgentApplications(String filepath) {
         
         AgentApplication agentApplication = null;
         
         ObjectMapper objectMapper = new ObjectMapper();
+        appCount++;
 
         try {
             agentApplication = objectMapper.readValue(new File(filepath), AgentApplication.class);

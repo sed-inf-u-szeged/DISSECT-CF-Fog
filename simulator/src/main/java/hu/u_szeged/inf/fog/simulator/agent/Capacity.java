@@ -6,6 +6,8 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Capacity {
