@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.node;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.energy.specialized.IaaSEnergyMeter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
@@ -10,7 +9,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class ComputingAppliance {
      * physical machines and scheduling VM requests.
      */
     public IaaSService iaas;
-
+    
     /**
      * The covered physical neighborhood of the node from where it accepts IoT data (in km).
      */
@@ -87,11 +88,6 @@ public class ComputingAppliance {
     public AppVm broker;
 
     /**
-     * The energy consumed by this physical resource.
-     */
-    public double energyConsumption;
-
-    /**
      * A helper variable to store every important event of the runtime of 
      * this computing appliance.
      */
@@ -123,7 +119,6 @@ public class ComputingAppliance {
         this.range = range <= 0 ? Integer.MAX_VALUE : range;
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
-        this.readEnergy(); // TODO: use the global EnergyDataMeter class instead
     }
     
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
@@ -165,63 +160,27 @@ public class ComputingAppliance {
             }
         }
     }
-    
-    /**
-     * Reads and monitors energy consumption of the computing appliance.
-     * Energy consumption data is collected periodically using an {@code IaaSEnergyMeter}.
-     * The time period is set to 1 minute.
-     */
-    public void readEnergy() {
-        final IaaSEnergyMeter iaasEnergyMeter = new IaaSEnergyMeter(this.iaas);
+
+    public static void stopEnergyMetering() {
+        boolean devicesDown = true;
+        boolean applicationsDown = true;
         
-        /**
-         * A helper class which is able to periodically log the energy consumption.
-         */
-        class EnergyDataCollector extends Timed {
-            
-            /**
-             * Starts the data collection process.
-             */
-            public void start() {
-                subscribe(1 * 60 * 1000);
-            }
-
-            /**
-             * Stops the data collection process.
-             */
-            public void stop() {
-                unsubscribe();
-            }
-
-            /**
-             * It updates the energy consumption info in every minute until the IoT applications
-             * are running.
-             */
-            @Override
-            public void tick(final long fires) {
-                energyConsumption = iaasEnergyMeter.getTotalConsumption();
-                if (checkApplicationStatus() /* TODO: && Timed.getFireCount() > Device.longestRunningDevice*/) {
-                    this.stop();
-                    iaasEnergyMeter.stopMeter();
-                }
+        for (Device device : Device.allDevices) {
+            if (device.isSubscribed()) {
+                devicesDown = false;
             }
         }
-        
-        final EnergyDataCollector dc = new EnergyDataCollector();
-        iaasEnergyMeter.startMeter(1 * 60 * 1000, true);
-        dc.start();
-    }
-
-    /**
-     * Returns true if all applications are stopped.
-     */
-    private boolean checkApplicationStatus() {
-        for (Application a : this.applications) {
-            if (a.isSubscribed()) {
-                return false;
+        for (Application app : Application.allApplications) {
+            if (app.isSubscribed()) {
+                applicationsDown = false;
             }
         }
-        return true;
+       
+        if (devicesDown && applicationsDown) {
+            for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+                edc.stop();
+            }
+        }
     }
 
     /**
@@ -309,5 +268,14 @@ public class ComputingAppliance {
      */
     public static ArrayList<ComputingAppliance> getAllComputingAppliances() {
         return allComputingAppliances;
+    }
+
+    /**
+     * Returns the available storage in the repositories.
+     */
+    public long getAvailableStorage() {
+        return iaas.repositories.stream()
+                .mapToLong(Repository::getFreeStorageCapacity).
+                sum();
     }
 }

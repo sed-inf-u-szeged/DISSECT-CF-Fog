@@ -7,7 +7,14 @@ import os
 nodeInfo = sys.argv[1].split(";")
 
 # defining 20 different colors
-colors = ["red", "blue", "green", "yellow", "purple", "cyan", "magenta", "orange", "brown", "pink", "lime", "teal", "gray", "black", "white", "crimson", "turquoise", "indigo", "gold", "silver"]
+colors = [
+    "red", "blue", "green", "orange", "purple", "pink", 
+    "lightblue", "darkgreen", "darkblue", "lightred", "lightgreen", 
+    "darkred", "black", "darkpurple", "cadetblue", "lightgray", 
+    "white", "beige", "gray"
+]
+
+
 
 # set the map zoom based on the first node's info
 map = folium.Map(

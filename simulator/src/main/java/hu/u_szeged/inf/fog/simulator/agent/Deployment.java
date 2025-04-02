@@ -48,7 +48,7 @@ public class Deployment extends Timed {
         Utilisation utilisation = resource.getRight();
                 
         AlterableResourceConstraints arc = new AlterableResourceConstraints(utilisation.utilisedCpu, 1, utilisation.utilisedMemory);
-        VirtualAppliance va = (VirtualAppliance) registryService.lookup(app.getComponent(utilisation.resource.name));
+        VirtualAppliance va = (VirtualAppliance) registryService.lookup(app.getComponentName(utilisation.resource.name));
        
         try {
             utilisation.vm = node.iaas.requestVM(va, arc, registryService, 1)[0];
@@ -99,7 +99,8 @@ public class Deployment extends Timed {
                     long actualTime = Timed.getFireCount();
                     taskNum++;
                     try {
-                        util.getRight().vm.newComputeTask(30 * 60 * 1000, ResourceConsumption.unlimitedProcessing, 
+                        util.getRight().vm.newComputeTask(
+                                30 * 60 * 1000 * util.getRight().utilisedCpu, ResourceConsumption.unlimitedProcessing, 
                                 new ConsumptionEventAdapter() {
                             
                                 @Override

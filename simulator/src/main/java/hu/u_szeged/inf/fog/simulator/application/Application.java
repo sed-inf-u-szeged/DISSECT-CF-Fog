@@ -397,7 +397,7 @@ public class Application extends Timed {
         if (this.incomingData == 0 && this.taskInProgress == 0 && this.processedData == this.receivedData
                 && this.checkDeviceState()) {
             unsubscribe();
-
+            ComputingAppliance.stopEnergyMetering();
             try {
                 if (this.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.RUNNING)) {
                     this.computingAppliance.broker.pm = this.computingAppliance.broker.vm.getResourceAllocation()

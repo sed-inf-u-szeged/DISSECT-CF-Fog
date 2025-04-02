@@ -19,6 +19,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
@@ -42,6 +43,10 @@ public class FogSimulationExample {
         ComputingAppliance fog1 = new ComputingAppliance(cloudfile, "fog1", new GeoLocation(47.6, 17.9), 50);
         ComputingAppliance fog2 = new ComputingAppliance(cloudfile, "fog2", new GeoLocation(46.0, 18.2), 50);
 
+        new EnergyDataCollector("cloud1", cloud1.iaas, true);
+        new EnergyDataCollector("fog1", fog1.iaas, true);
+        new EnergyDataCollector("fog2", fog2.iaas, true);
+        
         fog1.setParent(cloud1, 77);
         fog2.setParent(cloud1, 80);
         
@@ -93,5 +98,6 @@ public class FogSimulationExample {
         ScenarioBase.logBatchProcessing(stoptime - starttime);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
     }
 }
