@@ -51,8 +51,7 @@ public class ResourceAgent {
     
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
 
-    public static int broadcastCounter;
-    
+    public int reBroadcastCounter;
     
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
             AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity ...capacities) {
@@ -86,9 +85,6 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        broadcastCounter++;
-        SimLogger.logRes("Broadcast "+ broadcastCounter);
-
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
@@ -97,26 +93,22 @@ public class ResourceAgent {
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
 
-
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = 0;
+            app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
-            new DeferredEvent(10000) {
+            new DeferredEvent(1000 * 10) {
                 @Override
                 protected void eventAction() {
-                    if(broadcastCounter-AgentApplicationReader.appCount < AgentApplicationReader.appCount) {
-                        SimLogger.logRes("Rebroadcast");
-
+                    if(reBroadcastCounter < AgentApplicationReader.appCount) {
                         broadcast(app, bcastMessageSize);
-
+                        reBroadcastCounter++;
+                        SimLogger.logRes("Rebroadcast "+ reBroadcastCounter + " for " + app.name);
                     }
                 }
             };
             handleUnfulfilledResources(app,bcastMessageSize);
-
-
         }
     }
 

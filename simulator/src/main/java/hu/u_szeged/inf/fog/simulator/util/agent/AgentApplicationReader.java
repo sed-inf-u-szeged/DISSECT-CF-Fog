@@ -14,11 +14,11 @@ public class AgentApplicationReader {
         AgentApplication agentApplication = null;
         
         ObjectMapper objectMapper = new ObjectMapper();
-        appCount++;
 
         try {
             agentApplication = objectMapper.readValue(new File(filepath), AgentApplication.class);
             agentApplication.reName();
+            appCount++;
         } catch (IOException e) {
             e.printStackTrace();
         }
