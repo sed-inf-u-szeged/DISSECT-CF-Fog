@@ -15,16 +15,20 @@ import java.util.PriorityQueue;
 public class RenewableScheduler extends WorkflowScheduler {
 
     public Provider provider;
+    int ratio;
+    boolean requirement;
 
     public RenewableScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance,
                            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs,
-                           Provider provider) {
+                           Provider provider, int ratio, boolean requirement) {
         this.computeArchitecture = computeArchitecture;
         this.instance = instance;
         this.jobs = jobs.getRight();
         this.appName = jobs.getLeft();
         WorkflowScheduler.schedulers.add(this);
         this.provider = provider;
+        this.ratio = ratio;
+        this.requirement = requirement;
     }
 
     @Override
