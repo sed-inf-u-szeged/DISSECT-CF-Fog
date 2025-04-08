@@ -20,6 +20,7 @@ import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -142,6 +143,9 @@ public class WorkflowExecutor {
                                 
                                 for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
                                     EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                }
+                                if (workflowScheduler instanceof RenewableScheduler) {
+                                    ((RenewableScheduler) workflowScheduler).provider.stopProcessing();
                                 }
                             }
                             String id = workflowJob.ca.name + "-" + Integer.toString(vm.hashCode());
