@@ -1,0 +1,38 @@
+{
+  "us-east-1": {
+    "coordinates": {
+      "latitude": "37.7749",
+      "longitude": "-122.4194"
+    },
+    "instances": {
+      "t2.micro": {
+        "cpu": "1",
+        "memory": "1",
+        "price": "0.01"
+      },
+      "m5.large": {
+        "cpu": "2",
+        "memory": "8",
+        "price": "0.096"
+      }
+    }
+  },
+  "eu-west-1": {
+    "coordinates": {
+      "latitude": "53.3498",
+      "longitude": "-6.2603"
+    },
+    "instances": {
+      "t2.micro": {
+        "cpu": "1",
+        "memory": "1",
+        "price": "0.01"
+      },
+      "m5.large": {
+        "cpu": "2",
+        "memory": "8",
+        "price": "0.10"
+      }
+    }
+  }
+}
