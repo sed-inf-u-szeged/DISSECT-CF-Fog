@@ -1,25 +1,42 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 /**
- * The cryptographic algorithm for the Public Key Infrastructure
+ * The `CryptoStrategy` interface defines the methods for cryptographic operations.
+ * Implementing classes must provide the logic for signing and verifying data, as well as managing key sizes and algorithm names.
  */
-public abstract class CryptoStrategy {
-    private String name;
-    private int keySize;
+public interface CryptoStrategy {
+    /**
+     * Computes the signing time for the cryptographic operation.
+     *
+     * @return the computed signing time
+     */
+    double sign();
 
-    public abstract double sign();
+    /**
+     * Computes the verification time for the cryptographic operation.
+     *
+     * @return the computed verification time
+     */
+    double verify();
 
-    public abstract double verify();
+    /**
+     * Gets the key size used in the cryptographic operation.
+     *
+     * @return the key size
+     */
+    int getKeySize();
 
-    public int getKeySize() {
-        return this.keySize;
-    }
+    /**
+     * Sets the key size for the cryptographic operation.
+     *
+     * @param keySize the key size to set
+     */
+    void setKeySize(int keySize);
 
-    public void setKeySize(int keySize) {
-        this.keySize = keySize;
-    }
-
-    public String getName() {
-        return name;
-    }
+    /**
+     * Gets the name of the cryptographic algorithm.
+     *
+     * @return the name of the algorithm
+     */
+    String getName();
 }

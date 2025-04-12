@@ -1,7 +1,17 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy;
 
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.BlockValidator;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 
+/**
+ * The `FindNodeStrategy` interface defines a method for finding a miner node.
+ * Implementations of this interface provide different strategies for selecting a node.
+ */
 public interface FindNodeStrategy {
-    BlockValidator findNode();
+
+    /**
+     * Finds a miner node based on the implemented strategy.
+     *
+     * @return the selected miner node
+     */
+    Miner findNode();
 }

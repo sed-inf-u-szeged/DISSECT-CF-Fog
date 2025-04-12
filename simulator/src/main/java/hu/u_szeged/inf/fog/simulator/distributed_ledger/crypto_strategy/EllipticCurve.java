@@ -1,6 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
-// TODO: in the future, these measurements should come from an aggregated configuration file, e.g. json
+/**
+ * The `EllipticCurve` enum represents various elliptic curves used in cryptographic operations.
+ * Each curve has a name, signing instructions, and verification instructions.
+ */
 public enum EllipticCurve {
     SECP160R1("secp160r1", 0.1, 0.1),
     NISTP192("nistp192", 0.2, 0.2),
@@ -28,20 +31,42 @@ public enum EllipticCurve {
     private final double signInstr;
     private final double verifyInstr;
 
+    /**
+     * Constructs an `EllipticCurve` enum constant with the specified name, signing instructions, and verification instructions.
+     *
+     * @param name the name of the elliptic curve
+     * @param signInstr the number of instructions needed for signing
+     * @param verifyInstr the number of instructions needed for verification
+     */
     EllipticCurve(String name, double signInstr, double verifyInstr) {
         this.name = name;
         this.signInstr = signInstr;
         this.verifyInstr = verifyInstr;
     }
 
+    /**
+     * Gets the name of the elliptic curve.
+     *
+     * @return the name of the elliptic curve
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Gets the number of instructions needed for signing.
+     *
+     * @return the number of signing instructions
+     */
     public double getSignInstructions() {
         return signInstr;
     }
 
+    /**
+     * Gets the number of instructions needed for verification.
+     *
+     * @return the number of verification instructions
+     */
     public double getVerifyInstructions() {
         return verifyInstr;
     }

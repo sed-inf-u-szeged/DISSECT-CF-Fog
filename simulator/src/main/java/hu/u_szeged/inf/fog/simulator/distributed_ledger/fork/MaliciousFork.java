@@ -1,6 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.BlockValidator;
+
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.List;
 
@@ -10,8 +12,8 @@ public class MaliciousFork extends ForkScenario {
     }
 
     @Override
-    public void executeScenario(List<BlockValidator> validators) {
-        System.out.println("[Fork] Triggered: " + scenarioName);
-        // Assign some validators to build an alternative chain
+    public void executeScenario(List<Miner> miners) {
+        SimLogger.logRun("[Fork] Triggered: " + scenarioName);
+        // Assign some miners to build an alternative chain
     }
 }
