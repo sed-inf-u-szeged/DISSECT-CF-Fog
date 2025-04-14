@@ -1,8 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
+import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
@@ -14,6 +17,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.TransactionValid
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransactionTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.eclipse.collections.impl.bimap.mutable.HashBiMap;
@@ -40,7 +44,7 @@ public class Miner extends Timed {
     private static final Random RANDOM = SeedSyncer.centralRnd;
     public static HashBiMap<ComputingAppliance, Miner> miners = new HashBiMap<>();
     public final ComputingAppliance computingAppliance;
-    public final VirtualMachine localVm;
+    public VirtualMachine localVm;
     public final String name;
     public final Mempool mempool;
     public final DistributedLedger distributedLedger;
@@ -65,18 +69,36 @@ public class Miner extends Timed {
      * @param validationStrategy           The strategy for validating transactions.
      */
     public Miner(DistributedLedger distributedLedger, TransactionSelectionStrategy transactionSelectionStrategy, ComputingAppliance computingAppliance, ValidationStrategy validationStrategy) {
-        this.setState(MinerState.WAITING_FOR_VM);
         this.name = "[Miner]" + miners.size();
+        this.setState(MinerState.WAITING_FOR_VM);
         miners.put(computingAppliance, this);
         this.mempool = new Mempool();
         this.distributedLedger = distributedLedger;
         this.transactionSelectionStrategy = transactionSelectionStrategy;
         this.validationStrategy = validationStrategy;
         this.computingAppliance = computingAppliance;
-        this.localVm = computingAppliance.broker.vm;
+        startVm();
         this.localLedger = new LocalLedger(this);
         this.scheduleTask(new SyncChainTask());
         subscribe(1);
+    }
+
+    public void startVm() {
+        try{
+            if (this.localVm == null) {
+                /** VM "image" file with deploy time of 800 instructions **/
+                VirtualAppliance va = new VirtualAppliance("va", 800, 0, false, 1_073_741_824L);
+                Repository repo = this.computingAppliance.iaas.repositories.get(0);
+                repo.registerObject(va);
+                /** VM resource requirements **/
+                AlterableResourceConstraints arc = new AlterableResourceConstraints(4, 0.001, 4_294_967_296L);
+
+                this.localVm = this.computingAppliance.iaas.requestVM(va, arc, repo, 1)[0];
+            }
+        }catch (Exception e){
+            SimLogger.logError("Failed to start VM: " + e.getMessage());
+            throw new RuntimeException("Failed to start VM: " + e.getMessage());
+        }
     }
 
     /**
@@ -143,7 +165,13 @@ public class Miner extends Timed {
      * @return {@code true} if the virtual machine is running, {@code false} otherwise.
      */
     public boolean isVmRunning() {
-        return localVm.getState() == VirtualMachine.State.RUNNING;
+        boolean a = localVm.getState().equals(VirtualMachine.State.RUNNING);
+        if(a){
+            SimLogger.logRun("VM is running");
+            SimLogger.logRun("Time: " + Timed.getFireCount());
+            System.exit(0);
+        }
+        return a;
     }
 
     /**

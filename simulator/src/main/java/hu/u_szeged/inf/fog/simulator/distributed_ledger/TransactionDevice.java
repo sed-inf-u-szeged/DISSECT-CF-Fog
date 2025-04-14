@@ -7,7 +7,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionPublishEvent;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
@@ -27,6 +26,8 @@ import java.util.Random;
  * This class is responsible for creating transactions at specified intervals and sending them to miners.
  */
 public class TransactionDevice extends Device {
+
+    public static final int CONNECT2NODE_MAX_RETRIES = 10;
 
     private static final Random random = SeedSyncer.centralRnd;
     private final FindNodeStrategy findNodeStrategy;
@@ -76,11 +77,11 @@ public class TransactionDevice extends Device {
     @Override
     public void tick(long fires) {
         if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
-            //TODO: use Sensor class?
+//            new Sensor(this, 1);
             String data = "SensorData{" + random.nextInt(100) + "}";
             Transaction tx = new Transaction(data, fileSize);
             TransactionMessage msg = new TransactionMessage(tx);
-            this.caRepository.registerObject(msg);
+            this.localMachine.localDisk.registerObject(msg);
             SimLogger.logRun("[TransactionDevice] generated transaction: " + tx);
             SimulationMetrics.getInstance().setTransactionCreationTime(tx, Timed.getFireCount());
         }
@@ -89,9 +90,29 @@ public class TransactionDevice extends Device {
             this.stopMeter();
         }
 
+        if (connectedNode == null && !attemptConnectionToNode(CONNECT2NODE_MAX_RETRIES)) {
+            return;
+        }
+
         for (TransactionMessage tm : getMessagesToPublish()) {
             publishTransaction(tm);
         }
+    }
+
+    /**
+     * Attempts to establish a connection to a node with a specified maximum number of retries.
+     * Logs a message each time a connection attempt fails.
+     *
+     * @param maxRetries the maximum number of connection attempts
+     * @return true if a connection to a node was successfully established, false otherwise
+     */
+    private boolean attemptConnectionToNode(int maxRetries) {
+        int tryCount = 0;
+        while (!connectToNode() && tryCount < maxRetries) {
+            tryCount++;
+            SimLogger.logRun(name + "  Could not connect to a miner. Retrying...");
+        }
+        return connectedNode != null;
     }
 
     /**
@@ -101,7 +122,7 @@ public class TransactionDevice extends Device {
      */
     private List<TransactionMessage> getMessagesToPublish() {
         List<TransactionMessage> messages = new ArrayList<>();
-        for (StorageObject so : this.caRepository.contents()) {
+        for (StorageObject so : this.localMachine.localDisk.contents()) {
             if (so instanceof TransactionMessage) {
                 messages.add((TransactionMessage) so);
             }
@@ -116,28 +137,25 @@ public class TransactionDevice extends Device {
      * @param msg the transaction message to be published
      */
     private void publishTransaction(TransactionMessage msg) {
-        while (connectedNode == null) {
-            Miner candidate = findNodeStrategy.findNode();
-            if (!connectToNode(candidate)) continue;
-            connectedNode = candidate;
-        }
-
         TransactionPublishEvent event = new TransactionPublishEvent(msg, this, connectedNode);
         try {
-            NetworkNode.initTransfer(msg.size,           // how many bytes to send
-                    ResourceConsumption.unlimitedProcessing, this.caRepository,                   // from me
-                    connectedNode.getLocalRepo(),               // to neighbor
+            NetworkNode.initTransfer(msg.size,                                               // how many bytes to send
+                    ResourceConsumption.unlimitedProcessing,
+                    this.localMachine.localDisk,                                           // from me
+                    connectedNode.getLocalRepo(),                                         // to neighbor
                     event);
         } catch (NetworkNode.NetworkException e) {
             SimLogger.logError(name + "  Could not publish transaction to " + connectedNode.getName() + ": " + e.getMessage());
         }
     }
 
-    public boolean connectToNode(Miner miner) {
-        if (miner.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.RUNNING)) {
-            this.caRepository = miner.computingAppliance.iaas.repositories.get(0);
+    public boolean connectToNode() {
+        Miner candidate = findNodeStrategy.findNode();
+        if (candidate.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
+            this.caRepository = candidate.computingAppliance.iaas.repositories.get(0);
             int calc = this.latency + (int) (this.geoLocation.calculateDistance(this.application.computingAppliance.geoLocation) / 1000);
-            this.localMachine.localDisk.addLatencies(miner.computingAppliance.iaas.repositories.get(0).getName(), calc);
+            this.localMachine.localDisk.addLatencies(candidate.computingAppliance.iaas.repositories.get(0).getName(), calc);
+            this.connectedNode = candidate;
             return true;
         } else return false;
     }

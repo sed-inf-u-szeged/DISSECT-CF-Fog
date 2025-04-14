@@ -29,7 +29,7 @@ public class Sensor extends DeferredEvent {
      * @param device the device that will store the generated data
      * @param delay the length of the measurement (ms)
      */
-    Sensor(Device device, long delay) {
+    public Sensor(Device device, long delay) {
         super(delay);
         this.device = device;
     }
