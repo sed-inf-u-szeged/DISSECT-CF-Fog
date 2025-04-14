@@ -32,29 +32,29 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
-    
+
     public static String rankingMethodName;
-    
+
     public static String rankingScriptDir;
-    
+
     public String name;
-    
+
     ComputingAppliance hostNode;
-    
+
     VirtualMachine service;
-    
+
     public double hourlyPrice;
-    
+
     public List<Capacity> capacities;
-    
+
     AgentStrategy agentStrategy;
-    
+
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
 
     public int reBroadcastCounter;
-    
+
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
-            AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity ...capacities) {
+                         AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
         this.name = name;
         this.hourlyPrice = hourlyPrice;
@@ -63,11 +63,11 @@ public class ResourceAgent {
         this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
     }
-    
+
     public void registerCapacity(Capacity capacity) {
         this.capacities.add(capacity);
     }
-    
+
     private void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
         try {
             this.hostNode = this.capacities.get(SeedSyncer.centralRnd.nextInt(this.capacities.size())).node;
@@ -76,8 +76,8 @@ public class ResourceAgent {
             VirtualMachine vm = this.hostNode.iaas.requestVM(va, resourceAgentArc,
                     this.hostNode.iaas.repositories.get(0), 1)[0];
             this.service = vm;
-                
-            SimLogger.logRun(name + " agent started working at: " + Timed.getFireCount() 
+
+            SimLogger.logRun(name + " agent started working at: " + Timed.getFireCount()
                     + ", hosted on: " + this.hostNode.name);
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,27 +95,39 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
                 @Override
                 protected void eventAction() {
-                    if(reBroadcastCounter < AgentApplicationReader.appCount) {
+                    if (reBroadcastCounter < AgentApplicationReader.appCount) {
                         broadcast(app, bcastMessageSize);
                         reBroadcastCounter++;
-                        SimLogger.logRes("Rebroadcast "+ reBroadcastCounter + " for " + app.name);
+                        SimLogger.logRes("Rebroadcast " + reBroadcastCounter + " for " + app.name);
                     }
                 }
             };
-            handleUnfulfilledResources(app,bcastMessageSize);
+
+            acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
+            app.deploymentTime = -1;
+        }
+    }
+
+    private void releaseResourcesAndNotifyNoOffers(AgentApplication app) {
+        SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
+
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            for (Capacity capacity : agent.capacities) {
+                freeReservedResources(app.name, capacity);
+            }
         }
     }
 
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {               
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
 
@@ -126,28 +138,26 @@ public class ResourceAgent {
         for (Offer o : app.offers) {
             System.out.println(o);
         }
-    } 
-    
+    }
+
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
-        
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
         Set<Pair<ResourceAgent, Resource>> currentCombination = new LinkedHashSet<>();
         Set<Resource> includedResources = new LinkedHashSet<>();
 
-
         generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
-        
+
         for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
 
             for (Pair<ResourceAgent, Resource> pair : combination) {
                 ResourceAgent agent = pair.getLeft();
                 Resource resource = pair.getRight();
-                
+
                 agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
                 agentResourcesMap.get(agent).add(resource);
             }
-            
+
             app.offers.add(new Offer(agentResourcesMap, app.offers.size()));
         }
     }
@@ -156,13 +166,12 @@ public class ResourceAgent {
                                       Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
                                       Set<Pair<ResourceAgent, Resource>> currentCombination,
                                       Set<Resource> includedResources) {
-
         if (includedResources.size() == resourceCount) {
             uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
             return;
         }
-        
-        for (Pair<ResourceAgent, Resource> pair : pairs) {      
+
+        for (Pair<ResourceAgent, Resource> pair : pairs) {
             if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
                 currentCombination.add(pair);
                 includedResources.add(pair.getRight());
@@ -174,11 +183,10 @@ public class ResourceAgent {
             }
         }
     }
-    
-    private int callRankingScript(AgentApplication app) {
 
+    private int callRankingScript(AgentApplication app) {
         String inputfile = ScenarioBase.resultDirectory + File.separator + app.name + "-offers.json";
-        
+
         try {
             String command;
             ProcessBuilder processBuilder;
@@ -186,13 +194,13 @@ public class ResourceAgent {
             // TODO: revise these commands
             if (SystemUtils.IS_OS_WINDOWS) {
                 command = "cd /d " + rankingScriptDir
-                    + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
-                    + " --offers_loc " + inputfile;
+                        + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
+                        + " --offers_loc " + inputfile;
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
             } else if (SystemUtils.IS_OS_LINUX) {
                 command = "cd " + rankingScriptDir
-                    + " && python3 call_ranking_func.py --method_name " + rankingMethodName
-                    + " --offers_loc " + inputfile;
+                        + " && python3 call_ranking_func.py --method_name " + rankingMethodName
+                        + " --offers_loc " + inputfile;
 
                 processBuilder = new ProcessBuilder("bash", "-c", command);
             } else {
@@ -201,48 +209,48 @@ public class ResourceAgent {
 
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-            process.waitFor(); 
+            process.waitFor();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 StringBuilder arrayContent = new StringBuilder();
-                 
+
                 while ((line = reader.readLine()) != null) {
                     System.out.println(line);
                     arrayContent.append(line).append(" ");
                 }
-                
+
                 String content = arrayContent.toString();
-                
-                content = content.replaceAll("[^0-9\\s]", ""); 
-                
+
+                content = content.replaceAll("[^0-9\\s]", "");
+
                 List<Integer> numberList = Arrays.stream(content.split("\\s+"))
-                        .filter(token -> !token.isEmpty()) 
-                        .map(Integer::parseInt) 
+                        .filter(token -> !token.isEmpty())
+                        .map(Integer::parseInt)
                         .collect(Collectors.toList());
-                
+
                 int firstNumber = numberList.get(0);
                 int lastNumber = numberList.get(numberList.size() - 1);
-                
-                SimLogger.logRun(app.offers.size() + " offers were ranked for " 
-                        + app.name + " at: " + Timed.getFireCount() 
+
+                SimLogger.logRun(app.offers.size() + " offers were ranked for "
+                        + app.name + " at: " + Timed.getFireCount()
                         + " as follows: first = " + firstNumber + ", last = " + lastNumber);
-                
+
                 return firstNumber;
                 //return lastNumber;
             }
         } catch (IOException | InterruptedException e) {
             e.getStackTrace();
         }
+
         return -1;
     }
 
-    private void writeFile(AgentApplication app) {     
-
-        List<Double> reliabilityList = new ArrayList<Double>(); 
-        List<Double> energyList = new ArrayList<Double>(); 
-        List<Double> bandwidthList = new ArrayList<Double>(); 
-        List<Double> latencyList = new ArrayList<Double>(); 
-        List<Double> priceList = new ArrayList<Double>(); 
+    private void writeFile(AgentApplication app) {
+        List<Double> reliabilityList = new ArrayList<Double>();
+        List<Double> energyList = new ArrayList<Double>();
+        List<Double> bandwidthList = new ArrayList<Double>();
+        List<Double> latencyList = new ArrayList<Double>();
+        List<Double> priceList = new ArrayList<Double>();
 
         for (Offer offer : app.offers) {
             double averageLatency = 0;
@@ -256,78 +264,79 @@ public class ResourceAgent {
                         agent.hostNode.iaas.repositories.get(0).getName());
 
                 averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
-                
-                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();     
-                
+
+                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();
+
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
-                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange() 
+                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange()
                             * (resource.getTotalReqCpu() / 100);
-                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();   
+                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
                 }
-            } 
-            
+            }
+
             /*
             averageLatency /= offer.agentResourcesMap.keySet().size();
             averageBandwidth /= offer.agentResourcesMap.keySet().size();
             averageEnergy /= offer.agentResourcesMap.keySet().size();
             averagePrice /= offer.agentResourcesMap.keySet().size();
             */
-            
+
             reliabilityList.add(1.0);
-            
+
             //double epsilon = averageEnergy * 1e-10 * r.nextDouble();
             energyList.add(averageEnergy);
             bandwidthList.add(averageBandwidth);
             latencyList.add(averageLatency);
             priceList.add(averagePrice);
-            
+
             /*
-            System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: " 
+            System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: "
                 + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
             */
-            
-            QosPriority qosPriority = new QosPriority(app.energyPriority, app.bandwidthPriority, app.latencyPriority, app.pricePriority);
 
+            QosPriority qosPriority = new QosPriority(app.energyPriority, app.bandwidthPriority, app.latencyPriority, app.pricePriority);
             JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
-            
             AgentOfferWriter.writeOffers(jsonData, app.name);
         }
     }
 
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
-            SimLogger.logRun("All ack. messages received for " + app.name + " at: " + Timed.getFireCount());
+            SimLogger.logRun("All ack. messages receieved for " + app.name
+                    + " at: " + Timed.getFireCount());
 
+            if (offer.id == -1) {
+                releaseResourcesAndNotifyNoOffers(app);
+                return;
+            }
 
-            assignAndReleaseResources(offer, app.name);
+            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                for (Capacity capacity : agent.capacities) {
+                    if (offer.agentResourcesMap.containsKey(agent)) {
+                        capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
+                    }
+
+                    freeReservedResources(app.name, capacity);
+                }
+            }
+
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
     }
 
-    private void assignAndReleaseResources(Offer offer, String appName) {
-        final List<Capacity> capacitiesToRelease = new ArrayList<>();
+    private void freeReservedResources(final String appName, final Capacity capacity) {
+        List<Resource> resourcesToBeRemoved = new ArrayList<>();
 
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-            for (Capacity capacity : agent.capacities) {
-                if (offer.agentResourcesMap.containsKey(agent)) {
-                    capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
-                }
-                capacitiesToRelease.add(capacity);
+        for (Utilisation util : capacity.utilisations) {
+            if (util.resource.name.contains(appName) && util.state.equals(Utilisation.State.RESERVED)) {
+                resourcesToBeRemoved.add(util.resource);
             }
         }
-        releaseReservedResources(appName);
-    }
-
-    private void releaseReservedResources(String appName) {
-        for(ResourceAgent resourceAgent: ResourceAgent.resourceAgents) {
-            for (Capacity capacity : resourceAgent.capacities) {
-                capacity.utilisations.removeIf(util -> util.resource.name.contains(appName)
-                        && util.state.equals(Utilisation.State.RESERVED));
-            }
+        for (Resource resource : resourcesToBeRemoved) {
+            capacity.releaseCapacity(resource);
         }
     }
-
 
     private Pair<ComputingAppliance, Utilisation> findLeadResource(List<Pair<ComputingAppliance, Utilisation>> utilisations) {
         Pair<ComputingAppliance, Utilisation> leadResource = null;
@@ -342,16 +351,5 @@ public class ResourceAgent {
         leadResource.getRight().type = "LR";
 
         return leadResource;
-    }
-
-    private void handleUnfulfilledResources(AgentApplication app, int bcastMessageSize) {
-        MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
-            SimLogger.logRun("All ack. messages received for " + app.name + " at: " + Timed.getFireCount());
-            SimLogger.logRun(app.name + "'s resources cannot be fulfilled!");
-
-            releaseReservedResources(app.name);
-
-            app.deploymentTime = -1;
-        });
     }
 }
