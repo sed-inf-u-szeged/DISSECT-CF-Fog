@@ -41,6 +41,8 @@ public class WorkflowJob {
 
     public Actuator actuator;
 
+    public float consumption;
+
     public static enum State {
 
         SUBMITTED,
