@@ -98,6 +98,9 @@ public class WorkflowExecutor {
                                 for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
                                     EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
                                 }
+                                if (workflowScheduler instanceof RenewableScheduler) {
+                                    ((RenewableScheduler) workflowScheduler).provider.stopProcessing();
+                                }
                             }
                             actuator.isWorking = false;
                             actuator.actuatorEventList
