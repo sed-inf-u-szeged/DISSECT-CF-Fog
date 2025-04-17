@@ -7,8 +7,11 @@ import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
+import java.util.Random;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MaxMinScheduler extends WorkflowScheduler {
@@ -43,6 +46,7 @@ public class MaxMinScheduler extends WorkflowScheduler {
         }
         
         int nodeIndex = 0;
+        Collections.shuffle(this.jobs);
         for (WorkflowJob workflowJob : this.jobs) {
             workflowJob.ca = this.computeArchitecture.get(nodeIndex);
             if (nodeIndex == this.computeArchitecture.size() - 1) {

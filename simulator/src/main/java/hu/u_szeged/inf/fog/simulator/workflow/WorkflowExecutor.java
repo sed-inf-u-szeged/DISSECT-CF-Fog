@@ -168,7 +168,7 @@ public class WorkflowExecutor {
         VirtualMachine virtualMachine = null;
         int min = Integer.MAX_VALUE;
         for (VirtualMachine vm : ca.iaas.listVMs()) {
-            if (vm.getState().equals(VirtualMachine.State.RUNNING) && vm.underProcessing.size() < min) {
+            if (vm.getState().equals(VirtualMachine.State.RUNNING) && vm.underProcessing.size() <= min) {
                 virtualMachine = vm;
                 min = vm.underProcessing.size();
             }
