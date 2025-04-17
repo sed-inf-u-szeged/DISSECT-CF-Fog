@@ -60,17 +60,15 @@ public class WorkflowSimulation {
         
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
         
-        /** --- Single Cluster Approach 
+        /** --- Single Cluster Approach      --- */
         ArrayList<WorkflowComputingAppliance> nodes = new ArrayList<>(List.of(
-            node2, node3, node4, node5, node6, node7, node8, node9, node10, 
-            node11, node12, node13, node14, node15, node16, node17, node18, node19, node20
+            node0, node2, node3, node4, node5, node6, node7, node8, node9, node10, 
+            node11, node12, node13, node14, node15, node16, node17, node18, node19
         ));
 
         clusterAssignments.put(node1, nodes);
-        --- */
-        
-        
-        /** --- Predefined Centroids Approach
+
+        /** --- Predefined Centroids Approach 
         ArrayList<WorkflowComputingAppliance> centerNodes = new ArrayList<>();
 
         centerNodes.add(node5);
@@ -80,6 +78,7 @@ public class WorkflowSimulation {
        
         ArrayList<WorkflowComputingAppliance> nodesToBeClustered = new ArrayList<>();
         
+        nodesToBeClustered.add(node0);
         nodesToBeClustered.add(node1);
         nodesToBeClustered.add(node2);
         nodesToBeClustered.add(node3);
@@ -95,17 +94,16 @@ public class WorkflowSimulation {
         nodesToBeClustered.add(node16);
         nodesToBeClustered.add(node17);
         nodesToBeClustered.add(node18);
-        nodesToBeClustered.add(node20);
 
-        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 50, 50, 0.75, 0.75, 0.25, 0.15);
+        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.1, 0.3);
         --- */
         
-        
-        /** --- Adaptive Clustering Approach  --- */
+        /** --- Adaptive Clustering Approach 
         double[][] globalPheromoneMatrix = DecentralisedAntOptimiser.runOptimiser(ComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
         ClusterMessenger cm = new ClusterMessenger(globalPheromoneMatrix, ComputingAppliance.allComputingAppliances, 1 * 60 * 1000);
         Timed.simulateUntilLastEvent();
         clusterAssignments = cm.clusterAssignments;
+         --- */
         
         // Energy meters
         new EnergyDataCollector("node-0", node0.iaas, true);
@@ -134,7 +132,6 @@ public class WorkflowSimulation {
         
         List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiser.sortClustersByAveragePairwiseDistance(clusterAssignments);
        
-        
         // Creating the executor engine
         WorkflowExecutor executor = WorkflowExecutor.getIstance();
         
@@ -153,6 +150,7 @@ public class WorkflowSimulation {
         // Logging
         Timed.simulateUntilLastEvent();
         ScenarioBase.logStreamProcessing();
+        SimLogger.logRes("Messages required for clustering: " + ClusterMessenger.clusterMessageCount);
         WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
