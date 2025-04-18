@@ -2,10 +2,14 @@ package hu.u_szeged.inf.fog.simulator.node;
 
 import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
+
+import java.util.PriorityQueue;
 
 public class RenewableWorkflowComputingAppliance extends WorkflowComputingAppliance {
 
     Provider provider;
+    public String file;
 
     /**
      * Constructs a new {@code WorkflowComputingAppliance} with the specified parameters.
@@ -17,6 +21,7 @@ public class RenewableWorkflowComputingAppliance extends WorkflowComputingApplia
      */
     public RenewableWorkflowComputingAppliance(String file, String name, GeoLocation geoLocation, long range, Provider provider) throws Exception {
         super(file, name, geoLocation, range);
+        this.file = file;
         this.provider = provider;
     }
 }

@@ -39,7 +39,7 @@ public class RenewableWorkflowSimulation {
         Battery battery = new Battery(10_000, 1000, 3000, 100);
         FossilSource fossilSource = new FossilSource(5000);
 
-        Provider provider = new Provider(battery, new ArrayList<EnergySource>(), fossilSource, 3_600_000, 3_600_001, 1, 1, 50);
+        Provider provider = new Provider(battery, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 1, 1, 50);
 
         Solar solar = new Solar(1,200);
         Wind wind = new Wind(1, 100);
@@ -120,26 +120,26 @@ public class RenewableWorkflowSimulation {
          clusterAssignments = cm.clusterAssignments;
          --- */
         // Energy meters
-        new EnergyDataCollector("node-0", node0.iaas, true);
-        new EnergyDataCollector("node-1", node1.iaas, true);
-        new EnergyDataCollector("node-2", node2.iaas, true);
-        new EnergyDataCollector("node-3", node3.iaas, true);
-        new EnergyDataCollector("node-4", node4.iaas, true);
-        new EnergyDataCollector("node-5", node5.iaas, true);
-        new EnergyDataCollector("node-6", node6.iaas, true);
-        new EnergyDataCollector("node-7", node7.iaas, true);
-        new EnergyDataCollector("node-8", node8.iaas, true);
-        new EnergyDataCollector("node-9", node9.iaas, true);
-        new EnergyDataCollector("node-10", node10.iaas, true);
-        new EnergyDataCollector("node-11", node11.iaas, true);
-        new EnergyDataCollector("node-12", node12.iaas, true);
-        new EnergyDataCollector("node-13", node13.iaas, true);
-        new EnergyDataCollector("node-14", node14.iaas, true);
-        new EnergyDataCollector("node-15", node15.iaas, true);
-        new EnergyDataCollector("node-16", node16.iaas, true);
-        new EnergyDataCollector("node-17", node17.iaas, true);
-        new EnergyDataCollector("node-18", node18.iaas, true);
-        new EnergyDataCollector("node-19", node19.iaas, true);
+        new EnergyDataCollector("node-0", node0.iaas, false);
+        new EnergyDataCollector("node-1", node1.iaas, false);
+        new EnergyDataCollector("node-2", node2.iaas, false);
+        new EnergyDataCollector("node-3", node3.iaas, false);
+        new EnergyDataCollector("node-4", node4.iaas, false);
+        new EnergyDataCollector("node-5", node5.iaas, false);
+        new EnergyDataCollector("node-6", node6.iaas, false);
+        new EnergyDataCollector("node-7", node7.iaas, false);
+        new EnergyDataCollector("node-8", node8.iaas, false);
+        new EnergyDataCollector("node-9", node9.iaas, false);
+        new EnergyDataCollector("node-10", node10.iaas, false);
+        new EnergyDataCollector("node-11", node11.iaas, false);
+        new EnergyDataCollector("node-12", node12.iaas, false);
+        new EnergyDataCollector("node-13", node13.iaas, false);
+        new EnergyDataCollector("node-14", node14.iaas, false);
+        new EnergyDataCollector("node-15", node15.iaas, false);
+        new EnergyDataCollector("node-16", node16.iaas, false);
+        new EnergyDataCollector("node-17", node17.iaas, false);
+        new EnergyDataCollector("node-18", node18.iaas, false);
+        new EnergyDataCollector("node-19", node19.iaas, false);
 
 
         // The result of the clustering

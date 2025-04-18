@@ -4,12 +4,14 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
+import hu.u_szeged.inf.fog.simulator.node.RenewableWorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.PriorityQueue;
 
 public class RenewableScheduler extends WorkflowScheduler {
@@ -17,24 +19,43 @@ public class RenewableScheduler extends WorkflowScheduler {
     public Provider provider;
     int ratio;
     boolean requirement;
+    ArrayList<RenewableWorkflowComputingAppliance> renewableComputeArchitecture;
+
+    public static class RenewableComperator implements Comparator<WorkflowJob> {
+
+        @Override
+        public int compare(WorkflowJob o1, WorkflowJob o2) {
+            float o1cost = (float) (o1.consumption * o1.runtime);
+            float o2cost = (float) (o2.consumption * o2.runtime);
+            if (o1cost > o2cost) {
+                return 1;
+            }
+            if (o1cost < o2cost) {
+                return -1;
+            }
+            return 0;
+        }
+    }
 
     public RenewableScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance,
                            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs,
-                           Provider provider, int ratio, boolean requirement) {
+                           Provider provider, int ratio, boolean requirement) throws Exception {
         this.computeArchitecture = computeArchitecture;
         this.instance = instance;
         this.jobs = jobs.getRight();
         this.appName = jobs.getLeft();
         WorkflowScheduler.schedulers.add(this);
-        this.provider = provider;
         this.ratio = ratio;
         this.requirement = requirement;
+        this.provider = provider;
+        this.renewableComputeArchitecture = convertToRenewabelAppliance(computeArchitecture);
+        this.jobs = assignConsumptionToOwnJobs(jobs.getRight());
     }
 
     @Override
     public void init() {
-        for (WorkflowComputingAppliance ca : this.computeArchitecture) {
-            ca.workflowQueue = new PriorityQueue<WorkflowJob>(new MaxMinScheduler.MaxMinComperator());
+        for (RenewableWorkflowComputingAppliance ca : this.renewableComputeArchitecture) {
+            ca.workflowQueue = new PriorityQueue<WorkflowJob>(new RenewableComperator());
             ca.iaas.repositories.get(0).registerObject(this.instance.va);
             try {
                 ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
@@ -87,5 +108,33 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
         }
         return count;
+    }
+
+    private ArrayList<WorkflowJob> assignConsumptionToOwnJobs(ArrayList<WorkflowJob> oldJobs) {
+
+        ArrayList<WorkflowJob> newJobs = new ArrayList<WorkflowJob>();
+
+        for (WorkflowJob job : oldJobs) {
+            job.consumption = 10;
+            newJobs.add(job);
+        }
+
+        return newJobs;
+    }
+
+    public float getJobConsumption(WorkflowJob job) {
+        float hours = (float) (job.runtime / 3600);
+        return hours * job.consumption;
+    }
+
+    private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
+        ArrayList<RenewableWorkflowComputingAppliance> rcas= new ArrayList<RenewableWorkflowComputingAppliance>();
+        for (WorkflowComputingAppliance ca : cas) {
+
+            RenewableWorkflowComputingAppliance rca = (RenewableWorkflowComputingAppliance) ca;
+
+            rcas.add(rca);
+        }
+        return rcas;
     }
 }
