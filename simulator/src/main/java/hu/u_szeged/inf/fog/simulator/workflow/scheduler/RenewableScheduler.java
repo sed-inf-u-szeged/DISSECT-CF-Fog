@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
@@ -7,6 +8,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.RenewableWorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -54,49 +56,72 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     @Override
     public void init() {
-        for (RenewableWorkflowComputingAppliance ca : this.renewableComputeArchitecture) {
-            ca.workflowQueue = new PriorityQueue<WorkflowJob>(new RenewableComperator());
-            ca.iaas.repositories.get(0).registerObject(this.instance.va);
-            try {
-                ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
-            } catch (VMManager.VMManagementException e) {
-                e.printStackTrace();
-            }
-        }
 
-        int nodeIndex = 0;
-        for (WorkflowJob workflowJob : this.jobs) {
-            workflowJob.ca = this.computeArchitecture.get(nodeIndex);
-            if (nodeIndex == this.computeArchitecture.size() - 1) {
-                nodeIndex = 0;
-            } else {
-                nodeIndex++;
+        if (this.provider.renewableBattery.getBatteryLevel() < 3020) {
+            new DeferredEvent(1001) {
+                @Override
+                protected void eventAction() {
+                    init();
+                }
+            };
+        } else {
+
+            for (RenewableWorkflowComputingAppliance ca : this.renewableComputeArchitecture) {
+                ca.workflowQueue = new PriorityQueue<WorkflowJob>(new RenewableComperator());
+                ca.iaas.repositories.get(0).registerObject(this.instance.va);
+                try {
+                    ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
+                } catch (VMManager.VMManagementException e) {
+                    e.printStackTrace();
+                }
             }
 
-            if (workflowJob.inputs.get(0).amount == 0) {
-                workflowJob.ca.workflowQueue.add(workflowJob);
+            int nodeIndex = 0;
+            for (WorkflowJob workflowJob : this.jobs) {
+                workflowJob.ca = this.computeArchitecture.get(nodeIndex);
+                if (nodeIndex == this.computeArchitecture.size() - 1) {
+                    nodeIndex = 0;
+                } else {
+                    nodeIndex++;
+                }
+
+                if (workflowJob.inputs.get(0).amount == 0) {
+                    workflowJob.ca.workflowQueue.add(workflowJob);
+                }
             }
         }
     }
 
     @Override
     public void schedule(WorkflowJob workflowJob) {
-        if (workflowJob.inputs.get(0).amount == 0) {
-            workflowJob.ca.workflowQueue.add(workflowJob);
-        }
 
-        for (WorkflowComputingAppliance wca : this.computeArchitecture) {
-            int vmCount = 0;
-            int jobCount = 0;
-            for (VirtualMachine vm : wca.iaas.listVMs()) {
-                jobCount += vm.underProcessing.size();
-                vmCount++;
+        if (this.provider.renewableBattery.getBatteryLevel() < 3060) {
+            new DeferredEvent(1001) {
+                @Override
+                protected void eventAction() {
+                    schedule(workflowJob);
+                }
+            };
+        } else {
+
+            if (workflowJob.inputs.get(0).amount == 0) {
+                workflowJob.ca.workflowQueue.add(workflowJob);
             }
-            if (jobCount / vmCount > 1) {
-                this.addVm(wca);
-            } else if (countRunningVms(wca) > 1) {
-                this.shutdownVm(wca);
+
+            for (WorkflowComputingAppliance wca : this.computeArchitecture) {
+                int vmCount = 0;
+                int jobCount = 0;
+                for (VirtualMachine vm : wca.iaas.listVMs()) {
+                    jobCount += vm.underProcessing.size();
+                    vmCount++;
+                }
+                if (jobCount / vmCount > 1) {
+                    this.addVm(wca);
+                } else if (countRunningVms(wca) > 1) {
+                    this.shutdownVm(wca);
+                }
             }
+            WorkflowExecutor.execute(this);
         }
     }
 

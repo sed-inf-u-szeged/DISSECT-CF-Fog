@@ -40,7 +40,7 @@ public class Battery {
      * @return                  The current ammount stored in the Battery
      */
 
-    float getBatteryLevel() {
+    public float getBatteryLevel() {
         return this.batteryLevel;
     }
 

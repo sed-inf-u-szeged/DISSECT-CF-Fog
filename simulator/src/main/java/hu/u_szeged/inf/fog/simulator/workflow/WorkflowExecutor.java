@@ -223,7 +223,9 @@ public class WorkflowExecutor {
                                                 workflowScheduler.bytesOnNetwork += uses.size;
                                                 
                                                 workflowScheduler.schedule(childWorkflowJob);
-                                                execute(workflowScheduler);
+                                                if (!(workflowScheduler instanceof RenewableScheduler)) {
+                                                    execute(workflowScheduler);
+                                                }
                                             }
                                         });
                             } catch (NetworkException e) {

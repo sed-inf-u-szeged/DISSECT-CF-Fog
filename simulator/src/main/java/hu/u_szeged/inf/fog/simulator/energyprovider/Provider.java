@@ -8,7 +8,7 @@ public class Provider {
 
     ArrayList<EnergySource> renewableSources;
     FossilSource fossilSource;
-    Battery renewableBattery;
+    public Battery renewableBattery;
     float renewableBasePrice;
     float renewablePrice;
     float fossilBasePrice;
