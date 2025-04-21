@@ -60,27 +60,27 @@ public class WorkflowSimulation {
         
         WorkflowComputingAppliance node18 = new WorkflowComputingAppliance(
                 AgentTest.createNode("node18", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
-                		1, 3.5, 7.5, 1125_000, 15, new HashMap<>()),
+                		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(55.9533, -3.1883));
         
         WorkflowComputingAppliance node15 = new WorkflowComputingAppliance(
                 AgentTest.createNode("node15", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
-                		1, 3.5, 7.5, 1125_000, 15, new HashMap<>()),
+                		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(40.4168, -3.7038));
         
         WorkflowComputingAppliance node4 = new WorkflowComputingAppliance(
                 AgentTest.createNode("node4", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
-                		1, 3.5, 7.5, 1125_000, 15, new HashMap<>()),
+                		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(41.0082, 28.9784));
         
         WorkflowComputingAppliance node7 = new WorkflowComputingAppliance(
                 AgentTest.createNode("node7", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
-                		1, 3.5, 7.5, 1125_000, 15, new HashMap<>()),
+                		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(59.3293, 18.0686));
         
         WorkflowComputingAppliance node2 = new WorkflowComputingAppliance(
                 AgentTest.createNode("node2", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
-                		1, 3.5, 7.5, 1125_000, 15, new HashMap<>()),
+                		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(52.5200, 13.4050));
         
         WorkflowComputingAppliance.setDistanceBasedLatency();
