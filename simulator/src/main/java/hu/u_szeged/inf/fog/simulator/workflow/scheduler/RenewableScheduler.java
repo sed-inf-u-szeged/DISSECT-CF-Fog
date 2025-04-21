@@ -162,4 +162,8 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
         return rcas;
     }
+
+    boolean doesProviderHaveEnoughEnergy(WorkflowJob job) {
+        return true;
+    }
 }
