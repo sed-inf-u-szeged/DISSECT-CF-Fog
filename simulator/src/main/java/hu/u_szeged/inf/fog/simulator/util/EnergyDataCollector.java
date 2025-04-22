@@ -76,7 +76,6 @@ public class EnergyDataCollector extends Timed {
         if (logging) {
             readings.computeIfAbsent(this.name, k -> new TreeMap<>()).put(Timed.getFireCount(), energyConsumption);
         }
-      
     }
     
     public static EnergyDataCollector getEnergyCollector(IaaSService iaas) {

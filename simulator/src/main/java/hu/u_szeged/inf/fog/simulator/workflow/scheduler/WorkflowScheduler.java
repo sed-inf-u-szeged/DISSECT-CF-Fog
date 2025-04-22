@@ -9,6 +9,7 @@ import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.TreeMap;
 
 public abstract class WorkflowScheduler {
@@ -43,27 +44,32 @@ public abstract class WorkflowScheduler {
 
     public abstract void init();
     
-    public void addVm(WorkflowComputingAppliance ca) {
+    public void addVm(WorkflowComputingAppliance ca, int num) {
         try {
-            ca.workflowVms.add(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), 1)[0]);
+            ca.workflowVms.addAll( Arrays.asList(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), num)));
         } catch (VMManagementException e) {
             e.printStackTrace();
         }
     }
-
-    public void shutdownVm(WorkflowComputingAppliance ca) {
+    
+    public void shutdownVm(WorkflowComputingAppliance ca, int keepAlive) {
+        ArrayList<VirtualMachine> toShutDown = new ArrayList<>();
         for (VirtualMachine vm : ca.iaas.listVMs()) {
             if (vm.getState().equals(VirtualMachine.State.RUNNING) && vm.underProcessing.isEmpty()) {
+                toShutDown.add(vm);
+            }
+        }
+        if (toShutDown.size() > keepAlive) {
+            for (int i = 0; i < toShutDown.size() - keepAlive; i++) {
                 try {
-                    vm.switchoff(false);
+                    toShutDown.get(i).switchoff(false);
                 } catch (StateChangeException e) {
                     e.printStackTrace();
                 }
-                break;
             }
         }
     }
-    
+
     /*
     public void jobReAssign(WorkflowJob workflowJob, ComputingAppliance futureAppliance) {
 

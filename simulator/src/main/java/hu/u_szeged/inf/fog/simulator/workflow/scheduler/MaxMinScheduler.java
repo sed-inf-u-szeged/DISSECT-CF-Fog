@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import java.util.Random;
-
 import org.apache.commons.lang3.tuple.Pair;
 
 public class MaxMinScheduler extends WorkflowScheduler {
@@ -72,20 +70,10 @@ public class MaxMinScheduler extends WorkflowScheduler {
             jobCount += vm.underProcessing.size();
         }
         
-        if (jobCount != workflowJob.ca.iaas.listVMs().size()) {
-            this.addVm(workflowJob.ca);
-        } else if (workflowJob.ca.iaas.listVMs().size() > 1) {
-            this.shutdownVm(workflowJob.ca);
+        if (jobCount > workflowJob.ca.iaas.listVMs().size()) {
+            this.addVm(workflowJob.ca, 1);
+        } else {
+            this.shutdownVm(workflowJob.ca, 1);
         }
-    }
-    
-    private int countRunningVms(WorkflowComputingAppliance wca) {
-        int count = 0;
-        for (VirtualMachine vm : wca.iaas.listVMs()) {
-            if (vm.getState().equals(VirtualMachine.State.RUNNING)) {
-                count++;
-            }
-        }
-        return count;
     }
 }

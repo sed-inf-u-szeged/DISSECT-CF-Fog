@@ -90,15 +90,15 @@ public class WorkflowJobModel {
                     UsesXmlModel usesModel = wjModel.uses.get(usesIndex);
                     if (usesModel.link.equals("input")) {
                         inputs.add(new Uses(Uses.Type.valueOf(usesModel.type.toUpperCase()), usesModel.size,
-                                usesModel.runtime, usesModel.activate, usesModel.amount, usesModel.id));
+                                usesModel.runtime, usesModel.activate, usesModel.amount, repeatIndex + "_" + usesModel.id + "_" + name));
                     } else {
                         outputs.add(new Uses(Uses.Type.valueOf(usesModel.type.toUpperCase()), usesModel.size,
                                 usesModel.runtime, usesModel.activate, usesModel.amount,
-                                repeatIndex + "_" + usesModel.id));
+                                repeatIndex + "_" + usesModel.id + "_" + name));
                     }
                 }
-                WorkflowJob wj = new WorkflowJob(repeatIndex + "_" + wjModel.id, wjModel.runtime, wjModel.longitude, wjModel.latitude,
-                        WorkflowJob.State.SUBMITTED, inputs, outputs);
+                WorkflowJob wj = new WorkflowJob(repeatIndex + "_" + wjModel.id + "_" + name, wjModel.runtime, wjModel.longitude, 
+                        wjModel.latitude, WorkflowJob.State.SUBMITTED, inputs, outputs);
                 jobCount++;
                 jobs.add(wj);
             }

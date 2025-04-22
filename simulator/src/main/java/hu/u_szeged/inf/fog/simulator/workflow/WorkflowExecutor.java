@@ -91,11 +91,13 @@ public class WorkflowExecutor {
                         @Override
                         protected void eventAction() {
                             workflowJob.state = WorkflowJob.State.COMPLETED;
-                            if (isAllJobCompleted(workflowScheduler)) {
+                            if (isAllSchedulerJobCompleted(workflowScheduler)) {
                                 workflowScheduler.stopTime = Timed.getFireCount();
                                 
-                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
-                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                if (isAllJobCompleted()) {
+                                    for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+                                        EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                    }
                                 }
                             }
                             actuator.isWorking = false;
@@ -137,11 +139,13 @@ public class WorkflowExecutor {
                             workflowJob.ca.timelineList.add(new TimelineEntry(vmStartTime, Timed.getFireCount(),
                                     Integer.toString(vm.hashCode()) + "-" + workflowJob.id));
                             workflowJob.state = WorkflowJob.State.COMPLETED;
-                            if (isAllJobCompleted(workflowScheduler)) {
+                            if (isAllSchedulerJobCompleted(workflowScheduler)) {
                                 workflowScheduler.stopTime = Timed.getFireCount();
                                 
-                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
-                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                if (isAllJobCompleted()) {
+                                    for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+                                        EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                    }
                                 }
                             }
                             String id = workflowJob.ca.name + "-" + Integer.toString(vm.hashCode());
@@ -230,7 +234,7 @@ public class WorkflowExecutor {
         }
     }
     
-    private static boolean isAllJobCompleted(WorkflowScheduler workflowScheduler) {
+    private static boolean isAllSchedulerJobCompleted(WorkflowScheduler workflowScheduler) {
         for (WorkflowJob job : workflowScheduler.jobs) {
             if (!job.state.equals(WorkflowJob.State.COMPLETED)) {
                 return false;
@@ -238,6 +242,17 @@ public class WorkflowExecutor {
         }
         return true;
     }
+    
+    private static boolean isAllJobCompleted() {
+        for (WorkflowJob job : WorkflowJob.workflowJobs) {
+            if (!job.state.equals(WorkflowJob.State.COMPLETED)) {
+                return false;
+            }       
+        }
+        return true;
+    }
+    
+    
     
     private static void startSensors(WorkflowScheduler workflowScheduler) {
         for (WorkflowJob workflowJob : workflowScheduler.jobs) {
