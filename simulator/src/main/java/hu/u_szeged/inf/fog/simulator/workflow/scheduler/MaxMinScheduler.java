@@ -66,19 +66,16 @@ public class MaxMinScheduler extends WorkflowScheduler {
         if (workflowJob.inputs.get(0).amount == 0) {
             workflowJob.ca.workflowQueue.add(workflowJob);
         }
+
+        int jobCount = 0;
+        for (VirtualMachine vm : workflowJob.ca.iaas.listVMs()) {
+            jobCount += vm.underProcessing.size();
+        }
         
-        for (WorkflowComputingAppliance wca : this.computeArchitecture) {
-            int vmCount = 0;
-            int jobCount = 0;
-            for (VirtualMachine vm : wca.iaas.listVMs()) {
-                jobCount += vm.underProcessing.size();
-                vmCount++;
-            }
-            if (jobCount / vmCount > 1) {
-                this.addVm(wca);
-            } else if (countRunningVms(wca) > 1) {
-                this.shutdownVm(wca);
-            }
+        if (jobCount != workflowJob.ca.iaas.listVMs().size()) {
+            this.addVm(workflowJob.ca);
+        } else if (workflowJob.ca.iaas.listVMs().size() > 1) {
+            this.shutdownVm(workflowJob.ca);
         }
     }
     
