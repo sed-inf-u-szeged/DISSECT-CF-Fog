@@ -163,7 +163,7 @@ public class BuildBlockTask implements MinerTask, TransactionValidationCallback 
 
         // If there's still room and more transactions, schedule a new BuildBlockTask
         if (!buildingBlock.isFull() && !miner.getMempool().isEmpty()) {
-            miner.scheduleTask(new BuildBlockTask());
+            miner.scheduleTask(this);
         }
 
         SimulationMetrics.getInstance().recordTransactionValidation(miner, accepted);

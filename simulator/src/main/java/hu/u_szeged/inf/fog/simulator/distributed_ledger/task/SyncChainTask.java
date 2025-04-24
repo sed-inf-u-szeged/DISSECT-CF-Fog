@@ -29,6 +29,7 @@ public class SyncChainTask implements MinerTask {
      */
     @Override
     public void execute(Miner miner) {
+        miner.setState(Miner.MinerState.SYNC_CHAIN);
         SimLogger.logRun(miner.getName() + " starting chain sync...");
 
         Miner peerWithChain = findPeerWithLongestChain(miner);

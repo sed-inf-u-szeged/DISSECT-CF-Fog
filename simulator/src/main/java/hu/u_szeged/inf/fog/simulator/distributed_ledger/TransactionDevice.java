@@ -5,7 +5,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionPublishEvent;
@@ -16,9 +15,11 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The `TransactionDevice` class represents a device that generates and publishes transactions in a distributed ledger.
@@ -27,12 +28,13 @@ import java.util.Random;
  */
 public class TransactionDevice extends Device {
 
-    public static final int CONNECT2NODE_MAX_RETRIES = 10;
+    public static final int CONNECT2NODE_MAX_RETRIES = 5;
 
     private static final Random random = SeedSyncer.centralRnd;
     private final FindNodeStrategy findNodeStrategy;
     private final String name;
     private Miner connectedNode;
+    public Set<TransactionMessage> pendingTransactions;
 
     /**
      * Constructs a `TransactionDevice` with the specified parameters.
@@ -53,10 +55,12 @@ public class TransactionDevice extends Device {
         this.fileSize = transactionSize;
         this.freq = freq;
         this.deviceStrategy = null;
-        this.mobilityStrategy = new StaticMobilityStrategy(GeoLocation.generateRandomGeoLocation());
+        this.geoLocation = GeoLocation.generateRandomGeoLocation();
+        this.mobilityStrategy = new StaticMobilityStrategy(this.geoLocation);
         this.localMachine = localMachine;
         this.latency = latency;
         this.findNodeStrategy = findNodeStrategy;
+        this.pendingTransactions = new HashSet<>();
         this.startMeter();
     }
 
@@ -78,26 +82,34 @@ public class TransactionDevice extends Device {
     public void tick(long fires) {
         if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
 //            new Sensor(this, 1);
-            String data = "SensorData{" + random.nextInt(100) + "}";
-            Transaction tx = new Transaction(data, fileSize);
-            TransactionMessage msg = new TransactionMessage(tx);
-            this.localMachine.localDisk.registerObject(msg);
-            SimLogger.logRun("[TransactionDevice] generated transaction: " + tx);
-            SimulationMetrics.getInstance().setTransactionCreationTime(tx, Timed.getFireCount());
+            generateTransaction();
+        }
+
+        if (!getMessagesToPublish().isEmpty()) {
+            if (connectedNode == null && !attemptConnectionToNode(CONNECT2NODE_MAX_RETRIES)) {
+                return;
+            }
+            if (!connectedNode.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
+                connectedNode = null;
+            }
+            getMessagesToPublish().forEach(this::publishTransaction);
         }
 
         if (Timed.getFireCount() > stopTime) {
+            SimLogger.logRun(name + " timed out");
             this.stopMeter();
         }
-
-        if (connectedNode == null && !attemptConnectionToNode(CONNECT2NODE_MAX_RETRIES)) {
-            return;
-        }
-
-        for (TransactionMessage tm : getMessagesToPublish()) {
-            publishTransaction(tm);
-        }
     }
+
+    void generateTransaction() {
+        String data = "SensorData{" + random.nextInt(100) + "}";
+        Transaction tx = new Transaction(data, fileSize);
+        TransactionMessage msg = new TransactionMessage(tx);
+        this.localMachine.localDisk.registerObject(msg);
+        SimLogger.logRun(name + " generated transaction: " + tx);
+        SimulationMetrics.getInstance().setTransactionCreationTime(tx, Timed.getFireCount());
+    }
+
 
     /**
      * Attempts to establish a connection to a node with a specified maximum number of retries.
@@ -121,13 +133,12 @@ public class TransactionDevice extends Device {
      * @return the list of transaction messages to be published
      */
     private List<TransactionMessage> getMessagesToPublish() {
-        List<TransactionMessage> messages = new ArrayList<>();
-        for (StorageObject so : this.localMachine.localDisk.contents()) {
-            if (so instanceof TransactionMessage) {
-                messages.add((TransactionMessage) so);
-            }
-        }
-        return messages;
+        return this.localMachine.localDisk.contents()
+                .stream()
+                .filter(TransactionMessage.class::isInstance)
+                .map(TransactionMessage.class::cast)
+                .filter(tx -> !pendingTransactions.contains(tx))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -144,6 +155,7 @@ public class TransactionDevice extends Device {
                     this.localMachine.localDisk,                                           // from me
                     connectedNode.getLocalRepo(),                                         // to neighbor
                     event);
+
         } catch (NetworkNode.NetworkException e) {
             SimLogger.logError(name + "  Could not publish transaction to " + connectedNode.getName() + ": " + e.getMessage());
         }
@@ -153,7 +165,7 @@ public class TransactionDevice extends Device {
         Miner candidate = findNodeStrategy.findNode();
         if (candidate.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.caRepository = candidate.computingAppliance.iaas.repositories.get(0);
-            int calc = this.latency + (int) (this.geoLocation.calculateDistance(this.application.computingAppliance.geoLocation) / 1000);
+            int calc = this.latency + (int) (this.geoLocation.calculateDistance(candidate.computingAppliance.geoLocation) / 1000);
             this.localMachine.localDisk.addLatencies(candidate.computingAppliance.iaas.repositories.get(0).getName(), calc);
             this.connectedNode = candidate;
             return true;

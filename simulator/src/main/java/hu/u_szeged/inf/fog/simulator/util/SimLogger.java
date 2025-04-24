@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.util;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import java.io.IOException;
 import java.util.logging.FileHandler;
@@ -23,7 +24,7 @@ public class SimLogger {
      * @param string the message to log
      */
     public static void logRun(String string) {
-        simLogger.info(string);
+        simLogger.info(Timed.getFireCount() + ": " + string);
     }
     
     /**
@@ -32,7 +33,7 @@ public class SimLogger {
      * @param message he message to log
      */
     public static void logRes(Object message) {
-        simLogger.warning(String.valueOf(message)); 
+        simLogger.warning(Timed.getFireCount() + ": " + String.valueOf(message));
     }
     
     /**
@@ -41,7 +42,7 @@ public class SimLogger {
      * @param string he error message to log
      */
     public static void logError(String string) {
-        simLogger.severe("ERROR: " + string);
+        simLogger.severe("ERROR: " + Timed.getFireCount() + ": "+ string);
         System.exit(0);
     }
     

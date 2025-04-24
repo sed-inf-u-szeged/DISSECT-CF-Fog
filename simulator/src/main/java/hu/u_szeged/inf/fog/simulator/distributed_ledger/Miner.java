@@ -165,13 +165,7 @@ public class Miner extends Timed {
      * @return {@code true} if the virtual machine is running, {@code false} otherwise.
      */
     public boolean isVmRunning() {
-        boolean a = localVm.getState().equals(VirtualMachine.State.RUNNING);
-        if(a){
-            SimLogger.logRun("VM is running");
-            SimLogger.logRun("Time: " + Timed.getFireCount());
-            System.exit(0);
-        }
-        return a;
+        return localVm.getState().equals(VirtualMachine.State.RUNNING);
     }
 
     /**
@@ -211,6 +205,8 @@ public class Miner extends Timed {
     public void tick(long fires) {
         if (!isVmRunning()) {
             return;
+        }else if (this.state == MinerState.WAITING_FOR_VM) {
+            setState(MinerState.IDLE);
         }
 
         if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty()) {
@@ -227,6 +223,10 @@ public class Miner extends Timed {
                 tasksQueue.addLast(candidate);
             }
         }
+    }
+
+    boolean buildBlockAlreadyQueued() {
+        return tasksQueue.stream().anyMatch(BuildBlockTask.class::isInstance);
     }
 
     /**
@@ -289,7 +289,6 @@ public class Miner extends Timed {
         Transaction tx = transactionMessage.getTransaction();
         if (!isTxKnown(tx)) {
             this.getLocalRepo().registerObject(transactionMessage);
-            SimLogger.logRun(name + " -> received NEW transaction " + tx.getId());
             addKnownTransaction(tx);
             scheduleTask(new ValidateTransactionTask(tx, new TransactionValidationCallback() {
                 @Override
@@ -328,6 +327,6 @@ public class Miner extends Timed {
      * The `MinerState` enum represents the various states a miner can be in.
      */
     public enum MinerState {
-        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, PROCESSING_INCOMING_BLOCK, RESOLVE_FORK
+        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, PROCESSING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN
     }
 }

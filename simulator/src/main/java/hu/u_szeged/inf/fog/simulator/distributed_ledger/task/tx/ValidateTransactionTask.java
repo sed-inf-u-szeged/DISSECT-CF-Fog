@@ -49,7 +49,7 @@ public class ValidateTransactionTask implements MinerTask {
     public void execute(Miner miner) {
         miner.setState(Miner.MinerState.VALIDATING_TRANSACTION);
         SimLogger.logRun("[ValidateTransactionTask] validating " + tx.getId());
-        double instructions = miner.distributedLedger.getConsensusStrategy().getCryptoStrategy().verify();
+        double instructions = miner.distributedLedger.getConsensusStrategy().getCryptoStrategy().verify()*100;//TODO
         try {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override

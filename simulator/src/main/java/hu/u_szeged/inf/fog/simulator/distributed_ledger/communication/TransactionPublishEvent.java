@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.communication;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.TransactionDevice;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
  * TransactionPublishEvent class represents an event of publishing a transaction
@@ -31,6 +32,7 @@ public class TransactionPublishEvent implements ResourceConsumption.ConsumptionE
         this.transactionMessage = transactionMessage;
         this.senderDevice = senderDevice;
         this.receiverMiner = receiverMiner;
+        this.senderDevice.pendingTransactions.add(transactionMessage);
     }
 
     /**
@@ -41,7 +43,12 @@ public class TransactionPublishEvent implements ResourceConsumption.ConsumptionE
     @Override
     public void conComplete() {
         this.receiverMiner.receiveTransaction(transactionMessage);
-        this.senderDevice.caRepository.deregisterObject(transactionMessage);
+        SimLogger.logRun(this.receiverMiner.name + " received NEW transaction '" + transactionMessage.getTransaction().getId() + "' from " + senderDevice.getName());
+//        SimLogger.logRun("Exists in LocalDisk: "+ this.senderDevice.localMachine.localDisk.contents().stream().anyMatch(so -> so.id.equals(transactionMessage.id)));
+        this.senderDevice.localMachine.localDisk.deregisterObject(transactionMessage);
+        this.senderDevice.pendingTransactions.remove(transactionMessage);
+//        SimLogger.logRun("  Deregister object " + transactionMessage.id);
+//        SimLogger.logRun("      Exists in LocalDisk: "+ this.senderDevice.localMachine.localDisk.contents().stream().anyMatch(so -> so.id.equals(transactionMessage.id)));
     }
 
     /**

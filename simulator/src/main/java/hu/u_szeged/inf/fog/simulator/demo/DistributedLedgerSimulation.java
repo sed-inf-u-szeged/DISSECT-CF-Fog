@@ -48,7 +48,7 @@ public class DistributedLedgerSimulation {
 //        forkManager.registerScenario(forkScenario, 10_000L);
 
         ArrayList<TransactionDevice> deviceList = new ArrayList<>();
-        for (int i = 0; i < 0; i++) {
+        for (int i = 0; i < 5; i++) {
             HashMap<String, Integer> latencyMap = new HashMap<>();
             EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                     PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
@@ -60,7 +60,7 @@ public class DistributedLedgerSimulation {
             Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
 
-            TransactionDevice transactionDevice = new TransactionDevice(0, 10_000L, 1000, 1000, localMachine, 0, new RandomNodeStrategy());
+            TransactionDevice transactionDevice = new TransactionDevice(897_400, 1_000_000L,1000, 100L, localMachine, 0, new RandomNodeStrategy());
             deviceList.add(transactionDevice);
         }
 
