@@ -1,7 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 
 public class Provider {
@@ -16,6 +22,7 @@ public class Provider {
     long priceFreq;
     Charge charge;
     ChangePrice changePrice;
+    double multiplier;
 
     public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
@@ -28,11 +35,26 @@ public class Provider {
         this.chargeFreq = chargeFreq;
         this.priceFreq = priceFreq;
         this.renewableBasePrice = renewableBasePrice;
-        double multiplier = (maxPriceChange / 100.0);
-        this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));;
+        this.multiplier = (maxPriceChange / 100.0);
+        this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));
         this.fossilBasePrice = fossilBasePrice;
         this.charge = new Charge(this);
-        this.changePrice = new ChangePrice(this, maxPriceChange);
+        //this.changePrice = new ChangePrice(this, maxPriceChange);
+    }
+
+    public float calculatePrice() {
+        try {
+            new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
+            PrintStream out = new PrintStream(
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/charge.txt", true), true);
+            System.setOut(out);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.print("Price before change: " + this.renewablePrice);
+        this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));
+        System.out.println("  -------  Time: " + Timed.getFireCount() + "  -------  Price after change: " + this.renewablePrice);
+        return this.renewablePrice;
     }
 
     public void addEnergySource(EnergySource energySource) {
@@ -61,7 +83,7 @@ public class Provider {
 
     public void stopProcessing() {
         this.charge.stop();
-        this.changePrice.stop();
+        //this.changePrice.stop();
     }
 
 }

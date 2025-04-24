@@ -1,8 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.node.RenewableWorkflowComputingAppliance;
@@ -12,6 +14,10 @@ import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -57,10 +63,12 @@ public class RenewableScheduler extends WorkflowScheduler {
     @Override
     public void init() {
 
-        if (this.provider.renewableBattery.getBatteryLevel() < 3020) {
+        if (this.provider.renewableBattery.getBatteryLevel() < 0) {
             new DeferredEvent(1001) {
                 @Override
                 protected void eventAction() {
+                    provider.renewableBattery.addBatteryLevel(1);
+                    provider.calculatePrice();
                     init();
                 }
             };
@@ -94,16 +102,16 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     @Override
     public void schedule(WorkflowJob workflowJob) {
-
-        if (this.provider.renewableBattery.getBatteryLevel() < 3060) {
-            new DeferredEvent(1001) {
+        provider.calculatePrice();
+        if (!doesProviderHaveEnoughEnergy(workflowJob)) {
+            new DeferredEvent(1000) {
                 @Override
                 protected void eventAction() {
                     schedule(workflowJob);
                 }
             };
         } else {
-
+            provider.renewableBattery.removeBatteryLevel(getJobRenewableConsumption(workflowJob));
             if (workflowJob.inputs.get(0).amount == 0) {
                 workflowJob.ca.workflowQueue.add(workflowJob);
             }
@@ -140,16 +148,21 @@ public class RenewableScheduler extends WorkflowScheduler {
         ArrayList<WorkflowJob> newJobs = new ArrayList<WorkflowJob>();
 
         for (WorkflowJob job : oldJobs) {
-            job.consumption = 10;
+            job.consumption = 15;
             newJobs.add(job);
         }
 
         return newJobs;
     }
 
-    public float getJobConsumption(WorkflowJob job) {
+    public float getJobRenewableConsumption(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption;
+        return hours * job.consumption * ratio/100;
+    }
+
+    public float getJobFossilConsumption(WorkflowJob job) {
+        float hours = (float) (job.runtime / 3600);
+        return (float) (hours * job.consumption * ( 1.0 - ratio / 100));
     }
 
     private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
@@ -164,6 +177,20 @@ public class RenewableScheduler extends WorkflowScheduler {
     }
 
     boolean doesProviderHaveEnoughEnergy(WorkflowJob job) {
-        return true;
+        try {
+            new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
+            PrintStream out = new PrintStream(
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/bruv.txt", true), true);
+            System.setOut(out);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.print(this.getJobRenewableConsumption(job));
+        System.out.print("   ------------------   " + job.id);
+        System.out.println("   ------------------   " + Timed.getFireCount());
+        if (this.provider.renewableBattery.getBatteryLevel() >= this.getJobRenewableConsumption(job)) {
+            return true;
+        }
+        return false;
     }
 }
