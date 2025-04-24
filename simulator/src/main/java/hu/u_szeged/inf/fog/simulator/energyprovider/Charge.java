@@ -36,7 +36,9 @@ public class Charge extends Timed {
             }
             System.out.print("Current energy: " + provider.renewableBattery.getBatteryLevel() + " Wh");
             System.out.print("  -------  Added energy: " + this.lastTotalAdded + " Wh");
+            System.out.print("  -------  Time: " + Timed.getFireCount());
             System.out.println("  -------  Energy after charge: " + chargeUp() + " Wh");
+            provider.calculatePrice();
         }
     }
 
