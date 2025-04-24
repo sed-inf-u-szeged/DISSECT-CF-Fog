@@ -48,6 +48,7 @@ public class ChangePrice extends Timed {
         }
         System.out.print("Price before change: " + this.provider.renewablePrice);
         setEnergyPrice();
+        System.out.print("  -------  Time: " + Timed.getFireCount());
         System.out.println("  -------  Price after change: " + this.provider.renewablePrice);
     }
 
