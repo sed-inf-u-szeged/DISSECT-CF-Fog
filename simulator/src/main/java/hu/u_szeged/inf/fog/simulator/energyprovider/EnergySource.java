@@ -15,6 +15,9 @@ public abstract class EnergySource {
         int hours = round( (float) timePassed / 3_600_000 );
         double hoursPastDay = Math.floor( (double) timePassed / 86_400_000 ) * 24;
 
+        if ((int) (hours - hoursPastDay) < 18) {
+            return (int) (hours - hoursPastDay) + 6;
+        }
         return (int) (hours - hoursPastDay);
     }
 
