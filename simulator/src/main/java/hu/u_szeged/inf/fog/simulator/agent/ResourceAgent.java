@@ -59,8 +59,6 @@ public class ResourceAgent {
         this.agentStrategy = agentStrategy;
         this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
-
-        System.out.println("most hoztam letre a " + this.name);
     }
 
     public void registerCapacity(Capacity capacity) {
@@ -97,7 +95,7 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = 0;
+            app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
@@ -325,9 +323,6 @@ public class ResourceAgent {
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
-
-        System.out.println("szevasz " + this.name);
-        neighborScores.forEach((x,y) -> System.out.println(x.name+ " hajo "+ y));
     }
 
     private void freeReservedResources(final String appName, final Capacity capacity) {

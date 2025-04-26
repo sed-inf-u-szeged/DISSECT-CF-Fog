@@ -80,11 +80,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         }
 
         normalizeScores(gateway.neighborScores);
-
-        System.out.println("Normalized neighbor gateway scores:");
-        gateway.neighborScores.forEach((agent, score) ->
-                System.out.println("  " + agent.name + ": " + String.format("%.3f", score))
-        );
     }
 
     private void normalizeScores(Map<ResourceAgent, Double> scores) {
@@ -140,7 +135,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             selected.add(available.keySet().iterator().next());
         }
 
-        System.out.println("most valami");
+        System.out.println("Selected agents with probability: " );
         for (ResourceAgent s : selected
         ) {
             System.out.println(s.name);
