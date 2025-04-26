@@ -95,7 +95,7 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = 0;
+            app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
