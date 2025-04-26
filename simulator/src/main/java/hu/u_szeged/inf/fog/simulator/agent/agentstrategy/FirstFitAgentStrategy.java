@@ -1,16 +1,15 @@
-package hu.u_szeged.inf.fog.simulator.agent.strategy;
+package hu.u_szeged.inf.fog.simulator.agent.agentstrategy;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class FirstFitAgentStrategy extends AgentStrategy {
-    
     private final boolean descending;
-    
+
     public FirstFitAgentStrategy(boolean descending) {
         this.descending = descending;
     }
@@ -19,15 +18,15 @@ public class FirstFitAgentStrategy extends AgentStrategy {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
 
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-        
+
         for (Resource resource : sortedResources) {
-            if (resource.size == null) { // compute type 
-                
+            if (resource.size == null) { // compute type
+
                 int instances = resource.instances == null ? 1 : resource.instances;
 
                 List<Capacity> reservedCapacity = new ArrayList<>();
                 for (int i = 0; i < instances; i++) {
-                    for (Capacity capacity : agent.capacities) {                   
+                    for (Capacity capacity : agent.capacities) {
                         if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                                 && (resource.location == null || resource.location.equals(capacity.node.location))
                                 && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory) {
@@ -40,13 +39,13 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
 
                 if (instances != reservedCapacity.size() && reservedCapacity.size() > 0) {
-                    for (Capacity capacity : reservedCapacity) {   
+                    for (Capacity capacity : reservedCapacity) {
                         capacity.releaseCapacity(resource);
                     }
                 } else if (instances == reservedCapacity.size()) {
                     agentResourcePairs.add(Pair.of(agent, resource));
                 }
-                
+
             } else { // storage type
                 for (Capacity capacity : agent.capacities) {
                     if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
@@ -58,9 +57,9 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
             }
         }
-        
+
         return agentResourcePairs;
-    } 
+    }
 
     public List<Resource> sortingResourcesByCpuThenSize(List<Resource> originalResources) {
         List<Resource> sortedResources = new ArrayList<>(originalResources);

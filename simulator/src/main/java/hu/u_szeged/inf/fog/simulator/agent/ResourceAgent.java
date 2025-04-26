@@ -8,7 +8,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -16,20 +17,14 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
 
@@ -39,9 +34,9 @@ public class ResourceAgent {
 
     public String name;
 
-    ComputingAppliance hostNode;
+    public ComputingAppliance hostNode;
 
-    VirtualMachine service;
+    public VirtualMachine service;
 
     public double hourlyPrice;
 
@@ -53,6 +48,8 @@ public class ResourceAgent {
 
     public int reBroadcastCounter;
 
+    public Map<ResourceAgent, Double> neighborScores = new HashMap<>();
+
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
@@ -62,6 +59,8 @@ public class ResourceAgent {
         this.agentStrategy = agentStrategy;
         this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+
+        System.out.println("most hoztam letre a " + this.name);
     }
 
     public void registerCapacity(Capacity capacity) {
@@ -85,9 +84,12 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        MessageHandler.executeMessaging(this, app, bcastMessageSize, "bcast", () -> {
+
+
+        MessageHandler.executeMessaging(new GuidedSearchMessagingStrategy(), this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
+
     }
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
@@ -301,7 +303,7 @@ public class ResourceAgent {
     }
 
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
-        MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
+        MessageHandler.executeMessaging(new GuidedSearchMessagingStrategy(offer), this, app, bcastMessageSize, "ack", () -> {
             SimLogger.logRun("All ack. messages receieved for " + app.name
                     + " at: " + Timed.getFireCount());
 
@@ -323,6 +325,9 @@ public class ResourceAgent {
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
+
+        System.out.println("szevasz " + this.name);
+        neighborScores.forEach((x,y) -> System.out.println(x.name+ " hajo "+ y));
     }
 
     private void freeReservedResources(final String appName, final Capacity capacity) {

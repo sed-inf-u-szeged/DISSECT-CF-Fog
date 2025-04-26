@@ -26,7 +26,7 @@ import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -122,16 +122,16 @@ public class AgentTest {
 
         new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node4, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
+
         new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node5, 16, (long) 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
-        
+
         new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
+
         new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
+
         new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 

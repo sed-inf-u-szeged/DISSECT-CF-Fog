@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.agent.strategy;
+package hu.u_szeged.inf.fog.simulator.agent.agentstrategy;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
