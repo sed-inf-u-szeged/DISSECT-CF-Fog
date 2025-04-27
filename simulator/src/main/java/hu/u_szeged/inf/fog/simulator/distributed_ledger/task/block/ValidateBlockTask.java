@@ -68,7 +68,7 @@ public class ValidateBlockTask implements MinerTask {
             miner.finishTask(this);
         }
     }
-
+    
     @Override
     public String describe() {
         return "ValidateBlockTask(" + (block != null ? block.getId() : "null") + ")";

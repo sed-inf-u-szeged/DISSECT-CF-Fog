@@ -15,6 +15,8 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class NetworkGenerator {
 
+    private NetworkGenerator(){}
+
     public static void smallWorldNetworkGenerator(ArrayList<ComputingAppliance> nodes, int degree, double probability,
                                                   int minLatency, int maxLatency) throws IOException {
         if (nodes.size() >= degree + 1 && degree > 1) {

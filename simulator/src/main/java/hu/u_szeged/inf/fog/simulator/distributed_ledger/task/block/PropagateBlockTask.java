@@ -44,10 +44,9 @@ public class PropagateBlockTask implements MinerTask {
                 SimLogger.logError(miner.name + " Could not send block to " + neighbor.getName() + ": " + e.getMessage());
             }
         }
-
-        // Clear the miner's nextBlock
-        miner.setNextBlock(null);
-        // Done
+        if (block == miner.getNextBlock()) {
+            miner.setNextBlock(null);
+        }
         miner.finishTask(this);
     }
 

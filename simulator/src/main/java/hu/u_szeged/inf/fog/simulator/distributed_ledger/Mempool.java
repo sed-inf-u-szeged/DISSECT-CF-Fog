@@ -21,7 +21,6 @@ public class Mempool {
             return;
         }
         transactions.add(tx);
-        SimLogger.logRun("[Mempool] Transaction added: " + tx);
     }
 
     /**

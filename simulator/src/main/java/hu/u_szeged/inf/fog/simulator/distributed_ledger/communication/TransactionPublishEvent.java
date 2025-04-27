@@ -42,8 +42,8 @@ public class TransactionPublishEvent implements ResourceConsumption.ConsumptionE
      */
     @Override
     public void conComplete() {
+        SimLogger.logRun(this.receiverMiner.name + " received NEW published transaction '" + transactionMessage.getTransaction().getId() + "' from " + senderDevice.getName());
         this.receiverMiner.receiveTransaction(transactionMessage);
-        SimLogger.logRun(this.receiverMiner.name + " received NEW transaction '" + transactionMessage.getTransaction().getId() + "' from " + senderDevice.getName());
 //        SimLogger.logRun("Exists in LocalDisk: "+ this.senderDevice.localMachine.localDisk.contents().stream().anyMatch(so -> so.id.equals(transactionMessage.id)));
         this.senderDevice.localMachine.localDisk.deregisterObject(transactionMessage);
         this.senderDevice.pendingTransactions.remove(transactionMessage);

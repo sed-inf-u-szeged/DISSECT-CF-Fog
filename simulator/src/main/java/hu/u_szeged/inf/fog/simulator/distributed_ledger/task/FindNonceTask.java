@@ -6,6 +6,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.PropagateBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
@@ -43,13 +44,14 @@ public class FindNonceTask implements MinerTask {
             return;
         }
         try {
-            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty()), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
+            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty())*1000, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
                     SimLogger.logRun(miner.name + " Nonce found at time: " + Timed.getFireCount());
                     block.setNonceFound(true);
                     block.finalizeBlock();
                     miner.finishTask(FindNonceTask.this);
+                    miner.scheduleTask(new PropagateBlockTask(block));
                 }
             });
         } catch (NetworkNode.NetworkException e) {

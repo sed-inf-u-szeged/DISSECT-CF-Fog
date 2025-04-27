@@ -14,17 +14,14 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
  */
 public class ValidateTransactionTask implements MinerTask {
     private final Transaction tx;
-    private final TransactionValidationCallback callback;
 
     /**
-     * Constructs a new `ValidateTransactionTask` with the specified transaction and callback.
+     * Constructs a new `ValidateTransactionTask` with the specified transaction
      *
      * @param tx       the transaction to validate
-     * @param callback the callback to handle the result of the validation
      */
-    public ValidateTransactionTask(Transaction tx, TransactionValidationCallback callback) {
+    public ValidateTransactionTask(Transaction tx) {
         this.tx = tx;
-        this.callback = callback;
     }
 
     /**
@@ -48,24 +45,23 @@ public class ValidateTransactionTask implements MinerTask {
     @Override
     public void execute(Miner miner) {
         miner.setState(Miner.MinerState.VALIDATING_TRANSACTION);
-        SimLogger.logRun("[ValidateTransactionTask] validating " + tx.getId());
-        double instructions = miner.distributedLedger.getConsensusStrategy().getCryptoStrategy().verify()*100;//TODO
+        SimLogger.logRun(miner.getName() + " [ValidateTransactionTask] validating " + tx.getId());
+        double instructions = miner.distributedLedger.getConsensusStrategy().getCryptoStrategy().verify();
         try {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
                     boolean accepted = miner.getValidationStrategy().isValidTransaction(tx);
-                    if (callback != null) {
-                        callback.onValidationComplete(miner, tx, accepted);
+                    if (accepted) {
+                        SimLogger.logRun(miner.getName() + " [Mempool] Transaction added: " + tx);
+                        miner.getMempool().addTransaction(tx);
+                        miner.scheduleTask(new PropagateTransactionTask(tx));
                     }
                     miner.finishTask(ValidateTransactionTask.this);
                 }
             });
         } catch (NetworkNode.NetworkException e) {
-            SimLogger.logError("[ValidateTransactionTask] " + e.getMessage());
-            if (callback != null) {
-                callback.onValidationComplete(miner, tx, false);
-            }
+            SimLogger.logError(miner.getName() + " [ValidateTransactionTask] " + e.getMessage());
             miner.finishTask(this);
         }
     }

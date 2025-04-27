@@ -93,11 +93,18 @@ public class TransactionDevice extends Device {
                 connectedNode = null;
             }
             getMessagesToPublish().forEach(this::publishTransaction);
+            disconnect();
         }
 
         if (Timed.getFireCount() > stopTime) {
             SimLogger.logRun(name + " timed out");
             this.stopMeter();
+        }
+    }
+
+    void disconnect() {
+        if (connectedNode != null) {
+            connectedNode = null;
         }
     }
 

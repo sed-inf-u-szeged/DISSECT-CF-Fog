@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
  * BlockTransferEvent class represents an event of transferring a block message
@@ -35,6 +36,7 @@ public class BlockTransferEvent implements ResourceConsumption.ConsumptionEvent 
      */
     @Override
     public void conComplete() {
+        SimLogger.logRun(receiver.getName() + " received block '" + blockMessage.getBlock().getId() + "' from " + sender.getName());
         receiver.receiveBlock(blockMessage);
         SimulationMetrics.getInstance().recordNetworkSend(sender, blockMessage.size);
         SimulationMetrics.getInstance().markBlockArrived(blockMessage.getBlock(), receiver, Timed.getFireCount());

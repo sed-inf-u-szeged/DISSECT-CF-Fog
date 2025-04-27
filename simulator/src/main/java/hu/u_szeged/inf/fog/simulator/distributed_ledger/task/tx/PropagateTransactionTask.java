@@ -37,7 +37,7 @@ public class PropagateTransactionTask implements MinerTask {
     @Override
     public boolean canExecute(Miner miner) {
         // the transaction is not null and the transaction is not already known in the miner
-        return (tx != null && !miner.isTxKnown(tx));
+        return (tx != null );
     }
 
     /**

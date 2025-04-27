@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
  * TransactionTransferEvent class represents an event of transferring a transaction message
@@ -35,6 +36,7 @@ public class TransactionTransferEvent implements ResourceConsumption.Consumption
      */
     @Override
     public void conComplete() {
+        SimLogger.logRun(this.receiver.getName() + " received transaction '" + transactionMessage.getTransaction().getId() + "' from " + sender.getName());
         receiver.receiveTransaction(transactionMessage);
         SimulationMetrics.getInstance().recordNetworkSend(sender, transactionMessage.size);
         SimulationMetrics.getInstance().markTransactionArrived(transactionMessage.getTransaction(), receiver, Timed.getFireCount());

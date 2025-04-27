@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
@@ -13,11 +12,9 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.*;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.BuildBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.ValidateBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.PropagateTransactionTask;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.TransactionValidationCallback;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransactionTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.eclipse.collections.impl.bimap.mutable.HashBiMap;
@@ -197,22 +194,52 @@ public class Miner extends Timed {
     }
 
     /**
-     * The main simulation callback for this miner.
+     * Handles the main logic for the miner's behavior during each simulation tick.
+     * <p>
+     * This method is called periodically to simulate the passage of time and manage
+     * the miner's tasks and state transitions. It performs the following actions:
+     * </p>
+     * <ul>
+     *   <li>Checks if the virtual machine (VM) is running. If the VM is not running,
+     *       the method exits early as the miner cannot perform any tasks.</li>
+     *   <li>If the miner is in the {@code WAITING_FOR_VM} state and the VM is now running,
+     *       the state is transitioned to {@code IDLE} to allow task execution.</li>
+     *   <li>If the miner is idle and no block is currently being built, but there are
+     *       transactions in the mempool, a new {@link BuildBlockTask} is scheduled to
+     *       start building a block.</li>
+     *   <li>If the miner is idle and a block is already being built, but it is not yet
+     *       full and there are transactions in the mempool, a {@link BuildBlockTask} is
+     *       scheduled to continue adding transactions to the block.</li>
+     *   <li>If the miner is idle and there are tasks in the task queue, the next task
+     *       is retrieved and executed if it is ready. If the task cannot be executed
+     *       yet, it is re-added to the end of the queue.</li>
+     * </ul>
+     * <p>
+     * This method ensures that the miner operates efficiently by prioritizing tasks
+     * and managing its state transitions based on the current conditions.
+     * </p>
      *
-     * @param fires The number of simulation ticks.
+     * @param fires the current simulation tick count
      */
     @Override
     public void tick(long fires) {
         if (!isVmRunning()) {
             return;
-        }else if (this.state == MinerState.WAITING_FOR_VM) {
+        } else if (this.state == MinerState.WAITING_FOR_VM) {
             setState(MinerState.IDLE);
         }
 
-        if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty()) {
+        // If idle and building not yet started but we have txs, schedule new build
+        if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
             scheduleTask(new BuildBlockTask());
         }
 
+        // If idle and already building a block, continue with next tx (one per tick)
+        if (state == MinerState.IDLE && nextBlock != null && !nextBlock.isFull() && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
+            scheduleTask(new BuildBlockTask());
+        }
+
+        // If idle, pick and execute next task
         if (state == MinerState.IDLE && !tasksQueue.isEmpty()) {
             MinerTask candidate = tasksQueue.removeFirst();
             if (candidate.canExecute(this)) {
@@ -225,7 +252,11 @@ public class Miner extends Timed {
         }
     }
 
-    boolean buildBlockAlreadyQueued() {
+    /**
+     * Checks if a BuildBlockTask is already queued in the task queue.
+     * @return
+     */
+    private boolean isBuildBlockTaskQueued() {
         return tasksQueue.stream().anyMatch(BuildBlockTask.class::isInstance);
     }
 
@@ -290,15 +321,7 @@ public class Miner extends Timed {
         if (!isTxKnown(tx)) {
             this.getLocalRepo().registerObject(transactionMessage);
             addKnownTransaction(tx);
-            scheduleTask(new ValidateTransactionTask(tx, new TransactionValidationCallback() {
-                @Override
-                public void onValidationComplete(Miner miner, Transaction tx, boolean accepted) {
-                    if (accepted) {
-                        mempool.addTransaction(tx);
-                        scheduleTask(new PropagateTransactionTask(tx));
-                    }
-                }
-            }));
+            scheduleTask(new ValidateTransactionTask(tx));
         } else {
             SimLogger.logRun(name + " -> transaction " + tx.getId() + " is known, ignoring.");
         }
