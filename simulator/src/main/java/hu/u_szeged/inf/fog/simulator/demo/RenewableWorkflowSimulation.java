@@ -160,12 +160,13 @@ public class RenewableWorkflowSimulation {
 
         for (int i = 0; i < clusterList.size(); i++) {
             Pair<String, ArrayList<WorkflowJob>> jobs = WorkflowJobModel.loadWorkflowXml(workflowFile, "-" + i);
-            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 50, true));
+            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 60, true));
         }
 
         // Logging
         Timed.simulateUntilLastEvent();
         ScenarioBase.logStreamProcessing();
+        ScenarioBase.logRenewableStreamProcessing();
         WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);

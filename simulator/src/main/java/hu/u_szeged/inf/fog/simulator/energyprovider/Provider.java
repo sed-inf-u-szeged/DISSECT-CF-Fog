@@ -16,8 +16,8 @@ public class Provider {
     FossilSource fossilSource;
     public Battery renewableBattery;
     float renewableBasePrice;
-    float renewablePrice;
-    float fossilBasePrice;
+    public float renewablePrice;
+    public float fossilBasePrice;
     long chargeFreq;
     long priceFreq;
     Charge charge;
