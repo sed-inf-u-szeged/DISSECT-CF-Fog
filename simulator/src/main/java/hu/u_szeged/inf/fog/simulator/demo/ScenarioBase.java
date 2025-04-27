@@ -23,6 +23,7 @@ import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
 import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
 import java.math.BigDecimal;
@@ -257,5 +258,11 @@ public class ScenarioBase {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " actuator re-assigning");
         }    
         */
+    }
+    public static void logRenewableStreamProcessing() {
+        RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
+        SimLogger.logRes("Total fossil consumed: " + scheduler.fossilConsumed);
+        SimLogger.logRes("Total renewable consumed: " + scheduler.renewableConsumed);
+        SimLogger.logRes("Total money cost: " + scheduler.totalMoneySpent);
     }
 }
