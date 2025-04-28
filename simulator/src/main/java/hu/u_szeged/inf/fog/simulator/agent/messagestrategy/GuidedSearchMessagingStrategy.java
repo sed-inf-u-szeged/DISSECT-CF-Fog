@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  *   <li>Agents closer to the gateway are favored via distance weighting.</li>
  *   <li>A minimum selection probability is enforced to ensure diversity.</li>
  * </ul>
- *
+ * <p>
  * Agents are selected probabilistically based on their normalized scores
  * during each filtering round.
  * </p>
@@ -28,11 +28,9 @@ import java.util.stream.Collectors;
  */
 public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
-    private static final double WINNING_OFFER_WEIGHT = 1.5;
-    private static final double DISTANCE_WEIGHT = 0.3;
-    private static final double MIN_SELECTION_PROBABILITY = 0.05;
+    private static final double WINNING_OFFER_WEIGHT = 0.8;
+    private static final double MIN_SELECTION_PROBABILITY = 0.25;
     static int count = 0;
-
     public static List<ResourceAgent> guidedAgents;
     private Offer winningOffer;
 
@@ -57,7 +55,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         if (isFirstRound(gateway)) {
             initializeScores(gateway);
             guidedAgents = potentialAgents;
-            return potentialAgents; // return all agent due to no preferred agents yet
+            return potentialAgents; // return all agents due to no preferred agents yet
         } else {
             guidedAgents = selectAgentsBasedOnScores(gateway, potentialAgents);
             return selectAgentsBasedOnScores(gateway, potentialAgents);
@@ -88,33 +86,53 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             return;
         }
 
+        // 1. Collect distances
+        Map<ResourceAgent, Double> distances = new HashMap<>();
         double minDistance = Double.MAX_VALUE;
-        double maxDistance = 0;
+        double maxDistance = 0.0;
+
         for (ResourceAgent agent : gateway.neighborScores.keySet()) {
-            double distance = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000; // Convert to km
+            double distance = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000; // km
+            distances.put(agent, distance);
             minDistance = Math.min(minDistance, distance);
             maxDistance = Math.max(maxDistance, distance);
         }
 
-        System.out.println("gateway: " + gateway.name + "with offer " + winningOffer.id);
+        double distanceRange = maxDistance - minDistance;
+
+        System.out.println("gateway: " + gateway.name + " with offer " + winningOffer.id); // debug
+
         for (ResourceAgent agent : gateway.neighborScores.keySet()) {
             boolean wasHelping = winningOffer.agentResourcesMap.containsKey(agent);
-            double winningBonus = wasHelping ? WINNING_OFFER_WEIGHT : 1.0;
+            double winningBonus = wasHelping ? WINNING_OFFER_WEIGHT : 0;
+            double distance = distances.get(agent);
 
-            double distance = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000; // km
-            double normalizedDistance = (distance - minDistance) / (maxDistance - minDistance + 1e-6); // Normalize between 0 and 1
-            double distanceScore = 1.0 - normalizedDistance;
+            // 2. Normalize distance: 1.0 (best, closest) to 0.4 (worst, farthest)
+            double normalizedDistance;
+            if (distanceRange < 1e-9) {
+                normalizedDistance = 1.0; // All distances are almost the same
+            } else {
+                double inverted = (maxDistance - distance) / distanceRange; // closer = bigger
+                normalizedDistance = 0.4 + inverted * (1.0 - 0.4); // Scale to [0.4..1.0]
+            }
 
-            double newScore = (distanceScore * WINNING_OFFER_WEIGHT) + (winningBonus * (1.0 - DISTANCE_WEIGHT));
-            gateway.neighborScores.put(agent, newScore);
+            // 3. Apply winning bonus
+            double finalScore = winningBonus + normalizedDistance;
 
-            System.out.println(agent.name + " -> wasHelping=" + wasHelping + ", normalizedDistance=" + normalizedDistance + ", finalScore=" + newScore); // debug
+            gateway.neighborScores.put(agent, finalScore);
+
+            System.out.println(agent.name + " -> wasHelping=" + wasHelping + ", distance=" + distance + ", Normdistance=" + normalizedDistance +", normalizedDistance=" + normalizedDistance + ", finalScore=" + finalScore); // debug
         }
 
+        // 4. Normalize scores to [0.20..1.00] (already correct)
         normalizeScores(gateway.neighborScores);
     }
 
+
     private void normalizeScores(final Map<ResourceAgent, Double> scores) {
+        final double TARGET_MAX = 1.0;
+        final double TARGET_MIN = MIN_SELECTION_PROBABILITY;
+
         double maxScore = scores.values().stream()
                 .mapToDouble(Double::doubleValue)
                 .max()
@@ -128,16 +146,17 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         double range = maxScore - minScore;
 
         scores.replaceAll((agent, score) -> {
-            double normalizedScore = (score - minScore) / Math.max(range, 1e-9); // safe range
-            return Math.max(normalizedScore, MIN_SELECTION_PROBABILITY); // Enforce minimum threshold
+            double normalized = (score - minScore) / Math.max(range, 1e-9);
+
+            // Scale to [0.20, 1.0]
+            return TARGET_MIN + normalized * (TARGET_MAX - TARGET_MIN);
         });
 
-        System.out.println("Normalized neighbor scores:");
+        System.out.println("Normalized neighbor scores (scaled 0.20..1.0):");
         scores.forEach((agent, score) -> {
             System.out.println("  " + agent.name + ": " + String.format("%.3f", score));
         });
     }
-
 
     private List<ResourceAgent> selectAgentsBasedOnScores(final ResourceAgent gateway, final List<ResourceAgent> potentialAgents) {
         updateScores(gateway);

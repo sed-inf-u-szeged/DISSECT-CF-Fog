@@ -92,7 +92,7 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = 0;
+            app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
@@ -340,6 +340,10 @@ public class ResourceAgent {
         double maxCpu = Integer.MIN_VALUE;
 
         for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {
+            System.out.println(pair.getLeft().name);
+            System.out.println("utilized cpu:" + pair.getRight().utilisedCpu);
+            System.out.println("max cpu:" + maxCpu);
+
             if (pair.getRight().utilisedCpu > maxCpu) {
                 maxCpu = pair.getRight().utilisedCpu;
                 leadResource = pair;
