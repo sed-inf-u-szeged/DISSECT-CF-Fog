@@ -82,12 +82,9 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-
-
         MessageHandler.executeMessaging(new GuidedSearchMessagingStrategy(), this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
-
     }
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
@@ -95,7 +92,7 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {

@@ -11,6 +11,9 @@ public class MessageHandler {
                                         ResourceAgent gateway, AgentApplication app, int bcastMessageSize, String msg, Runnable customAction) {
         List<ResourceAgent> filteredAgents = messagingStrategy.filterAgents(gateway);
 
+        System.out.println("Networking agents for gateway "+ gateway.name +":"); // debug
+        filteredAgents.forEach(resourceAgent -> System.out.println(resourceAgent.name));
+
         for (ResourceAgent agent : filteredAgents) {
             String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";
             StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
