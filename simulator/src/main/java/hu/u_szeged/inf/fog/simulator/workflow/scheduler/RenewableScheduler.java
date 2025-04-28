@@ -130,6 +130,9 @@ public class RenewableScheduler extends WorkflowScheduler {
                 workflowJob.ca.workflowQueue.add(workflowJob);
                 this.fossilConsumed += getJobFossilConsumption(workflowJob);
                 this.renewableConsumed += getJobRenewableConsumption(workflowJob);
+                provider.calculatePrice();
+                this.totalMoneySpent += getJobRenewableConsumptionPrice(workflowJob);
+                this.totalMoneySpent += getJobFossilConsumptionPrice(workflowJob);
             }
 
             for (WorkflowComputingAppliance wca : this.computeArchitecture) {
@@ -232,4 +235,5 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
         return sum;
     }
+
 }

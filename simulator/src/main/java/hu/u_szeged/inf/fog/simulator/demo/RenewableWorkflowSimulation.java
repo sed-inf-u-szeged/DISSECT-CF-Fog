@@ -160,7 +160,7 @@ public class RenewableWorkflowSimulation {
 
         for (int i = 0; i < clusterList.size(); i++) {
             Pair<String, ArrayList<WorkflowJob>> jobs = WorkflowJobModel.loadWorkflowXml(workflowFile, "-" + i);
-            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 60, true));
+            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 20, true));
         }
 
         // Logging
