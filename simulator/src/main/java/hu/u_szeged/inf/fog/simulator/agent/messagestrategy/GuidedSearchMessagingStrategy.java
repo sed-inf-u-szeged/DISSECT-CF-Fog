@@ -30,13 +30,8 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
     private static final double WINNING_OFFER_WEIGHT = 0.8;
     private static final double MIN_SELECTION_PROBABILITY = 0.25;
-    static int count = 0;
     public static List<ResourceAgent> guidedAgents;
     private Offer winningOffer;
-
-    public GuidedSearchMessagingStrategy(final Offer offer) {
-        this.winningOffer = offer;
-    }
 
     public GuidedSearchMessagingStrategy() {
     }
@@ -45,9 +40,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     public List<ResourceAgent> filterAgents(final ResourceAgent gateway) {
         List<ResourceAgent> potentialAgents = getPotentialAgents(gateway);
 
-        count++;
-        System.out.println("filter count: " + count); // debug
-
         if (potentialAgents.isEmpty()) {
             return Collections.emptyList();
         }
@@ -55,6 +47,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         if (isFirstRound(gateway)) {
             initializeScores(gateway);
             guidedAgents = potentialAgents;
+            gateway.servedAsGateway = true;
             return potentialAgents; // return all agents due to no preferred agents yet
         } else {
             guidedAgents = selectAgentsBasedOnScores(gateway, potentialAgents);
@@ -71,7 +64,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     }
 
     private boolean isFirstRound(final ResourceAgent gateway) {
-        return gateway.neighborScores.isEmpty();
+        return !gateway.servedAsGateway;
     }
 
     private void initializeScores(final ResourceAgent gateway) {
@@ -187,5 +180,9 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         }
 
         return selected;
+    }
+
+    public void setWinningOffer(Offer winningOffer) {
+        this.winningOffer = winningOffer;
     }
 }

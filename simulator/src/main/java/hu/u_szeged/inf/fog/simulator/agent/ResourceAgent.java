@@ -10,6 +10,7 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -49,9 +50,11 @@ public class ResourceAgent {
     public int reBroadcastCounter;
 
     public Map<ResourceAgent, Double> neighborScores = new HashMap<>();
+    public boolean servedAsGateway = false;
+    private final MessagingStrategy messagingStrategy;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
-                         AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
+                         AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
         this.name = name;
         this.hourlyPrice = hourlyPrice;
@@ -59,6 +62,16 @@ public class ResourceAgent {
         this.agentStrategy = agentStrategy;
         this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        this.messagingStrategy = messagingStrategy;
+
+        if(messagingStrategy instanceof GuidedSearchMessagingStrategy){
+            for(ResourceAgent agent : ResourceAgent.resourceAgents) {
+                if (agent != this) {
+                    agent.neighborScores.put(this, 0.0);
+                    this.neighborScores.put(agent, 0.0);
+                }
+            }
+        }
     }
 
     public void registerCapacity(Capacity capacity) {
@@ -82,7 +95,7 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        MessageHandler.executeMessaging(new GuidedSearchMessagingStrategy(), this, app, bcastMessageSize, "bcast", () -> {
+        MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
     }
@@ -298,7 +311,11 @@ public class ResourceAgent {
     }
 
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
-        MessageHandler.executeMessaging(new GuidedSearchMessagingStrategy(offer), this, app, bcastMessageSize, "ack", () -> {
+        if(messagingStrategy instanceof GuidedSearchMessagingStrategy){
+            ((GuidedSearchMessagingStrategy) messagingStrategy).setWinningOffer(offer);
+        }
+
+        MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "ack", () -> {
             SimLogger.logRun("All ack. messages receieved for " + app.name
                     + " at: " + Timed.getFireCount());
 
