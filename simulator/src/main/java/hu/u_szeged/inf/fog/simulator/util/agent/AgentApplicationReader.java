@@ -7,6 +7,8 @@ import java.io.IOException;
 
 public class AgentApplicationReader {
 
+    public static int appCount = 0;
+
     public static AgentApplication readAgentApplications(String filepath) {
         
         AgentApplication agentApplication = null;
@@ -16,6 +18,7 @@ public class AgentApplicationReader {
         try {
             agentApplication = objectMapper.readValue(new File(filepath), AgentApplication.class);
             agentApplication.reName();
+            appCount++;
         } catch (IOException e) {
             e.printStackTrace();
         }
