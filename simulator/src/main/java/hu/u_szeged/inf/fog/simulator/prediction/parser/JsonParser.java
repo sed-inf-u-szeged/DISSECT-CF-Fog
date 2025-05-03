@@ -145,7 +145,7 @@ public class JsonParser {
         return null;
     }
 
-    public static JSONObject toJsonFromReflection(Object object, Class<?> clazz) throws IllegalAccessException, JSONException {
+    private static JSONObject toJsonFromReflection(Object object, Class<?> clazz) throws IllegalAccessException, JSONException {
         JSONObject result = new JSONObject();
 
         for (Field field : clazz.getDeclaredFields()) {

@@ -53,7 +53,6 @@ public abstract class Feature {
     /**
      * Computes the feature's value and adds it to the list of values.
      */
-    //TODO: Ask if change is a problem or not. (easy fix)
     public void computeValue() {
         if (values.size() + 1 > SimulationSettings.get().getPrediction().getBatchSize()) {
             values.remove(0);

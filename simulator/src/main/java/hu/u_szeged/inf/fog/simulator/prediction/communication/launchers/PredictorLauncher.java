@@ -24,7 +24,7 @@ public class PredictorLauncher extends Launcher {
     @Override
     public Process openWindows() throws Exception {
         String command =  String.format(String.format(
-               "C:/Windows/System32/cmd.exe /c cd %s & start python.exe main.py", getProjectLocation()));
+               "C:/Windows/System32/cmd.exe /c cd %s & start ./venv/Scripts/python.exe main.py", getProjectLocation()));
        
         System.out.println("Command: " + command);
             

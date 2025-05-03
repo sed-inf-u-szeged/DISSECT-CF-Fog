@@ -65,8 +65,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             if (features.size() > 0) {
                 try {
                     predictions = FeatureManager.getInstance().predict(
-                            features,
-                            SimulationSettings.get().getPrediction().getBatchSize()
+                            features
                     );
                 } catch (Exception e) {
                     e.printStackTrace();

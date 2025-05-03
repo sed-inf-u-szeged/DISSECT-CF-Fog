@@ -64,7 +64,7 @@ public class ServerSocket {
             try {
                 sendAndGet(
                         SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-                        new SocketMessage("set-ui-predictors", new JSONObject().put("predictors", JsonParser.toJsonArray(PredictorTemplate.getAll(), List.class) /*PredictorTemplate.getAllAsJson()*/))
+                        new SocketMessage("set-ui-predictors", new JSONObject().put("predictors", JsonParser.toJsonArray(PredictorTemplate.getAll(), List.class)))
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);
