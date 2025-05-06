@@ -1,9 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
-import hu.u_szeged.inf.fog.simulator.prediction.communication.ServerSocket;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.PredictorLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +18,9 @@ public class PredictionConfigurator {
      * Indicates whether the prediction functionality is enabled.
      */
     public static boolean PREDICTION_ENABLED = false;
+    public static Process predictor;
+    public static BufferedWriter predictor_writer;
+    public static BufferedReader predictor_reader;
     private List<Launcher> launchers;
     private SimulationDefinition simulationDefinition;
 
@@ -44,28 +47,25 @@ public class PredictionConfigurator {
     }
 
     /**
-     * Starts the server socket and waits for connections and prediction settings.
-     */
-    public void startSocket() {
-        ServerSocket.getInstance().start();
-        ServerSocket.getInstance().waitForConnections(launchers);
-        ServerSocket.getInstance().waitForPredictionSettings();
-    }
-
-    /**
      * Executes the prediction simulation by opening applications, starting the socket, 
      * running the simulation, exporting results, stopping threads, and printing information.
      */
     public void execute() throws Exception {
         for (Launcher application : launchers) {
-            application.open();
+            Process process = application.open();
+
+            if (application.getClass() == PredictorLauncher.class) {
+                predictor = process;
+                predictor_writer = new BufferedWriter(new OutputStreamWriter(predictor.getOutputStream()));
+                predictor_reader = new BufferedReader(new InputStreamReader(predictor.getInputStream()));
+            }
         }
 
-        startSocket();
         simulationDefinition.simulation();
+        predictor_reader.close();
+        predictor_writer.close();
         export();
-        
-        ServerSocket.getInstance().stopThreads();
+
         SimulationSettings.get().printInfo();
         FeatureManager.getInstance().printInfo();
         PredictionLogger.info("simulate", "Simulation has ended!");

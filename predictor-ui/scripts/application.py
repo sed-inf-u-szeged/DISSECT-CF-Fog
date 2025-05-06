@@ -1,66 +1,22 @@
-import socket
-import traceback
-import time
-
-from socket_client import SocketClient
-from socket_message import SocketMessage
+import sys
+import json
 
 from predictor import Predictor
-from app_utils.consts import APPLICATION_PREDICTOR
-from app_utils.log import Log
-
-import warnings
-
 
 class Application:
 
-    def __init__(self, disable_warnings):
-        if disable_warnings:
-            warnings.filterwarnings("ignore")
+    def __init__(self):
+        predictor = Predictor(json.loads(sys.argv[1])["simulation-settings"])
 
-        self._socket = SocketClient(socket.gethostname(), 65432)
-        self._socket.connect()
-        self._predictor = None
-        self._min_prediction_time = None
+        while True:
+            line = sys.stdin.readline()
 
-        self.loop()
-
-    def loop(self):
-        while self._socket.connected:
-            request = self._socket.wait_and_get()
-            response = self.handle_message(request)
-            if response == "STOP":
+            if not line:
                 break
-            self._socket.send(response)
 
-    def handle_message(self, message):
-        if message.event == "predict-feature":
-            prediction = None
             try:
-                start = time.time()
-                prediction = self._predictor.compute(message.data["feature"])
-                elapsed_time = time.time() - start
-                if self._min_prediction_time is not None and elapsed_time < self._min_prediction_time:
-                    time.sleep(self._min_prediction_time - elapsed_time)
-            except:
-                traceback.print_exc()
-
-            response = SocketMessage("prediction-result", {"prediction": prediction})
-
-            if prediction is None:
-                response.data["error"] = "Something went wrong while predicting."
-            return response
-
-        elif message.event == "simulation-settings":
-            self._min_prediction_time = message.data["simulation-settings"]["prediction"]["minPredictionTime"]
-            self._predictor = Predictor(message.data["simulation-settings"])
-            return SocketMessage("simulation-settings-response", {"message": None})
-        elif message.event == "get-name":
-            return SocketMessage("get-name-response", {"name": APPLICATION_PREDICTOR})
-        elif message.event == "stop-connection":
-            self._socket.close()
-            return "STOP"
-        else:
-            Log.error("No event has been found!")
-
-        return None
+                prediction = predictor.compute(json.loads(line)["feature"])
+                json_obj = {"prediction": prediction}
+                print(f"{json.dumps(json_obj)}", flush=True)
+            except Exception as e:
+                print("Error: %s", repr(e), flush=True)

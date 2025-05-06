@@ -1,16 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
-
-import hu.u_szeged.inf.fog.simulator.prediction.communication.ServerSocket;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.SocketMessage;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import lombok.Getter;
 import org.json.JSONObject;
@@ -213,36 +207,42 @@ public class FeatureManager {
         List<Prediction> predictions = new ArrayList<>();
         for (Feature feature : features) {
             feature.setHasNewValue(false);
-            SocketMessage message = ServerSocket.getInstance().sendAndGet(
-                    SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
-                    new SocketMessage(
-                            "predict-feature",
-                            new JSONObject().put("feature", JsonParser.toJson(feature, Feature.class))
-                    )
-            );
 
-            if (message.hasError()) {
-                PredictionLogger.error("socket-prediction-result", message.getData().get("error").toString());
-                continue;
-            }
+            Prediction result;
 
-            Prediction result = JsonParser.fromJsonObject(message.getData().getJSONObject("prediction"), Prediction.class, null);
+            String payload = new JSONObject().put(
+                    "feature",
+                    JsonParser.toJson(feature, Feature.class)
+            ).toString();
+
+            PredictionConfigurator.predictor_writer.write(payload);
+            PredictionConfigurator.predictor_writer.newLine();
+            PredictionConfigurator.predictor_writer.flush();
+
+            PredictionLogger.info("Predictor-message", PredictionConfigurator.predictor_reader.readLine());
+            String predictionString = PredictionConfigurator.predictor_reader.readLine();
+            PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
+
+            result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
+
             feature.addPrediction(result);
             predictions.add(result);
         }
 
-        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
-            PredictionLogger.info("FeatureManager-sendFeatures", "Send features to UI");
-            for (Prediction prediction : predictions) {
-                ServerSocket.getInstance().sendAndGet(
-                        SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-                        new SocketMessage(
-                                "prediction",
-                                new JSONObject().put("prediction", JsonParser.toJson(prediction, Prediction.class))
-                        )
-                );
-            }
-        }
+//TODO: refactor Electron to read from db file. (Could make db file WAL)
+
+//        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
+//            PredictionLogger.info("FeatureManager-sendFeatures", "Send features to UI");
+//            for (Prediction prediction : predictions) {
+//                ServerSocket.getInstance().sendAndGet(
+//                        SocketMessage.SocketApplication.APPLICATION_INTERFACE,
+//                        new SocketMessage(
+//                                "prediction",
+//                                new JSONObject().put("prediction", JsonParser.toJson(prediction, Prediction.class))
+//                        )
+//                );
+//            }
+//        }
         return predictions;
     }
 

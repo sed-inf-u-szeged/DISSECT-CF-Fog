@@ -1,5 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
+import org.json.JSONObject;
+
 import java.io.File;
 
 /**
@@ -23,20 +28,41 @@ public class PredictorLauncher extends Launcher {
 
     @Override
     public Process openWindows() throws Exception {
-        String command =  String.format(String.format(
-               "C:/Windows/System32/cmd.exe /c cd %s & start ./venv/Scripts/python.exe main.py", getProjectLocation()));
-       
-        System.out.println("Command: " + command);
-            
-        return Runtime.getRuntime().exec(command);
+        String command = "cd /d " +
+                getProjectLocation() +
+                String.format(
+                        " && %s/venv/Scripts/python.exe %s/main.py %s",
+                        getProjectLocation(),
+                        getProjectLocation(),
+                        new JSONObject().put(
+                                "simulation-settings",
+                                JsonParser.toJson(SimulationSettings.get(), SimulationSettings.class)
+                        ).toString().replace("\"", "\\\"")
+                );
+
+        ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
+        pb.redirectError(new File(String.format("%s\\prediction_error_logs.txt", ScenarioBase.resultDirectory)));
+
+        return pb.start();
     }
 
     @Override
     public Process openLinux() throws Exception {
-        String command = String.format("gnome-terminal -- python3.10 %s/main.py", getProjectLocation());
+        String command = "cd " +
+                getProjectLocation() +
+                String.format(
+                        " && %s/venv/Scripts/python3 %s/main.py %s",
+                        getProjectLocation(),
+                        getProjectLocation(),
+                        new JSONObject().put(
+                                "simulation-settings",
+                                JsonParser.toJson(SimulationSettings.get(), SimulationSettings.class)
+                        ).toString().replace("\"", "\\\"")
+                );
 
-        System.out.println("Command: " + command);
-        
-        return Runtime.getRuntime().exec(command);
+        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
+        pb.redirectError(new File(String.format("%s\\prediction_error_logs.txt", ScenarioBase.resultDirectory)));
+
+        return pb.start();
     }
 }

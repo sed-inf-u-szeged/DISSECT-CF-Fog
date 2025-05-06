@@ -37,20 +37,25 @@ public abstract class Launcher {
      * Opens the application based on the current operating system. 
      * Currently, only Windows and Linux OS are supported by default.
      */
-    public void open() {
+    public Process open() {
         try {
+            PredictionLogger.info("application",
+                    String.format("Opening '%s' application... (%s)", getClass().getSimpleName(), getProjectLocation()));
+
             if (SystemUtils.IS_OS_WINDOWS) {
-                openWindows();
+                return openWindows();
             } else if (SystemUtils.IS_OS_LINUX) {
-                openLinux();
+                return openLinux();
             } else {
                 throw new Exception();
             }
-            PredictionLogger.info("application", 
-                   String.format("Opening '%s' application... (%s)", getClass().getSimpleName(), getProjectLocation()));
         } catch (Exception e) {
             e.printStackTrace();
+            PredictionLogger.info("application",
+                    String.format("Failed to open '%s' application (%s)", getClass().getSimpleName(), getProjectLocation()));
         }
+
+        return null;
     }
 
     /**

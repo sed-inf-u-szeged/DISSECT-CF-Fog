@@ -13,9 +13,9 @@ public class PredictionSimulation {
     
     public static void main(String[] args) throws Exception {
         /** run only with prediction **/
-        // runPredictionOnly();
+         runPredictionOnly();
         /** run with prediction and UI **/
-        runPredictionWithUI();
+//        runPredictionWithUI();
     }
     
     private static void runPredictionOnly() throws Exception {
