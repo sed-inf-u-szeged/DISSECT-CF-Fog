@@ -264,5 +264,6 @@ public class ScenarioBase {
         SimLogger.logRes("Total fossil consumed: " + scheduler.fossilConsumed);
         SimLogger.logRes("Total renewable consumed: " + scheduler.renewableConsumed);
         SimLogger.logRes("Total money cost: " + scheduler.totalMoneySpent);
+        SimLogger.logRes("Total waiting time (mins) : " + scheduler.totalWaitingTime/60_000);
     }
 }

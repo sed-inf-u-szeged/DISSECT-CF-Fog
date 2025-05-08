@@ -37,6 +37,7 @@ public class RenewableScheduler extends WorkflowScheduler {
     public float totalMoneySpent = 0;
     public List<float[]> visualiser = new ArrayList<>();
     public List<int[]> consumptions = new ArrayList<>();
+    public long totalWaitingTime = 0;
 
     public static class RenewableComperator implements Comparator<WorkflowJob> {
 
@@ -79,6 +80,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         if (this.requirement) {
             if (this.provider.renewableBattery.getBatteryLevel() < startingPriceRenewableSum) {
                 addLog();
+                this.totalWaitingTime += 1000;
                 new DeferredEvent(1000) {
                     @Override
                     protected void eventAction() {
@@ -166,6 +168,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         if (this.requirement) {
             if (!doesProviderHaveEnoughEnergy(workflowJob)) {
                 addLog();
+                this.totalWaitingTime += 1000;
                 new DeferredEvent(1000) {
                     @Override
                     protected void eventAction() {

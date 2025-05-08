@@ -41,11 +41,11 @@ public class RenewableWorkflowSimulation {
 
         Provider provider = new Provider(battery, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
 
-        Solar solar = new Solar(1,10);
-        //Wind wind = new Wind(1, 10);
+        Solar solar = new Solar(1,100);
+        Wind wind = new Wind(1, 100);
 
         provider.addEnergySource(solar);
-        //provider.addEnergySource(wind);
+        provider.addEnergySource(wind);
 
         RenewableWorkflowComputingAppliance node0 = new RenewableWorkflowComputingAppliance(cloudfile, "node0", new GeoLocation(48.8566, 2.3522), 0, provider);
         RenewableWorkflowComputingAppliance node2 = new RenewableWorkflowComputingAppliance(cloudfile, "node2", new GeoLocation(52.5200, 13.4050), 0, provider);
@@ -160,7 +160,7 @@ public class RenewableWorkflowSimulation {
 
         for (int i = 0; i < clusterList.size(); i++) {
             Pair<String, ArrayList<WorkflowJob>> jobs = WorkflowJobModel.loadWorkflowXml(workflowFile, "-" + i);
-            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 10, false));
+            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 10, true));
         }
 
         // Logging
