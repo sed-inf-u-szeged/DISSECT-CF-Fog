@@ -23,6 +23,7 @@ public class Provider {
     Charge charge;
     ChangePrice changePrice;
     double multiplier;
+    float batteryStartingCharge;
 
     public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
@@ -31,6 +32,7 @@ public class Provider {
         {
         this.renewableSources = renewableSources;
         this.renewableBattery = renewableBattery;
+        this.batteryStartingCharge = this.renewableBattery.batteryLevel;
         this.fossilSource = fossilSource;
         this.chargeFreq = chargeFreq;
         this.priceFreq = priceFreq;

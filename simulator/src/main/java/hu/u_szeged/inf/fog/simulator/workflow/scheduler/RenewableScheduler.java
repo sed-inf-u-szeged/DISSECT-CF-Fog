@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
 
 public class RenewableScheduler extends WorkflowScheduler {
@@ -34,6 +35,8 @@ public class RenewableScheduler extends WorkflowScheduler {
     public float fossilPriceSum = 0;
     public float renewablePriceSum = 0;
     public float totalMoneySpent = 0;
+    public List<float[]> visualiser = new ArrayList<>();
+    public List<int[]> consumptions = new ArrayList<>();
 
     public static class RenewableComperator implements Comparator<WorkflowJob> {
 
@@ -54,6 +57,7 @@ public class RenewableScheduler extends WorkflowScheduler {
     public RenewableScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance,
                            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs,
                            Provider provider, int ratio, boolean requirement) throws Exception {
+        createConsumptionValues();
         this.computeArchitecture = computeArchitecture;
         this.instance = instance;
         this.jobs = jobs.getRight();
@@ -74,6 +78,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         if (this.requirement) {
             if (this.provider.renewableBattery.getBatteryLevel() < startingPriceRenewableSum) {
+                addLog();
                 new DeferredEvent(1000) {
                     @Override
                     protected void eventAction() {
@@ -86,6 +91,7 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
         }
         else {
+            addLog();
             if ( (this.provider.renewablePrice <= this.provider.fossilBasePrice) && (this.provider.renewableBattery.getBatteryLevel() >= startingPriceRenewableSum) ) {
                 processStartingJobsWithRenewable();
             } else {
@@ -159,6 +165,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         if (this.requirement) {
             if (!doesProviderHaveEnoughEnergy(workflowJob)) {
+                addLog();
                 new DeferredEvent(1000) {
                     @Override
                     protected void eventAction() {
@@ -173,6 +180,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         }
         else {
+            addLog();
             if ((this.provider.renewablePrice <= this.provider.fossilBasePrice) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
@@ -228,9 +236,13 @@ public class RenewableScheduler extends WorkflowScheduler {
     private ArrayList<WorkflowJob> assignConsumptionToOwnJobs(ArrayList<WorkflowJob> oldJobs) {
 
         ArrayList<WorkflowJob> newJobs = new ArrayList<WorkflowJob>();
+        int randomArray = 0;
+        int randomElement = 0;
 
         for (WorkflowJob job : oldJobs) {
-            job.consumption = 15;
+            randomArray = (int)(Math.random() * consumptions.size());
+            randomElement = (int)(Math.random() * consumptions.get(randomArray).length);
+            job.consumption = consumptions.get(randomArray)[randomElement];
             newJobs.add(job);
         }
 
@@ -270,7 +282,7 @@ public class RenewableScheduler extends WorkflowScheduler {
     }
 
     private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
-        ArrayList<RenewableWorkflowComputingAppliance> rcas= new ArrayList<RenewableWorkflowComputingAppliance>();
+        ArrayList<RenewableWorkflowComputingAppliance> rcas= new ArrayList<>();
         for (WorkflowComputingAppliance ca : cas) {
 
             RenewableWorkflowComputingAppliance rca = (RenewableWorkflowComputingAppliance) ca;
@@ -281,10 +293,18 @@ public class RenewableScheduler extends WorkflowScheduler {
     }
 
     boolean doesProviderHaveEnoughEnergy(WorkflowJob job) {
+        //logJobConsumptions(job);
+        if (this.provider.renewableBattery.getBatteryLevel() >= this.getJobRenewableConsumption(job)) {
+            return true;
+        }
+        return false;
+    }
+
+    void logJobConsumptions(WorkflowJob job) {
         try {
             new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
             PrintStream out = new PrintStream(
-                    new FileOutputStream(ScenarioBase.resultDirectory +"/bruv.txt", true), true);
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/consumption.txt", true), true);
             System.setOut(out);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -293,10 +313,6 @@ public class RenewableScheduler extends WorkflowScheduler {
         System.out.print("   ------------------   " +this.getJobFossilConsumption(job));
         System.out.print("   ------------------   " + job.id);
         System.out.println("   ------------------   " + Timed.getFireCount());
-        if (this.provider.renewableBattery.getBatteryLevel() >= this.getJobRenewableConsumption(job)) {
-            return true;
-        }
-        return false;
     }
 
     float calculateStarterTaskRenewablePrice() {
@@ -307,6 +323,25 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
         }
         return sum;
+    }
+
+    void addLog() {
+        float[] helper = {Timed.getFireCount(), provider.renewableBattery.getBatteryLevel()};
+        this.visualiser.add( helper );
+    }
+
+    void createConsumptionValues() {
+        consumptions.add(new int[]{2090, 2450});
+        consumptions.add(new int[]{800, 1600, 2300, 1200, 1500, 2400});
+        consumptions.add(new int[]{1600, 760, 2772});
+        consumptions.add(new int[]{370, 25, 245});
+        consumptions.add(new int[]{27, 33, 36});
+        consumptions.add(new int[]{271, 700, 613});
+        consumptions.add(new int[]{38, 45, 5, 33});
+        consumptions.add(new int[]{7, 10, 9});
+        consumptions.add(new int[]{590, 420, 560, 730});
+        consumptions.add(new int[]{800, 700, 1000});
+        consumptions.add(new int[]{66});
     }
 
 }
