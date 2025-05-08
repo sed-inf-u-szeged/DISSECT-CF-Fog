@@ -20,7 +20,7 @@ public class Provider {
     public float fossilBasePrice;
     long chargeFreq;
     long priceFreq;
-    Charge charge;
+    public Charge charge;
     ChangePrice changePrice;
     double multiplier;
     float batteryStartingCharge;
