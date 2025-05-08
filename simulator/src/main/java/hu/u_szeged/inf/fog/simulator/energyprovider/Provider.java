@@ -48,7 +48,7 @@ public class Provider {
         try {
             new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
             PrintStream out = new PrintStream(
-                    new FileOutputStream(ScenarioBase.resultDirectory +"/charge.txt", true), true);
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/price.txt", true), true);
             System.setOut(out);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);

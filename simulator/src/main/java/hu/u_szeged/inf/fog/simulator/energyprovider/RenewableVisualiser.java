@@ -15,7 +15,7 @@ public class RenewableVisualiser {
 
         RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
 
-        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/gex.html");
+        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/stored.html");
 
         fw.write("<html>");
         fw.write("<head>");
@@ -52,7 +52,7 @@ public class RenewableVisualiser {
         fw.write("</html>");
         fw.close();
 
-        new File(ScenarioBase.resultDirectory +"/gex.html");
+        new File(ScenarioBase.resultDirectory +"/stored.html");
 
 
     }
