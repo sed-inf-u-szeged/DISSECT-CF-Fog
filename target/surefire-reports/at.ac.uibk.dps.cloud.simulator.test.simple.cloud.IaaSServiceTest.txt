@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: at.ac.uibk.dps.cloud.simulator.test.simple.cloud.IaaSServiceTest
+-------------------------------------------------------------------------------
+Tests run: 21, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.093 s - in at.ac.uibk.dps.cloud.simulator.test.simple.cloud.IaaSServiceTest

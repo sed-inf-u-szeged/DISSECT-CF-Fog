@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instances>
+  <instance name="a1.large">
+    <ram>4294967296</ram>
+    <cpu-cores>1</cpu-cores>
+    <core-processing-power>0.001</core-processing-power>
+    <startup-process>100</startup-process>
+    <req-disk>1073741824</req-disk>
+    <price-per-tick>0.204</price-per-tick>
+  </instance>
+</instances>

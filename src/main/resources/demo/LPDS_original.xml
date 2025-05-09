@@ -1,0 +1,750 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<cloud id="sztaki-lpds"
+	scheduler="hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.RoundRobinScheduler"
+	pmcontroller="hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines">
+
+	<!-- pluto - AMD Opteron(tm) Processor 6262HE (3200.07 bogomips) x64, 256GB, 
+		disk ??? -->
+	<machine id="plutoPM" cores="64" processing="0.001" memory="256000000000">
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="296" max="493" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<!-- statedelays are unknown -->
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="pluto" capacity="5000000000000" inBW="250000"
+			outBW="250000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+                        <!-- latencies are unknown -->
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- sasha - AMD Opteron(tm) Processor 6376 (4588.61 bogomips) x32, 128GB, 
+		disk ??? -->
+	<machine id="sashaPM" cores="32" processing="0.001434063"
+		memory="128000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="sasha" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- moon - AMD Opteron(tm) Processor 6164HE (3400.23 bogomips) x48, 128GB, 
+		disk 6x1T -->
+	<machine id="moonPM" cores="48" processing="0.0010625" memory="128000000000">
+		<!-- 1x Moon - 4xOpteron 6164HE, 128G RAM, 6x1TDisk -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- bandwidthes are unknown -->
+		<repository id="moon" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- mimas - AMD Opteron(tm) Processor 2376 (4599.87 bogomips) x8, 12GB, 
+		disk ??? -->
+	<machine id="mimasPM" cores="8" processing="0.0014375" memory="12000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="mimas" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- enceladus - AMD Opteron(tm) Processor 2376 (4599.87 bogomips) x8, 12GB, 
+		disk ??? -->
+	<machine id="enceladusPM" cores="8" processing="0.0014375"
+		memory="12000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="enceladus" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- rhea - AMD Opteron(tm) Processor 2376 (4599.87 bogomips) x8, 12GB, 
+		disk ??? -->
+	<machine id="rheaPM" cores="8" processing="0.0014375" memory="12000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="rhea" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- thetys - AMD Opteron(tm) Processor 2376 (4599.87 bogomips) x8, 12GB, 
+		disk ??? -->
+	<machine id="thetysPM" cores="8" processing="0.0014375" memory="12000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="thetys" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- dione - AMD Opteron(tm) Processor 2376 (4599.87 bogomips) x8, 12GB, 
+		disk ??? -->
+	<machine id="dionePM" cores="8" processing="0.0014375" memory="12000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="dione" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- io - Intel(R) Xeon(R) CPU E5420 (4987.75 bogomips) x8, 8GB, disk ??? -->
+	<machine id="ioPM" cores="8" processing="0.00155875" memory="8000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="io" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- callisto - Intel(R) Xeon(R) CPU E5420 (4987.75 bogomips) x8, 8GB, disk 
+		??? -->
+	<machine id="callistoPM" cores="8" processing="0.00155875"
+		memory="8000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="callisto" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- europa - Intel(R) Xeon(R) CPU E5420 (4987.75 bogomips) x8, 8GB, disk 
+		??? -->
+	<machine id="europaPM" cores="8" processing="0.00155875"
+		memory="8000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="europa" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="ganymede" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- ganymede - Intel(R) Xeon(R) CPU E5420 (4987.75 bogomips) x8, 8GB, disk 
+		??? -->
+	<machine id="ganymedePM" cores="8" processing="0.00155875"
+		memory="8000000000">
+		<!-- power and statedelays are unknown -->
+		<powerstates kind="host">
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="398" max="533" inState="default" />
+			<!-- OFF is not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="20" max="20" inState="OFF" />
+		</powerstates>
+		<statedelays startup="89000" shutdown="29000" />
+		<!-- disk capacities, bandwidthes are unknown -->
+		<repository id="ganymede" capacity="6000000000000" inBW="125000"
+			outBW="125000" diskBW="50000">
+			<powerstates kind="storage">
+				<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="6.5" max="9" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<powerstates kind="network">
+				<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+				<!-- 2 x 1Gbps NICs -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+					idle="3.4" max="3.8" inState="default" />
+				<!-- Not measured! -->
+				<power
+					model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+					idle="0" max="0" inState="OFF" />
+			</powerstates>
+			<!-- latencies are unknown -->
+			<latency towards="pluto" value="5" />
+			<latency towards="sasha" value="5" />
+			<latency towards="moon" value="5" />
+			<latency towards="mimas" value="5" />
+			<latency towards="enceladus" value="5" />
+			<latency towards="rhea" value="5" />
+			<latency towards="thetys" value="5" />
+			<latency towards="dione" value="5" />
+			<latency towards="io" value="5" />
+			<latency towards="callisto" value="5" />
+			<latency towards="europa" value="5" />
+			<latency towards="ceph" value="5" />
+			<latency towards="iscsi-izabel" value="5" />
+		</repository>
+	</machine>
+
+	<!-- bandwidthes are unknown -->
+	<repository id="ceph" capacity="38000000000000" inBW="250000"
+		outBW="250000" diskBW="100000">
+		<powerstates kind="storage">
+			<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="65" max="90" inState="default" />
+			<!-- Not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<powerstates kind="network">
+			<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+			<!-- 2 x 1Gbps NICs -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="3.4" max="3.8" inState="default" />
+			<!-- Not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<!-- latencies are unknown -->
+		<latency towards="pluto" value="5" />
+		<latency towards="sasha" value="5" />
+		<latency towards="moon" value="5" />
+		<latency towards="mimas" value="5" />
+		<latency towards="enceladus" value="5" />
+		<latency towards="rhea" value="5" />
+		<latency towards="thetys" value="5" />
+		<latency towards="dione" value="5" />
+		<latency towards="io" value="5" />
+		<latency towards="callisto" value="5" />
+		<latency towards="europa" value="5" />
+		<latency towards="ganymede" value="5" />
+		<latency towards="iscsi-izabel" value="5" />
+	</repository>
+
+	<!-- bandwidthes are unknown -->
+	<repository id="iscsi-izabel" capacity="32000000000000"
+		inBW="250000" outBW="250000" diskBW="100000">
+		<powerstates kind="storage">
+			<!-- Not measured! http://www.buildcomputers.net/power-consumption-of-pc-components.html -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="65" max="90" inState="default" />
+			<!-- Not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<powerstates kind="network">
+			<!-- Not measured! http://www.cl.cam.ac.uk/~acr31/pubs/sohan-10gbpower.pdf -->
+			<!-- 2 x 1Gbps NICs -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.LinearConsumptionModel"
+				idle="3.4" max="3.8" inState="default" />
+			<!-- Not measured! -->
+			<power
+				model="hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.ConstantConsumptionModel"
+				idle="0" max="0" inState="OFF" />
+		</powerstates>
+		<!-- latencies are unknown -->
+		<latency towards="pluto" value="5" />
+		<latency towards="sasha" value="5" />
+		<latency towards="moon" value="5" />
+		<latency towards="mimas" value="5" />
+		<latency towards="enceladus" value="5" />
+		<latency towards="rhea" value="5" />
+		<latency towards="thetys" value="5" />
+		<latency towards="dione" value="5" />
+		<latency towards="io" value="5" />
+		<latency towards="callisto" value="5" />
+		<latency towards="europa" value="5" />
+		<latency towards="ganymede" value="5" />
+		<latency towards="ceph" value="5" />
+	</repository>
+</cloud>

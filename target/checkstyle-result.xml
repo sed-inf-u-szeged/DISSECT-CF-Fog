@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="9.3">
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\DeferredEvent.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\AggregatedEnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\DirectEnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\EnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\MonitorConsumption.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\powermodelling\ConstantConsumptionModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\powermodelling\LinearConsumptionModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\powermodelling\NoIdleConsumptionModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\powermodelling\PowerState.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\specialized\IaaSEnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\specialized\PhysicalMachineEnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\energy\specialized\SimpleVMEnergyMeter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\consolidation\Consolidator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\consolidation\SimpleConsolidator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\constraints\AlterableResourceConstraints.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\constraints\ConstantConstraints.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\constraints\ResourceConstraints.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\constraints\UnalterableConstraintsPropagator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\helpers\PMComparators.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\IaaSService.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\PhysicalMachine.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\pmscheduling\AlwaysOnMachines.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\pmscheduling\CapacityChangeManager.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\pmscheduling\MultiPMController.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\pmscheduling\PhysicalMachineController.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\pmscheduling\SchedulingDependentMachines.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\ConsumptionEventAdapter.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\FreqSyncer.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\MaxMinConsumer.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\MaxMinFairSpreader.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\MaxMinProvider.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\PowerBehaviorChangeListener.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\ResourceConsumption.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\resourcemodel\ResourceSpreader.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\statenotifications\PowerStateChangeNotificationHandler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\statenotifications\VMStateChangeNotificationHandler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\VirtualMachine.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\VMManager.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\FirstFitScheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\NonQueueingScheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\pmiterators\PMIterator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\pmiterators\RandomIterator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\pmiterators\RoundRobinIterator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\QueueingData.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\RandomScheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\RoundRobinScheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\Scheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\iaas\vmscheduling\SmallestFirstScheduler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\io\NetworkNode.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\io\Repository.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\io\StorageObject.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\io\VirtualAppliance.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\DirectDispatcher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\EventDispatcherCore.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\LoopedDispatcher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\NullDispatcher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\SingleNotificationHandler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\notifications\StateDependentEventHandler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\Timed.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\util\ArrayHandler.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\util\CloudLoader.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\util\PowerTransitionGenerator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\mta\sztaki\lpds\cloud\simulator\util\SeedSyncer.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\AgentApplication.java">
+<error line="5" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\BroadcastMessage.java">
+<error line="7" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="30" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="37" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="56" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="76" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="84" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="101" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\Constraint.java">
+<error line="3" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\NaiveResourceAgent.java">
+<error line="12" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="25" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="36" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="96" column="9" severity="warning" message="Comment has incorrect indentation level 8, expected is 12, indentation should be the same level as line 97." source="com.puppycrawl.tools.checkstyle.checks.indentation.CommentsIndentationCheck"/>
+<error line="97" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="98" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="99" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="100" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="101" column="13" severity="warning" message="&apos;try&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="103" severity="warning" message="Line is longer than 120 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="103" column="17" severity="warning" message="&apos;try&apos; child has incorrect indentation level 16, expected level should be 12." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="114" column="13" severity="warning" message="&apos;try rcurly&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="115" column="17" severity="warning" message="&apos;catch&apos; child has incorrect indentation level 16, expected level should be 12." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="116" column="13" severity="warning" message="&apos;catch rcurly&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="117" column="8" severity="warning" message="Comment has incorrect indentation level 7, expected is 12, indentation should be the same level as line 101." source="com.puppycrawl.tools.checkstyle.checks.indentation.CommentsIndentationCheck"/>
+<error line="120" severity="warning" message="Line is longer than 120 characters (found 121)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="123" column="9" severity="warning" message="Comment has incorrect indentation level 8, expected is 12, indentation should be the same level as line 124." source="com.puppycrawl.tools.checkstyle.checks.indentation.CommentsIndentationCheck"/>
+<error line="124" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="125" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="126" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="127" column="13" severity="warning" message="&apos;method def&apos; child has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="128" column="13" severity="warning" message="&apos;try&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="129" severity="warning" message="Line is longer than 120 characters (found 122)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="129" column="17" severity="warning" message="&apos;try&apos; child has incorrect indentation level 16, expected level should be 12." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="138" column="46" severity="warning" message="&apos;)&apos; is preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.ParenPadCheck"/>
+<error line="146" column="13" severity="warning" message="&apos;try rcurly&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="147" column="17" severity="warning" message="&apos;catch&apos; child has incorrect indentation level 16, expected level should be 12." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="148" column="13" severity="warning" message="&apos;catch rcurly&apos; has incorrect indentation level 12, expected level should be 8." source="com.puppycrawl.tools.checkstyle.checks.indentation.IndentationCheck"/>
+<error line="149" column="9" severity="warning" message="Comment has incorrect indentation level 8, expected is 12, indentation should be the same level as line 128." source="com.puppycrawl.tools.checkstyle.checks.indentation.CommentsIndentationCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\Orchestration.java">
+<error line="7" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="11" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="14" severity="warning" message="Line is longer than 120 characters (found 123)." source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="20" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\Pair.java">
+<error line="3" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\agent\ResourceAgent.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\Application.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\AppVm.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\ApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\CustomApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\HoldDownApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\PliantApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\PushUpApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\RandomApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\application\strategy\RuntimeAwareApplicationStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\AgentTest.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\CentralisedAcoTest.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\DeferredExample.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\DistributedWorkflowSimulation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\IoTSimulation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\NaiveAgentTest.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\PredictionSimulation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\PredictionSimulationDefinition.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\ScenarioBase.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\TimedExample.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\TransferExample.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\VmTaskExample.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\WorkflowSimulation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\demo\XMLSimulation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\Actuator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\Device.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\EdgeDevice.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\GeoLocation.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\MobilityEvent.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\MobilityStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\NomadicMobilityStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\RandomWalkMobilityStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\mobility\StaticMobilityStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\Sensor.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\SmartDevice.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\CostAwareDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\CustomDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\DeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\DistanceBasedDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\LoadBalancedDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\PliantDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\iot\strategy\RandomDeviceStrategy.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\node\AgentComputingAppliance.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="15" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\node\ComputingAppliance.java">
+<error line="17" column="1" severity="warning" message="Extra separation in import group before &apos;java.io.IOException&apos;" source="com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck"/>
+<error line="20" column="1" severity="warning" message="Extra separation in import group before &apos;javax.xml.parsers.ParserConfigurationException&apos;" source="com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck"/>
+<error line="22" column="1" severity="warning" message="Extra separation in import group before &apos;org.xml.sax.SAXException&apos;" source="com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\node\WorkflowComputingAppliance.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\pliant\FuzzyIndicators.java">
+<error line="5" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="9" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="22" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\pliant\Kappa.java">
+<error line="3" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\pliant\Linear.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\pliant\Normalizer.java">
+<error line="5" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\pliant\Sigmoid.java">
+<error line="5" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="20" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="35" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\ClientThread.java">
+<error line="11" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="17" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="35" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="50" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\launchers\ElectronLauncher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\launchers\Launcher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\launchers\PredictorLauncher.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\ServerSocket.java">
+<error line="13" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="25" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="32" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="74" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="83" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="92" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="118" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\communication\SocketMessage.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="8" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="37" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\Feature.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\FeatureManager.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\Backlog.java">
+<error line="3" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="14" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\LimitedQueue.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\Predictor.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\ProbabilityMatrix.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\Utils.java">
+<error line="116" column="13" severity="warning" message="Distance between variable &apos;a22&apos; declaration and its first usage is 4, but allowed 3.  Consider making that variable final if you still need to store its value in advance (before method calls that might have side effects on the original value)." source="com.puppycrawl.tools.checkstyle.checks.coding.VariableDeclarationUsageDistanceCheck"/>
+<error line="126" column="13" severity="warning" message="Distance between variable &apos;b22&apos; declaration and its first usage is 4, but allowed 3.  Consider making that variable final if you still need to store its value in advance (before method calls that might have side effects on the original value)." source="com.puppycrawl.tools.checkstyle.checks.coding.VariableDeclarationUsageDistanceCheck"/>
+<error line="143" column="13" severity="warning" message="Distance between variable &apos;c22&apos; declaration and its first usage is 4, but allowed 3.  Consider making that variable final if you still need to store its value in advance (before method calls that might have side effects on the original value)." source="com.puppycrawl.tools.checkstyle.checks.coding.VariableDeclarationUsageDistanceCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\mobility\WeightCoefficient.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\Prediction.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\PredictionConfigurator.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\PredictionLogger.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\ExportSettings.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\Option.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="36" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\Param.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="31" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\Parameter.java">
+<error line="8" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="10" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="27" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="37" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="111" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\PredictionSettings.java">
+<error line="6" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="8" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="43" column="9" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="57" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="128" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\PredictorSettings.java">
+<error line="10" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="16" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="33" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="50" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="104" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="111" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\PredictorTemplate.java">
+<error line="10" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="16" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="23" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="29" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="73" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="95" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="103" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\settings\SimulationSettings.java">
+<error line="12" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="18" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="58" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="73" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="86" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\TableBuilder.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\prediction\Utils.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\provider\AwsProvider.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\provider\AzureProvider.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\provider\IbmProvider.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\provider\Instance.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\provider\Provider.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\MapVisualiser.java">
+<error line="96" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\result\ActuatorEvents.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\result\Architecture.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\result\Cost.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\result\DataVolume.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\result\SimulatorJobResult.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\SimLogger.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\TimelineVisualiser.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\tosca\Ec2Loader.java">
+<error line="11" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\tosca\RegionInstanceReader.java">
+<error line="12" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="56" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\WorkflowGraphVisualiser.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\ApplianceNeigboursXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\AppliancesXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\ApplianceXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\ApplicationsXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\ApplicationXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\DevicesXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\DeviceXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\InstancesXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\InstanceXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\ScientificWorkflowParser.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\UsesXmlModel.java">
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\WorkflowJobModel.java">
+<error line="17" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="52" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="69" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="104" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="140" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\util\xml\WorkflowJobsModel.java">
+<error line="12" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\aco\Acoc.java">
+<error line="13" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="37" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="221" column="1" severity="warning" message="Top-level class Ant has to reside in its own source file." source="com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\aco\CentralisedAnt.java">
+<error line="25" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\aco\CentralisedAntOptimiser.java">
+<error line="9" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="17" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="117" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="127" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\DecentralizedWorkflowExecutor.java">
+<error line="28" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="41" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="71" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\scheduler\DecentralizedWorkflowScheduler.java">
+<error line="21" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="28" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="63" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="119" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\scheduler\IotWorkflowScheduler.java">
+<error line="18" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="22" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\scheduler\MaxMinScheduler.java">
+<error line="15" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="66" column="1" severity="warning" message="Top-level class MaxMinComperator has to reside in its own source file." source="com.puppycrawl.tools.checkstyle.checks.design.OneTopLevelClassCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\scheduler\WorkflowScheduler.java">
+<error line="19" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="33" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="71" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="86" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="95" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\WorkflowExecutor.java">
+<error line="27" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="39" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="70" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="H:\Dev\Egyetem\Szakdolgozat\DISSECT-CF-Fog\simulator\src\main\java\hu\u_szeged\inf\fog\simulator\workflow\WorkflowJob.java">
+<error line="9" column="1" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="48" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="65" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="79" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="93" column="5" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="95" column="9" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="117" column="9" severity="warning" message="Missing a Javadoc comment." source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+</checkstyle>
