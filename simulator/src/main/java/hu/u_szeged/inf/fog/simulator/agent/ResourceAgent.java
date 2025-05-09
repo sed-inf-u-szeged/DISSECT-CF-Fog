@@ -51,6 +51,7 @@ public class ResourceAgent {
 
     public Map<ResourceAgent, Double> neighborScores = new HashMap<>();
     public boolean servedAsGateway = false;
+    public int winningOfferSelectionCount = 0;
     private final MessagingStrategy messagingStrategy;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
@@ -357,9 +358,6 @@ public class ResourceAgent {
         double maxCpu = Integer.MIN_VALUE;
 
         for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {
-            System.out.println(pair.getLeft().name);
-            System.out.println("utilized cpu:" + pair.getRight().utilisedCpu);
-            System.out.println("max cpu:" + maxCpu);
 
             if (pair.getRight().utilisedCpu > maxCpu) {
                 maxCpu = pair.getRight().utilisedCpu;
