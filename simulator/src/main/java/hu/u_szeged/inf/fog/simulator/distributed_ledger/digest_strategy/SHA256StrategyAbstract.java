@@ -8,7 +8,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
  * It provides a method to compute the hash time for a given input size using the SHA-256 algorithm.
  * The hash time is interpolated based on predefined block sizes and their corresponding times.
  */
-public class SHA256Strategy extends DigestStrategy {
+public class SHA256StrategyAbstract extends AbstractDigestStrategy {
 
     private static final double[] BLOCK_SIZES = {16, 64, 256, 1024, 8192, 16384};
     private static final double[] TIMES = {
@@ -23,7 +23,7 @@ public class SHA256Strategy extends DigestStrategy {
     /**
      * Constructs a `SHA256Strategy` and sets the name and key size.
      */
-    public SHA256Strategy() {
+    public SHA256StrategyAbstract() {
         setName("SHA-256");
         setKeySize(256);
     }

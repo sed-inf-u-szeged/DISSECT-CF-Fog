@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy;
 
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.AbstractDigestStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 
 /**
