@@ -169,6 +169,8 @@ public class RenewableWorkflowSimulation {
         ScenarioBase.logRenewableStreamProcessing();
         WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
         RenewableVisualiser.visualiseGraph();
+        RenewableVisualiser.visualiseSolar(provider.charge);
+        RenewableVisualiser.visualiseWind(provider.charge);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);

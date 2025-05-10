@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+
 import java.util.Random;
 
 public class Wind extends EnergySource{
@@ -7,6 +9,7 @@ public class Wind extends EnergySource{
     int turbines;
     float output;
     float lastCapacityFactor;
+    int currentHour;
 
     public Wind(int turbines, float output) {
         super(true);
@@ -23,10 +26,20 @@ public class Wind extends EnergySource{
     }
 
     float CalculateOutputFactor() {
-        Random rand = new Random();
-        double variation = (rand.nextFloat() - 0.5) * 0.4;
-        this.lastCapacityFactor = (float) Math.max(0.1, Math.min(0.9, this.lastCapacityFactor + variation));
+        if (this.currentHour < calculateHours()) {
+            this.currentHour = calculateHours();
+            Random rand = new Random();
+            double variation = (rand.nextFloat() - 0.5) * 0.4;
+            this.lastCapacityFactor = (float) Math.max(0.1, Math.min(0.9, this.lastCapacityFactor + variation));
+        }
         return this.lastCapacityFactor;
     }
+
+    int calculateHours() {
+        int hours = (int) Math.floor((double) Timed.getFireCount() /3_600_000);
+        return hours;
+    }
+
+
 
 }

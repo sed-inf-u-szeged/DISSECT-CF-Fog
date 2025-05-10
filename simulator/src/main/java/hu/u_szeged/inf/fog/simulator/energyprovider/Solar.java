@@ -15,6 +15,8 @@ public class Solar extends EnergySource{
 
     int output;
     int panels;
+    int currentDay = 1;
+    float multiplier = 1;
 
 
     public Solar(int panels, int output) {
@@ -30,8 +32,8 @@ public class Solar extends EnergySource{
 
     //TODO simulate random days with less sun
     public float calculateSineCurveMultipier(double x) {
-
-        float value = (float) Math.sin(0.28 * x + 4.22);
+        updateMultiplier();
+        float value = (float) (this.multiplier * (Math.sin(0.28 * x + 4.22) ) );
         if (value >= 0) {
             return value;
         } else {
@@ -40,6 +42,18 @@ public class Solar extends EnergySource{
 
     }
 
+    int calculateDay() {
+        int day = (int) Math.ceil((double) Timed.getFireCount() / 3_600_000 / 24);
+        return day;
+    }
+
+    void updateMultiplier() {
+        if (this.currentDay < calculateDay()) {
+            this.currentDay = calculateDay();
+            Random rand = new Random();
+            this.multiplier = rand.nextFloat();
+        }
+    }
 
 }
 
