@@ -27,9 +27,9 @@ public class BuildBlockTask implements MinerTask {
     public void execute(Miner miner) {
         miner.setState(Miner.MinerState.BUILDING_BLOCK);
         if (currentState == State.NEW) {
-            DifficultyAdjustmentStrategy das = ((DifficultyAdjustmentStrategy) miner.distributedLedger.getConsensusStrategy());
+            DifficultyAdjustmentStrategy das = ((DifficultyAdjustmentStrategy) miner.consensusStrategy);
             long nextDiff = das.computeNextDifficulty(miner.getLocalLedger());
-            buildingBlock = new Block(miner.distributedLedger, nextDiff);
+            buildingBlock = new Block(miner.consensusStrategy, nextDiff);
             miner.setNextBlock(buildingBlock);
             currentState = State.IN_PROGRESS;
         }

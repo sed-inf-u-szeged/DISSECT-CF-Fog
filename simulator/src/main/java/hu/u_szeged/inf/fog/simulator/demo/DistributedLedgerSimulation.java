@@ -7,13 +7,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.DistributedLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.TransactionDevice;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.PoWConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.RSAStrategy;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.SHA256StrategyAbstract;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.SHA256Strategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.RandomNodeStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.RandomStrategy;
@@ -33,11 +32,10 @@ public class DistributedLedgerSimulation {
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
-        ConsensusStrategy consensus = new PoWConsensusStrategy(10, 20, 10_000, 1000, new RSAStrategy(4096), new SHA256StrategyAbstract()); //TODO
-        DistributedLedger distributedLedger = new DistributedLedger(consensus);
+        ConsensusStrategy consensus = new PoWConsensusStrategy(10, 20, 10_000, 1000, new RSAStrategy(4096), new SHA256Strategy());
         for (int i = 0; i < 2; i++) {
             ComputingAppliance ca = new ComputingAppliance(cloudfile, "fog1", new GeoLocation(47.6, 17.9), 50);
-            new Miner(distributedLedger, new RandomStrategy(), ca, new RandomizedValidation(0.95, 0.90, SeedSyncer.centralRnd));
+            new Miner(consensus, new RandomStrategy(), ca, new RandomizedValidation(0.95, 0.90, SeedSyncer.centralRnd));
         }
 //        NetworkGenerator.smallWorldNetworkGenerator(ComputingAppliance.allComputingAppliances, 2, 0.3,30, 50);
         ComputingAppliance.allComputingAppliances.get(0).addNeighbor(ComputingAppliance.allComputingAppliances.get(1),30);

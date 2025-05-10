@@ -9,7 +9,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
  * It provides a method to compute the hash time for a given input size using the SHA-512 algorithm.
  * The hash time is interpolated based on predefined block sizes and their corresponding times.
  */
-public class SHA512StrategyAbstract extends AbstractDigestStrategy {
+public class SHA512Strategy extends AbstractDigestStrategy {
 
     private static final double[] BLOCK_SIZES = {16, 64, 256, 1024, 8192, 16384};
     private static final double[] TIMES = {
@@ -24,7 +24,7 @@ public class SHA512StrategyAbstract extends AbstractDigestStrategy {
     /**
      * Constructs a `SHA512Strategy` and sets the name and key size.
      */
-    public SHA512StrategyAbstract() {
+    public SHA512Strategy() {
         setName("SHA-512");
         setKeySize(512);
     }

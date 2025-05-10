@@ -8,7 +8,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
  * It provides a method to compute the hash time for a given input size using the SHA-384 algorithm.
  * The hash time is interpolated based on predefined block sizes and their corresponding times.
  */
-public class SHA384StrategyAbstract extends AbstractDigestStrategy {
+public class SHA384Strategy extends AbstractDigestStrategy {
 
     private static final double[] BLOCK_SIZES = {16, 64, 256, 1024, 8192, 16384};
     private static final double[] TIMES = {
@@ -23,7 +23,7 @@ public class SHA384StrategyAbstract extends AbstractDigestStrategy {
     /**
      * Constructs a `SHA384Strategy` and sets the name and key size.
      */
-    public SHA384StrategyAbstract() {
+    public SHA384Strategy() {
         setName("SHA-384");
         setKeySize(384);
     }

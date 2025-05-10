@@ -51,11 +51,11 @@ public class ForkReorgTask implements MinerTask {
         miner.setState(Miner.MinerState.RESOLVE_FORK);
         SimLogger.logRun("[ForkReorgTask] " + miner.getName() + " rolling back " + rollbackDepth + " blocks...");
 
-        DifficultyAdjustmentStrategy das = ((DifficultyAdjustmentStrategy) miner.distributedLedger.getConsensusStrategy());
+        DifficultyAdjustmentStrategy das = ((DifficultyAdjustmentStrategy) miner.consensusStrategy);
         long diff = das.computeNextDifficulty(miner.getLocalLedger());
-        List<Block> deltaBlocks = Utils.generateFakeBlocks(miner.distributedLedger, rollbackDepth, diff);
+        List<Block> deltaBlocks = Utils.generateFakeBlocks(miner.consensusStrategy, rollbackDepth, diff);
         try {
-            miner.localVm.newComputeTask(Utils.reorgCost(miner.distributedLedger.getConsensusStrategy(), deltaBlocks), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
+            miner.localVm.newComputeTask(Utils.reorgCost(miner.consensusStrategy, deltaBlocks), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
                     miner.getLocalLedger().resolveReorg(deltaBlocks);

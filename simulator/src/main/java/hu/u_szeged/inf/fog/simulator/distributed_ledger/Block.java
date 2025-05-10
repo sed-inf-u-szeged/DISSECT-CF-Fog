@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 
@@ -22,16 +23,15 @@ public class Block {
 
     private boolean technicallyFull = false;
 
-    final DistributedLedger distributedLedger;
-
+    final ConsensusStrategy consensusStrategy;
     /**
      * Constructs a new `Block` with the specified distributed ledger and difficulty level.
      *
-     * @param distributedLedger the distributed ledger to which this block belongs
+     * @param consensusStrategy the consensus strategy used for the block
      * @param difficulty the difficulty level of the block, used for proof of work
      */
-    public Block(DistributedLedger distributedLedger, long difficulty) {
-        this.distributedLedger = distributedLedger;
+    public Block(ConsensusStrategy consensusStrategy, long difficulty) {
+        this.consensusStrategy = consensusStrategy;
         this.id = Utils.generateFakeHash((int) difficulty);
         this.transactions = new ArrayList<>();
         this.size = 0;
@@ -125,12 +125,12 @@ public class Block {
      * @throws ArithmeticException if the block size exceeds the maximum size defined in the consensus
      */
     public List<Transaction> add(Transaction tx) throws ArithmeticException {
-        if (tx.getSize() + size() > distributedLedger.getConsensusStrategy().getBlockSize())
+        if (tx.getSize() + size() > consensusStrategy.getBlockSize())
             throw new ArithmeticException("Block cannot be greater than the max size defined in the consensus");
         this.transactions.add(tx);
         this.size += tx.getSize();
 
-        if (distributedLedger.getConsensusStrategy().getBlockSize() - size() < distributedLedger.getConsensusStrategy().getBlockSize() * 0.05) {
+        if (consensusStrategy.getBlockSize() - size() < consensusStrategy.getBlockSize() * 0.05) {
             this.technicallyFull = true; // when there is very little space left in the block, it should not try to find a transaction to fill this space
             // if the left space in the block is less than 5%, it is technically full
         }

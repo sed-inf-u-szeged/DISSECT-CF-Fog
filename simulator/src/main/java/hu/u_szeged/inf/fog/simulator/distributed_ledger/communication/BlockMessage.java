@@ -9,6 +9,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
  */
 public class BlockMessage extends StorageObject implements MessageInterface {
     private final Block block;
+    private static final int BLOCK_MESSAGE_OVERHEAD = 50;
 
     /**
      * Constructor for BlockMessage.
@@ -16,7 +17,7 @@ public class BlockMessage extends StorageObject implements MessageInterface {
      * @param block the block to be included in the message
      */
     public BlockMessage(Block block) {
-        super(block.getId(), block.size() + 50, true);  // sum of the transactions plus an extra 50 overhead
+        super(block.getId(), block.size() + BLOCK_MESSAGE_OVERHEAD, true);  // sum of the transactions plus an extra 50 overhead
         this.block = block;
     }
 

@@ -8,10 +8,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.*;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.BuildBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.ValidateBlockTask;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.PropagateTransactionTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransactionTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
@@ -44,7 +44,7 @@ public class Miner extends Timed {
     public VirtualMachine localVm;
     public final String name;
     public final Mempool mempool;
-    public final DistributedLedger distributedLedger;
+    public final ConsensusStrategy consensusStrategy;
     public final TransactionSelectionStrategy transactionSelectionStrategy;
     private final ValidationStrategy validationStrategy;
 
@@ -60,17 +60,17 @@ public class Miner extends Timed {
     /**
      * Constructs a new `Miner` with the specified parameters.
      *
-     * @param distributedLedger            The distributed ledger instance.
+     * @param consensusStrategy            The consensus strategy used by this miner.
      * @param transactionSelectionStrategy The strategy for selecting transactions.
      * @param computingAppliance           The computing appliance associated with this miner.
      * @param validationStrategy           The strategy for validating transactions.
      */
-    public Miner(DistributedLedger distributedLedger, TransactionSelectionStrategy transactionSelectionStrategy, ComputingAppliance computingAppliance, ValidationStrategy validationStrategy) {
+    public Miner(ConsensusStrategy consensusStrategy, TransactionSelectionStrategy transactionSelectionStrategy, ComputingAppliance computingAppliance, ValidationStrategy validationStrategy) {
         this.name = "[Miner]" + miners.size();
         this.setState(MinerState.WAITING_FOR_VM);
         miners.put(computingAppliance, this);
         this.mempool = new Mempool();
-        this.distributedLedger = distributedLedger;
+        this.consensusStrategy = consensusStrategy;
         this.transactionSelectionStrategy = transactionSelectionStrategy;
         this.validationStrategy = validationStrategy;
         this.computingAppliance = computingAppliance;

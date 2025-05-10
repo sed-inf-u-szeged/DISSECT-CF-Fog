@@ -30,9 +30,9 @@ public class ValidateBlockTask implements MinerTask {
         SimLogger.logRun(miner.name + " Validating received block: " + block.getId());
         miner.setState(Miner.MinerState.PROCESSING_INCOMING_BLOCK);
 
-        double instructions = Utils.validateBlockCost(miner.distributedLedger.getConsensusStrategy(), block);
+        double instructions = Utils.validateBlockCost(miner.consensusStrategy, block);
 
-        long expectedDifficulty = ((DifficultyAdjustmentStrategy) miner.distributedLedger.getConsensusStrategy()).computeNextDifficulty(miner.getLocalLedger());
+        long expectedDifficulty = ((DifficultyAdjustmentStrategy) miner.consensusStrategy).computeNextDifficulty(miner.getLocalLedger());
 
         if (block.getDifficulty() != expectedDifficulty) {
             SimLogger.logRun(miner.getName() + " -> REJECT: block has difficulty " + block.getDifficulty() + ", expected " + expectedDifficulty);

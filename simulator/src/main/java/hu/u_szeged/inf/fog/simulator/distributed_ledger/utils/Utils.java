@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.utils;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.DistributedLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
@@ -119,18 +118,18 @@ public class Utils {
     /**
      * Generates a list of fake blocks for the distributed ledger.
      *
-     * @param distributedLedger the distributed ledger for which the blocks are generated
+     * @param consensusStrategy the consensus strategy used for block generation
      * @param numberOfBlocks    the number of blocks to generate
      * @param difficulty        the difficulty level for the blocks
      * @return the list of generated fake blocks
      */
-    public static List<Block> generateFakeBlocks(DistributedLedger distributedLedger, int numberOfBlocks, long difficulty) {
+    public static List<Block> generateFakeBlocks(ConsensusStrategy consensusStrategy, int numberOfBlocks, long difficulty) {
         List<Block> fakeBlocks = new ArrayList<>(numberOfBlocks);
         for (int i = 0; i < numberOfBlocks; i++) {
-            Block block = new Block(distributedLedger, difficulty);
+            Block block = new Block(consensusStrategy, difficulty);
             while (!block.isFull()) {
                 Transaction tx = new Transaction("fake-data", RANDOM.nextInt(100));
-                if (block.size() + tx.getSize() <= distributedLedger.getConsensusStrategy().getBlockSize()) {
+                if (block.size() + tx.getSize() <= consensusStrategy.getBlockSize()) {
                     block.add(tx);
                 }
             }
