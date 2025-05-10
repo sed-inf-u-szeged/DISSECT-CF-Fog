@@ -4,6 +4,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.LocalLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.AbstractDigestStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 
 /**
  * The `PoWConsensusStrategy` class implements the `ConsensusStrategy` and `DifficultyAdjustmentStrategy` interfaces.
@@ -33,7 +34,7 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
     /**
      * The digest strategy used for hashing the block data.
      */
-    public final AbstractDigestStrategy abstractDigestStrategy;
+    public final DigestStrategy digestStrategy;
 
     /**
      * Constructor for the PoWConsensusStrategy.
@@ -43,15 +44,15 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
      * @param targetBlockTimespan       the target time between blocks in ticks
      * @param blockSize                 the size of each block in the blockchain
      * @param cryptoStrategy            the cryptographic strategy used for hashing and signing blocks
-     * @param abstractDigestStrategy            the digest strategy used for hashing the block data
+     * @param digestStrategy            the digest strategy used for hashing the block data
      */
-    public PoWConsensusStrategy(int startDifficulty, int difficultyAdjustmentBlock, long targetBlockTimespan, int blockSize, CryptoStrategy cryptoStrategy, AbstractDigestStrategy abstractDigestStrategy) {
+    public PoWConsensusStrategy(int startDifficulty, int difficultyAdjustmentBlock, long targetBlockTimespan, int blockSize, CryptoStrategy cryptoStrategy, DigestStrategy digestStrategy) {
         this.startDifficulty = startDifficulty;
         this.difficultyAdjustmentBlock = difficultyAdjustmentBlock;
         this.targetBlockTimespan = targetBlockTimespan;
         this.blockSize = blockSize;
         this.cryptoStrategy = cryptoStrategy;
-        this.abstractDigestStrategy = abstractDigestStrategy;
+        this.digestStrategy = digestStrategy;
     }
 
     /**
@@ -69,8 +70,8 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
      *
      * @return the digest strategy
      */
-    public AbstractDigestStrategy getDigestStrategy() {
-        return abstractDigestStrategy;
+    public DigestStrategy getDigestStrategy() {
+        return digestStrategy;
     }
 
     /**
