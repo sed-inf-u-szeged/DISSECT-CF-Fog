@@ -21,6 +21,7 @@ public class Utils {
     private static final Random RANDOM = SeedSyncer.centralRnd;
     private static final double VARIANCE_PROBABILITY = 0.05; // 5% chance to reduce effort
     private static final double VARIANCE_FACTOR = 0.1; // Reduce to 10% of original
+    private static final int FAKE_TRANSACTION_SIZE = 512; // Size of fake transactions
 
     private static final int BASE = 16;
 
@@ -128,7 +129,7 @@ public class Utils {
         for (int i = 0; i < numberOfBlocks; i++) {
             Block block = new Block(consensusStrategy, difficulty);
             while (!block.isFull()) {
-                Transaction tx = new Transaction("fake-data", RANDOM.nextInt(100));
+                Transaction tx = new Transaction("fake-data", FAKE_TRANSACTION_SIZE);
                 if (block.size() + tx.getSize() <= consensusStrategy.getBlockSize()) {
                     block.add(tx);
                 }

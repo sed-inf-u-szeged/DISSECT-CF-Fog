@@ -14,6 +14,9 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.PoWCo
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.RSAStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.SHA256Strategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.RandomNodeStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.ForkManager;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.ForkScenario;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.NetworkLatencyFork;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.RandomStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.RandomizedValidation;
@@ -41,10 +44,10 @@ public class DistributedLedgerSimulation {
         ComputingAppliance.allComputingAppliances.get(0).addNeighbor(ComputingAppliance.allComputingAppliances.get(1),30);
         ComputingAppliance.allComputingAppliances.get(1).addNeighbor(ComputingAppliance.allComputingAppliances.get(0),30);
 
-//        ForkManager forkManager = new ForkManager();
-//        ForkScenario forkScenario = new NetworkLatencyFork(true, 0.01, 10_000L, 0);
-//        forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
-//        forkManager.registerScenario(forkScenario, 10_000L);
+        ForkManager forkManager = new ForkManager();
+        ForkScenario forkScenario = new NetworkLatencyFork(true, 0.01, 10_000L, 0);
+        forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
+        forkManager.registerScenario(forkScenario, 10_000L);
 
         ArrayList<TransactionDevice> deviceList = new ArrayList<>();
         for (int i = 0; i < 1; i++) {
