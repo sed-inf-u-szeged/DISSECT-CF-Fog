@@ -22,8 +22,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The `TransactionDevice` class represents a device that generates and publishes transactions in a distributed ledger.
- * It extends the `Device` class and uses a `FindNodeStrategy` to determine where to publish transactions.
+ * The TransactionDevice class represents a device that generates and publishes transactions in a distributed ledger.
+ * It extends the Device class and uses a FindNodeStrategy to determine where to publish transactions.
  * This class is responsible for creating transactions at specified intervals and sending them to miners.
  */
 public class TransactionDevice extends Device {
@@ -37,7 +37,7 @@ public class TransactionDevice extends Device {
     public Set<TransactionMessage> pendingTransactions;
 
     /**
-     * Constructs a `TransactionDevice` with the specified parameters.
+     * Constructs a TransactionDevice with the specified parameters.
      *
      * @param startTime        the start time for generating transactions
      * @param stopTime         the stop time for generating transactions

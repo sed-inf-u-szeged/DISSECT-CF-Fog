@@ -4,7 +4,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Mempool;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 
 /**
- * The `FiFoStrategy` class represents a transaction selection strategy based on the First-In-First-Out (FIFO) principle.
+ * The FiFoStrategy class represents a transaction selection strategy based on the First-In-First-Out (FIFO) principle.
  * This strategy selects transactions from the mempool in the order of their arrival.
  */
 public class FiFoStrategy implements TransactionSelectionStrategy {
@@ -21,7 +21,6 @@ public class FiFoStrategy implements TransactionSelectionStrategy {
         if (mempool.isEmpty()) {
             return null;
         }
-
         return mempool.removeFirst();
     }
 }

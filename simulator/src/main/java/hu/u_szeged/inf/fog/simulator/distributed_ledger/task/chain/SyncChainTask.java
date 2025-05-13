@@ -1,16 +1,17 @@
-package hu.u_szeged.inf.fog.simulator.distributed_ledger.task;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain;
 
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * The `SyncChainTask` class represents a task for synchronizing the blockchain ledger of a miner.
+ * The SyncChainTask class represents a task for synchronizing the blockchain ledger of a miner.
  * This task is executed by a miner to bootstrap its local ledger with the longest chain available from its peers.
  */
 public class SyncChainTask implements MinerTask {
 
     /**
-     * Determines whether this `SyncChainTask` can execute on the given miner.
+     * Determines whether this SyncChainTask can execute on the given miner.
      * The task can execute if the miner's local ledger is empty or if it hasn't already synced.
      *
      * @param miner The {@link Miner} instance to check for task eligibility.

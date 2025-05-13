@@ -5,12 +5,11 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.DifficultyAdjustmentStrategy;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.CalculateHeaderTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 public class BuildBlockTask implements MinerTask {
-    private static final long MAX_EMPTY_MEMPOOL_TICKS = 50_000L;
+    private static final long MAX_EMPTY_MEMPOOL_TICKS = 50_000L; //this could be also configurable
     private long mempoolEmptySince = -1;
 
     private enum State {NEW, IN_PROGRESS, DONE}
@@ -18,11 +17,21 @@ public class BuildBlockTask implements MinerTask {
     private State currentState = State.NEW;
     private Block buildingBlock;
 
+    /**
+     * Determines whether this BuildBlockTask can execute on the given miner.
+     * @param miner The {@link Miner} instance to check for task eligibility.
+     * @return
+     */
     @Override
     public boolean canExecute(Miner miner) {
         return currentState != State.DONE && (buildingBlock == miner.getNextBlock() || miner.getNextBlock() == null);
     }
 
+    /**
+     * Executes the block building process for the given miner.
+     * This method initiates the building of a new block and adds transactions to it.
+     * @param miner The {@link Miner} that owns and executes this task.
+     */
     @Override
     public void execute(Miner miner) {
         miner.setState(Miner.MinerState.BUILDING_BLOCK);
@@ -40,6 +49,10 @@ public class BuildBlockTask implements MinerTask {
         }
     }
 
+    /**
+     * Adds the next transaction to the block being built.
+     * @param miner
+     */
     private void addNextTransactionToBlock(Miner miner) {
         if (buildingBlock.isFull()) {
             currentState = State.DONE;
@@ -80,12 +93,14 @@ public class BuildBlockTask implements MinerTask {
             miner.getMempool().transactions.addLast(tx); //add last or add first?
         }
 
-        // Reschedule this task for the next tick to continue
         miner.scheduleTask(this);
         miner.finishTask(this);
     }
 
-
+    /**
+     * Provides a description of this task.
+     * @return a string describing the task
+     */
     @Override
     public String describe() {
         return "BuildBlockTask(state=" + currentState + ")";

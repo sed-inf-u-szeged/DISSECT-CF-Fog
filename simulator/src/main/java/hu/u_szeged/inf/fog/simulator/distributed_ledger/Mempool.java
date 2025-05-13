@@ -1,11 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-
 import java.util.LinkedList;
 
 /**
- * The `Mempool` class represents a memory pool that stores transactions before they are added to a block.
+ * The Mempool class represents a memory pool that stores transactions before they are added to a block.
  * It provides methods to add, retrieve, and remove transactions from the pool.
  */
 public class Mempool {

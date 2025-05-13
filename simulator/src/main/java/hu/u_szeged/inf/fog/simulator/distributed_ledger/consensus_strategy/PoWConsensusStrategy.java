@@ -3,11 +3,10 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.LocalLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.AbstractDigestStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 
 /**
- * The `PoWConsensusStrategy` class implements the `ConsensusStrategy` and `DifficultyAdjustmentStrategy` interfaces.
+ * The PoWConsensusStrategy class implements the ConsensusStrategy and DifficultyAdjustmentStrategy interfaces.
  * It provides methods to manage the Proof of Work (PoW) consensus mechanism and adjust the mining difficulty.
  */
 public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjustmentStrategy {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * The `RandomNodeStrategy` class implements the `FindNodeStrategy` interface.
+ * The RandomNodeStrategy class implements the FindNodeStrategy interface.
  * It selects a random miner node from the list of registered miners.
  */
 public class RandomNodeStrategy implements FindNodeStrategy {

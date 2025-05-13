@@ -4,7 +4,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
 import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.InterpolationUtils.interpolate;
 
 /**
- * The `SHA256Strategy` class implements the `DigestStrategy` interface.
+ * The SHA256Strategy class implements the DigestStrategy interface.
  * It provides a method to compute the hash time for a given input size using the SHA-256 algorithm.
  * The hash time is interpolated based on predefined block sizes and their corresponding times.
  */
@@ -21,7 +21,7 @@ public class SHA256Strategy extends AbstractDigestStrategy {
     };
 
     /**
-     * Constructs a `SHA256Strategy` and sets the name and key size.
+     * Constructs a SHA256Strategy and sets the name and key size.
      */
     public SHA256Strategy() {
         setName("SHA-256");

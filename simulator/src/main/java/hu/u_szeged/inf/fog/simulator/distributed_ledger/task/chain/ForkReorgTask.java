@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.distributed_ledger.task;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -7,20 +7,21 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.DifficultyAdjustmentStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.List;
 
 /**
- * The `ForkReorgTask` class represents a task for handling fork reorganization in the blockchain.
+ * The ForkReorgTask class represents a task for handling fork reorganization in the blockchain.
  * This task is executed by a miner to roll back a specified number of blocks and resolve the fork.
  */
 public class ForkReorgTask implements MinerTask {
     private final int rollbackDepth;
 
     /**
-     * Constructs a new `ForkReorgTask` with the specified rollback depth.
+     * Constructs a new ForkReorgTask with the specified rollback depth.
      *
      * @param rollbackDepth the number of blocks to roll back during the fork reorganization
      */
@@ -29,7 +30,7 @@ public class ForkReorgTask implements MinerTask {
     }
 
     /**
-     * Determines whether this `ForkReorgTask` can execute on the given miner.
+     * Determines whether this ForkReorgTask can execute on the given miner.
      * The task can execute if the miner has a local ledger and the ledger size is greater than the rollback depth.
      *
      * @param miner The {@link Miner} instance to check for task eligibility.

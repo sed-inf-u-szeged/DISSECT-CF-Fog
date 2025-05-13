@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The `Block` class represents a block in the distributed ledger.
+ * The Block class represents a block in the distributed ledger.
  * It contains a list of transactions and other metadata such as size, timestamp, and difficulty.
  * The block is part of a distributed ledger and is used to store transactions securely.
  */
@@ -25,7 +25,7 @@ public class Block {
 
     final ConsensusStrategy consensusStrategy;
     /**
-     * Constructs a new `Block` with the specified distributed ledger and difficulty level.
+     * Constructs a new Block with the specified distributed ledger and difficulty level.
      *
      * @param consensusStrategy the consensus strategy used for the block
      * @param difficulty the difficulty level of the block, used for proof of work
@@ -131,7 +131,8 @@ public class Block {
         this.size += tx.getSize();
 
         if (consensusStrategy.getBlockSize() - size() < consensusStrategy.getBlockSize() * 0.05) {
-            this.technicallyFull = true; // when there is very little space left in the block, it should not try to find a transaction to fill this space
+            this.technicallyFull = true;
+            // when there is very little space left in the block, it should not try to find a transaction to fill this space
             // if the left space in the block is less than 5%, it is technically full
         }
 

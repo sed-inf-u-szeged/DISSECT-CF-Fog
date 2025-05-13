@@ -66,7 +66,8 @@ public class GeoPartition implements PartitionStrategy {
     }
 
     /**
-     * Sets the debug mode.
+     * Sets the debug mode. Use this to enable or disable debug output.
+     * Debug output can be used at this <a href="https://mobisoftinfotech.com/tools/plot-multiple-points-on-map/">GeoPlotter</a> website.
      *
      * @param debugMode the debug mode to set
      */
@@ -148,14 +149,14 @@ public class GeoPartition implements PartitionStrategy {
      */
     public static void main(String[] args) throws IOException {
         ArrayList<ComputingAppliance> nodes = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             ComputingAppliance cloud = new ComputingAppliance(ScenarioBase.resourcePath + "LPDS_original.xml", "cloud" + i, GeoLocation.generateRandomGeoLocation(), 0);
             nodes.add(cloud);
         }
         smallWorldNetworkGenerator(nodes, 4, 0.3, 30, 50);
-        GeoPartition partition = new GeoPartition(10_000_000);
+        GeoPartition partition = new GeoPartition(5_000_000);
         partition.setStartNode(nodes.get(0));
         partition.setDebugMode(true);
-        List<ComputingAppliance> result = partition.selectNodes(nodes); //https://mobisoftinfotech.com/tools/plot-multiple-points-on-map/
+        List<ComputingAppliance> result = partition.selectNodes(nodes);
     }
 }

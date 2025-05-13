@@ -5,7 +5,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import java.util.Random;
 
 /**
- * The `RandomizedValidation` class represents a validation strategy that accepts transactions and blocks with a certain probability.
+ * The RandomizedValidation class represents a validation strategy that accepts transactions and blocks with a certain probability.
  * This strategy is useful for simulating environments where validation is probabilistic.
  */
 public class RandomizedValidation implements ValidationStrategy {
@@ -15,7 +15,7 @@ public class RandomizedValidation implements ValidationStrategy {
     private final double acceptanceProbBlock;
 
     /**
-     * Constructs a `RandomizedValidation` strategy with specified acceptance probabilities and a random number generator.
+     * Constructs a RandomizedValidation strategy with specified acceptance probabilities and a random number generator.
      *
      * @param acceptanceProbTx The probability of accepting a transaction.
      * @param acceptanceProbBlock The probability of accepting a block.

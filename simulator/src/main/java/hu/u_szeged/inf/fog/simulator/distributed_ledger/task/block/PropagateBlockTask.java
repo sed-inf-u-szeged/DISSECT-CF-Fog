@@ -18,12 +18,22 @@ public class PropagateBlockTask implements MinerTask {
         this.block = block;
     }
 
+    /**
+     * Determines whether this PropagateBlockTask can execute on the given miner.
+     * The task can execute if the block is not null and has a found nonce.
+     * @param miner The {@link Miner} instance to check for task eligibility.
+     * @return
+     */
     @Override
     public boolean canExecute(Miner miner) {
-        // the block should have a found nonce
         return block != null && block.isNonceFound();
     }
 
+    /**
+     * Executes the block propagation process for the given miner.
+     * This method initiates the broadcasting of the block to the miner's neighbors.
+     * @param miner The {@link Miner} that owns and executes this task.
+     */
     @Override
     public void execute(Miner miner) {
         SimLogger.logRun(miner.name + " Propagating block with " + block.getTransactions().size() + " transactions...");
@@ -32,10 +42,14 @@ public class PropagateBlockTask implements MinerTask {
         BlockMessage message = new BlockMessage(block);
         miner.getLocalRepo().registerObject(message);
 
-        // Gossip to neighbors
         for (ComputingAppliance ca : miner.computingAppliance.neighbors) {
             Miner neighbor = Miner.miners.get(ca);
             if (neighbor == null) continue;
+
+            if(neighbor.isBlockKnown(block)) {
+                SimLogger.logRun(miner.name + " Block already known by " + neighbor.getName());
+                continue;
+            }
 
             BlockTransferEvent event = new BlockTransferEvent(message, miner, neighbor);
             try {
@@ -50,6 +64,10 @@ public class PropagateBlockTask implements MinerTask {
         miner.finishTask(this);
     }
 
+    /**
+     * Provides a description of this task.
+     * @return a string describing the task
+     */
     @Override
     public String describe() {
         return "PropagateBlockTask";

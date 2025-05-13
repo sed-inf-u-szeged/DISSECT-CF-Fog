@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 /**
- * The `ECDSAStrategy` class extends the `AbstractCryptoStrategy` class and implements the CryptoStrategy interface.
+ * The ECDSAStrategy class extends the AbstractCryptoStrategy class and implements the CryptoStrategy interface.
  * It provides methods to compute the signing and verification times for a given elliptic curve using the ECDSA algorithm.
  * The times are based on the predefined signing and verification instructions for each elliptic curve.
  */
@@ -10,7 +10,7 @@ public class ECDSAStrategy extends AbstractCryptoStrategy {
     public final EllipticCurve ellipticCurve;
 
     /**
-     * Constructs an `ECDSAStrategy` with the specified elliptic curve.
+     * Constructs an ECDSAStrategy with the specified elliptic curve.
      *
      * @param ellipticCurve the elliptic curve to use
      */

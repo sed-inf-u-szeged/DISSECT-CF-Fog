@@ -4,7 +4,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
 import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.InterpolationUtils.interpolate;
 
 /**
- * The `RSAStrategy` class implements the `AbstractCryptoStrategy` interface.
+ * The RSAStrategy class implements the AbstractCryptoStrategy interface.
  * It provides methods to compute the signing and verification times for a given key size using the RSA algorithm.
  * The times are interpolated based on predefined key sizes and their corresponding times.
  */
@@ -19,7 +19,7 @@ public class RSAStrategy extends AbstractCryptoStrategy {
     public final double verifyInstr;
 
     /**
-     * Constructs an `RSAStrategy` and sets the key size.
+     * Constructs an RSAStrategy and sets the key size.
      *
      * @param keySize the size of the key
      * @throws IllegalArgumentException if the key size is out of range

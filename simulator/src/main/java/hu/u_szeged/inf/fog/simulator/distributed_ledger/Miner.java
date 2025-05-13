@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.Conse
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.*;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.BuildBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.ValidateBlockTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain.SyncChainTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransactionTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
@@ -38,7 +39,6 @@ import java.util.*;
  * </p>
  */
 public class Miner extends Timed {
-    private static final Random RANDOM = SeedSyncer.centralRnd;
     public static HashBiMap<ComputingAppliance, Miner> miners = new HashBiMap<>();
     public final ComputingAppliance computingAppliance;
     public VirtualMachine localVm;
@@ -58,7 +58,7 @@ public class Miner extends Timed {
     private MinerState state = MinerState.OFF;
 
     /**
-     * Constructs a new `Miner` with the specified parameters.
+     * Constructs a new Miner with the specified parameters.
      *
      * @param consensusStrategy            The consensus strategy used by this miner.
      * @param transactionSelectionStrategy The strategy for selecting transactions.
@@ -173,6 +173,14 @@ public class Miner extends Timed {
      */
     public boolean isTxKnown(Transaction tx) {
         return this.knownTransactions.contains(tx);
+    }
+
+    public boolean isBlockKnown(Block block) {
+        boolean onChain = this.localLedger.getChain().contains(block);
+        boolean inQueue = this.tasksQueue.stream()
+                .anyMatch(task -> task instanceof ValidateBlockTask
+                        && ((ValidateBlockTask) task).getBlock().equals(block));
+        return onChain || inQueue;
     }
 
     /**
@@ -347,7 +355,7 @@ public class Miner extends Timed {
     }
 
     /**
-     * The `MinerState` enum represents the various states a miner can be in.
+     * The MinerState enum represents the various states a miner can be in.
      */
     public enum MinerState {
         OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, PROCESSING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN

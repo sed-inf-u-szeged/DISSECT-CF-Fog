@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.distributed_ledger.task;
+package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -6,18 +6,18 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.PropagateBlockTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * The `FindNonceTask` class represents a task for finding a nonce in a block.
+ * The FindNonceTask class represents a task for finding a nonce in a block.
  * This task is executed by a miner to perform the proof-of-work computation.
  */
 public class FindNonceTask implements MinerTask {
 
     /**
-     * Determines whether this `FindNonceTask` can execute on the given miner.
+     * Determines whether this FindNonceTask can execute on the given miner.
      * The task can execute if the miner has a next block assigned and the nonce has not been found yet.
      *
      * @param miner The {@link Miner} instance to check for task eligibility.

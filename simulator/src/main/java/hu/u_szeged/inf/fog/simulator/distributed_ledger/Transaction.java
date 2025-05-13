@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The `Transaction` class represents a transaction in the distributed ledger.
+ * The Transaction class represents a transaction in the distributed ledger.
  * Each transaction has a unique ID, data, and size.
  */
 public class Transaction {
@@ -16,7 +16,7 @@ public class Transaction {
     private final long size;
 
     /**
-     * Constructs a `Transaction` with the specified data and size.
+     * Constructs a Transaction with the specified data and size.
      *
      * @param data the data of the transaction
      * @param size the size of the transaction

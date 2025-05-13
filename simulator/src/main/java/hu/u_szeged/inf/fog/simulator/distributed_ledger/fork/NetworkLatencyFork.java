@@ -3,7 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.partition.HopBasedPartition;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.ForkReorgTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain.ForkReorgTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;

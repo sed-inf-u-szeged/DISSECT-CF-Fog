@@ -11,7 +11,7 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * The `PropagateTransactionTask` class represents a task for propagating a transaction to neighboring miners.
+ * The PropagateTransactionTask class represents a task for propagating a transaction to neighboring miners.
  * This task is executed by a miner to broadcast a new transaction to its peers in the network.
  */
 public class PropagateTransactionTask implements MinerTask {
@@ -19,7 +19,7 @@ public class PropagateTransactionTask implements MinerTask {
     private final Transaction tx;
 
     /**
-     * Constructs a new `PropagateTransactionTask` with the specified transaction.
+     * Constructs a new PropagateTransactionTask with the specified transaction.
      *
      * @param tx the transaction to propagate
      */
@@ -28,7 +28,7 @@ public class PropagateTransactionTask implements MinerTask {
     }
 
     /**
-     * Determines whether this `PropagateTransactionTask` can execute on the given miner.
+     * Determines whether this PropagateTransactionTask can execute on the given miner.
      * The task can execute if the transaction is not null and is not already known by the miner.
      *
      * @param miner The {@link Miner} instance to check for task eligibility.
@@ -51,17 +51,15 @@ public class PropagateTransactionTask implements MinerTask {
         SimLogger.logRun(miner.name + " Propagating transaction " + tx.getId() + " ...");
         miner.setState(Miner.MinerState.PROPAGATING_TRANSACTION);
 
-        // Mark this transaction as known to avoid re-propagation loops
         miner.addKnownTransaction(tx);
-        // Create and register the message locally
         TransactionMessage message = new TransactionMessage(tx);
-        // Gossip to neighbors
         for (ComputingAppliance neighborCa : miner.computingAppliance.neighbors) {
             Miner neighbor = Miner.miners.get(neighborCa);
+
             if (neighbor == null) {
                 continue;
             }
-            // If the neighbor already knows tx, skip if desired:
+
             if (neighbor.isTxKnown(tx)) {
                 continue;
             }
@@ -77,7 +75,6 @@ public class PropagateTransactionTask implements MinerTask {
             }
         }
 
-        // Once we've scheduled transfers, we consider this task complete
         miner.finishTask(this);
     }
 

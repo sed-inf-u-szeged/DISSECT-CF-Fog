@@ -7,7 +7,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import java.util.Random;
 
 /**
- * The `RandomStrategy` class represents a transaction selection strategy based on random selection.
+ * The RandomStrategy class represents a transaction selection strategy based on random selection.
  * This strategy selects a transaction from the mempool at random.
  */
 public class RandomStrategy implements TransactionSelectionStrategy {
@@ -26,7 +26,6 @@ public class RandomStrategy implements TransactionSelectionStrategy {
         if (mempool.isEmpty()) {
             return null;
         }
-
         int randomIndex = RANDOM.nextInt(mempool.size());
         return mempool.remove(randomIndex);
     }

@@ -106,11 +106,11 @@ public abstract class ForkScenario extends Timed {
      */
     @Override
     public void tick(long fires) {
+//        unsubscribe(); // Unsubscribe to prevent double subscription if the scenario is recurring
         if (!recurring || random.nextDouble() < probability) {
             SimLogger.logRun("[Fork] Triggered: " + scenarioName + " at time " + fires);
             if (targets == null) {
                 SimLogger.logError("[Fork] " + scenarioName + ": No targets found. Unsubscribing.");
-                unsubscribe();
             }
             executeScenario(targets);
         }
@@ -120,8 +120,6 @@ public abstract class ForkScenario extends Timed {
             long jitter = (variance == 0) ? 0 : random.nextInt((int) (2 * variance + 1)) - variance;
             long nextTrigger = fires + baseInterval + jitter;
             subscribe(nextTrigger);
-        } else {
-            unsubscribe();
         }
     }
 

@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 /**
- * The `EllipticCurve` enum represents various elliptic curves used in cryptographic operations.
+ * The EllipticCurve enum represents various elliptic curves used in cryptographic operations.
  * Each curve has a name, signing instructions, and verification instructions.
  */
 public enum EllipticCurve {
@@ -32,7 +32,7 @@ public enum EllipticCurve {
     private final double verifyInstr;
 
     /**
-     * Constructs an `EllipticCurve` enum constant with the specified name, signing instructions, and verification instructions.
+     * Constructs an EllipticCurve enum constant with the specified name, signing instructions, and verification instructions.
      *
      * @param name the name of the elliptic curve
      * @param signInstr the number of instructions needed for signing

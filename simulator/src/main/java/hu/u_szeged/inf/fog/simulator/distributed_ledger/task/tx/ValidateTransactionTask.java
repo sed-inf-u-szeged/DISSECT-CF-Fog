@@ -5,18 +5,19 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * The `ValidateTransactionTask` class represents a task for validating a transaction.
+ * The ValidateTransactionTask class represents a task for validating a transaction.
  * This task is executed by a miner to verify the validity of a transaction using the consensus strategy's crypto strategy.
  */
 public class ValidateTransactionTask implements MinerTask {
     private final Transaction tx;
 
     /**
-     * Constructs a new `ValidateTransactionTask` with the specified transaction
+     * Constructs a new ValidateTransactionTask with the specified transaction
      *
      * @param tx       the transaction to validate
      */
@@ -25,7 +26,7 @@ public class ValidateTransactionTask implements MinerTask {
     }
 
     /**
-     * Determines whether this `ValidateTransactionTask` can execute on the given miner.
+     * Determines whether this ValidateTransactionTask can execute on the given miner.
      * The task can execute if the transaction is not null.
      *
      * @param miner The {@link Miner} instance to check for task eligibility.
@@ -52,6 +53,7 @@ public class ValidateTransactionTask implements MinerTask {
                 @Override
                 public void conComplete() {
                     boolean accepted = miner.getValidationStrategy().isValidTransaction(tx);
+                    SimulationMetrics.getInstance().recordTransactionValidation(miner, accepted);
                     if (accepted) {
                         SimLogger.logRun(miner.getName() + " [Mempool] Transaction added: " + tx);
                         miner.getMempool().addTransaction(tx);

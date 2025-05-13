@@ -6,7 +6,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import java.util.Comparator;
 
 /**
- * The `SizeStrategy` class represents a transaction selection strategy based on the size of transactions.
+ * The SizeStrategy class represents a transaction selection strategy based on the size of transactions.
  * This strategy selects transactions from the mempool based on their size, either in increasing or decreasing order.
  */
 public class SizeStrategy implements TransactionSelectionStrategy {
@@ -17,7 +17,7 @@ public class SizeStrategy implements TransactionSelectionStrategy {
     Order order;
 
     /**
-     * Constructs a new `SizeStrategy` with the specified order.
+     * Constructs a new SizeStrategy with the specified order.
      *
      * @param order The order in which transactions are selected (INCREASE or DECREASE).
      */
@@ -26,7 +26,7 @@ public class SizeStrategy implements TransactionSelectionStrategy {
     }
 
     /**
-     * Constructs a new `SizeStrategy` with the default order (DECREASE).
+     * Constructs a new SizeStrategy with the default order (DECREASE).
      */
     public SizeStrategy() {
         this.order = Order.DECREASE;
@@ -51,13 +51,13 @@ public class SizeStrategy implements TransactionSelectionStrategy {
                     .orElse(null);
         } else {
             return mempool.transactions.stream()
-                    .max(sizeComparator.reversed())
+                    .max(sizeComparator)
                     .orElse(null);
         }
     }
 
     /**
-     * The `Order` enum represents the order in which transactions are selected based on their size.
+     * The Order enum represents the order in which transactions are selected based on their size.
      */
     enum Order {
         INCREASE, DECREASE

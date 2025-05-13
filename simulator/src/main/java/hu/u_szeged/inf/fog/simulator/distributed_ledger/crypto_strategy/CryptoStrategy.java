@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy;
 
 /**
- * The `CryptoStrategy` interface defines the methods for cryptographic operations.
+ * The CryptoStrategy interface defines the methods for cryptographic operations.
  * Implementing classes must provide the logic for signing and verifying data, as well as managing key sizes and algorithm names.
  */
 public interface CryptoStrategy {

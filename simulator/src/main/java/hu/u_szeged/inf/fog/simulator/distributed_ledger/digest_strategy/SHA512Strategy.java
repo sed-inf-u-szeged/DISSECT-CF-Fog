@@ -5,7 +5,7 @@ import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Interpolati
 import static hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.InterpolationUtils.interpolate;
 
 /**
- * The `SHA512Strategy` class implements the `DigestStrategy` interface.
+ * The SHA512Strategy class implements the DigestStrategy interface.
  * It provides a method to compute the hash time for a given input size using the SHA-512 algorithm.
  * The hash time is interpolated based on predefined block sizes and their corresponding times.
  */
@@ -22,7 +22,7 @@ public class SHA512Strategy extends AbstractDigestStrategy {
     };
 
     /**
-     * Constructs a `SHA512Strategy` and sets the name and key size.
+     * Constructs a SHA512Strategy and sets the name and key size.
      */
     public SHA512Strategy() {
         setName("SHA-512");

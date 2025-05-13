@@ -37,7 +37,6 @@ public class ValidateBlockTask implements MinerTask {
         if (block.getDifficulty() != expectedDifficulty) {
             SimLogger.logRun(miner.getName() + " -> REJECT: block has difficulty " + block.getDifficulty() + ", expected " + expectedDifficulty);
             SimulationMetrics.getInstance().recordBlockValidation(miner, false);
-            // reject
             miner.finishTask(this);
             return;
         }
@@ -51,12 +50,9 @@ public class ValidateBlockTask implements MinerTask {
                     if (accepted) {
                         SimLogger.logRun(miner.name + " VALID block: " + block.getId() + " at time: " + Timed.getFireCount());
                         miner.getLocalLedger().addBlock(block);
-
-                        // Possibly propagate if we accept
                         miner.scheduleTask(new PropagateBlockTask(block));
                     } else {
                         SimLogger.logRun(miner.name + " INVALID block: " + block.getId() + " at time: " + Timed.getFireCount() + ". Discarding.");
-                        // Do not add to local ledger, do not propagate
                     }
 
                     miner.finishTask(ValidateBlockTask.this);
@@ -68,7 +64,19 @@ public class ValidateBlockTask implements MinerTask {
             miner.finishTask(this);
         }
     }
-    
+
+    /**
+     * Returns the block associated with this task.
+     * @return the block to be validated
+     */
+    public Block getBlock() {
+        return block;
+    }
+
+    /**
+     * Provides a description of this task.
+     * @return a string describing the task
+     */
     @Override
     public String describe() {
         return "ValidateBlockTask(" + (block != null ? block.getId() : "null") + ")";

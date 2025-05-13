@@ -4,13 +4,12 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The `NearestNodeStrategy` class implements the `FindNodeStrategy` interface.
+ * The NearestNodeStrategy class implements the FindNodeStrategy interface.
  * It defines a strategy for finding the nearest node to a given miner based on the mobility strategy.
  * This is a placeholder implementation and should be replaced with actual logic.
  */
@@ -19,7 +18,7 @@ public class NearestNodeStrategy implements FindNodeStrategy {
     private Device device;
 
     /**
-     * Constructor for the `NearestNodeStrategy` class.
+     * Constructor for the NearestNodeStrategy class.
      * Initializes the strategy with the given device.
      *
      * @param device The device to be used in this strategy.

@@ -3,8 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 
 /**
- * The `FindNodeStrategy` interface defines a method for finding a miner node.
- * Implementations of this interface provide different strategies for selecting a node.
+ * The FindNodeStrategy interface defines a method for finding a miner node.
  */
 public interface FindNodeStrategy {
 
