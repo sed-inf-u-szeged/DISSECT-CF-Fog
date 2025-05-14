@@ -13,8 +13,6 @@ public class Charge extends Timed {
     Provider provider;
     float lastTotalAdded;
     public List<float[]> charges = new ArrayList<>();
-    public List<float[]> solarProd = new ArrayList<>();
-    public List<float[]> windProd = new ArrayList<>();
 
     /**
      * Recurring Timed event that charges the battery of a Provider with the given renewable sources
@@ -61,12 +59,17 @@ public class Charge extends Timed {
         for (EnergySource source : this.provider.renewableSources) {
             float[] helper = {Timed.getFireCount(), source.Production(Timed.getFireCount(), getFrequency())};
             if (source instanceof Solar) {
-                this.solarProd.add( helper );
+                this.provider.solarRecords.add( helper );
+                this.provider.totalSolarProduced += source.Production(Timed.getFireCount(), getFrequency());
             }else {
-                this.windProd.add( helper );
+                this.provider.windRecords.add( helper );
+                this.provider.totalWindProduced += source.Production(Timed.getFireCount(), getFrequency());
             }
             sum += source.Production(Timed.getFireCount(), getFrequency());
         }
+        float[] helper = {Timed.getFireCount(), this.provider.renewableBattery.getBatteryLevel()};
+        this.provider.energyRecords.add(helper);
+        this.provider.totalRenewableProduced += sum;
         return sum;
     }
 

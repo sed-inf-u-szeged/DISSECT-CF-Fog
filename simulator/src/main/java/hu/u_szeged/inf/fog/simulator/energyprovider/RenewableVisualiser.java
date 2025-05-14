@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.Scheduler;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
@@ -8,180 +7,145 @@ import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class RenewableVisualiser {
 
-    public static void visualiseGraph () throws IOException {
+    public static void visualiseStoredEnergy(ArrayList<Provider> providers) throws IOException {
 
-        RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
+        for (Provider provider : providers) {
 
-        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/stored.html");
+            File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/stored.html");
+            file.getParentFile().mkdirs();
+            FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/stored.html");
 
-        fw.write("<html>");
-        fw.write("<head>");
-        fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
-        fw.write("<script type=\"text/javascript\">");
-        fw.write("google.charts.load('current', {'packages':['corechart']});");
-        fw.write("google.charts.setOnLoadCallback(drawChart);");
-        fw.write("function drawChart() {");
-        fw.write(" var data = google.visualization.arrayToDataTable([");
-        fw.write("  ['Time', 'Fossil', 'Renewable'],");
-        fw.write("  ["+'0'+",  "+ scheduler.provider.fossilSource.production +",      "+  scheduler.provider.batteryStartingCharge+"],");
+            fw.write("<html>");
+            fw.write("<head>");
+            fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
+            fw.write("<script type=\"text/javascript\">");
+            fw.write("google.charts.load('current', {'packages':['corechart']});");
+            fw.write("google.charts.setOnLoadCallback(drawChart);");
+            fw.write("function drawChart() {");
+            fw.write(" var data = google.visualization.arrayToDataTable([");
+            fw.write("  ['Time', 'Fossil', 'Renewable'],");
 
-        for (float[] asd : scheduler.visualiser){
-            fw.write("  ["+asd[0]+",  "+ scheduler.provider.fossilSource.production +",      "+  asd[1]+"],\n");
+            fw.write("[" + '0' + ","+ provider.fossilSource.production +","+  provider.batteryStartingCharge+ "],");
+
+            for (float[] record : provider.energyRecords){
+                fw.write("[" +record[0]+ ","+ provider.fossilSource.production +","+ record[1]+ "],\n");
+            }
+
+            fw.write("]);");
+
+            fw.write(" var options = {\n" +
+                    "          title: 'Stored Energy',\n" +
+                    "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
+                    "          vAxis: {minValue: 0},\n" +
+                    "          isStacked: true\n" +
+                    "        };");
+
+            fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
+                    "        chart.draw(data, options);");
+            fw.write(" }");
+            fw.write("</script> </head>");
+            fw.write("<body>\n" +
+                    "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
+                    "  </body>");
+
+            fw.write("</html>");
+            fw.close();
+
         }
-
-        fw.write("   ]);");
-
-        fw.write(" var options = {\n" +
-                "          title: 'Stored Energy',\n" +
-                "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
-                "          vAxis: {minValue: 0},\n" +
-                "          isStacked: true\n" +
-                "        };");
-
-        fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
-                "        chart.draw(data, options);");
-        fw.write(" }");
-        fw.write("</script> </head>");
-        fw.write("<body>\n" +
-                "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
-                "  </body>");
-
-        fw.write("</html>");
-        fw.close();
-
-        new File(ScenarioBase.resultDirectory +"/stored.html");
-
-
     }
 
-    public static void visualiseCharge(Charge charge) throws IOException {
+    public static void visualiseSolar(ArrayList<Provider> providers) throws IOException {
 
-        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/charge.html");
+        for (Provider provider : providers) {
+            File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/Solar.html");
+            file.getParentFile().mkdirs();
+            FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/Solar.html");
 
-        fw.write("<html>");
-        fw.write("<head>");
-        fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
-        fw.write("<script type=\"text/javascript\">");
-        fw.write("google.charts.load('current', {'packages':['corechart']});");
-        fw.write("google.charts.setOnLoadCallback(drawChart);");
-        fw.write("function drawChart() {");
-        fw.write(" var data = google.visualization.arrayToDataTable([");
-        fw.write("  ['Time', 'Charge'],");
-        fw.write("  ["+'0'+",  "+  charge.provider.batteryStartingCharge+"],");
+            fw.write("<html>");
+            fw.write("<head>");
+            fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
+            fw.write("<script type=\"text/javascript\">");
+            fw.write("google.charts.load('current', {'packages':['corechart']});");
+            fw.write("google.charts.setOnLoadCallback(drawChart);");
+            fw.write("function drawChart() {");
+            fw.write(" var data = google.visualization.arrayToDataTable([");
+            fw.write("  ['Time', 'Production'],");
 
-        for (float[] line : charge.charges){
-            fw.write("  ["+line[0]+",  "+ line[1]+"],\n");
+            for (float[] record : provider.solarRecords){
+                fw.write("["+ record[0] +","+ record[1] +"],\n");
+            }
+
+            fw.write("]);");
+
+            fw.write(" var options = {\n" +
+                    "          title: 'Produced power',\n" +
+                    "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
+                    "          vAxis: {minValue: 0},\n" +
+                    "          isStacked: true\n" +
+                    "        };");
+
+            fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
+                    "        chart.draw(data, options);");
+            fw.write(" }");
+            fw.write("</script> </head>");
+            fw.write("<body>\n" +
+                    "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
+                    "  </body>");
+
+            fw.write("</html>");
+            fw.close();
+
+            new File(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/Solar.html");
         }
-
-        fw.write("   ]);");
-
-        fw.write(" var options = {\n" +
-                "          title: 'Stored Energy',\n" +
-                "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
-                "          vAxis: {minValue: 0},\n" +
-                "          isStacked: true\n" +
-                "        };");
-
-        fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
-                "        chart.draw(data, options);");
-        fw.write(" }");
-        fw.write("</script> </head>");
-        fw.write("<body>\n" +
-                "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
-                "  </body>");
-
-        fw.write("</html>");
-        fw.close();
-
-        new File(ScenarioBase.resultDirectory +"/charge.html");
-
     }
 
-    public static void visualiseSolar(Charge charge) throws IOException {
+    public static void visualiseWind(ArrayList<Provider> providers) throws IOException {
 
-        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/solar.html");
+        for (Provider provider : providers) {
+            File file = new File(ScenarioBase.resultDirectory + "/Provider-" + provider.id + "/Wind.html");
+            file.getParentFile().mkdirs();
+            FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/Provider-" + provider.id + "/Wind.html");
 
-        fw.write("<html>");
-        fw.write("<head>");
-        fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
-        fw.write("<script type=\"text/javascript\">");
-        fw.write("google.charts.load('current', {'packages':['corechart']});");
-        fw.write("google.charts.setOnLoadCallback(drawChart);");
-        fw.write("function drawChart() {");
-        fw.write(" var data = google.visualization.arrayToDataTable([");
-        fw.write("  ['Time', 'Production'],");
+            fw.write("<html>");
+            fw.write("<head>");
+            fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
+            fw.write("<script type=\"text/javascript\">");
+            fw.write("google.charts.load('current', {'packages':['corechart']});");
+            fw.write("google.charts.setOnLoadCallback(drawChart);");
+            fw.write("function drawChart() {");
+            fw.write(" var data = google.visualization.arrayToDataTable([");
+            fw.write("  ['Time', 'Production'],");
 
-        for (float[] line : charge.solarProd){
-            fw.write("  ["+line[0]+",  "+ line[1]+"],\n");
+            for (float[] record : provider.windRecords) {
+                fw.write("[" + record[0] + "," + record[1] + "],\n");
+            }
+
+            fw.write("]);");
+
+            fw.write(" var options = {\n" +
+                    "          title: 'Produced power',\n" +
+                    "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
+                    "          vAxis: {minValue: 0},\n" +
+                    "          isStacked: true\n" +
+                    "        };");
+
+            fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
+                    "        chart.draw(data, options);");
+            fw.write(" }");
+            fw.write("</script> </head>");
+            fw.write("<body>\n" +
+                    "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
+                    "  </body>");
+
+            fw.write("</html>");
+            fw.close();
+
+
         }
-
-        fw.write("   ]);");
-
-        fw.write(" var options = {\n" +
-                "          title: 'Produced power',\n" +
-                "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
-                "          vAxis: {minValue: 0},\n" +
-                "          isStacked: true\n" +
-                "        };");
-
-        fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
-                "        chart.draw(data, options);");
-        fw.write(" }");
-        fw.write("</script> </head>");
-        fw.write("<body>\n" +
-                "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
-                "  </body>");
-
-        fw.write("</html>");
-        fw.close();
-
-        new File(ScenarioBase.resultDirectory +"/solar.html");
-
-    }
-
-    public static void visualiseWind(Charge charge) throws IOException {
-
-        FileWriter fw = new FileWriter(ScenarioBase.resultDirectory +"/wind.html");
-
-        fw.write("<html>");
-        fw.write("<head>");
-        fw.write("<script type=\"text/javascript\" src=\"https://www.gstatic.com/charts/loader.js\"></script>");
-        fw.write("<script type=\"text/javascript\">");
-        fw.write("google.charts.load('current', {'packages':['corechart']});");
-        fw.write("google.charts.setOnLoadCallback(drawChart);");
-        fw.write("function drawChart() {");
-        fw.write(" var data = google.visualization.arrayToDataTable([");
-        fw.write("  ['Time', 'Production'],");
-
-        for (float[] line : charge.windProd){
-            fw.write("  ["+line[0]+",  "+ line[1]+"],\n");
-        }
-
-        fw.write("   ]);");
-
-        fw.write(" var options = {\n" +
-                "          title: 'Produced power',\n" +
-                "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
-                "          vAxis: {minValue: 0},\n" +
-                "          isStacked: true\n" +
-                "        };");
-
-        fw.write("var chart = new google.visualization.AreaChart(document.getElementById('chart_div'));\n" +
-                "        chart.draw(data, options);");
-        fw.write(" }");
-        fw.write("</script> </head>");
-        fw.write("<body>\n" +
-                "    <div id=\"chart_div\" style=\"width: 100%; height: 500px;\"></div>\n" +
-                "  </body>");
-
-        fw.write("</html>");
-        fw.close();
-
-        new File(ScenarioBase.resultDirectory +"/wind.html");
-
     }
 
 }

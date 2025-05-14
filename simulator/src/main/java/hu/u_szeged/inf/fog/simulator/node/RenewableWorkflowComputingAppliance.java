@@ -8,7 +8,7 @@ import java.util.PriorityQueue;
 
 public class RenewableWorkflowComputingAppliance extends WorkflowComputingAppliance {
 
-    Provider provider;
+    public Provider provider;
     public String file;
 
     /**

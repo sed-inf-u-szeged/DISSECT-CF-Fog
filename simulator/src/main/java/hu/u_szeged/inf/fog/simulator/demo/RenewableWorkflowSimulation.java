@@ -24,7 +24,6 @@ import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 public class RenewableWorkflowSimulation {
 
@@ -36,37 +35,44 @@ public class RenewableWorkflowSimulation {
 
         String cloudfile = ScenarioBase.resourcePath+"ELKH_original.xml";
 
-        Battery battery = new Battery(1000, 1000, 0, 100);
+        Battery battery1 = new Battery(1000, 1000, 0, 100);
+        Battery battery2 = new Battery(1000, 1000, 0, 100);
+
         FossilSource fossilSource = new FossilSource(1);
 
-        Provider provider = new Provider(battery, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
+        Provider provider1 = new Provider("01",battery1, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
+        Provider provider2 = new Provider("02",battery2, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
 
-        Solar solar = new Solar(1,100);
-        Wind wind = new Wind(1, 100);
+        Solar solar1 = new Solar(1,100);
+        Solar solar2 = new Solar(1,100);
+        Wind wind1 = new Wind(1, 100);
+        Wind wind2 = new Wind(1, 100);
 
-        provider.addEnergySource(solar);
-        provider.addEnergySource(wind);
+        provider1.addEnergySource(solar1);
+        provider1.addEnergySource(wind1);
+        provider2.addEnergySource(solar2);
+        provider2.addEnergySource(wind2);
 
-        RenewableWorkflowComputingAppliance node0 = new RenewableWorkflowComputingAppliance(cloudfile, "node0", new GeoLocation(48.8566, 2.3522), 0, provider);
-        RenewableWorkflowComputingAppliance node2 = new RenewableWorkflowComputingAppliance(cloudfile, "node2", new GeoLocation(52.5200, 13.4050), 0, provider);
-        RenewableWorkflowComputingAppliance node3 = new RenewableWorkflowComputingAppliance(cloudfile, "node3", new GeoLocation(41.9028, 12.4964), 0, provider);
-        RenewableWorkflowComputingAppliance node4 = new RenewableWorkflowComputingAppliance(cloudfile, "node4", new GeoLocation(41.0082, 28.9784), 0, provider);
-        RenewableWorkflowComputingAppliance node1 = new RenewableWorkflowComputingAppliance(cloudfile, "node1", new GeoLocation(51.5074, -0.1278), 0, provider);
-        RenewableWorkflowComputingAppliance node5 = new RenewableWorkflowComputingAppliance(cloudfile, "node5", new GeoLocation(43.7102, 7.2620), 0, provider);
-        RenewableWorkflowComputingAppliance node6 = new RenewableWorkflowComputingAppliance(cloudfile, "node6", new GeoLocation(55.6761, 12.5683), 0, provider);
-        RenewableWorkflowComputingAppliance node7 = new RenewableWorkflowComputingAppliance(cloudfile, "node7", new GeoLocation(59.3293, 18.0686), 0, provider);
-        RenewableWorkflowComputingAppliance node8 = new RenewableWorkflowComputingAppliance(cloudfile, "node8", new GeoLocation(48.2082, 16.3738), 0, provider);
-        RenewableWorkflowComputingAppliance node9 = new RenewableWorkflowComputingAppliance(cloudfile, "node9", new GeoLocation(50.8503, 4.3517), 0, provider);
-        RenewableWorkflowComputingAppliance node10 = new RenewableWorkflowComputingAppliance(cloudfile, "node10", new GeoLocation(46.7762, 23.6213), 0, provider);
-        RenewableWorkflowComputingAppliance node11 = new RenewableWorkflowComputingAppliance(cloudfile, "node11", new GeoLocation(48.1351, 11.5820), 0, provider);
-        RenewableWorkflowComputingAppliance node12 = new RenewableWorkflowComputingAppliance(cloudfile, "node12", new GeoLocation(53.9076, 27.5754), 0, provider);
-        RenewableWorkflowComputingAppliance node13 = new RenewableWorkflowComputingAppliance(cloudfile, "node13", new GeoLocation(60.1695, 24.9354), 0, provider);
-        RenewableWorkflowComputingAppliance node14 = new RenewableWorkflowComputingAppliance(cloudfile, "node14", new GeoLocation(39.9334, 32.8597), 0, provider);
-        RenewableWorkflowComputingAppliance node15 = new RenewableWorkflowComputingAppliance(cloudfile, "node15", new GeoLocation(40.4168, -3.7038), 0, provider);
-        RenewableWorkflowComputingAppliance node16 = new RenewableWorkflowComputingAppliance(cloudfile, "node16", new GeoLocation(37.9838, 23.7275), 0, provider);
-        RenewableWorkflowComputingAppliance node17 = new RenewableWorkflowComputingAppliance(cloudfile, "node17", new GeoLocation(52.3702, 4.8952), 0, provider);
-        RenewableWorkflowComputingAppliance node18 = new RenewableWorkflowComputingAppliance(cloudfile, "node18", new GeoLocation(55.9533, -3.1883), 0, provider);
-        RenewableWorkflowComputingAppliance node19 = new RenewableWorkflowComputingAppliance(cloudfile, "node19", new GeoLocation(51.1657, 10.4515), 0, provider);
+        RenewableWorkflowComputingAppliance node0 = new RenewableWorkflowComputingAppliance(cloudfile, "node0", new GeoLocation(48.8566, 2.3522), 0, provider1);
+        RenewableWorkflowComputingAppliance node2 = new RenewableWorkflowComputingAppliance(cloudfile, "node2", new GeoLocation(52.5200, 13.4050), 0, provider1);
+        RenewableWorkflowComputingAppliance node3 = new RenewableWorkflowComputingAppliance(cloudfile, "node3", new GeoLocation(41.9028, 12.4964), 0, provider1);
+        RenewableWorkflowComputingAppliance node4 = new RenewableWorkflowComputingAppliance(cloudfile, "node4", new GeoLocation(41.0082, 28.9784), 0, provider1);
+        RenewableWorkflowComputingAppliance node1 = new RenewableWorkflowComputingAppliance(cloudfile, "node1", new GeoLocation(51.5074, -0.1278), 0, provider1);
+        RenewableWorkflowComputingAppliance node5 = new RenewableWorkflowComputingAppliance(cloudfile, "node5", new GeoLocation(43.7102, 7.2620), 0, provider1);
+        RenewableWorkflowComputingAppliance node6 = new RenewableWorkflowComputingAppliance(cloudfile, "node6", new GeoLocation(55.6761, 12.5683), 0, provider1);
+        RenewableWorkflowComputingAppliance node7 = new RenewableWorkflowComputingAppliance(cloudfile, "node7", new GeoLocation(59.3293, 18.0686), 0, provider1);
+        RenewableWorkflowComputingAppliance node8 = new RenewableWorkflowComputingAppliance(cloudfile, "node8", new GeoLocation(48.2082, 16.3738), 0, provider1);
+        RenewableWorkflowComputingAppliance node9 = new RenewableWorkflowComputingAppliance(cloudfile, "node9", new GeoLocation(50.8503, 4.3517), 0, provider1);
+        RenewableWorkflowComputingAppliance node10 = new RenewableWorkflowComputingAppliance(cloudfile, "node10", new GeoLocation(46.7762, 23.6213), 0, provider2);
+        RenewableWorkflowComputingAppliance node11 = new RenewableWorkflowComputingAppliance(cloudfile, "node11", new GeoLocation(48.1351, 11.5820), 0, provider2);
+        RenewableWorkflowComputingAppliance node12 = new RenewableWorkflowComputingAppliance(cloudfile, "node12", new GeoLocation(53.9076, 27.5754), 0, provider2);
+        RenewableWorkflowComputingAppliance node13 = new RenewableWorkflowComputingAppliance(cloudfile, "node13", new GeoLocation(60.1695, 24.9354), 0, provider2);
+        RenewableWorkflowComputingAppliance node14 = new RenewableWorkflowComputingAppliance(cloudfile, "node14", new GeoLocation(39.9334, 32.8597), 0, provider2);
+        RenewableWorkflowComputingAppliance node15 = new RenewableWorkflowComputingAppliance(cloudfile, "node15", new GeoLocation(40.4168, -3.7038), 0, provider2);
+        RenewableWorkflowComputingAppliance node16 = new RenewableWorkflowComputingAppliance(cloudfile, "node16", new GeoLocation(37.9838, 23.7275), 0, provider2);
+        RenewableWorkflowComputingAppliance node17 = new RenewableWorkflowComputingAppliance(cloudfile, "node17", new GeoLocation(52.3702, 4.8952), 0, provider2);
+        RenewableWorkflowComputingAppliance node18 = new RenewableWorkflowComputingAppliance(cloudfile, "node18", new GeoLocation(55.9533, -3.1883), 0, provider2);
+        RenewableWorkflowComputingAppliance node19 = new RenewableWorkflowComputingAppliance(cloudfile, "node19", new GeoLocation(51.1657, 10.4515), 0, provider2);
 
         WorkflowComputingAppliance.setDistanceBasedLatency();
 
@@ -157,10 +163,13 @@ public class RenewableWorkflowSimulation {
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
         AlterableResourceConstraints arc = new AlterableResourceConstraints(4, 0.001, 4294967296L);
         Instance instance = new Instance("instance", va, arc, 0.102 / 60 / 60 / 1000, 1);
+        ArrayList<Provider> providers = new ArrayList<>();
+        providers.add(provider1);
+        providers.add(provider2);
 
         for (int i = 0; i < clusterList.size(); i++) {
             Pair<String, ArrayList<WorkflowJob>> jobs = WorkflowJobModel.loadWorkflowXml(workflowFile, "-" + i);
-            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, provider, 10, true));
+            executor.submitJobs(new RenewableScheduler(clusterList.get(i), instance, null, jobs, providers, 10, false));
         }
 
         // Logging
@@ -168,9 +177,9 @@ public class RenewableWorkflowSimulation {
         ScenarioBase.logStreamProcessing();
         ScenarioBase.logRenewableStreamProcessing();
         WorkflowGraphVisualiser.generateDag(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, workflowFile);
-        RenewableVisualiser.visualiseGraph();
-        RenewableVisualiser.visualiseSolar(provider.charge);
-        RenewableVisualiser.visualiseWind(provider.charge);
+        RenewableVisualiser.visualiseStoredEnergy(providers);
+        RenewableVisualiser.visualiseSolar(providers);
+        RenewableVisualiser.visualiseWind(providers);
         TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         MapVisualiser.clusterMapGenerator(clusterAssignments, ScenarioBase.scriptPath, ScenarioBase.resultDirectory);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);

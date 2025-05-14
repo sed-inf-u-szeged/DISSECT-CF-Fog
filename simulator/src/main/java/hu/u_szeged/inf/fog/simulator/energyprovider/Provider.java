@@ -9,9 +9,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Provider {
 
+    public String id;
     ArrayList<EnergySource> renewableSources;
     FossilSource fossilSource;
     public Battery renewableBattery;
@@ -24,12 +26,20 @@ public class Provider {
     ChangePrice changePrice;
     double multiplier;
     float batteryStartingCharge;
+    public List<float[]> energyRecords = new ArrayList<>();
+    public List<float[]> solarRecords = new ArrayList<>();
+    public List<float[]> windRecords = new ArrayList<>();
+    public float totalRenewableProduced = 0;
+    public float totalWindProduced = 0;
+    public float totalSolarProduced = 0;
 
-    public Provider(Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
+
+    public Provider(String id, Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
                     float renewableBasePrice, float fossilBasePrice,
                     int maxPriceChange)
         {
+        this.id = id;
         this.renewableSources = renewableSources;
         this.renewableBattery = renewableBattery;
         this.batteryStartingCharge = this.renewableBattery.batteryLevel;
@@ -44,7 +54,7 @@ public class Provider {
         //this.changePrice = new ChangePrice(this, maxPriceChange);
     }
 
-    public float calculatePrice() {
+    public void calculatePrice() {
         try {
             new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
             PrintStream out = new PrintStream(
@@ -56,7 +66,6 @@ public class Provider {
         System.out.print("Price before change: " + this.renewablePrice);
         this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));
         System.out.println("  -------  Time: " + Timed.getFireCount() + "  -------  Price after change: " + this.renewablePrice);
-        return this.renewablePrice;
     }
 
     public void addEnergySource(EnergySource energySource) {
@@ -86,6 +95,21 @@ public class Provider {
     public void stopProcessing() {
         this.charge.stop();
         //this.changePrice.stop();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Provider provider = (Provider) o;
+
+        return id != null ? id.equals(provider.id) : provider.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 
 }

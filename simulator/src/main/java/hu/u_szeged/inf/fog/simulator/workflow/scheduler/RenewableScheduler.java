@@ -18,17 +18,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
 public class RenewableScheduler extends WorkflowScheduler {
 
-    public Provider provider;
+    public ArrayList<Provider> providers;
     int ratio;
     boolean requirement;
     ArrayList<RenewableWorkflowComputingAppliance> renewableComputeArchitecture;
+    Map<Provider, Float> startingCosts = new HashMap<>();
     float startingPriceRenewableSum;
     public float renewableConsumed = 0;
     public float fossilConsumed = 0;
@@ -38,6 +36,7 @@ public class RenewableScheduler extends WorkflowScheduler {
     public List<float[]> visualiser = new ArrayList<>();
     public List<int[]> consumptions = new ArrayList<>();
     public long totalWaitingTime = 0;
+    boolean hasJobsBeenAssigned = false;
 
     public static class RenewableComperator implements Comparator<WorkflowJob> {
 
@@ -57,7 +56,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     public RenewableScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance,
                            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs,
-                           Provider provider, int ratio, boolean requirement) throws Exception {
+                           ArrayList<Provider> providers, int ratio, boolean requirement) throws Exception {
         createConsumptionValues();
         this.computeArchitecture = computeArchitecture;
         this.instance = instance;
@@ -66,25 +65,30 @@ public class RenewableScheduler extends WorkflowScheduler {
         WorkflowScheduler.schedulers.add(this);
         this.ratio = ratio;
         this.requirement = requirement;
-        this.provider = provider;
+        this.providers = providers;
         this.renewableComputeArchitecture = convertToRenewabelAppliance(computeArchitecture);
         this.jobs = assignConsumptionToOwnJobs(jobs.getRight());
-        this.startingPriceRenewableSum = calculateStarterTaskRenewablePrice();
     }
 
     @Override
     public void init() {
 
-        provider.calculatePrice();
+        if (!hasJobsBeenAssigned) {
+            hasJobsBeenAssigned = true;
+            assignJobsToNodes();
+            calculateStarterTaskRenewablePrice();
+        }
+
+        recalculateProviderPrices();
 
         if (this.requirement) {
-            if (this.provider.renewableBattery.getBatteryLevel() < startingPriceRenewableSum) {
+            if (!allProviderHasEnoughToStart()) {
                 addLog();
                 this.totalWaitingTime += 1000;
                 new DeferredEvent(1000) {
                     @Override
                     protected void eventAction() {
-                        provider.calculatePrice();
+                        recalculateProviderPrices();
                         init();
                     }
                 };
@@ -94,10 +98,30 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
         else {
             addLog();
-            if ( (this.provider.renewablePrice <= this.provider.fossilBasePrice) && (this.provider.renewableBattery.getBatteryLevel() >= startingPriceRenewableSum) ) {
-                processStartingJobsWithRenewable();
-            } else {
-                processStartingJobsWithFossil();
+            assignStartingVMs();
+            for (Provider provider : providers) {
+                if (provider.renewableBattery.getBatteryLevel() > startingCosts.get(provider) && provider.renewablePrice <= provider.fossilBasePrice) {
+
+                    provider.renewableBattery.removeBatteryLevel(startingCosts.get(provider));
+                    assignStartingVMs();
+
+                    for (WorkflowJob workflowJob : this.jobs) {
+                        RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
+                        if (workflowJob.inputs.get(0).amount == 0 && Objects.equals(ca.provider.id, provider.id)) {
+                            workflowJob.ca.workflowQueue.add(workflowJob);
+                        }
+                    }
+                } else {
+
+                    for (WorkflowJob workflowJob : this.jobs) {
+
+                        RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
+                        if (workflowJob.inputs.get(0).amount == 0 && Objects.equals(ca.provider.id, provider.id)) {
+                            workflowJob.ca.workflowQueue.add(workflowJob);
+                        }
+                    }
+
+                }
             }
         }
     }
@@ -106,14 +130,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         assignStartingVMs();
 
-        int nodeIndex = 0;
         for (WorkflowJob workflowJob : this.jobs) {
-            workflowJob.ca = this.computeArchitecture.get(nodeIndex);
-            if (nodeIndex == this.computeArchitecture.size() - 1) {
-                nodeIndex = 0;
-            } else {
-                nodeIndex++;
-            }
 
             if (workflowJob.inputs.get(0).amount == 0) {
                 workflowJob.ca.workflowQueue.add(workflowJob);
@@ -123,14 +140,31 @@ public class RenewableScheduler extends WorkflowScheduler {
                 this.renewableConsumed += getJobRenewableConsumption(workflowJob);
             }
         }
-        this.provider.renewableBattery.removeBatteryLevel(startingPriceRenewableSum);
-        provider.calculatePrice();
+
+        for (Map.Entry entry: startingCosts.entrySet()) {
+            Provider provider = (Provider) entry.getKey();
+            float value = (float) entry.getValue();
+            provider.renewableBattery.removeBatteryLevel(value);
+        }
+
+        recalculateProviderPrices();
     }
 
     private void processStartingJobsWithFossil() {
 
         assignStartingVMs();
 
+        for (WorkflowJob workflowJob : this.jobs) {
+
+            if (workflowJob.inputs.get(0).amount == 0) {
+                workflowJob.ca.workflowQueue.add(workflowJob);
+                this.totalMoneySpent += getJobFullFossilConsumptionPrice(workflowJob);
+                this.fossilConsumed += getJobFullFossilConsumption(workflowJob);
+            }
+        }
+    }
+
+    private void assignJobsToNodes() {
         int nodeIndex = 0;
         for (WorkflowJob workflowJob : this.jobs) {
             workflowJob.ca = this.computeArchitecture.get(nodeIndex);
@@ -138,12 +172,6 @@ public class RenewableScheduler extends WorkflowScheduler {
                 nodeIndex = 0;
             } else {
                 nodeIndex++;
-            }
-
-            if (workflowJob.inputs.get(0).amount == 0) {
-                workflowJob.ca.workflowQueue.add(workflowJob);
-                this.totalMoneySpent += getJobFullFossilConsumptionPrice(workflowJob);
-                this.fossilConsumed += getJobFullFossilConsumption(workflowJob);
             }
         }
     }
@@ -163,7 +191,7 @@ public class RenewableScheduler extends WorkflowScheduler {
     @Override
     public void schedule(WorkflowJob workflowJob) {
 
-        provider.calculatePrice();
+        recalculateProviderPrices();
 
         if (this.requirement) {
             if (!doesProviderHaveEnoughEnergy(workflowJob)) {
@@ -184,7 +212,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
         else {
             addLog();
-            if ((this.provider.renewablePrice <= this.provider.fossilBasePrice) && doesProviderHaveEnoughEnergy(workflowJob)) {
+            if ((getProviderOfJob(workflowJob).renewablePrice <= getProviderOfJob(workflowJob).fossilBasePrice) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
                 WorkflowExecutor.execute(this);
@@ -201,12 +229,12 @@ public class RenewableScheduler extends WorkflowScheduler {
     }
 
     private void scheduleTaskWithRenewable(WorkflowJob workflowJob) {
-        provider.renewableBattery.removeBatteryLevel(getJobRenewableConsumption(workflowJob));
+        getProviderOfJob(workflowJob).renewableBattery.removeBatteryLevel(getJobRenewableConsumption(workflowJob));
         if (workflowJob.inputs.get(0).amount == 0) {
             workflowJob.ca.workflowQueue.add(workflowJob);
+            recalculateProviderPrices();
             this.fossilConsumed += getJobFossilConsumption(workflowJob);
             this.renewableConsumed += getJobRenewableConsumption(workflowJob);
-            provider.calculatePrice();
             this.totalMoneySpent += getJobRenewableConsumptionPrice(workflowJob);
             this.totalMoneySpent += getJobFossilConsumptionPrice(workflowJob);
         }
@@ -224,6 +252,18 @@ public class RenewableScheduler extends WorkflowScheduler {
                 this.shutdownVm(wca);
             }
         }
+    }
+
+    private void recalculateProviderPrices() {
+        for (Provider provider : this.providers) {
+            provider.calculatePrice();
+        }
+    }
+
+    private Provider getProviderOfJob(WorkflowJob workflowJob) {
+        RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
+
+        return ca.provider;
     }
 
     private int countRunningVms(WorkflowComputingAppliance wca) {
@@ -259,7 +299,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     public float getJobRenewableConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption * ratio/100 * provider.renewablePrice;
+        return hours * job.consumption * ratio/100 * getProviderOfJob(job).renewablePrice;
     }
 
     public float getJobFossilConsumption(WorkflowJob job) {
@@ -276,12 +316,12 @@ public class RenewableScheduler extends WorkflowScheduler {
     public float getJobFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
         float fossilRatio = (float) (100 - ratio) / 100;
-        return (hours * job.consumption * fossilRatio) * provider.fossilBasePrice;
+        return (hours * job.consumption * fossilRatio) * getProviderOfJob(job).fossilBasePrice;
     }
 
     public float getJobFullFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption * provider.fossilBasePrice;
+        return hours * job.consumption * getProviderOfJob(job).fossilBasePrice;
     }
 
     private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
@@ -297,10 +337,10 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     boolean doesProviderHaveEnoughEnergy(WorkflowJob job) {
         //logJobConsumptions(job);
-        if (this.provider.renewableBattery.getBatteryLevel() >= this.getJobRenewableConsumption(job)) {
-            return true;
-        }
-        return false;
+
+        RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) job.ca;
+
+        return ca.provider.renewableBattery.getBatteryLevel() >= getJobRenewableConsumption(job);
     }
 
     void logJobConsumptions(WorkflowJob job) {
@@ -318,19 +358,39 @@ public class RenewableScheduler extends WorkflowScheduler {
         System.out.println("   ------------------   " + Timed.getFireCount());
     }
 
-    float calculateStarterTaskRenewablePrice() {
-        float sum = 0;
-        for (WorkflowJob workflowJob : this.jobs) {
-            if (workflowJob.inputs.get(0).amount == 0) {
-                sum += getJobRenewableConsumption(workflowJob);
-            }
+    private void calculateStarterTaskRenewablePrice() {
+
+        for (Provider provider : this.providers) {
+            this.startingCosts.put(provider, 0F);
         }
-        return sum;
+
+        for (WorkflowJob workflowJob : this.jobs) {
+            RenewableWorkflowComputingAppliance renewableca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
+            Provider key = renewableca.provider;
+            this.startingCosts.put(key, this.startingCosts.get(key) + getJobRenewableConsumption(workflowJob));
+        }
+
     }
 
+    private boolean allProviderHasEnoughToStart () {
+
+        boolean hasEnough = true;
+        for (Map.Entry element : this.startingCosts.entrySet()) {
+            Provider key = (Provider) element.getKey();
+            float value = (Float) element.getValue();
+            if (key.renewableBattery.getBatteryLevel() < value) {
+                hasEnough = false;
+            }
+        }
+        return hasEnough;
+    }
+
+
     void addLog() {
-        float[] helper = {Timed.getFireCount(), provider.renewableBattery.getBatteryLevel()};
+        /*float[] helper = {Timed.getFireCount(), providers.renewableBattery.getBatteryLevel()};
         this.visualiser.add( helper );
+
+         */
     }
 
     void createConsumptionValues() {

@@ -14,19 +14,23 @@ public class CombinedTest extends Timed {
         subscribe(3_500_000);
 
         Wind wind = new Wind(1,100);
-        Solar solar = new Solar(1,100);
+        Solar solar = new Solar(1,300);
         Battery battery = new Battery(40_000,500,0,100);
         FossilSource fossilSource = new FossilSource(1000);
 
-        this.provider = new Provider(battery,new ArrayList<EnergySource>(),fossilSource,3_600_000,3_600_001, 1,1, 75);
+        this.provider = new Provider("01", battery,new ArrayList<EnergySource>(),fossilSource,3_600_000,3_600_001, 1,1, 75);
 
         provider.addEnergySource(wind);
         provider.addEnergySource(solar);
 
+        ArrayList<Provider> providers = new ArrayList<>();
+
+        providers.add(provider);
+
         Timed.simulateUntilLastEvent();
-        RenewableVisualiser.visualiseCharge(this.provider.charge);
-        RenewableVisualiser.visualiseSolar(this.provider.charge);
-        RenewableVisualiser.visualiseWind(this.provider.charge);
+        RenewableVisualiser.visualiseStoredEnergy(providers);
+        RenewableVisualiser.visualiseSolar(providers);
+        RenewableVisualiser.visualiseWind(providers);
     }
 
     @Override
