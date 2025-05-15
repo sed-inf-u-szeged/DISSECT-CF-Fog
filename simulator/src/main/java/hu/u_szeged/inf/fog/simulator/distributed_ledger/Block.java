@@ -25,13 +25,14 @@ public class Block {
 
     final ConsensusStrategy consensusStrategy;
     /**
-     * Constructs a new Block with the specified distributed ledger and difficulty level.
+     * Constructs a new Block according to the specified distributed ledger and difficulty level.
      *
      * @param consensusStrategy the consensus strategy used for the block
      * @param difficulty the difficulty level of the block, used for proof of work
      */
     public Block(ConsensusStrategy consensusStrategy, long difficulty) {
         this.consensusStrategy = consensusStrategy;
+        this.difficulty = difficulty;
         this.id = Utils.generateFakeHash((int) difficulty);
         this.transactions = new ArrayList<>();
         this.size = 0;
@@ -48,7 +49,6 @@ public class Block {
 
     /**
      * Checks if the nonce has been found for the block.
-     * The nonce is a value that, when added to the block, results in a hash that meets the difficulty requirements.
      *
      * @return true if the nonce has been found, false otherwise
      */
@@ -58,7 +58,6 @@ public class Block {
 
     /**
      * Sets the nonce found status for the block.
-     * This method is called when a valid nonce is discovered during the mining process.
      *
      * @param nonceFound the nonce found status
      */
@@ -68,7 +67,6 @@ public class Block {
 
     /**
      * Returns the timestamp of the block.
-     * The timestamp indicates when the block was created or finalized.
      *
      * @return the timestamp of the block
      */
@@ -78,7 +76,6 @@ public class Block {
 
     /**
      * Sets the difficulty level of the block.
-     * The difficulty level determines how hard it is to find a valid nonce for the block.
      *
      * @param difficulty the difficulty level
      */
@@ -88,7 +85,6 @@ public class Block {
 
     /**
      * Returns the list of transactions in the block.
-     * The transactions are the core data stored in the block.
      *
      * @return the list of transactions in the block
      */
@@ -118,7 +114,7 @@ public class Block {
 
     /**
      * Adds a transaction to the block.
-     * This method updates the block's size and checks if the block is technically full.
+     * Updates the block's size and checks if the block is technically full.
      *
      * @param tx the transaction to be added
      * @return the list of transactions in the block
@@ -141,24 +137,26 @@ public class Block {
 
     /**
      * Finalizes the block by setting its timestamp and recording metrics.
-     * This method is called when the block is completed and ready to be added to the ledger.
      */
     public void finalizeBlock() {
         this.timestamp = Timed.getFireCount();
         SimulationMetrics.getInstance().markBlockCreated(this, timestamp);
         for (Transaction tx : transactions) {
-            SimulationMetrics.getInstance().setTransactionConfirmationTime(tx, Timed.getFireCount());
+            SimulationMetrics.getInstance().setTransactionConfirmationTime(tx, timestamp);
             SimulationMetrics.getInstance().recordTransactionOnChain();
         }
     }
 
     /**
      * Returns the ID of the block.
-     * The ID is a unique identifier for the block, typically generated as a hash.
      *
-     * @return the ID of the block
+     * @return unique identifier for the block
      */
     public String getId() {
         return id;
+    }
+
+    public void forceFull() {
+        this.technicallyFull = true;
     }
 }

@@ -47,7 +47,6 @@ public class CalculateHeaderTask implements MinerTask {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
-                    SimLogger.logRun(miner.name + " Header calculated at time: " + Timed.getFireCount());
                     miner.finishTask(CalculateHeaderTask.this);
                     miner.scheduleTask(new FindNonceTask());
                 }

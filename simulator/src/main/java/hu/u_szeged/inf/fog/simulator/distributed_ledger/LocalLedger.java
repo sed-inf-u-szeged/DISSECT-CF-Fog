@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * LocalLedger class represents a local copy of the blockchain for a miner.
+ * LocalLedger class represents a local copy of the "blockchain" for a miner.
  * It contains methods to add blocks, resolve reorganization of the chain,
  * and synchronize the chain with another local ledger.
  */
@@ -48,6 +48,13 @@ public class LocalLedger {
         BlockMessage blockMessage = new BlockMessage(block);
         this.owner.getLocalRepo().registerObject(blockMessage);
         this.chain.add(block);
+        if(size() > 1) {
+            long previousDifficulty = chain.get(size() - 2).getDifficulty();
+            long currentDifficulty = chain.get(size() - 1).getDifficulty();
+            if (previousDifficulty != currentDifficulty) {
+                SimLogger.logRun(this.owner.getName() + " [LocalLedger] Difficulty changed from " + previousDifficulty + " to " + currentDifficulty);
+            }
+        }
     }
 
     /**

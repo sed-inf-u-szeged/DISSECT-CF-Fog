@@ -5,7 +5,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
-import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
@@ -17,6 +16,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransact
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.eclipse.collections.impl.bimap.mutable.HashBiMap;
 
@@ -50,6 +50,8 @@ public class Miner extends Timed {
 
     private MinerTask activeTask = null;
     private final Deque<MinerTask> tasksQueue = new ArrayDeque<>();
+    private long lastActionTime = 0L;
+    private static final long MAX_IDLE_TICKS = 50_000L; //this could be also configurable
 
     private Block nextBlock;
     private final LocalLedger localLedger;
@@ -80,6 +82,9 @@ public class Miner extends Timed {
         subscribe(1);
     }
 
+    /**
+     * Starts the virtual machine associated with this miner.
+     */
     public void startVm() {
         try{
             if (this.localVm == null) {
@@ -95,6 +100,22 @@ public class Miner extends Timed {
         }catch (Exception e){
             SimLogger.logError("Failed to start VM: " + e.getMessage());
             throw new RuntimeException("Failed to start VM: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Stops the virtual machine associated with this miner.
+     *
+     * @throws VirtualMachine.StateChangeException
+     */
+    public void stopVm() throws VirtualMachine.StateChangeException {
+        if (this.localVm != null && this.localVm.getState().
+                equals(VirtualMachine.State.RUNNING)) {
+            this.localVm.switchoff(true);
+            EnergyDataCollector ec = EnergyDataCollector.getEnergyCollector(this.computingAppliance.iaas);
+            if(ec != null){
+                ec.stop();
+            }
         }
     }
 
@@ -239,12 +260,12 @@ public class Miner extends Timed {
 
         // If idle and building not yet started but we have txs, schedule new build
         if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
-            scheduleTask(new BuildBlockTask());
+            scheduleTask(new BuildBlockTask(), true); //TODO
         }
 
         // If idle and already building a block, continue with next tx (one per tick)
-        if (state == MinerState.IDLE && nextBlock != null && !nextBlock.isFull() && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
-            scheduleTask(new BuildBlockTask());
+        if (state == MinerState.IDLE && nextBlock != null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
+            scheduleTask(new BuildBlockTask(), true); //TODO
         }
 
         // If idle, pick and execute next task
@@ -256,6 +277,21 @@ public class Miner extends Timed {
                 candidate.execute(this);
             } else {
                 tasksQueue.addLast(candidate);
+            }
+        }
+
+        if(state == MinerState.IDLE
+                && tasksQueue.isEmpty()
+                && nextBlock == null
+                && mempool.isEmpty()
+                && (Timed.getFireCount() - lastActionTime) > MAX_IDLE_TICKS){
+            setState(MinerState.OFF);
+            try {
+                SimLogger.logRun(this.name + " Idle for too long, shutting down");
+                stopVm();
+                unsubscribe();
+            } catch (VirtualMachine.StateChangeException e) {
+                SimLogger.logError(this.name + " Failed to stop VM: " + e.getMessage());
             }
         }
     }
@@ -291,6 +327,21 @@ public class Miner extends Timed {
     }
 
     /**
+     * Schedules a new task by adding it to the task queue with priority.
+     *
+     * @param task The task to schedule.
+     * @param force If true, the task is added to the front of the queue.
+     */
+    public void scheduleTask(MinerTask task, boolean force) {
+        if(force){
+            tasksQueue.addFirst(task);
+            SimLogger.logRun(name + " PRIORITY Task queued: " + task.describe());
+        }else {
+            scheduleTask(task);
+        }
+    }
+
+    /**
      * Called by a task when it finishes, so the miner can free itself and pick up the next task from the queue.
      *
      * @param task The task that finished.
@@ -299,6 +350,7 @@ public class Miner extends Timed {
         if (this.activeTask == task) {
             SimLogger.logRun(name + " Finished: " + task.describe());
             this.activeTask = null;
+            this.lastActionTime = Timed.getFireCount();
             setState(MinerState.IDLE);
         }
     }
@@ -312,10 +364,10 @@ public class Miner extends Timed {
         Block block = blockMessage.getBlock();
         if (!localLedger.getChain().contains(block)) {
             this.getLocalRepo().registerObject(blockMessage);
-            SimLogger.logRun(name + " -> received NEW block. Scheduling validation.");
-            scheduleTask(new ValidateBlockTask(block));
+            SimLogger.logRun(name + " received NEW block: " + block.getId());
+            scheduleTask(new ValidateBlockTask(block), true);
         } else {
-            SimLogger.logRun(name + " -> block already known, ignoring.");
+            SimLogger.logRun(name + " received block already known: " + block.getId());
         }
     }
 
@@ -331,7 +383,7 @@ public class Miner extends Timed {
             addKnownTransaction(tx);
             scheduleTask(new ValidateTransactionTask(tx));
         } else {
-            SimLogger.logRun(name + " -> transaction " + tx.getId() + " is known, ignoring.");
+            SimLogger.logRun(name + " received transaction " + tx.getId() + " is known");
         }
     }
 
@@ -358,6 +410,6 @@ public class Miner extends Timed {
      * The MinerState enum represents the various states a miner can be in.
      */
     public enum MinerState {
-        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, PROCESSING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN
+        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, VALIDATING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN
     }
 }

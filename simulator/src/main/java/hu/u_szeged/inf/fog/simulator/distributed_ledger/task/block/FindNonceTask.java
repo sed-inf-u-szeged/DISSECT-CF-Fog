@@ -36,7 +36,6 @@ public class FindNonceTask implements MinerTask {
      */
     @Override
     public void execute(Miner miner) {
-        SimLogger.logRun(miner.name + " Mining for nonce...");
         miner.setState(Miner.MinerState.MINING_NONCE);
         Block block = miner.getNextBlock();
         if (block == null) {
@@ -44,14 +43,15 @@ public class FindNonceTask implements MinerTask {
             return;
         }
         try {
-            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty())*1000, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
+            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty()), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
-                    SimLogger.logRun(miner.name + " Nonce found at time: " + Timed.getFireCount());
+                    SimLogger.logRun(miner.name + " Nonce found with difficulty " + block.getDifficulty());
                     block.setNonceFound(true);
+                    miner.getLocalLedger().addBlock(block);
                     block.finalizeBlock();
                     miner.finishTask(FindNonceTask.this);
-                    miner.scheduleTask(new PropagateBlockTask(block));
+                    miner.scheduleTask(new PropagateBlockTask(block), true);
                 }
             });
         } catch (NetworkNode.NetworkException e) {

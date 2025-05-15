@@ -4,6 +4,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.LocalLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
  * The PoWConsensusStrategy class implements the ConsensusStrategy and DifficultyAdjustmentStrategy interfaces.
@@ -151,7 +152,7 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
 
         // Otherwise, we are at a boundary => recalc difficulty based on
         // the last difficultyAdjustmentBlock blocks.
-        // This is a simplistic approach that looks at the timespan
+        // This is a simple approach that looks at the timespan
         // between chainSize-difficultyAdjustmentBlock and chainSize-1.
 
         if (chainSize < difficultyAdjustmentBlock) {
@@ -166,9 +167,20 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
         long lastTime = lastInWindow.getTimestamp();
         long actualTimespan = lastTime - firstTime;
 
-        // e.g. each block is targeted at 10 ticks =>
-        // expectedTimespan = difficultyAdjustmentBlock * 10
+        // e.g. each block is targeted at 10_000 ticks =>
+        // expectedTimespan = difficultyAdjustmentBlock * 10_000
         long expectedTimespan = difficultyAdjustmentBlock * targetBlockTimespan;
+
+        boolean clampingUsed = false;
+        if (actualTimespan < expectedTimespan / 4){
+            actualTimespan = expectedTimespan / 4;
+            clampingUsed = true;
+        }
+
+        if (actualTimespan > expectedTimespan * 4){
+            actualTimespan = expectedTimespan * 4;
+            clampingUsed = true;
+        }
 
         // naive formula: newDiff = oldDiff * (expected / actual)
         // if the blocks were found too quickly (actual < expected),
@@ -177,6 +189,13 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
         long newDifficulty = Math.round(currentDifficulty * ratio);
 
         if (newDifficulty < 1) newDifficulty = 1;
+
+        SimLogger.logRun("[PoWConsensusStrategy] Difficulty adjustment: " +
+                "currentDifficulty=" + currentDifficulty +
+                ", expectedTimespan=" + expectedTimespan +
+                ", actualTimespan=" + actualTimespan +
+                ", newDifficulty=" + newDifficulty +
+                ", clampingUsed=" + clampingUsed);
 
         return newDifficulty;
     }

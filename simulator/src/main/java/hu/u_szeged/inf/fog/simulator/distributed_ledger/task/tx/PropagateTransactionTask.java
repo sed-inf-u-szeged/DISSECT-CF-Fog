@@ -48,7 +48,7 @@ public class PropagateTransactionTask implements MinerTask {
      */
     @Override
     public void execute(Miner miner) {
-        SimLogger.logRun(miner.name + " Propagating transaction " + tx.getId() + " ...");
+        SimLogger.logRun(miner.name + " Propagating transaction " + tx.getId());
         miner.setState(Miner.MinerState.PROPAGATING_TRANSACTION);
 
         miner.addKnownTransaction(tx);

@@ -44,7 +44,7 @@ public class BuildBlockTask implements MinerTask {
         }
 
         if (currentState == State.IN_PROGRESS) {
-            SimLogger.logRun(miner.getName() + " [BuildBlockTask] Building block with " + buildingBlock.getTransactions().size() + " tx.");
+            SimLogger.logRun(miner.getName() + " [BuildBlockTask] Building block with " + buildingBlock.getTransactions().size() + " tx");
             addNextTransactionToBlock(miner);
         }
     }
@@ -56,8 +56,7 @@ public class BuildBlockTask implements MinerTask {
     private void addNextTransactionToBlock(Miner miner) {
         if (buildingBlock.isFull()) {
             currentState = State.DONE;
-            SimLogger.logRun(miner.getName() + " [BuildBlockTask] Done building block with " + buildingBlock.getTransactions().size() + " tx.");
-            miner.getLocalLedger().addBlock(buildingBlock);
+            SimLogger.logRun(miner.getName() + " [BuildBlockTask] Done building block with " + buildingBlock.getTransactions().size() + " tx");
             miner.scheduleTask(new CalculateHeaderTask());
             miner.finishTask(this);
             return;
@@ -72,7 +71,7 @@ public class BuildBlockTask implements MinerTask {
             if (mempoolEmptySince + MAX_EMPTY_MEMPOOL_TICKS < Timed.getFireCount()) {
                 SimLogger.logRun(miner.getName() + " [BuildBlockTask] Mempool has been empty for too long, finishing task.");
                 currentState = State.DONE;
-                miner.getLocalLedger().addBlock(buildingBlock);
+                buildingBlock.forceFull();
                 miner.scheduleTask(new CalculateHeaderTask());
             }else{
                 miner.scheduleTask(this);

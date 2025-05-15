@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
@@ -28,18 +27,18 @@ public class ValidateBlockTask implements MinerTask {
     @Override
     public void execute(Miner miner) {
         SimLogger.logRun(miner.name + " Validating received block: " + block.getId());
-        miner.setState(Miner.MinerState.PROCESSING_INCOMING_BLOCK);
+        miner.setState(Miner.MinerState.VALIDATING_INCOMING_BLOCK);
 
         double instructions = Utils.validateBlockCost(miner.consensusStrategy, block);
 
         long expectedDifficulty = ((DifficultyAdjustmentStrategy) miner.consensusStrategy).computeNextDifficulty(miner.getLocalLedger());
 
-        if (block.getDifficulty() != expectedDifficulty) {
-            SimLogger.logRun(miner.getName() + " -> REJECT: block has difficulty " + block.getDifficulty() + ", expected " + expectedDifficulty);
-            SimulationMetrics.getInstance().recordBlockValidation(miner, false);
-            miner.finishTask(this);
-            return;
-        }
+//        if (block.getDifficulty() != expectedDifficulty) {
+//            SimLogger.logRun(miner.getName() + " -> REJECT: block has difficulty " + block.getDifficulty() + ", expected " + expectedDifficulty);
+//            SimulationMetrics.getInstance().recordBlockValidation(miner, false);
+//            miner.finishTask(this);
+//            return;
+//        }
 
         try {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
@@ -48,11 +47,11 @@ public class ValidateBlockTask implements MinerTask {
                     boolean accepted = miner.getValidationStrategy().isValidBlock(block);
 
                     if (accepted) {
-                        SimLogger.logRun(miner.name + " VALID block: " + block.getId() + " at time: " + Timed.getFireCount());
+                        SimLogger.logRun(miner.name + " VALID block: " + block.getId());
                         miner.getLocalLedger().addBlock(block);
                         miner.scheduleTask(new PropagateBlockTask(block));
                     } else {
-                        SimLogger.logRun(miner.name + " INVALID block: " + block.getId() + " at time: " + Timed.getFireCount() + ". Discarding.");
+                        SimLogger.logRun(miner.name + " INVALID block: " + block.getId());
                     }
 
                     miner.finishTask(ValidateBlockTask.this);

@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class TransactionDevice extends Device {
 
     public static final int CONNECT2NODE_MAX_RETRIES = 5;
+    private int maxRetries = CONNECT2NODE_MAX_RETRIES;
 
     private static final Random random = SeedSyncer.centralRnd;
     private final FindNodeStrategy findNodeStrategy;
@@ -62,6 +63,22 @@ public class TransactionDevice extends Device {
         this.findNodeStrategy = findNodeStrategy;
         this.pendingTransactions = new HashSet<>();
         this.startMeter();
+    }
+
+    /**
+     * Sets the maximum number of retries for connecting to a node.
+     * @param maxRetries the maximum number of retries
+     */
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+    }
+
+    /**
+     * Returns the maximum number of retries for connecting to a node.
+     * @return the maximum number of retries
+     */
+    public int getMaxRetries() {
+        return maxRetries;
     }
 
     /**

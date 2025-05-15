@@ -149,7 +149,7 @@ public class GeoPartition implements PartitionStrategy {
      */
     public static void main(String[] args) throws IOException {
         ArrayList<ComputingAppliance> nodes = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 10; i++) {
             ComputingAppliance cloud = new ComputingAppliance(ScenarioBase.resourcePath + "LPDS_original.xml", "cloud" + i, GeoLocation.generateRandomGeoLocation(), 0);
             nodes.add(cloud);
         }
