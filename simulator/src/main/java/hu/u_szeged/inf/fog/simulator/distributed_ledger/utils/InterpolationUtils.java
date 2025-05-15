@@ -5,6 +5,7 @@ import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
 public class InterpolationUtils {
 
+    private InterpolationUtils(){}
     private static final LinearInterpolator interpolator = new LinearInterpolator();
 
     /**
@@ -29,11 +30,9 @@ public class InterpolationUtils {
      */
     public static double interpolate(PolynomialSplineFunction splineFunction, double xValue, double xRangeStart, double xRangeEnd) {
         if (xValue < xRangeStart || xValue > xRangeEnd) {
-            throw new IllegalArgumentException(
-                    "Value out of range. Must be between " + xRangeStart + " and " + xRangeEnd + ".");
+            throw new IllegalArgumentException("Value out of range. Must be between " + xRangeStart + " and " + xRangeEnd + ".");
         }
         return splineFunction.value(xValue);
     }
 
-    private InterpolationUtils(){}
 }

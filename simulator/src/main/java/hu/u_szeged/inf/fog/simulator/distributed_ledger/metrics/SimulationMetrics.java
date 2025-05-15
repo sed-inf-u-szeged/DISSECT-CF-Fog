@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics;
 
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -17,7 +16,6 @@ import java.util.*;
  *   <li>Transaction confirmation times</li>
  *   <li>Block/transaction propagation delays</li>
  * </ul>
- *
  */
 public class SimulationMetrics {
 
@@ -51,19 +49,31 @@ public class SimulationMetrics {
      * and how many transactions/blocks they validated or rejected.
      */
     public static class MinerStats {
-        /** The number of network messages this miner has sent. */
+        /**
+         * The number of network messages this miner has sent.
+         */
         public long networkMessagesSent = 0;
-        /** The total network bytes this miner has sent. */
+        /**
+         * The total network bytes this miner has sent.
+         */
         public long networkBytesSent = 0;
 
-        /** The number of transactions this miner accepted (validated). */
+        /**
+         * The number of transactions this miner accepted (validated).
+         */
         public long transactionsValidated = 0;
-        /** The number of transactions this miner rejected. */
+        /**
+         * The number of transactions this miner rejected.
+         */
         public long transactionsRejected = 0;
 
-        /** The number of blocks this miner accepted (validated). */
+        /**
+         * The number of blocks this miner accepted (validated).
+         */
         public long blocksValidated = 0;
-        /** The number of blocks this miner rejected. */
+        /**
+         * The number of blocks this miner rejected.
+         */
         public long blocksRejected = 0;
     }
 
@@ -71,7 +81,9 @@ public class SimulationMetrics {
     // A map of Miner -> MinerStats
     // ----------------------------------------------------------------
 
-    /** Holds stats on a per-miner basis. */
+    /**
+     * Holds stats on a per-miner basis.
+     */
     private final Map<Miner, MinerStats> statsPerMiner = new HashMap<>();
 
     /**
@@ -89,37 +101,37 @@ public class SimulationMetrics {
     // Global counters (across all miners)
     // ----------------------------------------------------------------
 
-    /** Global count of all network messages sent (across every miner). */
+    /**
+     * Global count of all network messages sent (across every miner).
+     */
     private long globalNetworkMessagesSent = 0;
-    /** Global sum of all network bytes sent (across every miner). */
+    /**
+     * Global sum of all network bytes sent (across every miner).
+     */
     private long globalNetworkBytesSent = 0;
 
-    /** How many transactions were accepted overall. */
+    /**
+     * How many transactions were accepted overall.
+     */
     private long globalTransactionsAccepted = 0;
-    /** How many transactions were rejected overall. */
+    /**
+     * How many transactions were rejected overall.
+     */
     private long globalTransactionsRejected = 0;
-    /** How many blocks were accepted overall. */
+    /**
+     * How many blocks were accepted overall.
+     */
     private long globalBlocksAccepted = 0;
-    /** How many blocks were rejected overall. */
+    /**
+     * How many blocks were rejected overall.
+     */
     private long globalBlocksRejected = 0;
 
-    /** Count of how many transactions got “on-chain” (i.e., included in accepted blocks). */
+    /**
+     * Count of how many transactions got “on-chain” (i.e., included in accepted blocks).
+     */
     private long globalTransactionsOnChain = 0;
 
-    // ----------------------------------------------------------------
-    // Transaction times (creation, confirmation) for measuring latencies
-    // ----------------------------------------------------------------
-
-    /**
-     * When each transaction was first created (or first seen).
-     * Key = Transaction, Value = simulation time of creation.
-     */
-    private final Map<Transaction, Long> txCreationTime = new HashMap<>();
-    /**
-     * When each transaction was confirmed (included in a block).
-     * Key = Transaction, Value = simulation time of confirmation.
-     */
-    private final Map<Transaction, Long> txConfirmationTime = new HashMap<>();
 
     // ----------------------------------------------------------------
     // Block and Transaction Propagation times
@@ -131,11 +143,6 @@ public class SimulationMetrics {
      */
     private final Map<Block, Map<Miner, Long>> blockArrivalTimes = new HashMap<>();
 
-    /**
-     * For each transaction, store (Miner -> arrival time).
-     * This way we can later compute how quickly it propagated to each miner.
-     */
-    private final Map<Transaction, Map<Miner, Long>> txArrivalTimes = new HashMap<>();
 
     /**
      * When each block was created (mined) by its producing miner.
@@ -175,32 +182,7 @@ public class SimulationMetrics {
     }
 
     // ----------------------------------------------------------------
-    // 3) Transaction creation and confirmation times
-    // ----------------------------------------------------------------
-
-    /**
-     * Mark the time at which a transaction was created or first observed.
-     * Used to compute latencies later (e.g., confirmation time minus creation time).
-     *
-     * @param tx   the transaction
-     * @param time the simulation time at creation
-     */
-    public void setTransactionCreationTime(Transaction tx, long time) {
-        txCreationTime.putIfAbsent(tx, time);
-    }
-
-    /**
-     * Mark the time at which a transaction was confirmed (e.g., included in a block).
-     *
-     * @param tx   the transaction
-     * @param time the simulation time of confirmation
-     */
-    public void setTransactionConfirmationTime(Transaction tx, long time) {
-        txConfirmationTime.putIfAbsent(tx, time);
-    }
-
-    // ----------------------------------------------------------------
-    // 5) Result of block and transaction validations
+    // 3) Result of block and transaction validations
     // ----------------------------------------------------------------
 
     /**
@@ -236,7 +218,7 @@ public class SimulationMetrics {
     }
 
     // ----------------------------------------------------------------
-    // 6) Block/Transaction Propagation Delay
+    // 4) Block/Transaction Propagation Delay
     // ----------------------------------------------------------------
 
     /**
@@ -256,9 +238,9 @@ public class SimulationMetrics {
      * Mark the simulation time at which a particular miner
      * received a block.
      *
-     * @param block  the block
-     * @param miner  the miner receiving it
-     * @param time   the simulation time
+     * @param block the block
+     * @param miner the miner receiving it
+     * @param time  the simulation time
      */
     public void markBlockArrived(Block block, Miner miner, long time) {
         blockArrivalTimes
@@ -266,19 +248,6 @@ public class SimulationMetrics {
                 .putIfAbsent(miner, time);
     }
 
-    /**
-     * Mark the simulation time at which a particular miner
-     * received a transaction.
-     *
-     * @param tx     the transaction
-     * @param miner  the miner receiving it
-     * @param time   the simulation time
-     */
-    public void markTransactionArrived(Transaction tx, Miner miner, long time) {
-        txArrivalTimes
-                .computeIfAbsent(tx, k -> new HashMap<>())
-                .putIfAbsent(miner, time);
-    }
 
     // ----------------------------------------------------------------
     // Print / finalize stats at end of simulation
@@ -294,7 +263,7 @@ public class SimulationMetrics {
      *   <li>Counts of accepted/rejected blocks and transactions</li>
      *   <li>Average block propagation delay</li>
      * </ul>
-     *
+     * <p>
      * Call this at the end of the simulation to get a summary of results.
      */
     public void printFinalStats() {
@@ -321,21 +290,8 @@ public class SimulationMetrics {
         SimLogger.logRun("Transactions On-Chain: " + globalTransactionsOnChain);
         SimLogger.logRun("Throughput (TPS):      " + tps);
 
-        // 3) Average Transaction Confirmation Time
-        long sumConfirmDelays = 0;
-        int confirmedCount = 0;
-        for (Transaction tx : txConfirmationTime.keySet()) {
-            Long createT = txCreationTime.get(tx);
-            Long confirmT = txConfirmationTime.get(tx);
-            if (createT != null && confirmT != null) {
-                sumConfirmDelays += (confirmT - createT);
-                confirmedCount++;
-            }
-        }
-        double avgConfirmation = confirmedCount > 0 ? (double) sumConfirmDelays / confirmedCount : 0.0;
-        SimLogger.logRun("Avg Transaction Confirmation Time: " + avgConfirmation);
 
-        // 4) Validation results
+        // 3) Validation results
         SimLogger.logRun("Transactions accepted: " + globalTransactionsAccepted);
         SimLogger.logRun("Transactions rejected: " + globalTransactionsRejected);
         SimLogger.logRun("Blocks accepted:       " + globalBlocksAccepted);
@@ -352,7 +308,7 @@ public class SimulationMetrics {
                     + " rejectedBlk=" + ms.blocksRejected);
         }
 
-        // 5) Block propagation delay
+        // 4) Block propagation delay
         double sumBlockPropagation = 0.0;
         int blockPropagationCount = 0;
         for (Block block : blockArrivalTimes.keySet()) {

@@ -39,8 +39,7 @@ public class TransactionTransferEvent implements ResourceConsumption.Consumption
         SimLogger.logRun(this.receiver.getName() + " received transaction '" + transactionMessage.getTransaction().getId() + "' from " + sender.getName());
         receiver.receiveTransaction(transactionMessage);
         SimulationMetrics.getInstance().recordNetworkSend(sender, transactionMessage.size);
-        SimulationMetrics.getInstance().markTransactionArrived(transactionMessage.getTransaction(), receiver, Timed.getFireCount());
-    }
+        }
 
     /**
      * Method called when the consumption event is cancelled.

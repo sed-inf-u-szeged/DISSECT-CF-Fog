@@ -131,7 +131,6 @@ public class TransactionDevice extends Device {
         TransactionMessage msg = new TransactionMessage(tx);
         this.localMachine.localDisk.registerObject(msg);
         SimLogger.logRun(name + " generated transaction: " + tx);
-        SimulationMetrics.getInstance().setTransactionCreationTime(tx, Timed.getFireCount());
     }
 
 
