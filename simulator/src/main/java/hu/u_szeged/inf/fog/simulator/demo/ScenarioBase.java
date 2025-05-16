@@ -282,8 +282,8 @@ public class ScenarioBase {
             totalRenewableProduced += provider.totalRenewableProduced;
             totalFossilUsed += provider.totalFossilUsed;
             totalRenewableUsed += provider.totalRenewableUsed;
-            totalMoneySpent += provider.moneySpentOnFossil;
-            totalMoneySpent += provider.moneySpentOnRenewable;
+            totalMoneySpent += provider.moneySpentOnFossil/1000;
+            totalMoneySpent += provider.moneySpentOnRenewable/1000;
         }
         SimLogger.logRes("");
         SimLogger.logRes("Total renewable produced (Wh): " + totalRenewableProduced);
