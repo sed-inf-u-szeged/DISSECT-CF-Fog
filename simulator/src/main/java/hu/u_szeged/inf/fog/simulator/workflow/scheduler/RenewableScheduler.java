@@ -27,13 +27,9 @@ public class RenewableScheduler extends WorkflowScheduler {
     boolean requirement;
     ArrayList<RenewableWorkflowComputingAppliance> renewableComputeArchitecture;
     Map<Provider, Float> startingCosts = new HashMap<>();
-    float startingPriceRenewableSum;
     public float renewableConsumed = 0;
     public float fossilConsumed = 0;
-    public float fossilPriceSum = 0;
-    public float renewablePriceSum = 0;
     public float totalMoneySpent = 0;
-    public List<float[]> visualiser = new ArrayList<>();
     public List<int[]> consumptions = new ArrayList<>();
     public long totalWaitingTime = 0;
     boolean hasJobsBeenAssigned = false;
@@ -100,7 +96,7 @@ public class RenewableScheduler extends WorkflowScheduler {
             addLog();
             assignStartingVMs();
             for (Provider provider : providers) {
-                if (provider.renewableBattery.getBatteryLevel() > startingCosts.get(provider) && provider.renewablePrice <= provider.fossilBasePrice) {
+                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.renewablePrice <= provider.fossilBasePrice) {
 
                     provider.renewableBattery.removeBatteryLevel(startingCosts.get(provider));
                     assignStartingVMs();
@@ -109,6 +105,7 @@ public class RenewableScheduler extends WorkflowScheduler {
                         RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
                         if (workflowJob.inputs.get(0).amount == 0 && Objects.equals(ca.provider.id, provider.id)) {
                             workflowJob.ca.workflowQueue.add(workflowJob);
+                            logJobRenewableCunsumption(workflowJob);
                         }
                     }
                 } else {
@@ -118,12 +115,27 @@ public class RenewableScheduler extends WorkflowScheduler {
                         RenewableWorkflowComputingAppliance ca = (RenewableWorkflowComputingAppliance) workflowJob.ca;
                         if (workflowJob.inputs.get(0).amount == 0 && Objects.equals(ca.provider.id, provider.id)) {
                             workflowJob.ca.workflowQueue.add(workflowJob);
+                            logJobFossilCunsumption(workflowJob);
                         }
                     }
 
                 }
             }
         }
+    }
+
+    private void logJobRenewableCunsumption(WorkflowJob workflowJob) {
+        Provider provider = getProviderOfJob(workflowJob);
+        provider.totalRenewableUsed += getJobRenewableConsumption(workflowJob);
+        provider.totalFossilUsed += getJobFossilConsumption(workflowJob);
+        provider.moneySpentOnRenewable += getJobRenewableConsumptionPrice(workflowJob);
+        provider.moneySpentOnFossil += getJobFossilConsumptionPrice(workflowJob);
+    }
+
+    private void logJobFossilCunsumption(WorkflowJob workflowJob) {
+        Provider provider = getProviderOfJob(workflowJob);
+        provider.totalFossilUsed += getJobFullFossilConsumption(workflowJob);
+        provider.moneySpentOnFossil += getJobFullFossilConsumptionPrice(workflowJob);
     }
 
     private void processStartingJobsWithRenewable() {
@@ -134,10 +146,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
             if (workflowJob.inputs.get(0).amount == 0) {
                 workflowJob.ca.workflowQueue.add(workflowJob);
-                this.totalMoneySpent += getJobRenewableConsumptionPrice(workflowJob);
-                this.totalMoneySpent += getJobFossilConsumptionPrice(workflowJob);
-                this.fossilConsumed += getJobFossilConsumption(workflowJob);
-                this.renewableConsumed += getJobRenewableConsumption(workflowJob);
+                logJobRenewableCunsumption(workflowJob);
             }
         }
 
@@ -220,8 +229,7 @@ public class RenewableScheduler extends WorkflowScheduler {
             else {
                 if (workflowJob.inputs.get(0).amount == 0) {
                     workflowJob.ca.workflowQueue.add(workflowJob);
-                    this.totalMoneySpent += getJobFullFossilConsumptionPrice(workflowJob);
-                    this.fossilConsumed += getJobFullFossilConsumption(workflowJob);
+                    logJobFossilCunsumption(workflowJob);
                     WorkflowExecutor.execute(this);
                 }
             }
@@ -233,10 +241,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         if (workflowJob.inputs.get(0).amount == 0) {
             workflowJob.ca.workflowQueue.add(workflowJob);
             recalculateProviderPrices();
-            this.fossilConsumed += getJobFossilConsumption(workflowJob);
-            this.renewableConsumed += getJobRenewableConsumption(workflowJob);
-            this.totalMoneySpent += getJobRenewableConsumptionPrice(workflowJob);
-            this.totalMoneySpent += getJobFossilConsumptionPrice(workflowJob);
+            logJobRenewableCunsumption(workflowJob);
         }
 
         for (WorkflowComputingAppliance wca : this.computeArchitecture) {

@@ -23,7 +23,6 @@ public class Provider {
     long chargeFreq;
     long priceFreq;
     public Charge charge;
-    ChangePrice changePrice;
     double multiplier;
     float batteryStartingCharge;
     public List<float[]> energyRecords = new ArrayList<>();
@@ -32,7 +31,10 @@ public class Provider {
     public float totalRenewableProduced = 0;
     public float totalWindProduced = 0;
     public float totalSolarProduced = 0;
-
+    public float totalFossilUsed = 0;
+    public float totalRenewableUsed = 0;
+    public float moneySpentOnFossil = 0;
+    public float moneySpentOnRenewable = 0;
 
     public Provider(String id, Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
                     long chargeFreq, long priceFreq,
@@ -51,14 +53,14 @@ public class Provider {
         this.renewablePrice = (float) (this.renewableBasePrice * (1 + multiplier * ((50 - this.renewableBattery.getBatteryPercentage()) / 50.0)));
         this.fossilBasePrice = fossilBasePrice;
         this.charge = new Charge(this);
-        //this.changePrice = new ChangePrice(this, maxPriceChange);
     }
 
     public void calculatePrice() {
         try {
-            new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
+            File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ this.id +"/Price.txt");
+            file.getParentFile().mkdirs();
             PrintStream out = new PrintStream(
-                    new FileOutputStream(ScenarioBase.resultDirectory +"/price.txt", true), true);
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/Provider-"+ this.id +"/Price.txt", true), true);
             System.setOut(out);
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -94,7 +96,24 @@ public class Provider {
 
     public void stopProcessing() {
         this.charge.stop();
-        //this.changePrice.stop();
+
+        File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ this.id +"/log.txt");
+        file.getParentFile().mkdirs();
+        try {
+            PrintStream out = new PrintStream(
+                    new FileOutputStream(ScenarioBase.resultDirectory +"/Provider-"+ this.id +"/log.txt", true), true);
+            System.setOut(out);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Total renewable produced (Wh): " + totalRenewableProduced);
+        System.out.println("Total solar produced (Wh): " + totalSolarProduced);
+        System.out.println("Total wind produced (Wh): " + totalWindProduced);
+        System.out.println("Total fossil used (Wh): " + totalFossilUsed);
+        System.out.println("Total renewable used (Wh): " + totalRenewableUsed);
+        System.out.println("Money spent on fossil (EUR): " + moneySpentOnFossil);
+        System.out.println("Money spent on renewable (EUR): " + moneySpentOnRenewable);
+        System.out.println("Total money spent (EUR): " + (moneySpentOnRenewable+moneySpentOnFossil));
     }
 
     @Override

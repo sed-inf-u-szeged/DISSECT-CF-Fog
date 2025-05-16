@@ -82,7 +82,7 @@ public class RenewableVisualiser {
             fw.write("]);");
 
             fw.write(" var options = {\n" +
-                    "          title: 'Produced power',\n" +
+                    "          title: 'Produced power (Wh)',\n" +
                     "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
                     "          vAxis: {minValue: 0},\n" +
                     "          isStacked: true\n" +
@@ -127,7 +127,7 @@ public class RenewableVisualiser {
             fw.write("]);");
 
             fw.write(" var options = {\n" +
-                    "          title: 'Produced power',\n" +
+                    "          title: 'Produced power (Wh)',\n" +
                     "          hAxis: {title: 'Ticks',  titleTextStyle: {color: '#333'}},\n" +
                     "          vAxis: {minValue: 0},\n" +
                     "          isStacked: true\n" +

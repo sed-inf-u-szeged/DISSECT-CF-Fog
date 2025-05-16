@@ -261,9 +261,22 @@ public class ScenarioBase {
     }
     public static void logRenewableStreamProcessing() {
         RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
-        SimLogger.logRes("Total fossil consumed: " + scheduler.fossilConsumed);
-        SimLogger.logRes("Total renewable consumed: " + scheduler.renewableConsumed);
-        SimLogger.logRes("Total money cost: " + scheduler.totalMoneySpent);
-        SimLogger.logRes("Total waiting time (mins) : " + scheduler.totalWaitingTime/60_000);
+        float totalFossilUsed = 0;
+        float totalRenewableUsed = 0;
+        float totalMoneySpent = 0;
+        float totalRenewableProduced = 0;
+        for (hu.u_szeged.inf.fog.simulator.energyprovider.Provider provider : scheduler.providers) {
+            totalRenewableProduced += provider.totalRenewableProduced;
+            totalFossilUsed += provider.totalFossilUsed;
+            totalRenewableUsed += provider.totalRenewableUsed;
+            totalMoneySpent += provider.moneySpentOnFossil;
+            totalMoneySpent += provider.moneySpentOnRenewable;
+        }
+        SimLogger.logRes("");
+        SimLogger.logRes("Total renewable produced (Wh): " + totalRenewableProduced);
+        SimLogger.logRes("Total fossil consumed (Wh): " + totalFossilUsed);
+        SimLogger.logRes("Total renewable consumed (Wh): " + totalRenewableUsed);
+        SimLogger.logRes("Total money cost (EUR): " + totalMoneySpent);
+        SimLogger.logRes("Total waiting time (min.): " + scheduler.totalWaitingTime/60_000);
     }
 }

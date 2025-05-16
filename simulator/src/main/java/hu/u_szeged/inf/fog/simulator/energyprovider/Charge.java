@@ -12,7 +12,7 @@ public class Charge extends Timed {
 
     Provider provider;
     float lastTotalAdded;
-    public List<float[]> charges = new ArrayList<>();
+
 
     /**
      * Recurring Timed event that charges the battery of a Provider with the given renewable sources
@@ -26,28 +26,22 @@ public class Charge extends Timed {
     @Override
     public void tick(long fires) {
         this.lastTotalAdded = getTotalProduction();
-
         if (this.lastTotalAdded > 0) {
+            File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/Charge.txt");
+            file.getParentFile().mkdirs();
             try {
-                new File(new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath());
                 PrintStream out = new PrintStream(
-                        new FileOutputStream(ScenarioBase.resultDirectory +"/output.txt", true), true);
+                        new FileOutputStream(ScenarioBase.resultDirectory +"/Provider-"+ provider.id +"/Charge.txt", true), true);
                 System.setOut(out);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-            log();
             System.out.print("Current energy: " + provider.renewableBattery.getBatteryLevel() + " Wh");
             System.out.print("  -------  Added energy: " + this.lastTotalAdded + " Wh");
             System.out.print("  -------  Time: " + Timed.getFireCount());
             System.out.println("  -------  Energy after charge: " + chargeUp() + " Wh");
             provider.calculatePrice();
         }
-    }
-
-    void log() {
-        float[] helper = {Timed.getFireCount(), provider.renewableBattery.getBatteryLevel()};
-        this.charges.add( helper );
     }
 
     private float chargeUp() {
