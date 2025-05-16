@@ -67,35 +67,35 @@ public class AgentTest {
         double capacity = 100; 
         
         ComputingAppliance node1 = new ComputingAppliance(
-                createNode("node1", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
+                createNode("node1", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
                 new GeoLocation(47.50, 19.08), "EU", "AWS"); // Budapest
 
             ComputingAppliance node2 = new ComputingAppliance(
-                createNode("node2", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+                createNode("node2", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
                 new GeoLocation(48.86, 2.35), "EU", "Azure"); // Paris
 
             ComputingAppliance node3 = new ComputingAppliance(
-                createNode("node3", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
+                createNode("node3", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
                 new GeoLocation(52.52, 13.40), "EU", "AWS"); // Berlin
                 
             ComputingAppliance node4 = new ComputingAppliance(
-                createNode("node4", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
+                createNode("node4", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
                 new GeoLocation(41.90, 12.50), "EU", "Azure"); // Rome
                 
             ComputingAppliance node5 = new ComputingAppliance(
-                createNode("node5", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
+                createNode("node5", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
                 new GeoLocation(40.71, -74.00), "US", "AWS"); // New York
 
             ComputingAppliance node6 = new ComputingAppliance(
-                createNode("node6", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+                createNode("node6", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
                 new GeoLocation(34.05, -118.25), "US", "Azure"); // Los Angeles
 
             ComputingAppliance node7 = new ComputingAppliance(
-                createNode("node7", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+                createNode("node7", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
                 new GeoLocation(37.77, -122.42), "US", "AWS"); // San Francisco
 
             ComputingAppliance node8 = new ComputingAppliance(
-                createNode("node8", capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+                createNode("node8", capacity, (long) capacity * 1_073_741_824L, 1, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
                 new GeoLocation(41.88, -87.63), "US", "Azure"); // Chicago
         
         new EnergyDataCollector("node-1", node1.iaas, true);
@@ -230,7 +230,7 @@ public class AgentTest {
         */
     }
     
-    private static IaaSService createNode(String name, double cpu, long memory, long storage, double minpower, 
+    static IaaSService createNode(String name, double cpu, double perCoreProcessing, long memory, long storage, double minpower, 
             double idlepower, double maxpower, long bandwidth, int latency, Map<String, Integer> latencyMap) { 
         
         IaaSService iaas = null;
@@ -245,7 +245,7 @@ public class AgentTest {
                      transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                      transitions.get(PowerTransitionGenerator.PowerStateKind.network));
 
-             PhysicalMachine pm1 = new PhysicalMachine(cpu, 1, memory, pmRepo1, 60_000, 60_000, 
+             PhysicalMachine pm1 = new PhysicalMachine(cpu, perCoreProcessing, memory, pmRepo1, 60_000, 60_000, 
                      transitions.get(PowerTransitionGenerator.PowerStateKind.host));
 
              iaas.registerHost(pm1);

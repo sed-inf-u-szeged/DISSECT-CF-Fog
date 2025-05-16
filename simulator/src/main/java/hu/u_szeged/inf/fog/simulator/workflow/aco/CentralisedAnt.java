@@ -48,27 +48,23 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
                     }
                 }
             } else {
-                maxIndex = (int) (SeedSyncer.centralRnd.nextInt(pheromoneMatrix[i].length));
-                /*
-                double sum = 0;
-               
-                for (int j = 0; j < ; j++) {
+                //maxIndex = (int) (SeedSyncer.centralRnd.nextInt(pheromoneMatrix[i].length));
+                double sum = 0.0;
+
+                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
                     sum += pheromoneMatrix[i][j];
                 }
 
-                double randomNum = Math.random();
-                double cumulativeProbability = 0.0;
-                
-                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
-                    double num = pheromoneMatrix[i][j] / sum;
-                    cumulativeProbability += num;
+                double randomNum = SeedSyncer.centralRnd.nextDouble() * sum;
+                double cumulative = 0.0;
 
-                    if (randomNum < cumulativeProbability) {
+                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
+                    cumulative += pheromoneMatrix[i][j];
+                    if (randomNum <= cumulative) {
                         maxIndex = j;
-                        break;  
+                        break;
                     }
                 }
-                */
             }
             localSolution[i] = maxIndex;
         }

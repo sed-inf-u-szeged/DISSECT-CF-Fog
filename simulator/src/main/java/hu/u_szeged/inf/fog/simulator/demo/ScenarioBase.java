@@ -23,6 +23,7 @@ import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
 import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
@@ -202,12 +203,16 @@ public class ScenarioBase {
         
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
+        int totalUtilisedVms = 0;
         double avgExecutionTime = 0.0;
         double avgPairwiseDistance = 0.0;
+        double avgBytesOnNetwork = 0.0;
+        double avgTimeOnNetwork = 0.0;
         for(WorkflowScheduler scheduler : WorkflowScheduler.schedulers) {
             SimLogger.logRes("App: " + scheduler.appName);
             
             SimLogger.logRes("\tUtilised VMs: " + scheduler.vmTaskLogger.size());
+            totalUtilisedVms += scheduler.vmTaskLogger.size();
             for (Map.Entry<String, Integer> entry : scheduler.vmTaskLogger.entrySet()) {
                 String key = entry.getKey();
                 Integer value = entry.getValue();
@@ -225,13 +230,16 @@ public class ScenarioBase {
             totalCost += cost;
             totalEnergyConsumption += energyConsumption;
             SimLogger.logRes("Cost (EUR): " + cost + " VM time: " + vmTime + " Price: " + scheduler.instance.pricePerTick);
-            SimLogger.logRes("Total energy (kWh): " + energyConsumption / 1000 / 3_600_000);
-            SimLogger.logRes("Total time on network (seconds): "
+            SimLogger.logRes("Energy consumption (kWh): " + energyConsumption / 1000 / 3_600_000);
+            SimLogger.logRes("Time on network (seconds): "
                     + TimeUnit.SECONDS.convert(scheduler.timeOnNetwork, TimeUnit.MILLISECONDS));
-            SimLogger.logRes("Total bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
-            SimLogger.logRes("Average Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
+            avgTimeOnNetwork += scheduler.timeOnNetwork;
+            SimLogger.logRes("Bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
+            avgBytesOnNetwork += scheduler.bytesOnNetwork;
+            SimLogger.logRes("Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
             avgPairwiseDistance += CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
             
+
             int completed = 0;
             for (WorkflowJob wj : scheduler.jobs) {
                 if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
@@ -247,9 +255,14 @@ public class ScenarioBase {
         }
         SimLogger.logRes("Total cost (EUR): " + totalCost);
         SimLogger.logRes("Total energy consumption (kWh): " + totalEnergyConsumption / 1000 / 3_600_000);
+        SimLogger.logRes("Total utilised VMs: " + totalUtilisedVms);
+        SimLogger.logRes("Avg time on network (seconds): "
+                + TimeUnit.SECONDS.convert((long) (avgTimeOnNetwork / WorkflowScheduler.schedulers.size()), TimeUnit.MILLISECONDS));
+        SimLogger.logRes("Avg bytes on network (MB): " + (long) avgBytesOnNetwork / WorkflowScheduler.schedulers.size() / 1024 / 1024);
         SimLogger.logRes("Avg execution time (min): " + avgExecutionTime / WorkflowScheduler.schedulers.size());
         SimLogger.logRes("Avg pairwise distance (km): " + avgPairwiseDistance / WorkflowScheduler.schedulers.size());
-        
+        SimLogger.logRes("Messages required for clustering: " + ClusterMessenger.clusterMessageCount);
+
         /*
         for (Entry<WorkflowJob, Integer> entry : WorkflowExecutor.jobReassigns.entrySet()) {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " re-assigning");
