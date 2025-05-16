@@ -18,8 +18,8 @@ public class Provider {
     FossilSource fossilSource;
     public Battery renewableBattery;
     float renewableBasePrice;
-    public float renewablePrice;
-    public float fossilBasePrice;
+    float renewablePrice;
+    float fossilBasePrice;
     long chargeFreq;
     long priceFreq;
     public Charge charge;
@@ -114,6 +114,13 @@ public class Provider {
         System.out.println("Money spent on fossil (EUR): " + moneySpentOnFossil);
         System.out.println("Money spent on renewable (EUR): " + moneySpentOnRenewable);
         System.out.println("Total money spent (EUR): " + (moneySpentOnRenewable+moneySpentOnFossil));
+    }
+
+    public float getRenewablePrice(){
+        return this.renewablePrice;
+    }
+    public float getFossilBasePrice(){
+        return this.renewableBasePrice;
     }
 
     @Override

@@ -96,7 +96,7 @@ public class RenewableScheduler extends WorkflowScheduler {
             addLog();
             assignStartingVMs();
             for (Provider provider : providers) {
-                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.renewablePrice <= provider.fossilBasePrice) {
+                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilBasePrice()) {
 
                     provider.renewableBattery.removeBatteryLevel(startingCosts.get(provider));
                     assignStartingVMs();
@@ -221,7 +221,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
         else {
             addLog();
-            if ((getProviderOfJob(workflowJob).renewablePrice <= getProviderOfJob(workflowJob).fossilBasePrice) && doesProviderHaveEnoughEnergy(workflowJob)) {
+            if ((getProviderOfJob(workflowJob).getRenewablePrice() <= getProviderOfJob(workflowJob).getFossilBasePrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
                 WorkflowExecutor.execute(this);
@@ -252,9 +252,9 @@ public class RenewableScheduler extends WorkflowScheduler {
                 vmCount++;
             }
             if (jobCount / vmCount > 1) {
-                this.addVm(wca);
+                this.addVm(wca, 1);
             } else if (countRunningVms(wca) > 1) {
-                this.shutdownVm(wca);
+                this.shutdownVm(wca, 1);
             }
         }
     }
@@ -304,7 +304,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
     public float getJobRenewableConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption * ratio/100 * getProviderOfJob(job).renewablePrice;
+        return hours * job.consumption * ratio/100 * getProviderOfJob(job).getRenewablePrice();
     }
 
     public float getJobFossilConsumption(WorkflowJob job) {
@@ -321,12 +321,12 @@ public class RenewableScheduler extends WorkflowScheduler {
     public float getJobFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
         float fossilRatio = (float) (100 - ratio) / 100;
-        return (hours * job.consumption * fossilRatio) * getProviderOfJob(job).fossilBasePrice;
+        return (hours * job.consumption * fossilRatio) * getProviderOfJob(job).getFossilBasePrice();
     }
 
     public float getJobFullFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption * getProviderOfJob(job).fossilBasePrice;
+        return hours * job.consumption * getProviderOfJob(job).getFossilBasePrice();
     }
 
     private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
