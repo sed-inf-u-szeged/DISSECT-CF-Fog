@@ -30,7 +30,6 @@ public class Solar extends EnergySource{
         return output * panels * calculateSineCurveMultipier(this.getTime(time)) * ( (float) frequency / 3_600_000);
     }
 
-    //TODO simulate random days with less sun
     public float calculateSineCurveMultipier(double x) {
         updateMultiplier();
         float value = (float) (this.multiplier * (Math.sin(0.28 * x + 4.22) ) );

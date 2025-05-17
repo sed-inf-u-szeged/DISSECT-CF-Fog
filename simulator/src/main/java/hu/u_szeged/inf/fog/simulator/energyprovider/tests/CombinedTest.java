@@ -15,7 +15,7 @@ public class CombinedTest extends Timed {
 
         Wind wind = new Wind(1,100);
         Solar solar = new Solar(1,300);
-        Battery battery = new Battery(40_000,500,0,100);
+        Battery battery = new Battery(40_000,500,0);
         FossilSource fossilSource = new FossilSource(1000);
 
         this.provider = new Provider("01", battery,new ArrayList<EnergySource>(),fossilSource,3_600_000,3_600_001, 1,1, 75);

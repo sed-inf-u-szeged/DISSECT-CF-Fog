@@ -5,20 +5,17 @@ public class Battery {
     float capacity;
     float outputCapacity;
     float batteryLevel;
-    float condition;
 
     /**
      *
      * @param capacity          Maximum capacity of a Battery
      * @param outputCapacity    Maximum output of a Battery
      * @param batteryLevel      Currently stored energy
-     * @param condition         Condition of a Battery
      */
-    public Battery(float capacity, float outputCapacity, float batteryLevel, float condition) {
+    public Battery(float capacity, float outputCapacity, float batteryLevel) {
         this.capacity = capacity;
         this.outputCapacity = outputCapacity;
         this.batteryLevel = batteryLevel;
-        this.condition = condition;
     }
 
     /**
@@ -80,5 +77,4 @@ public class Battery {
         return this.batteryLevel;
     }
 
-    //TODO battery degradation
 }

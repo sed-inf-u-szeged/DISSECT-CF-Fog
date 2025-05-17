@@ -35,8 +35,8 @@ public class RenewableWorkflowSimulation {
 
         String cloudfile = ScenarioBase.resourcePath+"ELKH_original.xml";
 
-        Battery battery1 = new Battery(1000, 1000, 0, 100);
-        Battery battery2 = new Battery(1000, 1000, 0, 100);
+        Battery battery1 = new Battery(1000, 1000, 0);
+        Battery battery2 = new Battery(1000, 1000, 0);
 
         FossilSource fossilSource = new FossilSource(1);
 
