@@ -27,9 +27,6 @@ public class RenewableScheduler extends WorkflowScheduler {
     boolean requirement;
     ArrayList<RenewableWorkflowComputingAppliance> renewableComputeArchitecture;
     Map<Provider, Float> startingCosts = new HashMap<>();
-    public float renewableConsumed = 0;
-    public float fossilConsumed = 0;
-    public float totalMoneySpent = 0;
     public List<int[]> consumptions = new ArrayList<>();
     public long totalWaitingTime = 0;
     boolean hasJobsBeenAssigned = false;
@@ -79,7 +76,6 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         if (this.requirement) {
             if (!allProviderHasEnoughToStart()) {
-                addLog();
                 this.totalWaitingTime += 1000;
                 new DeferredEvent(1000) {
                     @Override
@@ -93,7 +89,6 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
         }
         else {
-            addLog();
             assignStartingVMs();
             for (Provider provider : providers) {
                 if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilBasePrice()) {
@@ -159,20 +154,6 @@ public class RenewableScheduler extends WorkflowScheduler {
         recalculateProviderPrices();
     }
 
-    private void processStartingJobsWithFossil() {
-
-        assignStartingVMs();
-
-        for (WorkflowJob workflowJob : this.jobs) {
-
-            if (workflowJob.inputs.get(0).amount == 0) {
-                workflowJob.ca.workflowQueue.add(workflowJob);
-                this.totalMoneySpent += getJobFullFossilConsumptionPrice(workflowJob);
-                this.fossilConsumed += getJobFullFossilConsumption(workflowJob);
-            }
-        }
-    }
-
     private void assignJobsToNodes() {
         int nodeIndex = 0;
         for (WorkflowJob workflowJob : this.jobs) {
@@ -204,7 +185,6 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         if (this.requirement) {
             if (!doesProviderHaveEnoughEnergy(workflowJob)) {
-                addLog();
                 this.totalWaitingTime += 1000;
                 new DeferredEvent(1000) {
                     @Override
@@ -220,7 +200,6 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         }
         else {
-            addLog();
             if ((getProviderOfJob(workflowJob).getRenewablePrice() <= getProviderOfJob(workflowJob).getFossilBasePrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
@@ -388,14 +367,6 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
         }
         return hasEnough;
-    }
-
-
-    void addLog() {
-        /*float[] helper = {Timed.getFireCount(), providers.renewableBattery.getBatteryLevel()};
-        this.visualiser.add( helper );
-
-         */
     }
 
     void createConsumptionValues() {
