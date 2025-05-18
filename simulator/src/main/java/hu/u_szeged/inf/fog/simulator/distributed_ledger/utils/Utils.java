@@ -20,10 +20,9 @@ public class Utils {
 
     private static final Random RANDOM = SeedSyncer.centralRnd;
     private static final double VARIANCE_PROBABILITY = 0.01; // 1% chance to reduce effort
-    private static final double VARIANCE_FACTOR = 0.1; // Reduce to 10% of original
+    private static final double VARIANCE_FACTOR = 0.5; // Reduce to 50% of original
     private static final int FAKE_TRANSACTION_SIZE = 200; // Size of fake transactions
 
-    private static final int BASE = 16;
 
     private Utils() {
     }
@@ -32,16 +31,17 @@ public class Utils {
      * Calculates the number of instructions required for proof of work based on the given difficulty.
      *
      * @param difficulty the difficulty level of the proof of work
+        * @param digestStrategy the strategy used to compute the hash
      * @return the number of instructions required
      */
     public static double instructionsPoW(long difficulty, DigestStrategy digestStrategy) {
-        double result = Math.pow(BASE, difficulty);
+        double result = 0.991 * Math.pow(15.853, difficulty);
 
         if (RANDOM.nextDouble() < VARIANCE_PROBABILITY) {
             result = (result * VARIANCE_FACTOR);
         }
 
-        return result*digestStrategy.hash(80L);
+        return result * digestStrategy.hash(80L);
     }
 
     /**
