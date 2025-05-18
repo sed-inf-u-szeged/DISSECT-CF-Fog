@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
@@ -21,7 +22,7 @@ import java.util.Random;
  * @see Timed
  * @see Miner
  */
-public abstract class ForkScenario extends Timed {
+public abstract class ForkScenario {
     protected final String scenarioName;
     /**
      * Indicates if the scenario is recurring or a single event.
@@ -45,6 +46,8 @@ public abstract class ForkScenario extends Timed {
      * List of target miners affected by this scenario.
      */
     private List<Miner> targets = null;
+
+    public long executeTime = Long.MAX_VALUE;
 
     /**
      * Constructs a {@code ForkScenario} with specified parameters.
@@ -73,25 +76,6 @@ public abstract class ForkScenario extends Timed {
     }
 
     /**
-     * Registers the scenario.
-     *
-     * @param frequency interval frequency for initial registration.
-     * @return {@code true} if successfully subscribed.
-     */
-    public boolean register(long frequency) {
-        return this.subscribe(frequency);
-    }
-
-    /**
-     * Unregisters the scenario.
-     *
-     * @return {@code true} if successfully unsubscribed.
-     */
-    public boolean unregister() {
-        return this.unsubscribe();
-    }
-
-    /**
      * Abstract method to execute the specific scenario logic. Must be implemented by subclasses to define custom fork behaviors.
      *
      * @param miners list of miners to affect during scenario execution.
@@ -102,13 +86,11 @@ public abstract class ForkScenario extends Timed {
      * Method invoked by the simulation timer to potentially trigger the scenario.
      * This method uses probabilistic execution and handles rescheduling based on configured intervals and variance.
      *
-     * @param fires current simulation time tick.
      */
-    @Override
-    public void tick(long fires) {
+    public void execute() {
 //        unsubscribe(); // Unsubscribe to prevent double subscription if the scenario is recurring
         if (!recurring || random.nextDouble() < probability) {
-            SimLogger.logRun("[Fork] Triggered: " + scenarioName + " at time " + fires);
+            SimLogger.logRun("[Fork] Triggered: " + scenarioName + " at time " + Timed.getFireCount());
             if (targets == null) {
                 SimLogger.logError("[Fork] " + scenarioName + ": No targets found. Unsubscribing.");
             }
@@ -118,8 +100,7 @@ public abstract class ForkScenario extends Timed {
         if (recurring) {
 //            long jitter = (variance == 0) ? 0 : random.nextLong(-variance, variance + 1);
             long jitter = (variance == 0) ? 0 : random.nextInt((int) (2 * variance + 1)) - variance;
-            long nextTrigger = fires + baseInterval + jitter;
-            subscribe(nextTrigger);
+            this.executeTime = Timed.getFireCount() + baseInterval + jitter;
         }
     }
 

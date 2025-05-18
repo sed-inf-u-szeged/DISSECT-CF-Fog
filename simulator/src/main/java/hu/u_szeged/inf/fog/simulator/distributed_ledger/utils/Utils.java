@@ -21,7 +21,7 @@ public class Utils {
     private static final Random RANDOM = SeedSyncer.centralRnd;
     private static final double VARIANCE_PROBABILITY = 0.01; // 1% chance to reduce effort
     private static final double VARIANCE_FACTOR = 0.1; // Reduce to 10% of original
-    private static final int FAKE_TRANSACTION_SIZE = 512; // Size of fake transactions
+    private static final int FAKE_TRANSACTION_SIZE = 200; // Size of fake transactions
 
     private static final int BASE = 16;
 

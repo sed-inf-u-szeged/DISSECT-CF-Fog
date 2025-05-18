@@ -35,7 +35,7 @@ import java.util.Random;
 public class NetworkLatencyFork extends ForkScenario {
     private static Random RANDOM = SeedSyncer.centralRnd;
     /** Maximum depth for blockchain rollback during fork reorganization. */
-    private static final int MAX_ROLLBACK_DEPTH = 5;
+    private static final int MAX_ROLLBACK_DEPTH = 4;
     /** Strategy to partition the network based on hop counts from a start node. */
     HopBasedPartition partitionStrategy;
 
@@ -70,7 +70,7 @@ public class NetworkLatencyFork extends ForkScenario {
         List<ComputingAppliance> selectedNodes = partitionStrategy.selectNodes(Utils.miners2ComputingAppliances(miners));
         SimLogger.logRun("[Fork] Triggered: " + scenarioName + ", for " + selectedNodes.size() + " miners");
         selectedNodes.stream().map(Utils::ca2Miner).forEach((miner) -> {
-            miner.scheduleTask(new ForkReorgTask(RANDOM.nextInt(MAX_ROLLBACK_DEPTH)));
+            miner.scheduleTask(new ForkReorgTask(RANDOM.nextInt(MAX_ROLLBACK_DEPTH) + 1));
         });
     }
 }

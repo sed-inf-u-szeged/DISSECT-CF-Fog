@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.fork;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.ArrayList;
@@ -16,15 +17,22 @@ import java.util.Map;
  *
  * @see ForkScenario
  */
-public class ForkManager {
+public class ForkManager extends Timed {
     /**
      * List of registered fork scenarios.
      */
     private final List<ForkScenario> forkScenarios = new ArrayList<>();
+    private long stopTime;
+
+    public ForkManager(long freq, long stopTime) {
+        subscribe(freq);
+        this.stopTime = stopTime;
+    }
+
 
     public void registerScenario(ForkScenario scenario, long scheduleTime) {
+        scenario.executeTime = scheduleTime;
         forkScenarios.add(scenario);
-        scenario.register(scheduleTime);
         SimLogger.logRun("Registered and scheduled: " + scenario.getScenarioName() + " at time " + scheduleTime);
     }
 
@@ -64,7 +72,6 @@ public class ForkManager {
      */
     public void unregisterScenario(ForkScenario scenario) {
         if (forkScenarios.remove(scenario)) {
-            scenario.unregister();
             SimLogger.logRun("Unregistered scenario: " + scenario.getScenarioName());
         }
     }
@@ -77,5 +84,24 @@ public class ForkManager {
      */
     public boolean isRegistered(ForkScenario scenario) {
         return forkScenarios.contains(scenario);
+    }
+
+    @Override
+    public void tick(long fires) {
+        if(fires >= stopTime) {
+            unsubscribe();
+            return;
+        }
+        List<ForkScenario> toRemove = new ArrayList<>();
+        for (ForkScenario scenario : forkScenarios) {
+            if (Timed.getFireCount() >= scenario.executeTime){
+                if(!scenario.recurring)
+                    toRemove.add(scenario);
+                scenario.execute();
+            }
+        }
+        for (ForkScenario scenario : toRemove) {
+            unregisterScenario(scenario);
+        }
     }
 }

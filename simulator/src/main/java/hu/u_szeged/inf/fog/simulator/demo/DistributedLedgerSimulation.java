@@ -36,7 +36,7 @@ public class DistributedLedgerSimulation {
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
-        ConsensusStrategy consensus = new PoWConsensusStrategy(10, 10, 25_000, 20_000, new RSAStrategy(4096), new SHA256Strategy());
+        ConsensusStrategy consensus = new PoWConsensusStrategy(5, 10, 25_000, 1_000, new RSAStrategy(4096), new SHA256Strategy());
         for (int i = 0; i < 2; i++) {
             ComputingAppliance ca = new ComputingAppliance(cloudfile, "fog" + i, new GeoLocation(47.6, 17.9), 50);
             new Miner(consensus, new RandomStrategy(), ca, new RandomizedValidation(0.98, 0.95, SeedSyncer.centralRnd));
@@ -49,10 +49,10 @@ public class DistributedLedgerSimulation {
         new EnergyDataCollector("fog-0", ComputingAppliance.allComputingAppliances.get(0).iaas, true);
         new EnergyDataCollector("fog-1", ComputingAppliance.allComputingAppliances.get(1).iaas, true);
 
-//        ForkManager forkManager = new ForkManager();
-//        ForkScenario forkScenario = new NetworkLatencyFork(true, 0.01, 10_000L, 0);
-//        forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
-//        forkManager.registerScenario(forkScenario, 10_000L);
+        ForkManager forkManager = new ForkManager(100L,  1_100_000L);
+        ForkScenario forkScenario = new NetworkLatencyFork(true, 1, 100_000L, 0);
+        forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
+        forkManager.registerScenario(forkScenario, 1_000_000L);
 
         ArrayList<TransactionDevice> deviceList = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
