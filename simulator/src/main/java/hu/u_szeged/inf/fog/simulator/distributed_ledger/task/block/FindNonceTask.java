@@ -43,7 +43,7 @@ public class FindNonceTask implements MinerTask {
             return;
         }
         try {
-            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty()), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
+            miner.localVm.newComputeTask(Utils.instructionsPoW(block.getDifficulty(), miner.consensusStrategy.getDigestStrategy()), ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
                     SimLogger.logRun(miner.name + " Nonce found with difficulty " + block.getDifficulty());

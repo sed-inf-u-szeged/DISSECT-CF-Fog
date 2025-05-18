@@ -141,10 +141,7 @@ public class Block {
     public void finalizeBlock() {
         this.timestamp = Timed.getFireCount();
         SimulationMetrics.getInstance().markBlockCreated(this, timestamp);
-        for (Transaction tx : transactions) {
-            SimulationMetrics.getInstance().setTransactionConfirmationTime(tx, timestamp);
-            SimulationMetrics.getInstance().recordTransactionOnChain();
-        }
+        SimulationMetrics.getInstance().recordTransactionOnChain(transactions.size());
     }
 
     /**

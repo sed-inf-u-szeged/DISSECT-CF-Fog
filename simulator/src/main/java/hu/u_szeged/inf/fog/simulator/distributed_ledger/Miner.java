@@ -49,7 +49,7 @@ public class Miner extends Timed {
     private final ValidationStrategy validationStrategy;
 
     private MinerTask activeTask = null;
-    private final Deque<MinerTask> tasksQueue = new ArrayDeque<>();
+    public final Deque<MinerTask> tasksQueue = new ArrayDeque<>();
     private long lastActionTime = 0L;
     private static final long MAX_IDLE_TICKS = 50_000L; //this could be also configurable
 
@@ -79,14 +79,14 @@ public class Miner extends Timed {
         startVm();
         this.localLedger = new LocalLedger(this);
         this.scheduleTask(new SyncChainTask());
-        subscribe(1);
+        subscribe(1000);
     }
 
     /**
      * Starts the virtual machine associated with this miner.
      */
     public void startVm() {
-        try{
+        try {
             if (this.localVm == null) {
                 /** VM "image" file with deploy time of 800 instructions **/
                 VirtualAppliance va = new VirtualAppliance("va", 800, 0, false, 1_073_741_824L);
@@ -97,7 +97,7 @@ public class Miner extends Timed {
 
                 this.localVm = this.computingAppliance.iaas.requestVM(va, arc, repo, 1)[0];
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             SimLogger.logError("Failed to start VM: " + e.getMessage());
             throw new RuntimeException("Failed to start VM: " + e.getMessage());
         }
@@ -109,11 +109,10 @@ public class Miner extends Timed {
      * @throws VirtualMachine.StateChangeException
      */
     public void stopVm() throws VirtualMachine.StateChangeException {
-        if (this.localVm != null && this.localVm.getState().
-                equals(VirtualMachine.State.RUNNING)) {
+        if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.localVm.switchoff(true);
             EnergyDataCollector ec = EnergyDataCollector.getEnergyCollector(this.computingAppliance.iaas);
-            if(ec != null){
+            if (ec != null) {
                 ec.stop();
             }
         }
@@ -198,9 +197,7 @@ public class Miner extends Timed {
 
     public boolean isBlockKnown(Block block) {
         boolean onChain = this.localLedger.getChain().contains(block);
-        boolean inQueue = this.tasksQueue.stream()
-                .anyMatch(task -> task instanceof ValidateBlockTask
-                        && ((ValidateBlockTask) task).getBlock().equals(block));
+        boolean inQueue = this.tasksQueue.stream().anyMatch(task -> task instanceof ValidateBlockTask && ((ValidateBlockTask) task).getBlock().equals(block));
         return onChain || inQueue;
     }
 
@@ -280,11 +277,7 @@ public class Miner extends Timed {
             }
         }
 
-        if(state == MinerState.IDLE
-                && tasksQueue.isEmpty()
-                && nextBlock == null
-                && mempool.isEmpty()
-                && (Timed.getFireCount() - lastActionTime) > MAX_IDLE_TICKS){
+        if (state == MinerState.IDLE && tasksQueue.isEmpty() && nextBlock == null && mempool.isEmpty() && (Timed.getFireCount() - lastActionTime) > MAX_IDLE_TICKS) {
             setState(MinerState.OFF);
             try {
                 SimLogger.logRun(this.name + " Idle for too long, shutting down");
@@ -298,6 +291,7 @@ public class Miner extends Timed {
 
     /**
      * Checks if a BuildBlockTask is already queued in the task queue.
+     *
      * @return
      */
     private boolean isBuildBlockTaskQueued() {
@@ -329,14 +323,14 @@ public class Miner extends Timed {
     /**
      * Schedules a new task by adding it to the task queue with priority.
      *
-     * @param task The task to schedule.
+     * @param task  The task to schedule.
      * @param force If true, the task is added to the front of the queue.
      */
     public void scheduleTask(MinerTask task, boolean force) {
-        if(force){
+        if (force) {
             tasksQueue.addFirst(task);
             SimLogger.logRun(name + " PRIORITY Task queued: " + task.describe());
-        }else {
+        } else {
             scheduleTask(task);
         }
     }
@@ -385,6 +379,14 @@ public class Miner extends Timed {
         } else {
             SimLogger.logRun(name + " received transaction " + tx.getId() + " is known");
         }
+    }
+
+    public void removeTransactionFromMempool(Transaction transaction) {
+        mempool.transactions.removeIf(tx -> tx.equals(transaction));
+    }
+
+    public void removeTransactionFromQueue(Transaction transaction) {
+        tasksQueue.removeIf(task -> task instanceof ValidateTransactionTask && ((ValidateTransactionTask) task).getTx().equals(transaction));
     }
 
     /**

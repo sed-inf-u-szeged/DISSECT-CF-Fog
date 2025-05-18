@@ -16,6 +16,10 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 public class ValidateTransactionTask implements MinerTask {
     private final Transaction tx;
 
+    public Transaction getTx() {
+        return tx;
+    }
+
     /**
      * Constructs a new ValidateTransactionTask with the specified transaction
      *

@@ -177,8 +177,8 @@ public class SimulationMetrics {
      * and accepted on-chain. This increments the global count of
      * “transactions on chain,” used for throughput calculations.
      */
-    public void recordTransactionOnChain() {
-        globalTransactionsOnChain++;
+    public void recordTransactionOnChain(int n) {
+        globalTransactionsOnChain += n;
     }
 
     // ----------------------------------------------------------------
@@ -259,7 +259,6 @@ public class SimulationMetrics {
      *   <li>Global network usage (messages/bytes sent)</li>
      *   <li>Per-miner network usage</li>
      *   <li>Throughput (transactions on chain / total time)</li>
-     *   <li>Average transaction confirmation time</li>
      *   <li>Counts of accepted/rejected blocks and transactions</li>
      *   <li>Average block propagation delay</li>
      * </ul>
@@ -267,7 +266,7 @@ public class SimulationMetrics {
      * Call this at the end of the simulation to get a summary of results.
      */
     public void printFinalStats() {
-        long simEndTime = Timed.getFireCount(); // the final simulation "tick" or time
+        long simEndTime = Timed.getFireCount(); // the final tick
 
         SimLogger.logRun("=== SIMULATION METRICS ===");
 
@@ -285,8 +284,8 @@ public class SimulationMetrics {
         }
 
         // 2) Throughput
-        double totalSimTime = simEndTime; // Timed starts at 0, so "end time" = totalSimTime
-        double tps = (double) globalTransactionsOnChain / (totalSimTime > 0 ? totalSimTime : 1.0);
+        double totalSimTime = simEndTime;
+        double tps = (double) globalTransactionsOnChain / (totalSimTime > 0 ? totalSimTime/1000 : 1.0);
         SimLogger.logRun("Transactions On-Chain: " + globalTransactionsOnChain);
         SimLogger.logRun("Throughput (TPS):      " + tps);
 

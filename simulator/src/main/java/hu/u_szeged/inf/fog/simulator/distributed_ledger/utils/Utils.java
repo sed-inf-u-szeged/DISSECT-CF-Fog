@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class Utils {
 
     private static final Random RANDOM = SeedSyncer.centralRnd;
-    private static final double VARIANCE_PROBABILITY = 0.05; // 5% chance to reduce effort
+    private static final double VARIANCE_PROBABILITY = 0.01; // 1% chance to reduce effort
     private static final double VARIANCE_FACTOR = 0.1; // Reduce to 10% of original
     private static final int FAKE_TRANSACTION_SIZE = 512; // Size of fake transactions
 
@@ -34,15 +34,14 @@ public class Utils {
      * @param difficulty the difficulty level of the proof of work
      * @return the number of instructions required
      */
-    public static long instructionsPoW(long difficulty) {
+    public static double instructionsPoW(long difficulty, DigestStrategy digestStrategy) {
         double result = Math.pow(BASE, difficulty);
 
-        // Simulate variance: 5% chance to reduce effort (early nonce discovery)
         if (RANDOM.nextDouble() < VARIANCE_PROBABILITY) {
-            result = (long) (result * VARIANCE_FACTOR);
+            result = (result * VARIANCE_FACTOR);
         }
 
-        return (long) result;
+        return result*digestStrategy.hash(80L);
     }
 
     /**

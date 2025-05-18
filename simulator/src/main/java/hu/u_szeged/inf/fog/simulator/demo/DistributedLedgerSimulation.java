@@ -36,7 +36,7 @@ public class DistributedLedgerSimulation {
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
-        ConsensusStrategy consensus = new PoWConsensusStrategy(4, 20, 30_000, 1000, new RSAStrategy(4096), new SHA256Strategy());
+        ConsensusStrategy consensus = new PoWConsensusStrategy(10, 10, 25_000, 20_000, new RSAStrategy(4096), new SHA256Strategy());
         for (int i = 0; i < 2; i++) {
             ComputingAppliance ca = new ComputingAppliance(cloudfile, "fog" + i, new GeoLocation(47.6, 17.9), 50);
             new Miner(consensus, new RandomStrategy(), ca, new RandomizedValidation(0.98, 0.95, SeedSyncer.centralRnd));

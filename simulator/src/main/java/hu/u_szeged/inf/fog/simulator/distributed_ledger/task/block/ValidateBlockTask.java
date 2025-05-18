@@ -5,6 +5,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.DifficultyAdjustmentStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
@@ -49,6 +50,7 @@ public class ValidateBlockTask implements MinerTask {
                     if (accepted) {
                         SimLogger.logRun(miner.name + " VALID block: " + block.getId());
                         miner.getLocalLedger().addBlock(block);
+                        removeTransactions(miner); // avoid double spending
                         miner.scheduleTask(new PropagateBlockTask(block));
                     } else {
                         SimLogger.logRun(miner.name + " INVALID block: " + block.getId());
@@ -61,6 +63,13 @@ public class ValidateBlockTask implements MinerTask {
         } catch (NetworkNode.NetworkException e) {
             SimLogger.logError(miner.name + " Block validation failed: " + e.getMessage());
             miner.finishTask(this);
+        }
+    }
+
+    public void removeTransactions(Miner miner) {
+        for (Transaction tx : this.block.getTransactions()) {
+            miner.removeTransactionFromMempool(tx);
+            miner.removeTransactionFromQueue(tx);
         }
     }
 
