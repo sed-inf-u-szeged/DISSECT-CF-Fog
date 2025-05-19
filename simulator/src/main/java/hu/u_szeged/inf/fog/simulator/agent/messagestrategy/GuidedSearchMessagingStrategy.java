@@ -1,10 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.agent.messagestrategy;
 
+import com.sun.security.jgss.GSSUtil;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.Offer;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import org.apache.commons.lang3.tuple.Triple;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,25 +51,10 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             return Collections.emptyList();
         }
 
-        demonstrateRanking(potentialAgents, gateway);
-
-        /*
-        for(ResourceAgent agent : ResourceAgent.resourceAgents){
-            agent.capacities.forEach(c -> {
-                c.utilisations.forEach(u -> System.out.println(agent.name + " utliszed cpu " + u.utilisedCpu));
-            });
-
-            Map<String, Integer> latencies = agent.hostNode.iaas.repositories.get(0).getLatencies();
-
-            System.out.println("Latencies for "+ agent.name + ":");
-            for (Map.Entry<String, Integer> entry : latencies.entrySet()) {
-                System.out.println("  To " + entry.getKey() + " -> " + entry.getValue() + " ms");
-            }
-        }*/
-
         if (isFirstRound(gateway)) {
             initializeScores(gateway);
             gateway.servedAsGateway = true;
+            System.out.println("First gateway round for " + gateway.name);
             return potentialAgents; // return all agents due to no preferred agents yet
         } else {
             return selectAgentsBasedOnScores(gateway, potentialAgents);
@@ -90,7 +77,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         for (ResourceAgent agent : getPotentialAgents(gateway)) {
             gateway.neighborScores.put(agent, 0.0);
         }
-        System.out.println("initialized 0.0 scores for gate " + gateway.name);
     }
 
     private void updateScores(final ResourceAgent gateway) {
@@ -98,31 +84,44 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             return;
         }
 
-
         Map<ResourceAgent, Double> distances = new HashMap<>();
+        Map<ResourceAgent, Integer> latencies = new HashMap<>();
         double minDistance = Double.MAX_VALUE;
         double maxDistance = 0.0;
+        int minLatency = Integer.MAX_VALUE;
+        int maxLatency = 0;
+
+        NetworkNode gatewayNode = gateway.hostNode.iaas.repositories.get(0);
 
         for (ResourceAgent agent : gateway.neighborScores.keySet()) {
             double distance = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000; // km
             distances.put(agent, distance);
             minDistance = Math.min(minDistance, distance);
             maxDistance = Math.max(maxDistance, distance);
+
+            int latency = getLatencyToNode(agent, gatewayNode);
+            latencies.put(agent, latency);
+            minLatency = Math.min(minLatency, latency);
+            maxLatency = Math.max(maxLatency, latency);
         }
 
         double distanceRange = maxDistance - minDistance;
+        int latencyRange = maxLatency - minLatency;
 
         System.out.println("Working gateway: " + gateway.name); // debug
 
         for (ResourceAgent agent : gateway.neighborScores.keySet()) {
             boolean wasHelping = winningOffer.agentResourcesMap.containsKey(agent);
             double distance = distances.get(agent);
+            int latency = latencies.get(agent);
             if (wasHelping) {
                 agent.winningOfferSelectionCount++;
             }
             double winningBonus = wasHelping ? WINNING_OFFER_WEIGHT / agent.winningOfferSelectionCount : 0;
 
-
+            System.out.println("fa " +agent.name);
+            System.out.println(getAvailableResourceScore(agent));
+            // Normalize distance (prefer closer agents)
             double normalizedDistance;
             if (distanceRange < INSIGNIFICANT_DISTANCE_KM) {
                 normalizedDistance = 1.0;
@@ -131,16 +130,45 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
                 normalizedDistance = 0.4 + inverted * (1.0 - 0.4); // Scale to [0.4..1.0]
             }
 
-            double finalScore = winningBonus + normalizedDistance;
+            // Normalize latency (prefer lower latency)
+            double normalizedLatency;
+            if (latencyRange == 0) {
+                normalizedLatency = 1.0;
+            } else {
+                double inverted = (maxLatency - latency) / (double) latencyRange;
+                normalizedLatency = 0.4 + inverted * (1.0 - 0.4); // Scale to [0.4..1.0]
+            }
+
+            System.out.println(agent.name + " Winningbonus: " + winningBonus + " nDistance: " + normalizedDistance + " nLatency: " + normalizedLatency);
+            double finalScore = winningBonus + normalizedDistance + normalizedLatency;
 
             double currentScore = gateway.neighborScores.getOrDefault(agent, 0.0);
             gateway.neighborScores.put(agent, currentScore + finalScore);
-
-            //System.out.println(agent.name + " -> wasHelping=" + wasHelping + ", distance=" + distance + ", normalizedDistance=" + normalizedDistance + ", finalScore=" + finalScore + ", hasWonCount=" + agent.winningOfferSelectionCount); // debug
         }
 
-
         normalizeScores(gateway.neighborScores);
+    }
+
+    private double getAvailableResourceScore(ResourceAgent agent) {
+        Triple<Double, Long, Long> free = agent.getAllFreeResources();
+
+        double cpuScore = Math.log1p(free.getLeft());                // log(1 + cpu)
+        double memoryScore = Math.log1p(free.getMiddle() / 1024.0);    // log(1 + GB)
+        double storageScore = Math.log1p(free.getRight() / 1024.0);    // log(1 + GB)
+
+        return (cpuScore + memoryScore + storageScore) / 3.0;
+    }
+
+    private int getLatencyToNode(ResourceAgent agent, NetworkNode targetNode) {
+        try {
+            String targetName = targetNode.getName();
+            Map<String, Integer> latencies = agent.hostNode.iaas.repositories.get(0).getLatencies();
+
+            return latencies.getOrDefault(targetName, Integer.MAX_VALUE);
+        } catch (Exception e) {
+            System.out.println("Failed to read latency for agent " + agent.name);
+            return Integer.MAX_VALUE;
+        }
     }
 
 
@@ -205,44 +233,4 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     public void setWinningOffer(final Offer winningOffer) {
         this.winningOffer = winningOffer;
     }
-
-    public void demonstrateRanking(List<ResourceAgent> agents, ResourceAgent gateway) {
-        rank ranker = new rank();
-
-        NetworkNode gateeayNode = gateway.hostNode.iaas.repositories.get(0);
-
-        System.out.println("\n=== Ranking by Bandwidth ===");
-        List<ResourceAgent> byBandwidth = ranker.rankByBandwidth(agents);
-        int i = 1;
-        for (ResourceAgent agent : byBandwidth) {
-            long bandwidth = ranker.getTotalBandwidth(agent);
-            System.out.println(i++ + ". " + agent.name + " → Bandwidth: " + bandwidth);
-        }
-
-        System.out.println("\n=== Ranking by Latency ===");
-        List<ResourceAgent> byLatency = ranker.rankByLatency(agents, gateeayNode);
-        i = 1;
-        for (ResourceAgent agent : byLatency) {
-            int latency = ranker.getLatencyToNode(agent, gateeayNode);
-            System.out.println(i++ + ". " + agent.name + " → Latency: " + latency + "ms");
-        }
-
-        System.out.println("\n=== Ranking by Power Consumption ===");
-        List<ResourceAgent> byPower = ranker.rankByPowerConsumption(agents);
-        i = 1;
-        for (ResourceAgent agent : byPower) {
-            double power = ranker.calculatePowerConsumption(agent);
-            System.out.printf("%d. %s → Power: %.2fkW%n", i++, agent.name, power);
-        }
-
-        System.out.println("\n=== Custom Ranking (Latency → Bandwidth) ===");
-        List<ResourceAgent> customRanked = ranker.rankCustom(agents, gateeayNode);
-        i = 1;
-        for (ResourceAgent agent : customRanked) {
-            int latency = ranker.getLatencyToNode(agent, gateeayNode);
-            long bandwidth = ranker.getTotalBandwidth(agent);
-            System.out.println(i++ + ". " + agent.name + " → Latency: " + latency + "ms, Bandwidth: " + bandwidth);
-        }
-    }
-
 }

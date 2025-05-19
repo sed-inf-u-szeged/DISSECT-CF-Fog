@@ -20,6 +20,7 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -79,6 +80,14 @@ public class ResourceAgent {
         this.capacities.add(capacity);
     }
 
+    public Triple<Double, Long, Long> getAllFreeResources() {
+        double cpu = capacities.stream().mapToDouble(c -> c.cpu).sum();
+        long memory = capacities.stream().mapToLong(c -> c.memory).sum();
+        long storage = capacities.stream().mapToLong(c -> c.storage).sum();
+
+        return Triple.of(cpu, memory, storage);
+    }
+
     private void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
         try {
             this.hostNode = this.capacities.get(SeedSyncer.centralRnd.nextInt(this.capacities.size())).node;
@@ -106,7 +115,7 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
