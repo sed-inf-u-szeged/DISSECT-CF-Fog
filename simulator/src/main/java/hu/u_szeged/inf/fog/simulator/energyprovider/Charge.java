@@ -3,10 +3,10 @@ package hu.u_szeged.inf.fog.simulator.energyprovider;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 
-import java.io.*;
-import java.sql.Time;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 
 public class Charge extends Timed {
 
@@ -51,15 +51,15 @@ public class Charge extends Timed {
     private float getTotalProduction() {
         float sum = 0;
         for (EnergySource source : this.provider.renewableSources) {
-            float[] helper = {Timed.getFireCount(), source.Production(Timed.getFireCount(), getFrequency())};
+            float[] helper = {Timed.getFireCount(), source.production(Timed.getFireCount(), getFrequency())};
             if (source instanceof Solar) {
                 this.provider.solarRecords.add( helper );
-                this.provider.totalSolarProduced += source.Production(Timed.getFireCount(), getFrequency());
+                this.provider.totalSolarProduced += source.production(Timed.getFireCount(), getFrequency());
             }else {
                 this.provider.windRecords.add( helper );
-                this.provider.totalWindProduced += source.Production(Timed.getFireCount(), getFrequency());
+                this.provider.totalWindProduced += source.production(Timed.getFireCount(), getFrequency());
             }
-            sum += source.Production(Timed.getFireCount(), getFrequency());
+            sum += source.production(Timed.getFireCount(), getFrequency());
         }
         float[] helper = {Timed.getFireCount(), this.provider.renewableBattery.getBatteryLevel()};
         this.provider.energyRecords.add(helper);

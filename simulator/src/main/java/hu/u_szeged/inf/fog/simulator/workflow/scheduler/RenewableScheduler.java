@@ -91,7 +91,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         else {
             assignStartingVMs();
             for (Provider provider : providers) {
-                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilBasePrice()) {
+                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilPrice()) {
 
                     provider.renewableBattery.removeBatteryLevel(startingCosts.get(provider));
                     assignStartingVMs();
@@ -200,7 +200,7 @@ public class RenewableScheduler extends WorkflowScheduler {
 
         }
         else {
-            if ((getProviderOfJob(workflowJob).getRenewablePrice() <= getProviderOfJob(workflowJob).getFossilBasePrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
+            if ((getProviderOfJob(workflowJob).getRenewablePrice() <= getProviderOfJob(workflowJob).getFossilPrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
                 WorkflowExecutor.execute(this);
@@ -300,12 +300,12 @@ public class RenewableScheduler extends WorkflowScheduler {
     public float getJobFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
         float fossilRatio = (float) (100 - ratio) / 100;
-        return (hours * job.consumption * fossilRatio) * getProviderOfJob(job).getFossilBasePrice();
+        return (hours * job.consumption * fossilRatio) * getProviderOfJob(job).getFossilPrice();
     }
 
     public float getJobFullFossilConsumptionPrice(WorkflowJob job) {
         float hours = (float) (job.runtime / 3600);
-        return hours * job.consumption * getProviderOfJob(job).getFossilBasePrice();
+        return hours * job.consumption * getProviderOfJob(job).getFossilPrice();
     }
 
     private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {

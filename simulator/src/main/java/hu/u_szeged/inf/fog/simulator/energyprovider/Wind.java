@@ -12,7 +12,6 @@ public class Wind extends EnergySource{
     int currentHour;
 
     public Wind(int turbines, float output) {
-        super(true);
         this.turbines = turbines;
         this.output = output;
         Random rnd = new Random();
@@ -20,7 +19,7 @@ public class Wind extends EnergySource{
     }
 
     @Override
-    public float Production(long time, long frequency) {
+    public float production(long time, long frequency) {
         float frequencyFactor = (float) frequency / 3_600_000;
         return turbines * output * CalculateOutputFactor() * frequencyFactor;
     }

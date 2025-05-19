@@ -14,14 +14,14 @@ public class CombinedTest extends Timed {
         subscribe(3_500_000);
 
         Wind wind = new Wind(1,100);
-        Solar solar = new Solar(1,300);
-        Battery battery = new Battery(40_000,500,0);
+        //Solar solar = new Solar(1,300);
+        Battery battery = new Battery(40_000,0);
         FossilSource fossilSource = new FossilSource(1000);
 
-        this.provider = new Provider("01", battery,new ArrayList<EnergySource>(),fossilSource,3_600_000,3_600_001, 1,1, 75);
+        this.provider = new Provider("01", battery,new ArrayList<EnergySource>(),fossilSource,3_600_000, 1,1, 75,50);
 
         provider.addEnergySource(wind);
-        provider.addEnergySource(solar);
+        //provider.addEnergySource(solar);
 
         ArrayList<Provider> providers = new ArrayList<>();
 
@@ -35,7 +35,7 @@ public class CombinedTest extends Timed {
 
     @Override
     public void tick(long fires) {
-        if (Timed.getFireCount() > 3_600_000 *96) {
+        if (Timed.getFireCount() > 3_600_000 * 96) {
             provider.stopProcessing();
             unsubscribe();
         }

@@ -3,18 +3,15 @@ package hu.u_szeged.inf.fog.simulator.energyprovider;
 public class Battery {
 
     float capacity;
-    float outputCapacity;
     float batteryLevel;
 
     /**
      *
      * @param capacity          Maximum capacity of a Battery
-     * @param outputCapacity    Maximum output of a Battery
      * @param batteryLevel      Currently stored energy
      */
-    public Battery(float capacity, float outputCapacity, float batteryLevel) {
+    public Battery(float capacity, float batteryLevel) {
         this.capacity = capacity;
-        this.outputCapacity = outputCapacity;
         this.batteryLevel = batteryLevel;
     }
 
@@ -47,19 +44,6 @@ public class Battery {
 
     public float getBatteryPercentage() {
         return this.batteryLevel / this.capacity * 100;
-    }
-
-    /**
-     * @return                  The max energy output of the Battery
-     */
-
-    public float getCurrentMaxOutput () {
-
-        if (this.outputCapacity < this.batteryLevel) {
-            return this.outputCapacity;
-        }else {
-            return  this.batteryLevel;
-        }
     }
 
     /**

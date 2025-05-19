@@ -1,29 +1,25 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import hu.u_szeged.inf.fog.simulator.energyprovider.*;
-import hu.u_szeged.inf.fog.simulator.node.RenewableWorkflowComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
-import org.apache.commons.lang3.tuple.Pair;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.energyprovider.*;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.node.RenewableWorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
-import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
-import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
+import hu.u_szeged.inf.fog.simulator.util.*;
 import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class RenewableWorkflowSimulation {
 
@@ -35,13 +31,13 @@ public class RenewableWorkflowSimulation {
 
         String cloudfile = ScenarioBase.resourcePath+"ELKH_original.xml";
 
-        Battery battery1 = new Battery(1000, 1000, 0);
-        Battery battery2 = new Battery(1000, 1000, 0);
+        Battery battery1 = new Battery(1000,  0);
+        Battery battery2 = new Battery(1000,  0);
 
         FossilSource fossilSource = new FossilSource(1);
 
-        Provider provider1 = new Provider("01",battery1, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
-        Provider provider2 = new Provider("02",battery2, new ArrayList<EnergySource>(), fossilSource, 1000, 1000, 0.2889F, 0.2889F, 50);
+        Provider provider1 = new Provider("01",battery1, new ArrayList<EnergySource>(), fossilSource, 1000, 0.2889F, 0.2889F, 50,50);
+        Provider provider2 = new Provider("02",battery2, new ArrayList<EnergySource>(), fossilSource, 1000, 0.2889F, 0.2889F, 50,50);
 
         Solar solar1 = new Solar(1,100);
         Solar solar2 = new Solar(1,100);
