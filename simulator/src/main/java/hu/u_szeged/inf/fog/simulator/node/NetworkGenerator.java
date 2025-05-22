@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.node;
 
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
@@ -20,7 +21,7 @@ public class NetworkGenerator {
     public static void smallWorldNetworkGenerator(ArrayList<ComputingAppliance> nodes, int degree, double probability,
                                                   int minLatency, int maxLatency) throws IOException {
         if (nodes.size() >= degree + 1 && degree > 1) {
-            Random random = new Random();
+            Random random = SeedSyncer.centralRnd;
 
             for (int i = 0; i < nodes.size(); i++) {
                 ComputingAppliance center = nodes.get(i);

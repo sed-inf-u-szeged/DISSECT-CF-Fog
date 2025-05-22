@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot.mobility;
 
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+
 import java.util.Random;
 
 /**
@@ -97,7 +99,7 @@ public class GeoLocation {
      * It generates a random position.
      */
     public static GeoLocation generateRandomGeoLocation() {
-        Random random = new Random();
+        Random random = SeedSyncer.centralRnd;
         double latitude = -90.0 + (90.0 - (-90.0)) * random.nextDouble();
         double longitude = -180.0 + (180.0 - (-180.0)) * random.nextDouble();
         return new GeoLocation(latitude, longitude);

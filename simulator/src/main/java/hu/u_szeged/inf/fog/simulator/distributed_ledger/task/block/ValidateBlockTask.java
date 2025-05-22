@@ -32,15 +32,6 @@ public class ValidateBlockTask implements MinerTask {
 
         double instructions = Utils.validateBlockCost(miner.consensusStrategy, block);
 
-        long expectedDifficulty = ((DifficultyAdjustmentStrategy) miner.consensusStrategy).computeNextDifficulty(miner.getLocalLedger());
-
-//        if (block.getDifficulty() != expectedDifficulty) {
-//            SimLogger.logRun(miner.getName() + " -> REJECT: block has difficulty " + block.getDifficulty() + ", expected " + expectedDifficulty);
-//            SimulationMetrics.getInstance().recordBlockValidation(miner, false);
-//            miner.finishTask(this);
-//            return;
-//        }
-
         try {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
