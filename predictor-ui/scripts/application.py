@@ -6,7 +6,7 @@ from predictor import Predictor
 class Application:
 
     def __init__(self):
-        predictor = Predictor(json.loads(sys.argv[1])["simulation-settings"])
+        predictor = Predictor(json.loads(sys.argv[1])["predictor-settings"])
 
         while True:
             line = sys.stdin.readline()

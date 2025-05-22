@@ -1,9 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -11,12 +8,14 @@ import org.json.JSONObject;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode
 public class PredictionSettings {
     
     @Setter
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
+    @EqualsAndHashCode
     public static class SmoothingSettings {
         private int windowSize;
         private int polynomialDegree;

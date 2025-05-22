@@ -213,17 +213,17 @@ public class JsonParser {
             for (Iterator it = json.keys(); it.hasNext(); ) {
                 var key = it.next();
                 var value = json.get(key.toString());
-                if (json.get(key.toString()).toString().matches("^[0-9.,]+$")) {
-                    try {
-                        value = Double.parseDouble(value.toString());
-                    } catch (NumberFormatException ignored) {
-                        //Not a Double
-                    }
-                } else if (json.get(key.toString()).toString().matches("^\\d+$")) {
+                if (json.get(key.toString()).toString().matches("^\\d+$")) {
                     try {
                         value = Integer.parseInt(value.toString());
                     } catch (NumberFormatException ignored){
                         //Not an Integer
+                    }
+                } else if (json.get(key.toString()).toString().matches("^[0-9.,]+$")) {
+                    try {
+                        value = Double.parseDouble(value.toString());
+                    } catch (NumberFormatException ignored) {
+                        //Not a Double
                     }
                 }
 

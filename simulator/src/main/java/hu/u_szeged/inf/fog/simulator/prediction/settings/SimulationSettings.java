@@ -6,14 +6,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 @Setter
 @Getter
@@ -22,8 +21,8 @@ import org.json.JSONObject;
 public class SimulationSettings {
     private static SimulationSettings SIMULATION_SETTINGS;
     private ExportSettings export;
-    private PredictionSettings prediction;
-    private PredictorSettings predictor;
+    private List<PairPredictionSettings> predictionSettings;
+    private TrainSettings trainSettings;
 
     public static SimulationSettings get() {
         return SimulationSettings.SIMULATION_SETTINGS;
@@ -47,14 +46,17 @@ public class SimulationSettings {
     }
 
     public void printInfo() throws Exception {
-        TableBuilder table = new TableBuilder();
-        table.addHeader("Name", "Value");
-        table.addRow("Predictor model", predictor.getPredictor());
-        table.addRow("Batch size", prediction.getBatchSize());
-        table.addRow("Test size", prediction.getTestSize());
-        table.addRow("Prediction size", prediction.getLength());
-        table.addRow("Smoothing", prediction.getSmoothing().getWindowSize() 
-                + ", " + prediction.getSmoothing().getPolynomialDegree());
-        System.out.println(table);
+        for (var predictionSetting : predictionSettings) {
+            TableBuilder table = new TableBuilder();
+            table.addHeader("Name", "Value");
+            table.addRow("Batch size", predictionSetting.getPredictionSettings().getBatchSize());
+            table.addRow("Predictor model", predictionSetting.getPredictorSettings().getPredictor());
+            table.addRow("Test size", predictionSetting.getPredictionSettings().getTestSize());
+            table.addRow("Prediction size", predictionSetting.getPredictionSettings().getLength());
+            table.addRow("Smoothing", predictionSetting.getPredictionSettings().getSmoothing().getWindowSize()
+                    + ", " + predictionSetting.getPredictionSettings().getSmoothing().getPolynomialDegree());
+            table.addRow("Best prediction", predictionSetting.getBestPredictor());
+            System.out.println(table);
+        }
     }
 }

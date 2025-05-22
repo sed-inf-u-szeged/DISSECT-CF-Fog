@@ -5,12 +5,11 @@ const {
 
 contextBridge.exposeInMainWorld(
     'electron-api', {
-        send: (channel, data) => {
-            console.log(`[DOWN] E: ${channel}`);
-            ipcRenderer.send(channel, data);
-        },
-        receive: (channel, func) => {
-            ipcRenderer.on(channel, (event, ...args) => func(...args));
+        onDataUpdated: (callback) => ipcRenderer.on('data-updated', (_event, value) => callback(value)),
+        onDataError: (callback) => ipcRenderer.on('data-error', (_event, value) => callback(value)),
+        removeAllListeners: () => {
+            ipcRenderer.removeAllListeners('data-updated');
+            ipcRenderer.removeAllListeners('data-error');
         }
     }
 );

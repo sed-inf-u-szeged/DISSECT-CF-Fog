@@ -4,9 +4,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import lombok.Getter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -46,6 +48,7 @@ public class FeatureManager {
     public FeatureManager addFeature(Feature feature) {
         if (getFeatureByName(feature.getName()) == null) {
             features.add(feature);
+            PredictionConfigurator.sqLiteManager.createTable(feature.getName());
         }
         return this;
     }
@@ -202,47 +205,45 @@ public class FeatureManager {
      * @param windowSize the size of the window for prediction
      * @return the list of predictions
      */
-    public List<Prediction> predict(List<Feature> features) throws Exception {
+    public List<Prediction> predict(List<Feature> features, String predictorName) throws Exception {
         PredictionLogger.info("FeatureManager-sendFeatures", "Send features for prediction");
         List<Prediction> predictions = new ArrayList<>();
+
         for (Feature feature : features) {
-            feature.setHasNewValue(false);
-
             Prediction result;
-
             String payload = new JSONObject().put(
                     "feature",
-                    JsonParser.toJson(feature, Feature.class)
+                    new JSONObject().put(
+                            "name",
+                            feature.getName()
+                    ).put(
+                            "values",
+                            new JSONArray(feature.getWindowValues(
+                                    PairPredictionSettings.getPredictionSettingsByName(predictorName)
+                                            .getPredictionSettings().getBatchSize()
+                            ))
+                    )
             ).toString();
 
-            PredictionConfigurator.predictor_writer.write(payload);
-            PredictionConfigurator.predictor_writer.newLine();
-            PredictionConfigurator.predictor_writer.flush();
+            PredictionConfigurator.predictor_writer.get(predictorName).write(payload);
+            PredictionConfigurator.predictor_writer.get(predictorName).newLine();
+            PredictionConfigurator.predictor_writer.get(predictorName).flush();
 
-            PredictionLogger.info("Predictor-message", PredictionConfigurator.predictor_reader.readLine());
-            String predictionString = PredictionConfigurator.predictor_reader.readLine();
-            PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
+            PredictionLogger.info(
+                    "Predictor-message",
+                    PredictionConfigurator.predictor_reader.get(predictorName).readLine()
+            );
+            String predictionString = PredictionConfigurator.predictor_reader.get(predictorName).readLine();
+//            PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
 
             result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
 
             feature.addPrediction(result);
             predictions.add(result);
+
+            PredictionConfigurator.sqLiteManager.addPredictionDataToTable(feature.getName(), result);
         }
-
-//TODO: refactor Electron to read from db file. (Could make db file WAL)
-
-//        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
-//            PredictionLogger.info("FeatureManager-sendFeatures", "Send features to UI");
-//            for (Prediction prediction : predictions) {
-//                ServerSocket.getInstance().sendAndGet(
-//                        SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-//                        new SocketMessage(
-//                                "prediction",
-//                                new JSONObject().put("prediction", JsonParser.toJson(prediction, Prediction.class))
-//                        )
-//                );
-//            }
-//        }
+        
         return predictions;
     }
 
@@ -282,6 +283,10 @@ public class FeatureManager {
         List<Feature> result = new ArrayList<>();
 
         for (Feature feature : features) {
+            if (feature.getValues().isEmpty()) {
+                continue;
+            }
+
             if (feature.getValues().size() >= windowSize && feature.getHasNewValue()) {
                 result.add(feature);
             }

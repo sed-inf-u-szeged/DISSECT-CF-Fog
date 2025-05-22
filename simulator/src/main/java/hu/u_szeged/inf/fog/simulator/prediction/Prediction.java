@@ -2,12 +2,14 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.FromJsonFieldAliases;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonFieldName;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Represents a prediction with its associated data, error metrics, and settings.
@@ -42,12 +44,14 @@ public class Prediction {
     @ToJsonFieldName(value = "feature_name")
     @FromJsonFieldAliases(fieldNames = {"feature_name"})
     private String featureName;
+    @Setter
     @ToJsonFieldName(value = "prediction_number")
     @FromJsonFieldAliases(fieldNames = {"prediction_number"})
     private int predictionNumber;
-    @ToJsonFieldName(value = "simulation_settings")
-    @FromJsonFieldAliases(fieldNames = {"simulation_settings"})
-    private SimulationSettings simulationSettings;
+    @Setter
+    @ToJsonFieldName(value = "prediction_settings")
+    @FromJsonFieldAliases(fieldNames = {"prediction_settings"})
+    private PairPredictionSettings predictionSettings;
     @ToJsonFieldName(value = "original_data")
     @FromJsonFieldAliases(fieldNames = {"original_data"})
     private Data originalData;
@@ -72,4 +76,31 @@ public class Prediction {
     @ToJsonFieldName(value = "prediction_time")
     @FromJsonFieldAliases(fieldNames = {"prediction_time"})
     private double predictionTime;
+
+    public static Map<String, Prediction> getBestPredictions(Collection<Prediction> predictions) {
+        Map<String, Prediction> bestPredictions = new HashMap<>();
+        for (Prediction prediction : predictions) {
+            Collection<Prediction> sameFeaturePrediction =
+                    Prediction.getPredictionsForFeature(predictions, prediction.getFeatureName());
+
+            bestPredictions.put(prediction.getFeatureName(), Prediction.getBestPrediction(sameFeaturePrediction));
+        }
+        return bestPredictions;
+    }
+
+    public static Prediction getBestPrediction(Collection<Prediction> predictions) {
+        return predictions.stream().min(Comparator.comparingDouble(
+                (Prediction pred) ->
+                        (pred.getErrorMetrics().getMae()
+                                + pred.getErrorMetrics().getMse()
+                                + pred.getErrorMetrics().getRmse()) / 3
+            )).orElseThrow();
+    }
+
+    public static Collection<Prediction> getPredictionsForFeature(Collection<Prediction> predictions, String featureName) {
+        return predictions.stream().filter(
+                predictionForFilter -> predictionForFilter
+                        .getFeatureName().equals(featureName)
+        ).collect(Collectors.toList());
+    }
 }

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -54,11 +53,11 @@ public abstract class Feature {
      * Computes the feature's value and adds it to the list of values.
      */
     public void computeValue() {
-        if (values.size() + 1 > SimulationSettings.get().getPrediction().getBatchSize()) {
-            values.remove(0);
-        }
+        double value = compute();
+        values.add(value);
 
-        values.add(compute());
+        PredictionConfigurator.sqLiteManager.addRawDataToTable(getName(), value);
+
         hasNewValue = true;
     }
 
