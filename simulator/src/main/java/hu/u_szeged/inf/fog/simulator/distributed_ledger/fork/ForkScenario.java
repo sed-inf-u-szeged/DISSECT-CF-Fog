@@ -58,7 +58,7 @@ public abstract class ForkScenario {
      * @param baseInterval interval (in ticks) for recurring scenarios.
      * @param variance     maximum jitter (in ticks) applied to the interval.
      */
-    public ForkScenario(String scenarioName, boolean recurring, double probability, long baseInterval, long variance) {
+    protected ForkScenario(String scenarioName, boolean recurring, double probability, long baseInterval, long variance) {
         this.scenarioName = scenarioName;
         this.recurring = recurring;
         this.probability = probability;
@@ -80,16 +80,14 @@ public abstract class ForkScenario {
      *
      * @param miners list of miners to affect during scenario execution.
      */
-    public abstract void executeScenario(List<Miner> miners);
+    protected abstract void executeScenario(List<Miner> miners);
 
     /**
      * Method invoked by the simulation timer to potentially trigger the scenario.
      * This method uses probabilistic execution and handles rescheduling based on configured intervals and variance.
-     *
      */
-    public void execute() {
-//        unsubscribe(); // Unsubscribe to prevent double subscription if the scenario is recurring
-        if (!recurring || random.nextDouble() < probability) {
+    protected void execute() {
+       if (!recurring || random.nextDouble() < probability) {
             SimLogger.logRun("[Fork] Triggered: " + scenarioName + " at time " + Timed.getFireCount());
             if (targets == null) {
                 SimLogger.logError("[Fork] " + scenarioName + ": No targets found. Unsubscribing.");
@@ -104,6 +102,9 @@ public abstract class ForkScenario {
         }
     }
 
+    /**
+     * @return the name of the scenario
+     */
     public String getScenarioName() {
         return scenarioName;
     }

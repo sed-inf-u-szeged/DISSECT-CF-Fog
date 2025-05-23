@@ -28,14 +28,13 @@ import java.util.*;
  * A Miner is responsible for:
  * - Receiving and validating transactions and blocks.
  * - Building blocks from validated transactions in its local mempool.
- * - Running a sequence of simulation tasks (e.g., building, validating, propagating).
- * - Interacting with a virtual machine and distributed ledger.
- * - Tracking known transactions to avoid redundant propagation.
+ * - Running a sequence of simulation tasks.
+ * - Interacting with a virtual machine.
  * </p>
  * <p>
  * Each Miner operates based on a discrete event simulation using {@link Timed#tick(long)},
  * and queues {@link MinerTask}s for execution. Tasks are pulled and executed when the miner
- * is in an IDLE state and its local VM is available.
+ * is in an IDLE state and its local VM is RUNNING.
  * </p>
  */
 public class Miner extends Timed {
@@ -119,8 +118,6 @@ public class Miner extends Timed {
     }
 
     /**
-     * Returns the name of the miner.
-     *
      * @return The name of the miner.
      */
     public String getName() {
@@ -128,8 +125,6 @@ public class Miner extends Timed {
     }
 
     /**
-     * Returns the mempool of the miner.
-     *
      * @return The mempool of the miner.
      */
     public Mempool getMempool() {
@@ -137,8 +132,6 @@ public class Miner extends Timed {
     }
 
     /**
-     * Returns the next block to be mined.
-     *
      * @return The next block to be mined.
      */
     public Block getNextBlock() {
@@ -146,8 +139,6 @@ public class Miner extends Timed {
     }
 
     /**
-     * Returns the local repository of the miner.
-     *
      * @return The local repository of the miner.
      * @throws IllegalStateException if no local repository is available.
      */
@@ -159,8 +150,6 @@ public class Miner extends Timed {
     }
 
     /**
-     * Returns the local ledger of the miner.
-     *
      * @return The local ledger of the miner.
      */
     public LocalLedger getLocalLedger() {
@@ -255,17 +244,10 @@ public class Miner extends Timed {
             setState(MinerState.IDLE);
         }
 
-        // If idle and building not yet started but we have txs, schedule new build
         if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
-            scheduleTask(new BuildBlockTask(), true); //TODO
+            scheduleTask(new BuildBlockTask(), true);
         }
 
-        // If idle and already building a block, continue with next tx (one per tick)
-        if (state == MinerState.IDLE && nextBlock != null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
-            scheduleTask(new BuildBlockTask(), true); //TODO
-        }
-
-        // If idle, pick and execute next task
         if (state == MinerState.IDLE && !tasksQueue.isEmpty()) {
             MinerTask candidate = tasksQueue.removeFirst();
             if (candidate.canExecute(this)) {
@@ -292,22 +274,10 @@ public class Miner extends Timed {
     /**
      * Checks if a BuildBlockTask is already queued in the task queue.
      *
-     * @return
+     * @return {@code true} if a BuildBlockTask is queued, {@code false} otherwise.
      */
     private boolean isBuildBlockTaskQueued() {
         return tasksQueue.stream().anyMatch(BuildBlockTask.class::isInstance);
-    }
-
-    /**
-     * Waits for the virtual machine to be in a running state.
-     *
-     * @return {@code true} if the virtual machine is not running, {@code false} otherwise.
-     */
-    public boolean waitForVm() {
-        if (this.localVm == null) {
-            return false;
-        }
-        return !isVmRunning();
     }
 
     /**
@@ -381,10 +351,19 @@ public class Miner extends Timed {
         }
     }
 
+    /**
+     * Removes a transaction from the mempool and the task queue.
+     *
+     * @param transaction The transaction to remove.
+     */
     public void removeTransactionFromMempool(Transaction transaction) {
         mempool.transactions.removeIf(tx -> tx.equals(transaction));
     }
 
+    /**
+     * Removes a transaction from the task queue.
+     * @param transaction The transaction to remove.
+     */
     public void removeTransactionFromQueue(Transaction transaction) {
         tasksQueue.removeIf(task -> task instanceof ValidateTransactionTask && ((ValidateTransactionTask) task).getTx().equals(transaction));
     }
@@ -412,6 +391,8 @@ public class Miner extends Timed {
      * The MinerState enum represents the various states a miner can be in.
      */
     public enum MinerState {
-        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK, CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION, VALIDATING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN
+        OFF, IDLE, WAITING_FOR_VM, VALIDATING_TRANSACTION, BUILDING_BLOCK,
+        CALCULATING_HEADER, MINING_NONCE, PROPAGATING_BLOCK, PROPAGATING_TRANSACTION,
+        VALIDATING_INCOMING_BLOCK, RESOLVE_FORK, SYNC_CHAIN
     }
 }

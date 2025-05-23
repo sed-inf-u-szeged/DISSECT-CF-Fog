@@ -8,10 +8,17 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.Diffi
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
+/**
+ * BuildBlockTask is responsible for building a block in the miner's local ledger.
+ * It manages the state of the block being built and handles the addition of transactions to the block.
+ */
 public class BuildBlockTask implements MinerTask {
     private static final long MAX_EMPTY_MEMPOOL_TICKS = 50_000L; //this could be also configurable
     private long mempoolEmptySince = -1;
 
+    /**
+     * The states of the block building process.
+     */
     private enum State {NEW, IN_PROGRESS, DONE}
 
     private State currentState = State.NEW;
@@ -20,7 +27,7 @@ public class BuildBlockTask implements MinerTask {
     /**
      * Determines whether this BuildBlockTask can execute on the given miner.
      * @param miner The {@link Miner} instance to check for task eligibility.
-     * @return
+     * @return {@code true} if the task can execute, {@code false} otherwise.
      */
     @Override
     public boolean canExecute(Miner miner) {
@@ -51,7 +58,8 @@ public class BuildBlockTask implements MinerTask {
 
     /**
      * Adds the next transaction to the block being built.
-     * @param miner
+     * If the block is full or the mempool is empty for too long, it finalizes the block and schedules the next task.
+     * @param miner The {@link Miner} that owns and executes this task.
      */
     private void addNextTransactionToBlock(Miner miner) {
         if (buildingBlock.isFull()) {

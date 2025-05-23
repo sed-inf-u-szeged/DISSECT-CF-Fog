@@ -12,25 +12,32 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
  */
 public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjustmentStrategy {
 
+    /**
+     * The initial difficulty level for mining.
+     */
     private final int startDifficulty;
 
-    private final int difficultyAdjustmentBlock;
     /**
-     * The size of each block in the blockchain.
-     * This is used to determine the maximum number of transactions that can be included in a block.
+     * The number of blocks after which the difficulty is adjusted.
+     */
+    private final int difficultyAdjustmentBlock;
+
+    /**
+     * The max size of each block in the blockchain.
      */
     private final int blockSize;
+
     /**
      * The target block timespan in ticks.
      * This is used to calculate the expected time between blocks.
      */
     private final long targetBlockTimespan;
 
-
     /**
      * The cryptographic strategy used for hashing and signing blocks.
      */
     public final CryptoStrategy cryptoStrategy;
+
     /**
      * The digest strategy used for hashing the block data.
      */
@@ -110,16 +117,6 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
      * how long the last N blocks took to mine, compared to a target timespan.
      * </p>
      *
-     * <p><b>Behavior:</b></p>
-     * <ul>
-     *   <li>If the ledger is empty, returns the {@code startDifficulty}.</li>
-     *   <li>If the current chain length is not at a difficulty retarget boundary
-     *       (i.e., not a multiple of {@code difficultyAdjustmentBlock}), the method
-     *       returns the difficulty of the most recent block.</li>
-     *   <li>Otherwise, calculates a new difficulty based on the time span between the
-     *       oldest and newest blocks in the most recent window of {@code difficultyAdjustmentBlock} blocks.</li>
-     * </ul>
-     *
      * <p><b>Adjustment Formula:</b><br>
      * {@code newDifficulty = currentDifficulty * (expectedTimespan / actualTimespan)}</p>
      *
@@ -139,8 +136,6 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
             return startDifficulty;
         }
 
-        // The last block in the ledger tells us what difficulty
-        // was used for that block:
         Block lastBlock = localLedger.getChain().get(chainSize - 1);
         long currentDifficulty = lastBlock.getDifficulty();
 
@@ -150,13 +145,7 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
             return currentDifficulty;
         }
 
-        // Otherwise, we are at a boundary => recalc difficulty based on
-        // the last difficultyAdjustmentBlock blocks.
-        // This is a simple approach that looks at the timespan
-        // between chainSize-difficultyAdjustmentBlock and chainSize-1.
-
         if (chainSize < difficultyAdjustmentBlock) {
-            // if for some reason chainSize < difficultyAdjustmentBlock, just return currentDifficulty
             return currentDifficulty;
         }
 
@@ -182,9 +171,6 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
             clampingUsed = true;
         }
 
-        // naive formula: newDiff = oldDiff * (expected / actual)
-        // if the blocks were found too quickly (actual < expected),
-        // newDiff will be bigger => harder to find next block
         double ratio = (double) expectedTimespan / (double) actualTimespan;
         long newDifficulty = Math.round(currentDifficulty * ratio);
 

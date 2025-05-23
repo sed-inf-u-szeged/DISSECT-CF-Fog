@@ -59,7 +59,7 @@ public class SizeStrategy implements TransactionSelectionStrategy {
     /**
      * The Order enum represents the order in which transactions are selected based on their size.
      */
-    enum Order {
+    public enum Order {
         INCREASE, DECREASE
     }
 }

@@ -7,8 +7,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetric
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * BlockTransferEvent class represents an event of transferring a block message
- * from a sender miner to a receiver miner.
+ * BlockTransferEvent class represents an event of transferring a block message from a sender miner to a receiver miner.
  * It implements the ResourceConsumption.ConsumptionEvent interface.
  */
 public class BlockTransferEvent implements ResourceConsumption.ConsumptionEvent {
@@ -50,6 +49,6 @@ public class BlockTransferEvent implements ResourceConsumption.ConsumptionEvent 
      */
     @Override
     public void conCancelled(ResourceConsumption problematic) {
-        System.err.println("[BlockTransferEvent] Transfer cancelled. Could not deliver block from '" + sender.getName() + "' to '" + receiver.getName() + "'");
+        SimLogger.logError("[BlockTransferEvent] Transfer cancelled. Could not deliver block from '" + sender.getName() + "' to '" + receiver.getName() + "'");
     }
 }

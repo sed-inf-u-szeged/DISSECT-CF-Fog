@@ -8,7 +8,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionPublishEvent;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.FindNodeStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -23,8 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * The TransactionDevice class represents a device that generates and publishes transactions in a distributed ledger.
- * It extends the Device class and uses a FindNodeStrategy to determine where to publish transactions.
- * This class is responsible for creating transactions at specified intervals and sending them to miners.
+ * Responsible for creating transactions at specified intervals and sending them to miners.
  */
 public class TransactionDevice extends Device {
 
@@ -119,13 +117,19 @@ public class TransactionDevice extends Device {
         }
     }
 
-    void disconnect() {
+    /**
+     * Disconnects from the connected node.
+     */
+    private void disconnect() {
         if (connectedNode != null) {
             connectedNode = null;
         }
     }
 
-    void generateTransaction() {
+    /**
+     * Generates a transaction with random data and registers it in the local disk.
+     */
+    private void generateTransaction() {
         String data = "SensorData{" + random.nextInt(100) + "}";
         Transaction tx = new Transaction(data, fileSize);
         TransactionMessage msg = new TransactionMessage(tx);
@@ -136,7 +140,6 @@ public class TransactionDevice extends Device {
 
     /**
      * Attempts to establish a connection to a node with a specified maximum number of retries.
-     * Logs a message each time a connection attempt fails.
      *
      * @param maxRetries the maximum number of connection attempts
      * @return true if a connection to a node was successfully established, false otherwise
@@ -145,13 +148,13 @@ public class TransactionDevice extends Device {
         int tryCount = 0;
         while (!connectToNode() && tryCount < maxRetries) {
             tryCount++;
-            SimLogger.logRun(name + "  Could not connect to a miner. Retrying...");
+            SimLogger.logRun(name + " Could not connect to a miner. Retrying.");
         }
         return connectedNode != null;
     }
 
     /**
-     * Retrieves the list of transaction messages to be published.
+     * Retrieves the list of transaction messages to be published from the local disk.
      *
      * @return the list of transaction messages to be published
      */
@@ -165,8 +168,7 @@ public class TransactionDevice extends Device {
     }
 
     /**
-     * Publishes a transaction message to the connected miner. If no miner is connected,
-     * attempts to find and connect to a suitable miner before publishing.
+     * Publishes a transaction message to the connected miner. If no miner is connected, attempts to find and connect to a suitable miner before publishing.
      *
      * @param msg the transaction message to be published
      */
@@ -184,7 +186,13 @@ public class TransactionDevice extends Device {
         }
     }
 
-    public boolean connectToNode() {
+    /**
+     * Attempts to connect to a node using the specified find node strategy.
+     * If a connection is established, the connected node is set and the latency is calculated.
+     *
+     * @return true if a connection was successfully established, false otherwise
+     */
+    private boolean connectToNode() {
         Miner candidate = findNodeStrategy.findNode();
         if (candidate.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.caRepository = candidate.computingAppliance.iaas.repositories.get(0);

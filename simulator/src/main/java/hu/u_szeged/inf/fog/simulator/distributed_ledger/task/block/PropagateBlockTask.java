@@ -10,8 +10,15 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
+/**
+ * The PropagateBlockTask class represents a task for propagating a block to neighboring miners.
+ * This task is executed by a miner to broadcast the block to its neighbors.
+ */
 public class PropagateBlockTask implements MinerTask {
 
+    /**
+     * The block to be propagated.
+     */
     private final Block block;
 
     public PropagateBlockTask(Block block) {
@@ -22,7 +29,7 @@ public class PropagateBlockTask implements MinerTask {
      * Determines whether this PropagateBlockTask can execute on the given miner.
      * The task can execute if the block is not null and has a found nonce.
      * @param miner The {@link Miner} instance to check for task eligibility.
-     * @return
+     * @return {@code true} if the task can execute, {@code false} otherwise.
      */
     @Override
     public boolean canExecute(Miner miner) {
@@ -58,9 +65,11 @@ public class PropagateBlockTask implements MinerTask {
                 SimLogger.logError(miner.name + " Could not send block to " + neighbor.getName() + ": " + e.getMessage());
             }
         }
+
         if (block == miner.getNextBlock()) {
             miner.setNextBlock(null);
         }
+
         miner.finishTask(this);
     }
 

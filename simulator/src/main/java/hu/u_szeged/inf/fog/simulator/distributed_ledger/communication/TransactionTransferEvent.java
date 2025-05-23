@@ -1,14 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.communication;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
- * TransactionTransferEvent class represents an event of transferring a transaction message
- * from a sender miner to a receiver miner.
+ * TransactionTransferEvent class represents an event of transferring a transaction message from a sender miner to a receiver miner.
  * It implements the ResourceConsumption.ConsumptionEvent interface.
  */
 public class TransactionTransferEvent implements ResourceConsumption.ConsumptionEvent {
@@ -49,6 +47,6 @@ public class TransactionTransferEvent implements ResourceConsumption.Consumption
      */
     @Override
     public void conCancelled(ResourceConsumption problematic) {
-        System.err.println("[TransactionTransferEvent] Transfer cancelled. Could not deliver Tx from '" + sender.getName() + "' to '" + receiver.getName() + "'");
+        SimLogger.logError("[TransactionTransferEvent] Transfer cancelled. Could not deliver Tx from '" + sender.getName() + "' to '" + receiver.getName() + "'");
     }
 }

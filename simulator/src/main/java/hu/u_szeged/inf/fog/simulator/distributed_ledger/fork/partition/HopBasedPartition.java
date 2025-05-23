@@ -112,7 +112,7 @@ public class HopBasedPartition implements PartitionStrategy {
      */
     private void addNeighborNodes(ComputingAppliance node, Set<ComputingAppliance> selectedNodes, int counter) {
         selectedNodes.addAll(node.neighbors);
-        if (isDebugMode) {
+        if (isDebugMode()) {
             SimLogger.logRun("counter: " + counter);
             SimLogger.logRun("addNeighborNodes: " + node.name);
             for (ComputingAppliance nodes : selectedNodes) {

@@ -11,9 +11,7 @@ import java.util.Map;
  * The {@code ForkManager} class is responsible for managing and registering fork scenarios
  * within the blockchain simulation environment.
  *
- * <p>It maintains a list of {@code ForkScenario} instances and handles their scheduling
- * by invoking their {@code register} method. This allows centralized control over all
- * fork-related events within the simulation.</p>
+ * <p>It maintains a list of {@code ForkScenario} instances and handles their scheduling.
  *
  * @see ForkScenario
  */
@@ -22,14 +20,18 @@ public class ForkManager extends Timed {
      * List of registered fork scenarios.
      */
     private final List<ForkScenario> forkScenarios = new ArrayList<>();
-    private long stopTime;
+    private final long stopTime;
 
     public ForkManager(long freq, long stopTime) {
         subscribe(freq);
         this.stopTime = stopTime;
     }
 
-
+    /**
+     * Registers and schedules a {@code ForkScenario} instance.
+     * @param scenario the scenario to register.
+     * @param scheduleTime the time at which the scenario should be executed.
+     */
     public void registerScenario(ForkScenario scenario, long scheduleTime) {
         scenario.executeTime = scheduleTime;
         forkScenarios.add(scenario);

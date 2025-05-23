@@ -8,14 +8,7 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.*;
 
 /**
- * A centralized, singleton class for recording and reporting
- * various simulation metrics, such as:
- * <ul>
- *   <li>Network statistics (messages/bytes sent)</li>
- *   <li>Transaction and block validations (accepted vs. rejected)</li>
- *   <li>Transaction confirmation times</li>
- *   <li>Block/transaction propagation delays</li>
- * </ul>
+ * SimulationMetrics class is a singleton that collects and stores various statistics.
  */
 public class SimulationMetrics {
 
@@ -44,9 +37,7 @@ public class SimulationMetrics {
     // ----------------------------------------------------------------
 
     /**
-     * Holds various statistics for a single miner, such as
-     * how many network messages/bytes they sent,
-     * and how many transactions/blocks they validated or rejected.
+     * Statistics how many network messages/bytes they sent, and how many transactions/blocks they validated or rejected.
      */
     public static class MinerStats {
         /**
@@ -87,8 +78,7 @@ public class SimulationMetrics {
     private final Map<Miner, MinerStats> statsPerMiner = new HashMap<>();
 
     /**
-     * Helper to retrieve (and if needed, create) a {@link MinerStats}
-     * entry for the given miner.
+     * Helper to retrieve (and if needed, create) a {@link MinerStats} entry for the given miner.
      *
      * @param m the miner
      * @return the stats object for that miner
@@ -98,7 +88,7 @@ public class SimulationMetrics {
     }
 
     // ----------------------------------------------------------------
-    // Global counters (across all miners)
+    // Global counters
     // ----------------------------------------------------------------
 
     /**
@@ -169,7 +159,7 @@ public class SimulationMetrics {
     }
 
     // ----------------------------------------------------------------
-    // 2) Throughput (globally)
+    // 2) Throughput
     // ----------------------------------------------------------------
 
     /**
@@ -266,7 +256,7 @@ public class SimulationMetrics {
      * Call this at the end of the simulation to get a summary of results.
      */
     public void printFinalStats() {
-        long simEndTime = Timed.getFireCount(); // the final tick
+        long simEndTime = Timed.getFireCount();
 
         SimLogger.logRun("=== SIMULATION METRICS ===");
 
@@ -313,7 +303,7 @@ public class SimulationMetrics {
         for (Block block : blockArrivalTimes.keySet()) {
             Long createT = blockCreationTime.get(block);
             if (createT == null) {
-                continue; // skip blocks missing a creation time
+                continue;
             }
             Map<Miner, Long> arrivals = blockArrivalTimes.get(block);
             for (Long arrivalTime : arrivals.values()) {
@@ -321,9 +311,7 @@ public class SimulationMetrics {
                 blockPropagationCount++;
             }
         }
-        double avgBlockPropagation = blockPropagationCount > 0
-                ? sumBlockPropagation / blockPropagationCount
-                : 0.0;
+        double avgBlockPropagation = blockPropagationCount > 0 ? sumBlockPropagation / blockPropagationCount : 0.0;
         SimLogger.logRun("Avg Block Propagation Delay: " + avgBlockPropagation);
 
         SimLogger.logRun("=== END OF METRICS ===");

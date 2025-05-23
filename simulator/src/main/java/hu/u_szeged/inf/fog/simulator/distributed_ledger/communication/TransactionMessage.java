@@ -31,4 +31,23 @@ public class TransactionMessage extends StorageObject implements MessageInterfac
         return transaction;
     }
 
+    /**
+     * Gets the size of the transaction message.
+     *
+     * @return the size of the transaction message
+     */
+    @Override
+    public long getSize() {
+        return this.size;
+    }
+
+    /**
+     * Gets the type of the message.
+     *
+     * @return the type of the message
+     */
+    @Override
+    public String getType() {
+        return "TransactionMessage";
+    }
 }

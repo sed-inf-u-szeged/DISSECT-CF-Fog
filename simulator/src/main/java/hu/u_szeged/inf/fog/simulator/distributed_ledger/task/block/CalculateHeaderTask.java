@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
@@ -31,7 +30,7 @@ public class CalculateHeaderTask implements MinerTask {
 
     /**
      * Executes the header calculation process for the given miner.
-     * This method initiates the computation of the Merkle root and handles the completion or failure of the task.
+     * This method initiates the computation of the Merkle root.
      *
      * @param miner The {@link Miner} that owns and executes this task.
      */

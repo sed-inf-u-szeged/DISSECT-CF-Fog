@@ -10,8 +10,7 @@ import java.util.List;
 
 /**
  * LocalLedger class represents a local copy of the "blockchain" for a miner.
- * It contains methods to add blocks, resolve reorganization of the chain,
- * and synchronize the chain with another local ledger.
+ * It contains methods to add blocks, resolve reorganization of the chain, and synchronize the chain with another local ledger.
  */
 public class LocalLedger {
     private final List<Block> chain;

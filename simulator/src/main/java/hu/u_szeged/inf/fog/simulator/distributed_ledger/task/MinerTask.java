@@ -4,7 +4,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 
 /**
  * The MinerTask interface defines the structure for tasks that can be executed by a miner.
- * Implementations of this interface represent specific tasks that a miner can perform, such as mining a block.
+ * Implementations of this interface represent specific tasks that a miner can perform.
  */
 public interface MinerTask {
     /**

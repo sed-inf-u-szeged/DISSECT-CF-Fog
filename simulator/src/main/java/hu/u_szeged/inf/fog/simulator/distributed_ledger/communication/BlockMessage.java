@@ -29,4 +29,24 @@ public class BlockMessage extends StorageObject implements MessageInterface {
     public Block getBlock() {
         return block;
     }
+
+    /**
+     * Gets the size of the block message.
+     *
+     * @return the size of the block message
+     */
+    @Override
+    public long getSize() {
+        return this.size;
+    }
+
+    /**
+     * Gets the type of the message.
+     *
+     * @return the type of the message
+     */
+    @Override
+    public String getType() {
+        return "BlockMessage";
+    }
 }

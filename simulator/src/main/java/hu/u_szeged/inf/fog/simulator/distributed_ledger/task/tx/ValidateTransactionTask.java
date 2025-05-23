@@ -14,17 +14,15 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
  * This task is executed by a miner to verify the validity of a transaction using the consensus strategy's crypto strategy.
  */
 public class ValidateTransactionTask implements MinerTask {
+    /**
+     * The transaction to be validated.
+     */
     private final Transaction tx;
 
     public Transaction getTx() {
         return tx;
     }
 
-    /**
-     * Constructs a new ValidateTransactionTask with the specified transaction
-     *
-     * @param tx       the transaction to validate
-     */
     public ValidateTransactionTask(Transaction tx) {
         this.tx = tx;
     }
@@ -43,7 +41,7 @@ public class ValidateTransactionTask implements MinerTask {
 
     /**
      * Executes the transaction validation process for the given miner.
-     * This method initiates the validation of the transaction and handles the completion or failure of the task.
+     * This method initiates the validation of the transaction.
      *
      * @param miner The {@link Miner} that owns and executes this task.
      */

@@ -6,8 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Transaction class represents a transaction in the distributed ledger.
- * Each transaction has a unique ID, data, and size.
+ * Represents a transaction in the distributed ledger.
  */
 public class Transaction {
     public static final List<Transaction> transactions = new ArrayList<>();
@@ -29,8 +28,6 @@ public class Transaction {
     }
 
     /**
-     * Returns the data of the transaction.
-     *
      * @return the data of the transaction
      */
     public String getData() {
@@ -38,8 +35,6 @@ public class Transaction {
     }
 
     /**
-     * Returns the size of the transaction.
-     *
      * @return the size of the transaction
      */
     public long getSize() {
@@ -47,8 +42,6 @@ public class Transaction {
     }
 
     /**
-     * Returns the ID of the transaction.
-     *
      * @return the ID of the transaction
      */
     public String getId() {
@@ -56,8 +49,6 @@ public class Transaction {
     }
 
     /**
-     * Returns a string representation of the transaction.
-     *
      * @return a string representation of the transaction
      */
     @Override

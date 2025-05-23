@@ -87,7 +87,7 @@ public class GeoPartition implements PartitionStrategy {
         }
         double latitude = node.geoLocation.latitude;
         double longitude = node.geoLocation.longitude;
-        System.out.printf(Locale.US, "%.4f,%.4f,%s,marker%n", latitude, longitude, color);
+        SimLogger.logRun(String.format(Locale.US, "%.4f,%.4f,%s,marker%n", latitude, longitude, color));
     }
 
     /**

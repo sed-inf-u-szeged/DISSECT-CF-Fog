@@ -20,11 +20,6 @@ import java.util.List;
 public class ForkReorgTask implements MinerTask {
     private final int rollbackDepth;
 
-    /**
-     * Constructs a new ForkReorgTask with the specified rollback depth.
-     *
-     * @param rollbackDepth the number of blocks to roll back during the fork reorganization
-     */
     public ForkReorgTask(int rollbackDepth) {
         this.rollbackDepth = rollbackDepth;
     }
@@ -43,7 +38,7 @@ public class ForkReorgTask implements MinerTask {
 
     /**
      * Executes the fork reorganization process for the given miner.
-     * This method initiates the rollback of blocks and resolves the fork by generating new blocks.
+     * This method initiates the rollback of blocks and resolves the fork.
      *
      * @param miner The {@link Miner} that owns and executes this task.
      */

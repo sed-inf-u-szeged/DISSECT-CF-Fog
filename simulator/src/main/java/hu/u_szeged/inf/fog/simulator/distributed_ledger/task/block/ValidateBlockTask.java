@@ -6,12 +6,15 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.DifficultyAdjustmentStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
+/**
+ * The ValidateBlockTask class represents a task for validating a block.
+ * This task is executed by a miner to check the validity of a received block.
+ */
 public class ValidateBlockTask implements MinerTask {
 
     private final Block block;
@@ -20,11 +23,21 @@ public class ValidateBlockTask implements MinerTask {
         this.block = block;
     }
 
+    /**
+     * Determines whether this ValidateBlockTask can execute on the given miner.
+     * @param miner The {@link Miner} instance to check for task eligibility.
+     * @return {@code true} if the task can execute, {@code false} otherwise.
+     */
     @Override
     public boolean canExecute(Miner miner) {
         return block != null;
     }
 
+    /**
+     * Executes the block validation process for the given miner.
+     * This method initiates the validation of the received block.
+     * @param miner The {@link Miner} that owns and executes this task.
+     */
     @Override
     public void execute(Miner miner) {
         SimLogger.logRun(miner.name + " Validating received block: " + block.getId());
@@ -57,7 +70,11 @@ public class ValidateBlockTask implements MinerTask {
         }
     }
 
-    public void removeTransactions(Miner miner) {
+    /**
+     * Removes transactions from the miner's mempool and queue.
+     * @param miner The {@link Miner} that owns this task.
+     */
+    private void removeTransactions(Miner miner) {
         for (Transaction tx : this.block.getTransactions()) {
             miner.removeTransactionFromMempool(tx);
             miner.removeTransactionFromQueue(tx);

@@ -71,7 +71,7 @@ public class PropagateTransactionTask implements MinerTask {
                         neighbor.getLocalRepo(),                                        // to neighbor
                         event);
             } catch (NetworkNode.NetworkException e) {
-                SimLogger.logError(miner.name + "  Could not send transaction to " + neighbor.getName() + ": " + e.getMessage());
+                SimLogger.logError(miner.name + " Could not send transaction to " + neighbor.getName() + ": " + e.getMessage());
             }
         }
 
