@@ -263,13 +263,13 @@ public class RenewableScheduler extends WorkflowScheduler {
     private ArrayList<WorkflowJob> assignConsumptionToOwnJobs(ArrayList<WorkflowJob> oldJobs) {
 
         ArrayList<WorkflowJob> newJobs = new ArrayList<WorkflowJob>();
-        int randomArray = 0;
-        int randomElement = 0;
+        int randomArray;
+        int randomElement;
 
         for (WorkflowJob job : oldJobs) {
             randomArray = (int)(Math.random() * consumptions.size());
             randomElement = (int)(Math.random() * consumptions.get(randomArray).length);
-            job.consumption = consumptions.get(randomArray)[randomElement];
+            job.consumption = (float) consumptions.get(randomArray)[randomElement];
             newJobs.add(job);
         }
 
@@ -308,7 +308,7 @@ public class RenewableScheduler extends WorkflowScheduler {
         return hours * job.consumption * getProviderOfJob(job).getFossilPrice();
     }
 
-    private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) throws Exception {
+    private ArrayList<RenewableWorkflowComputingAppliance> convertToRenewabelAppliance(ArrayList<WorkflowComputingAppliance> cas) {
         ArrayList<RenewableWorkflowComputingAppliance> rcas= new ArrayList<>();
         for (WorkflowComputingAppliance ca : cas) {
 
