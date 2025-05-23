@@ -58,6 +58,15 @@ public class Provider {
         this.charge = new Charge(this);
     }
 
+
+    /**
+     * Call this if you want to recalculate the renewablePrice belonging to this provider
+     * If referenceLevel is at 50 and battery percentage is also at 50 the price doesn't change compared to renewableBasePrice
+     * If referenceLevel is at 50 and battery percentage is at 75% and maxPriceChange is 20 then the price decreases by 10%
+     * If referenceLevel is at 50 and battery percentage is at 100% and maxPriceChange is 20 then the price decreases by 20%
+     * If referenceLevel is at 50 and battery percentage is at 25% and maxPriceChange is 20 then the price increases by 10%
+     * If referenceLevel is at 50 and battery percentage is at 0% and maxPriceChange is 20 then the price increases by 20%
+     */
     public void calculatePrice() {
         try {
             File file = new File(ScenarioBase.resultDirectory +"/Provider-"+ this.id +"/price.txt");
@@ -77,6 +86,9 @@ public class Provider {
         this.renewableSources.add(energySource);
     }
 
+    /**
+     * Stops the Charge instance belonging to this provider then logs information about this provider
+     */
     public void stopProcessing() {
         this.charge.stop();
 

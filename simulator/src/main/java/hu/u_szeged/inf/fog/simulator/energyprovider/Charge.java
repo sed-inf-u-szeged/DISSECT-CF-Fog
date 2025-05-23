@@ -23,6 +23,11 @@ public class Charge extends Timed {
         subscribe(this.provider.chargeFreq);
     }
 
+    /**
+     *
+     * Charges the battery of it's corresponding provider and logs every charge
+     */
+
     @Override
     public void tick(long fires) {
         this.lastTotalAdded = getTotalProduction();
@@ -47,6 +52,11 @@ public class Charge extends Timed {
     private float chargeUp() {
         return this.provider.renewableBattery.addBatteryLevel(this.lastTotalAdded);
     }
+
+    /**
+     *
+     * @return The total ammount produced by all of the renewable sources belonging to this Provider
+     */
 
     private float getTotalProduction() {
         float sum = 0;

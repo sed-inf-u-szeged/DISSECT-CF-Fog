@@ -18,12 +18,22 @@ public class Wind extends EnergySource{
         this.lastCapacityFactor = (float) (rnd.nextInt(20) + 10) / 100;
     }
 
+    /**
+     * Calls the built function that calculates the multiplier for this wind farm and scales it down to the frequency Charge is called
+     * @param frequency The frequency of the Charge instance that belongs to this Wind class
+     * @return The total production belonging to this wind farm
+     */
     @Override
     public float production(long time, long frequency) {
         float frequencyFactor = (float) frequency / 3_600_000;
         return turbines * output * calculateOutputFactor() * frequencyFactor;
     }
 
+    /**
+     * Changes the production factor of this wind farm every hour
+     * Changes it by [-0.2;0.2]
+     * @return
+     */
     float calculateOutputFactor() {
         if (this.currentHour < calculateHours()) {
             this.currentHour = calculateHours();

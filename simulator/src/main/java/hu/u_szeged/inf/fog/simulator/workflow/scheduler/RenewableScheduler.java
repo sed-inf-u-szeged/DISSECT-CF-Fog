@@ -47,9 +47,14 @@ public class RenewableScheduler extends WorkflowScheduler {
         }
     }
 
+    /**
+     * @param providers A list of all the Providers participating in the simulation
+     * @param ratio Percentage number of what ratio of the energy of jobs should be renewable [0;100]
+     * @param requirement Tells the scheduler to use the given ratio as a must
+     */
     public RenewableScheduler(ArrayList<WorkflowComputingAppliance> computeArchitecture, Instance instance,
                            ArrayList<Actuator> actuatorArchitecture, Pair<String, ArrayList<WorkflowJob>> jobs,
-                           ArrayList<Provider> providers, int ratio, boolean requirement) throws Exception {
+                           ArrayList<Provider> providers, int ratio, boolean requirement) {
         createConsumptionValues();
         this.computeArchitecture = computeArchitecture;
         this.instance = instance;
