@@ -9,13 +9,10 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+
+import java.util.*;
 
 /**
  * This class represents an application strategy based on Fuzzy logic and Pliant system.
@@ -59,19 +56,27 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         ComputingAppliance currentCa = this.application.computingAppliance;
         List<Prediction> predictions = new ArrayList<>();
         if (PredictionConfigurator.PREDICTION_ENABLED) {
-            List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
-                    SimulationSettings.get().getPrediction().getBatchSize()
-            );
-            if (features.size() > 0) {
-                try {
-                    predictions = FeatureManager.getInstance().predict(
-                            features
-                    );
-                } catch (Exception e) {
-                    e.printStackTrace();
+            List<Feature> predictedFeatures = new ArrayList<>();
+            for (var predictor : SimulationSettings.get().getPredictionSettings()) {
+                List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
+                        predictor.getPredictionSettings().getBatchSize()
+                );
+                if (!features.isEmpty()) {
+                    try {
+                        predictions.addAll(FeatureManager.getInstance().predict(
+                                features,
+                                predictor.getPredictorName()
+                        ));
+                        predictedFeatures.addAll(features);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            predictedFeatures.forEach(feature -> feature.setHasNewValue(false));
         }
+
+        PairPredictionSettings.increaseBestPredictorCounterFromPredictions(predictions);
 
         double minLoadOfResource = currentCa.getLoadOfResource();
         double maxLoadOfResource = currentCa.getLoadOfResource();
@@ -165,20 +170,19 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
 
             //if we have prediction
             //find the element from prediction.
-            if (predictions.size() > 0) {
-                for (Prediction prediction : predictions) {
+            if (!predictions.isEmpty()) {
+                for (Prediction prediction : Prediction.getBestPredictions(predictions).values()) {
                     String[] name = prediction.getFeatureName().split("::");
 
                     //Find the relevant compuerappliant
                     if (name[0].equals(ca.name)) {
                         double tmpavg = 0.0;
                         int num = 0;
-                        for (int k = 0; k < 10; k++) {
-                            if (prediction.getPredictionFuture() == null) {
-                                continue;
+                        if (prediction.getPredictionFuture() != null) {
+                            for (int k = 0; k < 10; k++) {
+                                tmpavg += prediction.getPredictionFuture().getData().get(k);
+                                num++;
                             }
-                            tmpavg += prediction.getPredictionFuture().getData().get(k);
-                            num++;
                         }
                         tmpavg /= num;
                         double actUd = (double) ((ca.applications.get(0).receivedData 

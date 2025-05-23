@@ -24,8 +24,8 @@ public class PairPredictionSettings {
     @ToJsonFieldName("predictor")
     @FromJsonFieldAliases(fieldNames = {"predictor"})
     private PredictorSettings predictorSettings;
-    @ToJsonParseIgnore
 
+     @ToJsonParseIgnore
     private int bestPredictor;
 
     public PairPredictionSettings(String predictorName, PredictionSettings predictionSettings, PredictorSettings predictorSettings) {
@@ -49,7 +49,9 @@ public class PairPredictionSettings {
         SimulationSettings.get().getPredictionSettings().stream()
                 .filter(setting ->
                         setting.getPredictorSettings().equals(prediction.getPredictionSettings().getPredictorSettings())
-                                && setting.getPredictionSettings().equals(prediction.getPredictionSettings().getPredictionSettings())
+                                && setting.getPredictionSettings().equals(
+                                        prediction.getPredictionSettings().getPredictionSettings()
+                                    )
                 )
                 .findFirst()
                 .orElseThrow().increaseBestPredictor();
