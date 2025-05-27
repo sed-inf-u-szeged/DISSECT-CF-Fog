@@ -17,6 +17,8 @@ public class FirstFitAgentStrategy extends AgentStrategy {
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
 
+        //resources.forEach(x -> System.out.println("canfulfill:" + x.cpu)); // minusz bug
+
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
         for (Resource resource : sortedResources) {
@@ -30,7 +32,6 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                         if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                                 && (resource.location == null || resource.location.equals(capacity.node.location))
                                 && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory) {
-
                             capacity.reserveCapacity(resource);
                             reservedCapacity.add(capacity);
                             break;
@@ -63,7 +64,6 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
     public List<Resource> sortingResourcesByCpuThenSize(List<Resource> originalResources) {
         List<Resource> sortedResources = new ArrayList<>(originalResources);
-
         sortedResources.sort((r1, r2) -> {
             if (r1.cpu != null && r2.cpu != null) {
                 if (r1.instances != null) {
