@@ -14,10 +14,22 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+/**
+ * The class that implements the methods for the handling of
+ * JSON mapping from Java classes into JSONObject classes
+ */
 public class JsonParser {
 
     private JsonParser() {  }
 
+    /**
+     * The method that converts Java objects to JSONObject using reflection.
+     * @param object The object to convert
+     * @param clazz The class of the object
+     * @return The converted JSONObject object.
+     * @throws JSONException If something failed to convert to a JSONObject
+     * @throws IllegalAccessException If the Field couldn't be accessed or written to with reflection.
+     */
     public static JSONObject toJson(Object object, Class<?> clazz) throws JSONException, IllegalAccessException {
         Object jsonObject = toJsonObject(object, clazz);
 
@@ -26,6 +38,14 @@ public class JsonParser {
         return (JSONObject) jsonObject;
     }
 
+    /**
+     * The method that converts Java objects to JSONArray using reflection.
+     * @param object The object to convert
+     * @param clazz The class of the object
+     * @return The converted JSONObject object.
+     * @throws JSONException If something failed to convert to a JSONObject
+     * @throws IllegalAccessException If the Field couldn't be accessed or written to with reflection.
+     */
     public static JSONArray toJsonArray(Object object, Class<?> clazz) throws JSONException, IllegalAccessException {
         Object jsonObject = toJsonObject(object, clazz);
 
@@ -34,6 +54,12 @@ public class JsonParser {
         return (JSONArray) jsonObject;
     }
 
+    /**
+     * Checks if the given object is an object of the given class.
+     * @param result The object to check the class of.
+     * @param parseToClass The class that it is supposed to be.
+     * @throws JSONException If the given object is not of the given class
+     */
     private static void parseResultValidation(Object result, Class<?> parseToClass) throws JSONException {
         if (result == null) {
             throw new JSONException("Parsed to null");
@@ -47,6 +73,14 @@ public class JsonParser {
         }
     }
 
+    /**
+     * Handles the recursive conversion of Java Object to JSONObject object.
+     * @param object The Java object to convert
+     * @param clazz The class of the object.
+     * @return The converted object or null if empty object.
+     * @throws IllegalAccessException if the data access with reflection failed
+     * @throws JSONException if the conversion of object to JSONObject failed
+     */
     private static Object toJsonObject(Object object, Class<?> clazz) throws IllegalAccessException, JSONException {
         if (object == null) {
             if (Collection.class.isAssignableFrom(clazz)) {
@@ -82,6 +116,12 @@ public class JsonParser {
         return toJsonFromReflection(object, clazz);
     }
 
+    /**
+     * Handles the conversion of object to String, Primitive or Primitive Wrapper.
+     * @param object The object to convert
+     * @param clazz the object's class
+     * @return The converted object or null if the object wasn't String, Primitive or Primitive Wrapper
+     */
     private static Object toJsonFromPrimitiveOrString(Object object, Class<?> clazz) {
         if (clazz == String.class) {
             return object;
@@ -94,6 +134,13 @@ public class JsonParser {
         return null;
     }
 
+    /**
+     * Handles the conversion of an array object to JSONArray.
+     * @param object the obejct to convert
+     * @return the converted JSONArray object or null if couldn't convert from an array.
+     * @throws JSONException If the recursive conversion failed
+     * @throws IllegalAccessException If the recursive conversion's reflection failed
+     */
     private static JSONArray toJsonFromArray(Object object) throws JSONException, IllegalAccessException {
         if (object.getClass().isArray()) {
             JSONArray jsonArray = new JSONArray();
@@ -113,6 +160,13 @@ public class JsonParser {
         return null;
     }
 
+    /**
+     * Handles the conversion of a collection object to JSONArray.
+     * @param object the obejct to convert
+     * @return the converted JSONArray object or null if couldn't convert from a collection.
+     * @throws JSONException If the recursive conversion failed
+     * @throws IllegalAccessException If the recursive conversion's reflection failed
+     */
     private static JSONArray toJsonFromCollection(Object object) throws JSONException, IllegalAccessException {
         if (object instanceof Collection<?>) {
             JSONArray jsonArray = new JSONArray();
@@ -127,6 +181,14 @@ public class JsonParser {
         return null;
     }
 
+    /**
+     * Handles the conversion of a Map object to JSONObject.
+     * In the format of key: value -> fieldName: value
+     * @param object the obejct to convert
+     * @return the converted JSONObject object or null if couldn't convert from a Map.
+     * @throws JSONException If the recursive conversion failed
+     * @throws IllegalAccessException If the recursive conversion's reflection failed
+     */
     private static JSONObject toJsonFromMap(Object object) throws JSONException, IllegalAccessException {
         if (object instanceof Map<?, ?>) {
             JSONObject jsonMap = new JSONObject();
@@ -145,6 +207,14 @@ public class JsonParser {
         return null;
     }
 
+    /**
+     * Handles the conversion of a Object object to JSONObject based on the given class using reflection.
+     * @param object the object to convert
+     * @param clazz the class of the object
+     * @return the converted JSONObject.
+     * @throws JSONException If the recursive conversion failed
+     * @throws IllegalAccessException If the data mapping with reflection failed
+     */
     private static JSONObject toJsonFromReflection(Object object, Class<?> clazz) throws IllegalAccessException, JSONException {
         JSONObject result = new JSONObject();
 
@@ -169,10 +239,32 @@ public class JsonParser {
         return result;
     }
 
+    /**
+     * Converts a JSON string to the given class using reflection and generic methods.
+     * Requires a zero parameter constructor for object initialization.
+     * @param json the json string to convert from
+     * @param clazz the class to convert into
+     * @return The object with the given class from the JSON string.
+     * @param <T> The class of the object to convert to
+     */
     public static <T> T fromJsonString(String json, Class<T> clazz) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return fromJsonObject(new JSONObject(json), clazz, null);
     }
 
+    /**
+     * Converts a JSONObject to the given class using reflection and generic methods.
+     * Requires a zero parameter constructor for object initialization.
+     * @param json the JSONObject to convert from
+     * @param clazz the class to convert to
+     * @param parent the parent of the object to convert.
+     * @return
+     * @param <T>
+     * @throws JSONException
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     */
     public static <T> T fromJsonObject(JSONObject json, Class<T> clazz, Object parent) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         T instance = createInstance(clazz, parent);
 
@@ -187,6 +279,12 @@ public class JsonParser {
         return instance;
     }
 
+    /**
+     * Creates the default instance of the given class.
+     * @param clazz the class to create the instance of
+     * @param parent the parent object which the class needs to be created in.
+     * @return The created object.
+     */
     private static <T> T createInstance(Class<T> clazz, Object parent) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         T instance;
 
@@ -206,6 +304,12 @@ public class JsonParser {
         return instance;
     }
 
+    /**
+     * Creates a Map from the given JSONObject.
+     * @param json the JSONObject to create from
+     * @param clazz the class of the object to create to.
+     * @return The map from the JSONObject.
+     */
     private static Map<Object, Object> fromJsonToMap(JSONObject json, Class<?> clazz) throws JSONException {
         if (Map.class.isAssignableFrom(clazz)) {
             Map<Object, Object> instance = new HashMap<>();
@@ -213,13 +317,13 @@ public class JsonParser {
             for (Iterator it = json.keys(); it.hasNext(); ) {
                 var key = it.next();
                 var value = json.get(key.toString());
-                if (json.get(key.toString()).toString().matches("^\\d+$")) {
+                if (json.get(key.toString()).toString().matches("^\\d+$")) { //Integer checking regex
                     try {
                         value = Integer.parseInt(value.toString());
                     } catch (NumberFormatException ignored){
                         //Not an Integer
                     }
-                } else if (json.get(key.toString()).toString().matches("^[0-9.,]+$")) {
+                } else if (json.get(key.toString()).toString().matches("^[0-9.,]+$")) { //Double checking regex
                     try {
                         value = Double.parseDouble(value.toString());
                     } catch (NumberFormatException ignored) {
@@ -235,6 +339,12 @@ public class JsonParser {
         return new HashMap<>();
     }
 
+    /**
+     * Method used for assigning the json object's value to the Java object's corresponding field.
+     * @param json the JSONObject to assign from.
+     * @param field the Java field to assign to.
+     * @param instance The instance of the object. (Reflection requires)
+     */
     private static void assignValueToField(JSONObject json, Field field, Object instance) throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         field.setAccessible(true);
 
@@ -271,6 +381,12 @@ public class JsonParser {
 
     }
 
+    /**
+     * Converts the given JSONArray to the given class.
+     * @param jsonArray the JSONArray to convert from.
+     * @param clazz the class to convert to.
+     * @return the created Object.
+     */
     private static Object convertJsonArray(JSONArray jsonArray, Class<?> clazz) throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         Class<?> componentType = clazz.getComponentType();
 

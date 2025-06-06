@@ -5,9 +5,6 @@ import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-import lombok.Getter;
 import lombok.Setter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -15,8 +12,11 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
-import java.time.Instant;
 
+/**
+ * The class that provides implementation for the handling of the SQLite database.
+ * Provides methods for database setup, creating tables, and writing data to the tables.
+ */
 public class SqLiteManager {
 
     private static File databaseFile;
@@ -30,6 +30,10 @@ public class SqLiteManager {
         SqLiteManager.setEnabled(PredictionConfigurator.CREATE_DATABASE);
     }
 
+    /**
+     * Returns the Connection if present. If not then creates it's instance.
+     * @return The Connection object for the database.
+     */
     public static Connection getConnection() {
         if (!enabled)
             return null;
@@ -48,6 +52,12 @@ public class SqLiteManager {
         return connection;
     }
 
+    /**
+     * Returns the database file as a File object if present. If not then creates it.
+     * @return The database file as a File object.
+     * @throws SQLException If failed to create the database.
+     * @throws IOException If couldn't create the file for the database.
+     */
     public File getDatabaseFile() throws SQLException, IOException {
         if (!enabled)
             return null;
@@ -59,6 +69,11 @@ public class SqLiteManager {
         return databaseFile;
     }
 
+    /**
+     * Creates the database file, then the connection and turns auto commit to false.
+     * @throws IOException if couldn't create database file
+     * @throws SQLException if there was error with either creating the database, or the Connection for it.
+     */
     public void setUpDatabase() throws IOException, SQLException {
         if (!enabled)
             return;
@@ -67,10 +82,13 @@ public class SqLiteManager {
 
         connection = getConnection();
 
-
         getConnection().setAutoCommit(false);
     }
 
+    /**
+     * Creates the tables for the provided features.
+     * @param featureName the features to create tables for.
+     */
     public void createTable(String featureName) {
         if (!enabled)
             return;
@@ -105,6 +123,11 @@ public class SqLiteManager {
         }
     }
 
+    /**
+     * Method to add a row to the feature's raw data table.
+     * @param featureName the name of the feature.
+     * @param data the new data raw for the provided feature.
+     */
     public void addRawDataToTable(String featureName, Double data) {
         if (!enabled)
             return;
@@ -121,6 +144,11 @@ public class SqLiteManager {
         }
     }
 
+    /**
+     * Method to add a row to the feature's prediction data table.
+     * @param featureName the name of the feature.
+     * @param prediction the new data prediction for the provided feature.
+     */
     public void addPredictionDataToTable(String featureName, Prediction prediction) {
         if (!enabled)
             return;
@@ -157,6 +185,11 @@ public class SqLiteManager {
         }
     }
 
+    /**
+     * Method for the creation of the database file.
+     * @return The created database file.
+     * @throws IOException if couldn't create database file.
+     */
     private File createDatabaseFile() throws IOException {
         if (!enabled)
             return null;
@@ -177,6 +210,11 @@ public class SqLiteManager {
         return databaseFile;
     }
 
+    /**
+     * Util method for transforming characters which couldn't be used in a table's name
+     * @param name the name to be transformed
+     * @return the transformed name
+     */
     private static String formatFeatureNameToSQL(String name) {
         return name.replace(":", "__");
     }

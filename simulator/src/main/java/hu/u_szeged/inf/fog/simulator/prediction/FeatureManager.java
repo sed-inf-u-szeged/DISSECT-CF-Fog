@@ -7,6 +7,7 @@ import java.util.List;
 
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import lombok.Getter;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,6 +43,7 @@ public class FeatureManager {
 
     /**
      * Adds a feature to the list if it does not already exist.
+     * If database enabled then it also creates the tables for the feature.
      *
      * @param feature the feature to be added
      */
@@ -202,7 +204,6 @@ public class FeatureManager {
      * Sends features for prediction.
      *
      * @param features the list of features to predict
-     * @param windowSize the size of the window for prediction
      * @return the list of predictions
      */
     public List<Prediction> predict(List<Feature> features, String predictorName) throws Exception {
@@ -237,6 +238,14 @@ public class FeatureManager {
 //            PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
 
             result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
+
+            SimulationSettings.get().getPredictionSettings().stream().filter(
+                    settings -> settings.getPredictorName().equals(result.getPredictionSettings().getPredictorName())
+            ).findFirst().orElseThrow().increaseSumOfErrorMetrics(
+                    (result.getErrorMetrics().getMae()
+                            + result.getErrorMetrics().getMse()
+                            + result.getErrorMetrics().getRmse()) / 3
+            ).increaseNumberOfPredictions();
 
             feature.addPrediction(result);
             predictions.add(result);

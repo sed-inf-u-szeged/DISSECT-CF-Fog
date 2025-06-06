@@ -26,6 +26,7 @@ public class PredictionSimulation {
     private static void runPredictionOnly() throws Exception {
         PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
 
+        //List of predictor setting's for multiple launch
         List<PairPredictionSettings> predictionSettings = new ArrayList<>();
 
         predictionSettings.add(new PairPredictionSettings(
@@ -83,6 +84,7 @@ public class PredictionSimulation {
     private static void runPredictionWithUI() throws Exception {
         PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
 
+        //List of predictor setting's for multiple launch
         List<PairPredictionSettings> predictionSettings = new ArrayList<>();
 
         predictionSettings.add(new PairPredictionSettings(

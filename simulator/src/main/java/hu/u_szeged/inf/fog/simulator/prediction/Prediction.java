@@ -77,6 +77,12 @@ public class Prediction {
     @FromJsonFieldAliases(fieldNames = {"prediction_time"})
     private double predictionTime;
 
+    /**
+     * Returns the best predictions for features from the given predictions.
+     * The deceison is based on the getBestPrediction method.
+     * @param predictions the given predictions with possibly multiple predictions for a feature
+     * @return The best prediction for the given features
+     */
     public static Map<String, Prediction> getBestPredictions(Collection<Prediction> predictions) {
         Map<String, Prediction> bestPredictions = new HashMap<>();
         for (Prediction prediction : predictions) {
@@ -88,6 +94,11 @@ public class Prediction {
         return bestPredictions;
     }
 
+    /**
+     * Returns the best prediction in the given collection based on the average of the error metrics.
+     * @param predictions The predictions to decide from.
+     * @return
+     */
     public static Prediction getBestPrediction(Collection<Prediction> predictions) {
         return predictions.stream().min(Comparator.comparingDouble(
                 (Prediction pred) ->
@@ -97,6 +108,12 @@ public class Prediction {
             )).orElseThrow();
     }
 
+    /**
+     * Separates the predictions of the given feature from all feature predictions.
+     * @param predictions The predictions for possibly multiple features.
+     * @param featureName The name of the feature to separate.
+     * @return The predictions for the given feature.
+     */
     public static Collection<Prediction> getPredictionsForFeature(Collection<Prediction> predictions, String featureName) {
         return predictions.stream().filter(
                 predictionForFilter -> predictionForFilter

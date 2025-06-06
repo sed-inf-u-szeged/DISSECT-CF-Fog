@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * The {@code PredictionConfigurator} class is responsible for configuring and managing
  * the simulation using time series analysis, including starting necessary launchers,
- * handling socket communication, and exporting simulation results.
+ * communicating with necessary applications, and exporting simulation results.
  */
 public class PredictionConfigurator {
     
@@ -55,6 +55,11 @@ public class PredictionConfigurator {
         }
     }
 
+    /**
+     * Adds a predictor process to the list of predictions alongside with it's reader and writer streams.
+     * @param name The name of the predictor
+     * @param predictorProcess The predictor's process
+     */
     public static void addPredictorProcess(String name, Process predictorProcess) {
         predictor.put(name, predictorProcess);
         predictor_reader.put(name, new BufferedReader(new InputStreamReader(predictorProcess.getInputStream()), 8192 * 8));
@@ -62,13 +67,15 @@ public class PredictionConfigurator {
     }
 
     /**
-     * Executes the prediction simulation by opening applications, starting the socket, 
-     * running the simulation, exporting results, stopping threads, and printing information.
+     * Executes the prediction simulation by opening processes and applications,
+     * running the simulation, closing input/output streams, exporting results,
+     * starting LSTM training based on configuration, and printing information
      */
     public void execute() throws Exception {
         for (Launcher application : launchers) {
             application.open();
 
+            // The UI depends on the database
             if (application.getClass() == ElectronLauncher.class) {
                 PredictionConfigurator.CREATE_DATABASE = true;
                 SqLiteManager.setEnabled(true);

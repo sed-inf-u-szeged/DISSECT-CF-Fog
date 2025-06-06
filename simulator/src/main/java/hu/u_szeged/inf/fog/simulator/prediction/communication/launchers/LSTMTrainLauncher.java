@@ -11,6 +11,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * The class provides implementations for starting the Python-based LSTM trainer application.
+ */
 public class LSTMTrainLauncher extends Launcher {
 
     public LSTMTrainLauncher() throws IOException {

@@ -51,6 +51,7 @@ public abstract class Feature {
 
     /**
      * Computes the feature's value and adds it to the list of values.
+     * If database is enabled creates a row in the database.
      */
     public void computeValue() {
         double value = compute();
