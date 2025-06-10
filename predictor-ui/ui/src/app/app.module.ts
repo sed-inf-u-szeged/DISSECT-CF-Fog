@@ -15,7 +15,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RequiredSymbolComponent } from './components/required-symbol/required-symbol.component';
 import { PredictionChartComponent } from './components/prediction-chart/prediction-chart.component';
 import { ErrorChartComponent } from './components/error-chart/error-chart.component';
-import { LstmTrainModalComponent } from './components/lstm-train-modal/lstm-train-modal.component';
 import { RightPanelComponent } from './components/right-panel/right-panel.component';
 import { ProgressBarComponent } from './components/progress-bar/progress-bar.component';
 import { LoadingCircleComponent } from './components/loading-circle/loading-circle.component';
@@ -36,7 +35,6 @@ import { SimulationViewModalComponent } from './components/simulation-view-modal
     RequiredSymbolComponent,
     PredictionChartComponent,
     ErrorChartComponent,
-    LstmTrainModalComponent,
     RightPanelComponent,
     ProgressBarComponent,
     LoadingCircleComponent,

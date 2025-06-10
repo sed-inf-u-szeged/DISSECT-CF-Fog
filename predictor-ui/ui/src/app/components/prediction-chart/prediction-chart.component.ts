@@ -57,7 +57,7 @@ export class PredictionChartComponent implements OnInit, AfterViewInit, OnChange
   }
 
   getName() {
-    return `Feature: ${this.prediction.feature_name}`;
+    return `Feature: ${this.prediction.feature_name}\npredicted with: ${this.prediction.predictor_settings.predictor_name}`;
   }
 
   getId() {
@@ -258,7 +258,7 @@ export class PredictionChartComponent implements OnInit, AfterViewInit, OnChange
 
   createLabels() {
     const labels: string[] = [];
-    const len = this.prediction.simulation_settings['prediction']['batchSize'] + this.prediction.simulation_settings['prediction']['length'];
+    const len = this.prediction.predictor_settings['prediction']['batchSize'] + this.prediction.predictor_settings['prediction']['length'];
     for (let i = 0; i < len; i++) {
       labels.push(i.toString());
     }

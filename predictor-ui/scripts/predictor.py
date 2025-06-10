@@ -13,12 +13,12 @@ import time
 
 class Predictor:
 
-    def __init__(self, simulation_settings):
-        self._simulation_settings = simulation_settings
+    def __init__(self, prediction_settings):
+        self._prediction_settings = prediction_settings
         self._num_of_predictions = {}
         self._predictor_model = Predictor.get_predictor_model(
-            name=self._simulation_settings["predictor"]["predictor"],
-            simulation_settings=self._simulation_settings
+            name=self._prediction_settings["predictor"]["predictor"],
+            prediction_settings=self._prediction_settings
         )
 
     def compute(self, feature):  # TODO scale_inverse if it was scaled
@@ -34,24 +34,24 @@ class Predictor:
         original_data, scaler_original = Preprocessor.process(
             data=values,
             smoothing=None,
-            scale=self._simulation_settings["prediction"]["scale"],
+            scale=self._prediction_settings["prediction"]["scale"],
         )
 
         preprocessed_data, scaler_preprocessed = Preprocessor.process(
             data=values,
-            smoothing=self._simulation_settings["prediction"]["smoothing"],
-            scale=self._simulation_settings["prediction"]["scale"],
+            smoothing=self._prediction_settings["prediction"]["smoothing"],
+            scale=self._prediction_settings["prediction"]["scale"],
         )
 
         test_data_beginning, test_data_end = Preprocessor.create_test_data(
             data=preprocessed_data,
-            test_size=self._simulation_settings["prediction"]["testSize"]
+            test_size=self._prediction_settings["prediction"]["testSize"]
         )
 
         result = {
             "feature_name": feature_name,
             "prediction_number": self._num_of_predictions[feature_name],
-            "simulation_settings": self._simulation_settings,
+            "prediction_settings": self._prediction_settings,
             "original_data": {
                 "timestamp": original_data["timestamp"].values.tolist(),
                 "data": Preprocessor.get_data_inverse(original_data["data"], scaler_original)
@@ -96,23 +96,23 @@ class Predictor:
         return result
 
     @staticmethod
-    def get_predictor_model(name, simulation_settings):
+    def get_predictor_model(name, prediction_settings):
         if name == "ARIMA":
-            return ArimaModel(simulation_settings=simulation_settings)
+            return ArimaModel(predictor_settings=prediction_settings)
 
         if name == "SVR":
-            return SVRModel(simulation_settings=simulation_settings)
+            return SVRModel(predictor_settings=prediction_settings)
 
         if name == "RANDOM_FOREST":
-            return RandomForestModel(simulation_settings=simulation_settings)
+            return RandomForestModel(predictor_settings=prediction_settings)
 
         if name == "HOLT_WINTERS":
-            return HoltWintersModel(simulation_settings=simulation_settings)
+            return HoltWintersModel(predictionSettings=prediction_settings)
 
         if name == "LSTM":
-            return LSTMModel(simulation_settings=simulation_settings)
+            return LSTMModel(predictor_settings=prediction_settings)
 
         if name == "LINEAR_REGRESSION":
-            return LinearRegressionModel(simulation_settings=simulation_settings)
+            return LinearRegressionModel(predictor_settings=prediction_settings)
 
         return None

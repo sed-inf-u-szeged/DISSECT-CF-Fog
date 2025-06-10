@@ -62,6 +62,10 @@ def get_from_pyshell():
     return json.loads(input())
 
 
+def get_from_args():
+    return json.loads(sys.argv[1])
+
+
 def make_data(dataframes, input_shape, output_shape, shuffle_datasets=True):
 
     x, y = [], []
@@ -100,14 +104,18 @@ def prepare_dataframes(settings, dataframes):
         for column in df.columns:
             df[column] = df[column].apply(replace_commas).astype(float).tolist()
             df = df[df[column].notna()]
-            df_result, scaler = Preprocessor.process(
-                data=df[column].tolist(),
-                smoothing={
+            try:
+                df_result, scaler = Preprocessor.process(
+                    data=df[column].tolist(),
+                    smoothing={
                     "windowSize": int(settings["smoothing"]["windowSize"]),
                     "polynomialDegree": int(settings["smoothing"]["polynomialDegree"])
-                },
-                scale=settings["scale"],
-            )
+                    },
+                    scale = settings["scale"],
+                )
+            except ValueError:
+                sys.stderr.write(f"Skipped {column}, not enough data for window\n")
+                continue
             result.append(df_result)
     return result
 
@@ -169,4 +177,4 @@ def main(settings):
 
 
 if __name__ == "__main__":
-    main(get_from_pyshell())
+    main(get_from_args())
