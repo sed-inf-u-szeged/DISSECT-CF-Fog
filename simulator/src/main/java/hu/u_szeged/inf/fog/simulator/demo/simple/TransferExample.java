@@ -12,27 +12,27 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransferExample extends ConsumptionEventAdapter {
+public class TransferExample {
 
     Repository from;
     Repository to;
     StorageObject so;
-    long start;
+    long startTime;
 
     public TransferExample(Repository from, Repository to, StorageObject so) throws NetworkException {
         this.from = from;
         this.to = to;
         this.so = so;
         this.from.registerObject(so);
-        this.from.requestContentDelivery(so.id, to, this);
-        this.start = Timed.getFireCount();
-    }
+        this.startTime = Timed.getFireCount();
 
-    @Override
-    public void conComplete() {
-        this.from.deregisterObject(this.so);
-        System.out.println("Start: " + this.start + " from: " +
-                    this.from.getName() + " to: " + this.to.getName() + " end: " +Timed.getFireCount());
+        this.from.requestContentDelivery(so.id, to, new ConsumptionEventAdapter() {
+            @Override
+            public void conComplete() {
+                from.deregisterObject(so);
+                System.out.println("Start: " + startTime + " from: " + from.getName() + " to: " + to.getName() + " end: " +Timed.getFireCount());
+            }
+        });
     }
 
     public static void main(String[] args) throws NetworkException {
