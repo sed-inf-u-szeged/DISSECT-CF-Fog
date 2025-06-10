@@ -5,8 +5,8 @@ from .predictor_model import PredictorModel
 
 
 class LinearRegressionModel(PredictorModel):
-    def __init__(self, simulation_settings):
-        super().__init__("LINEAR_REGRESSION", simulation_settings)
+    def __init__(self, predictor_settings):
+        super().__init__("LINEAR_REGRESSION", predictor_settings)
 
     def predict(self, feature_name, dataframe, prediction_length, is_test_data):
         model = LinearRegression()

@@ -10,16 +10,16 @@ class Log:
     def info(data):
         date = datetime.today().strftime("%Y/%m/%d %H:%M:%S")
         message = f"[INFO   ][{date}]\t{data}"
-        print(message)
+        print(message, flush=True)
 
     @staticmethod
     def warning(data):
         date = datetime.today().strftime("%Y/%m/%d %H:%M:%S")
         message = f"[WARNING][{date}]\t{data}"
-        print(f"{bcolors.WARNING}{message}{bcolors.ENDC}")
+        print(f"{bcolors.WARNING}{message}{bcolors.ENDC}", flush=True)
 
     @staticmethod
     def error(data):
         date = datetime.today().strftime("%Y/%m/%d %H:%M:%S")
         message = f"[ERROR  ][{date}]\t{data}"
-        print(f"{bcolors.FAIL}{message}{bcolors.ENDC}")
+        print(f"{bcolors.FAIL}{message}{bcolors.ENDC}", flush=True)

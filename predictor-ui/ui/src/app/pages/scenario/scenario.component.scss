@@ -2,7 +2,6 @@
     height: calc(100vh - 49px - 49px);
     display: flex;
     flex-direction: row;
-
     .panels {
         min-width: 600px;
         display: flex;
@@ -21,14 +20,15 @@
     }
 
     .output {
-        width: 100%;
-        max-width: calc(100% - 600px);
+        width: 100vw;
+        
 
         .output-container {
-            height: calc(100% - 49px - 49px);
+            height: calc(100% - 70px - 70px);
             display: flex;
             flex-direction: column;
             background-color: var(--color-background);
+            
             gap: 16px;
             padding: 16px;
             box-sizing: border-box;
@@ -38,7 +38,7 @@
           .item {
             display: flex;
             background-color: var(--color-background);
-            max-height: 250px;
+            max-height: 750px;
             min-height: 250px;
           }
         }

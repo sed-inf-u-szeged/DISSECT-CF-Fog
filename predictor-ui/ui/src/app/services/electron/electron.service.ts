@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
+import { Prediction } from 'src/app/shared/Prediction';
 
 @Injectable({
   providedIn: 'root'
@@ -7,25 +8,29 @@ import { Observable } from 'rxjs';
 export class ElectronService {
   api: string = 'electron-api'
 
-  constructor() { }
+  private dataSubject = new Subject<Map<string, Prediction[]>>();
+  public dataUpdates$: Observable<Map<string, Prediction[]>> = this.dataSubject.asObservable();
 
-  send(channel: string, data?: any) {
+  private errorSubject = new Subject<string>();
+  public errorUpdates$: Observable<string> = this.errorSubject.asObservable();
+
+  constructor() {
     if (!this.hasApi()) {
-      throw Error('[send] Electron API is not supported in Browser!');
+      this.errorSubject.next('Electron API is not supported in Browser!')
+      throw Error('[readData] Electron API is not supported in Browser!');
     }
-    (window as any)[this.api].send(channel, data);
+    (window as any)[this.api].onDataUpdated((data: Map<string, Prediction[]>) => {
+        this.dataSubject.next(data)
+    });
+    (window as any)[this.api].onDataError((data: string) => {
+        this.errorSubject.next(data)
+    });
   }
 
-  receive(channel: string): Observable<{ result: any }> {
-    return new Observable((subscriber) => {
-      if (!this.hasApi()) {
-        subscriber.error('[receive] Electron API is not supported in Browser!');
-      } else {
-        (window as any)[this.api].receive(channel, (data: any) => {
-          subscriber.next(data);
-        });
-      }
-    });
+  cleanupListeners(): void {
+    if ((window as any)[this.api].electronAPI) {
+      (window as any)[this.api].removeAllListeners();
+    }
   }
 
   hasApi() {

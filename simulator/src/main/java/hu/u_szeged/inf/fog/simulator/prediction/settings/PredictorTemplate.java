@@ -3,22 +3,24 @@ package hu.u_szeged.inf.fog.simulator.prediction.settings;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class PredictorTemplate {
     private String id;
     private String label;
     private List<Parameter> hyperparameters;
     private List<Parameter> options;
-
-    public PredictorTemplate(String id, String label, List<Parameter> hyperparameters, List<Parameter> options) {
-        this.id = id;
-        this.label = label;
-        this.hyperparameters = hyperparameters;
-        this.options = options;
-    }
 
     public PredictorTemplate(String id, String label, List<Parameter> hyperparameters) {
         this.id = id;
@@ -36,68 +38,6 @@ public class PredictorTemplate {
     public PredictorTemplate(String id, String label) {
         this.id = id;
         this.label = label;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public List<Parameter> getHyperparameters() {
-        return hyperparameters;
-    }
-
-    public void setHyperparameters(List<Parameter> hyperparameters) {
-        this.hyperparameters = hyperparameters;
-    }
-
-    public List<Parameter> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<Parameter> options) {
-        this.options = options;
-    }
-
-    public JSONObject toJson() throws JSONException {
-        JSONArray arrayHypers = new JSONArray();
-        if (hyperparameters != null) {
-            for (Parameter p : hyperparameters) {
-                arrayHypers.put(p.toJson());
-            }
-        }
-
-        JSONArray arrayOptions = new JSONArray();
-        if (options != null) {
-            for (Parameter p : options) {
-                arrayOptions.put(p.toJson());
-            }
-        }
-
-        return new JSONObject()
-                .put("id", id)
-                .put("label", label)
-                .put("hyperparameters", hyperparameters == null ? new JSONArray() : arrayHypers)
-                .put("options", options == null ? new JSONArray() : arrayOptions);
-    }
-
-    public static JSONObject getAllAsJson() throws JSONException { // TODO replace json to classes
-        JSONArray array = new JSONArray();
-        for (PredictorTemplate predictorTemplate : getAll()) {
-            array.put(predictorTemplate.toJson());
-        }
-        return new JSONObject().put("predictors", array);
     }
 
     public static List<PredictorTemplate> getAll() { // TODO replace json to classes

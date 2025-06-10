@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +16,7 @@ public class TableBuilder {
     /**
      * Represents a row in the table.
      */
+    @Getter
     public class TableRow {
         
         private List<String> data;
@@ -28,15 +31,6 @@ public class TableBuilder {
             for (Object item : items) {
                 this.data.add(item.toString());
             }
-        }
-
-        /**
-         * Returns the data in the row.
-         *
-         * @return the list of data in the row
-         */
-        public List<String> getData() {
-            return data;
         }
 
         /**

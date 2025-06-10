@@ -21,7 +21,7 @@ export const getMockPredictions = ({ numOfPredictions, numOfFeatures, batchSize,
             test_data_end: getData(batchSize - testLength, batchSize),
             prediction_test: getData(batchSize - testLength, batchSize),
             prediction_future: getData(batchSize, batchSize + predictionLength),
-            simulation_settings: {
+            predictor_settings: {
                 prediction: {
                     batchSize: batchSize,
                     length: predictionLength
