@@ -33,11 +33,7 @@ public class FogSimulationExample {
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1_073_741_824L);
-        AlterableResourceConstraints arc = new AlterableResourceConstraints(2, 0.001, 4294967296L);
-
-        Instance instance1 = new Instance("instance1", va, arc, 0.0255 / 60 / 60 / 1000);
-        Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
-        Instance instance3 = new Instance("instance3", va, arc, 0.102 / 60 / 60 / 1000);
+        AlterableResourceConstraints arc = new AlterableResourceConstraints(2, 0.001, 4_294_967_296L);
 
         ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 21.3), 100);
         ComputingAppliance fog1 = new ComputingAppliance(cloudfile, "fog1", new GeoLocation(47.6, 17.9), 50);
@@ -52,11 +48,15 @@ public class FogSimulationExample {
         
         fog1.addNeighbor(fog2, 33);
 
-        Application application1 = new Application("App-1", 1 * 60 * 1000, 250, 2500, false,
+        Instance instance1 = new Instance("instance1", va, arc, 0.0255 / 60 / 60 / 1000);
+        Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
+        Instance instance3 = new Instance("instance3", va, arc, 0.102 / 60 / 60 / 1000);
+
+        Application application1 = new Application("App-1", 1 * 60 * 1000, 250, 2_500, false,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance3);
-        Application application2 = new Application("App-2", 1 * 60 * 1000, 250, 2500, true,
+        Application application2 = new Application("App-2", 1 * 60 * 1000, 250, 2_500, true,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance2);
-        Application application3 = new Application("App-3", 1 * 60 * 1000, 250, 2500, true,
+        Application application3 = new Application("App-3", 1 * 60 * 1000, 250, 2_500, true,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance1);
 
         cloud1.addApplication(application1);
@@ -78,13 +78,13 @@ public class FogSimulationExample {
 
             Device device;
             double step = SeedSyncer.centralRnd.nextDouble(); 
-            if(i % 2 == 0) {
+            if (i % 2 == 0) {
                 device = new EdgeDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
-                        new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10000),
+                        new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
                         new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
-            }else {
+            } else {
                 device  = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
-                        new RandomWalkMobilityStrategy(new GeoLocation(47 - step, 19 - step), 0.0027, 0.0055, 10000),
+                        new RandomWalkMobilityStrategy(new GeoLocation(47 - step, 19 - step), 0.0027, 0.0055, 10_000),
                         new RandomDeviceStrategy(), localMachine, 50, true);
             }
             deviceList.add(device);

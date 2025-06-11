@@ -34,6 +34,12 @@ public class IoTSimulationExample {
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
+        ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 21.3), 0);
+        ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(47.6, 17.9), 0);
+
+        new EnergyDataCollector("cloud1", cloud1.iaas, true);
+        new EnergyDataCollector("cloud2", cloud2.iaas, true);
+
         VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1_073_741_824L);
         AlterableResourceConstraints arc = new AlterableResourceConstraints(2, 0.001, 4_294_967_296L);
 
@@ -41,12 +47,6 @@ public class IoTSimulationExample {
         Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
         Instance instance3 = new Instance("instance3", va, arc, 0.102 / 60 / 60 / 1000);
 
-        ComputingAppliance cloud1 = new ComputingAppliance(cloudfile, "cloud1", new GeoLocation(47.45, 21.3), 0);
-        ComputingAppliance cloud2 = new ComputingAppliance(cloudfile, "cloud2", new GeoLocation(47.6, 17.9), 0);
-
-        new EnergyDataCollector("cloud1", cloud1.iaas, true);
-        new EnergyDataCollector("cloud2", cloud2.iaas, true);
-        
         // applications' settings - a fully loaded task requires 1 minute to be processed
         long appFreq = 60 * 1000; 
         long taskSize = 100;
@@ -73,10 +73,10 @@ public class IoTSimulationExample {
             final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
             final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-            Repository repo = new Repository(4_294_967_296L, "device-repo" + i, 3_250, 3_250, 3_250, new HashMap<>(), stTransitions, nwTransitions); // 26 Mbit/s
+            Repository repo = new Repository(4_294_967_296L, "device-repo" + i, 3_250, 3_250, 3_250,
+                    new HashMap<>(), stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(1, 0.001, 1_073_741_824L, repo, 0, 0, cpuTransitions);
 
-            
             // devices' settings
             long startTime = 0;
             long stopTime = 10 * 60 * 60 * 1000;

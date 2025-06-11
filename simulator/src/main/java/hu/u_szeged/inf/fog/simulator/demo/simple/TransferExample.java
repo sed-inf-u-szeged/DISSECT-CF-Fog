@@ -44,7 +44,7 @@ public class TransferExample {
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(20, 200, 300, 10, 20);
 
-        HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+        HashMap<String, Integer> latencyMap = new HashMap<>();
 
         Repository repo1 = new Repository(storageSize, "repo1", bandwidth, bandwidth, bandwidth, latencyMap, 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
@@ -57,8 +57,8 @@ public class TransferExample {
         repo1.setState(NetworkNode.State.RUNNING);
         repo2.setState(NetworkNode.State.RUNNING);
 
-        latencyMap.put("repo1",5);
-        latencyMap.put("repo2",6);
+        latencyMap.put("repo1", 5);
+        latencyMap.put("repo2", 6);
 
         new TransferExample(repo1, repo2, new StorageObject("file1", fileSize, false));
         new TransferExample(repo2, repo1, new StorageObject("file2", fileSize, false));

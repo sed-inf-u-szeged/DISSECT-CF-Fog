@@ -36,7 +36,7 @@ public class VmTaskExample {
         /** Creating a PM with 8 CPU cores, 8 GB RAM     **/
         /** 1 instruction/tick processing speed per core **/
         /** 10-10 seconds boot time and shutdown time    **/
-        PhysicalMachine pm = new PhysicalMachine(8, 1, 8589934592L, repo, 10_000, 10_000, 
+        PhysicalMachine pm = new PhysicalMachine(8, 1, 8_589_934_592L, repo, 10_000, 10_000,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.host));
 
         pm.turnon();
@@ -58,7 +58,7 @@ public class VmTaskExample {
 
         System.out.println("Time: " + Timed.getFireCount() + " PM-state: " + pm.getState() + " VM-state: " + vm.getState());
 
-        /** Simulating 100_000 instruction load of the VM **/
+        /** Simulating 100_000 instructions to be processed by the VM **/
         vm.newComputeTask(100_000, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
 
             @Override
