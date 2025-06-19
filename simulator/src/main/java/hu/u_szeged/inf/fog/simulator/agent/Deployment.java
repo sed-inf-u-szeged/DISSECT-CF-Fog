@@ -81,14 +81,14 @@ public class Deployment extends Timed {
             new Deployment(null, this.offer, this.app);
         }
                 
-        if (this.leadResource == null && offer.isRemainingDeploymentStarted == false) {
+        if (this.leadResource == null && !offer.isRemainingDeploymentStarted) {
             offer.isRemainingDeploymentStarted = true;
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 if (util.getRight().utilisedCpu > 0 && util.getRight().type == null) {
                     this.deployResource(util);
                 } 
             }
-        } else if (this.leadResource == null && checkRemainingDeployment() == true) {
+        } else if (this.leadResource == null && checkRemainingDeployment()) {
             SimLogger.logRun("Remaining resources for " + this.app.name + " were initilised at: " + Timed.getFireCount());
             app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
             unsubscribe();

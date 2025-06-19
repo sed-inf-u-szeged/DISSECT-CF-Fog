@@ -112,8 +112,8 @@ public class Capacity {
         utilisations.removeAll(utilisationsToBeRemoved);
     }
 
-    public void assignCapacity(Set<Resource> set, Offer offer) {
-        for (Resource resource : set) {
+    public void assignCapacity(Set<Resource> resources, Offer offer) {
+        for (Resource resource : resources) {
             for (Utilisation util : utilisations) {
                 if (util.resource == resource) {
                     util.state = Utilisation.State.ASSIGNED;

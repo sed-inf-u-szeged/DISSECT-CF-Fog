@@ -53,6 +53,8 @@ public class ResourceAgent {
     public Map<ResourceAgent, Double> neighborScores = new HashMap<>();
     public boolean servedAsGateway = false;
     public int winningOfferSelectionCount = 0;
+    private Set<ResourceAgent> networkingAgents;
+
     private final MessagingStrategy messagingStrategy;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
@@ -81,19 +83,9 @@ public class ResourceAgent {
     }
 
     public Triple<Double, Long, Long> getAllFreeResources() {
-        double totalFreeCpu = 0.0;
-        long totalFreeMemory = 0L;
-        long totalFreeStorage = 0L;
-
-        for (Capacity cap : capacities) {
-            double freeCpu = cap.cpu;
-            long freeMemory = cap.memory;
-            long freeStorage = cap.storage;
-
-            totalFreeCpu += freeCpu;
-            totalFreeMemory += freeMemory;
-            totalFreeStorage += freeStorage;
-        }
+        double totalFreeCpu = capacities.stream().mapToDouble(cap -> cap.cpu).sum();
+        long totalFreeMemory = capacities.stream().mapToLong(cap -> cap.memory).sum();
+        long totalFreeStorage = capacities.stream().mapToLong(cap -> cap.storage).sum();
 
         /*System.out.printf("%s not reserved (cpu: %.1f, memory: %d, storage: %d)%n",
                 this.name, totalFreeCpu, totalFreeMemory, totalFreeStorage
@@ -119,20 +111,17 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
-        System.out.println("broadcast started---------------");
         MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
-            System.out.println("broadcast message finished-----");
         });
     }
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
-        System.out.println("deploy started ----------------------");
         this.generateOffers(app);
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app);
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
@@ -165,7 +154,7 @@ public class ResourceAgent {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
         //app.resources.forEach(x -> System.out.println("itt meg jo: "+ x.cpu)); // minusz bug
 
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+        for (ResourceAgent agent : resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
 
@@ -174,7 +163,7 @@ public class ResourceAgent {
         // TODO: only for debugging, needs to be deleted
         System.out.println(app.name);
         for (Offer o : app.offers) {
-            //System.out.println(o);
+            // System.out.println(o);
         }
     }
 
@@ -342,10 +331,9 @@ public class ResourceAgent {
         if (messagingStrategy instanceof GuidedSearchMessagingStrategy) {
             ((GuidedSearchMessagingStrategy) messagingStrategy).setWinningOffer(offer);
         }
-        System.out.println("acknowledge started ----------------------");
+
 
         MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "ack", () -> {
-            System.out.println("acknowledge message finished------");
             SimLogger.logRun("All ack. messages receieved for " + app.name
                     + " at: " + Timed.getFireCount());
 
@@ -354,20 +342,24 @@ public class ResourceAgent {
                 return;
             }
 
+
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
                     if (offer.agentResourcesMap.containsKey(agent)) {
                         capacity.assignCapacity(offer.agentResourcesMap.get(agent), offer);
-                        // System.out.println("assigned capacity for " + agent.name + "-------------");
                     }
 
                     freeReservedResources(app.name, capacity);
                 }
             }
-
+            //System.out.println("find LR for " + app.name);
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
+        //System.out.println("ennyi van neki");
+        //System.out.println(app.name);
+        //System.out.println(app.bcastCounter);
+
     }
 
     private void freeReservedResources(final String appName, final Capacity capacity) {
@@ -397,5 +389,10 @@ public class ResourceAgent {
         leadResource.getRight().type = "LR";
 
         return leadResource;
+    }
+
+    public void setNetWorkingAgents(Set<ResourceAgent> networkingAgents) {
+        this.networkingAgents = networkingAgents;
+        this.networkingAgents.add(this);
     }
 }
