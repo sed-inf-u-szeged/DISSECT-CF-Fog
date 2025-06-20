@@ -19,15 +19,14 @@ public class CentralisedAntOptimiser {
      */
     private static double[][] globalPheromoneMatrix;
 
-    public static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> runOptimiser(
-            ArrayList<WorkflowComputingAppliance> centerNodes, 
+    public static HashMap<Integer, ArrayList<WorkflowComputingAppliance>> runOptimiser(int clusterCount,
             ArrayList<WorkflowComputingAppliance> nodesToBeClustered, 
             int numberOfAnts, int numberOfIteration, double probability, double topPercentAnts,
             double pheromoneIncrement, double evaporationRate) {
         
-        globalPheromoneMatrix = new double[nodesToBeClustered.size()][centerNodes.size()];
+        globalPheromoneMatrix = new double[nodesToBeClustered.size()][clusterCount];
         for (int i = 0; i < nodesToBeClustered.size(); i++) {
-            for (int j = 0; j < centerNodes.size(); j++) {
+            for (int j = 0; j < clusterCount; j++) {
                 double noise = SeedSyncer.centralRnd.nextDouble() * 0.1;
                 globalPheromoneMatrix[i][j] = 0.5 - (0.1 / 2) + noise;
             }
@@ -46,7 +45,7 @@ public class CentralisedAntOptimiser {
                 ant.generateSolution(globalPheromoneMatrix, nodesToBeClustered.size(), probability);
             }
             
-            calculateFitness(centerNodes, nodesToBeClustered, ants);
+            calculateFitness(clusterCount, nodesToBeClustered, ants);
             for (CentralisedAnt ant : ants) {
                 System.out.println(ant.id + ": " + Arrays.toString(ant.solution) + " " + ant.fitness);
             }
@@ -54,15 +53,16 @@ public class CentralisedAntOptimiser {
             evaporatePheromones(globalPheromoneMatrix, evaporationRate);
             printMatrix("updated pheromone matrix: ", globalPheromoneMatrix);
         }
-        return generateClusters(globalPheromoneMatrix, nodesToBeClustered, centerNodes);
+        return generateClusters(clusterCount, globalPheromoneMatrix, nodesToBeClustered);
     }
     
-    private static HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> generateClusters(
-            double[][] globalPheromoneMatrix,
-            ArrayList<WorkflowComputingAppliance> nodesToBeClustered,
-            ArrayList<WorkflowComputingAppliance> centerNodes) {
+    private static HashMap<Integer, ArrayList<WorkflowComputingAppliance>> generateClusters(
+            int clusterCount, double[][] globalPheromoneMatrix, ArrayList<WorkflowComputingAppliance> nodesToBeClustered) {
 
-        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment = new HashMap<>();
+        HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignment = new HashMap<>();
+        for (int i = 0; i < clusterCount; i++) {
+            clusterAssignment.computeIfAbsent(i, k -> new ArrayList<>());
+        }
 
         for (int i = 0; i < globalPheromoneMatrix.length; i++) {
             int clusterIndex = 0;
@@ -74,14 +74,7 @@ public class CentralisedAntOptimiser {
                     clusterIndex = j;
                 }
             }
-
-            WorkflowComputingAppliance selectedCluster = centerNodes.get(clusterIndex);
-            WorkflowComputingAppliance node = nodesToBeClustered.get(i);
-            
-            if (!clusterAssignment.containsKey(selectedCluster)) {
-                clusterAssignment.put(selectedCluster, new ArrayList<>());
-            }
-            clusterAssignment.get(selectedCluster).add(node);
+            clusterAssignment.get(clusterIndex).add(nodesToBeClustered.get(i));
         }
 
         return clusterAssignment;
@@ -114,19 +107,42 @@ public class CentralisedAntOptimiser {
         System.out.println();
     }
 
-    private static void calculateFitness(ArrayList<WorkflowComputingAppliance> centerNodes, 
+    private static void calculateFitness(int clusterCount, 
             ArrayList<WorkflowComputingAppliance> nodesToBeClustered, CentralisedAnt[] ants) {
+        
         for (CentralisedAnt ant : ants) {
-            double fitnessLevel = 0.0;
-            for (int i = 0; i < nodesToBeClustered.size(); i++) {
-                fitnessLevel += calculateHeuristic(nodesToBeClustered.get(i), centerNodes.get(ant.solution[i]));
+            Map<Integer, ArrayList<WorkflowComputingAppliance>> clusters = new HashMap<>();
+
+            for (int i = 0; i < clusterCount; i++) {
+                clusters.computeIfAbsent(i, k -> new ArrayList<>());
             }
-            ant.fitness = fitnessLevel;
+            for (int j = 0; j < ant.solution.length; j++) {
+                clusters.get(ant.solution[j]).add(nodesToBeClustered.get(j));
+            }
+            
+            
+            for (Map.Entry<Integer, ArrayList<WorkflowComputingAppliance>> entry : clusters.entrySet()) {
+                // System.out.println("Cluster " + entry.getKey() + ":");
+                ArrayList<WorkflowComputingAppliance> cluster = entry.getValue();
+                
+                if (cluster.size() < 2) {
+                    ant.fitness = Double.MAX_VALUE;
+                    break;
+                }
+                double sum = 0.0;
+
+                for (int i = 0; i < cluster.size(); i++) {
+                    for (int j = i + 1; j < cluster.size(); j++) {
+                        sum += calculateHeuristic(cluster.get(i), cluster.get(j));
+                    }
+                }
+                ant.fitness += (2.0 * sum) / (cluster.size() * (cluster.size() - 1));
+            }          
             //System.out.println(ant.fitness);
         }
     }
     
-    private static double calculateHeuristic(WorkflowComputingAppliance node, WorkflowComputingAppliance center) {
+    static double calculateHeuristic(WorkflowComputingAppliance node, WorkflowComputingAppliance center) {
         return center.geoLocation.calculateDistance(node.geoLocation) / 1000;
     }
 
@@ -142,12 +158,12 @@ public class CentralisedAntOptimiser {
     }
     
     public static void printClusterAssignments(
-            HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment) {
+            HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignment) {
         
-        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry :
+        for (Map.Entry<Integer, ArrayList<WorkflowComputingAppliance>> entry :
             clusterAssignment.entrySet()) {
             
-            WorkflowComputingAppliance center = entry.getKey();
+            WorkflowComputingAppliance center = entry.getValue().get(0);
             ArrayList<WorkflowComputingAppliance> nodes = entry.getValue();
             
             System.out.println("Cluster Center: " + center.name);
@@ -176,15 +192,15 @@ public class CentralisedAntOptimiser {
     }
     
     public static List<ArrayList<WorkflowComputingAppliance>> sortClustersByAveragePairwiseDistance(
-            HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusters) {
+            HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusters) {
 
         return clusters.entrySet().stream()
             .map(entry -> {
-                WorkflowComputingAppliance key = entry.getKey();
+               // WorkflowComputingAppliance key = entry.getKey();
                 ArrayList<WorkflowComputingAppliance> value = entry.getValue();
 
                 ArrayList<WorkflowComputingAppliance> mergedList = new ArrayList<>();
-                mergedList.add(key);
+              //  mergedList.add(key);
                 mergedList.addAll(value);
 
                 double avgDistance = calculateAvgPairwiseDistance(mergedList);

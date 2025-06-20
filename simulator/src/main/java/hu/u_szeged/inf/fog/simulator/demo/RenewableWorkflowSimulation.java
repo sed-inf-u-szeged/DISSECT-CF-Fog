@@ -72,7 +72,7 @@ public class RenewableWorkflowSimulation {
 
         WorkflowComputingAppliance.setDistanceBasedLatency();
 
-        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
+        HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
 
         /** --- Single Cluster Approach --- */
         ArrayList<WorkflowComputingAppliance> nodes = new ArrayList<>(List.of(
@@ -80,7 +80,7 @@ public class RenewableWorkflowSimulation {
                 node11, node12, node13, node14, node15, node16, node17, node18, node19
         ));
 
-        clusterAssignments.put(node0, nodes);
+        clusterAssignments.put(1, nodes);
 
 
 

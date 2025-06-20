@@ -24,6 +24,7 @@ import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.DecentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.Medoids;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 public class WorkflowSimulation {
@@ -80,25 +81,18 @@ public class WorkflowSimulation {
 
         WorkflowComputingAppliance.setDistanceBasedLatency();
         
-        HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
+        HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignments = new HashMap<>();
         
-        /** --- Single Cluster Approach --- */
+        /** --- Single Cluster Approach 
         ArrayList<WorkflowComputingAppliance> nodes = new ArrayList<>(List.of(
             node0, node2, node3, node4, node5, node6, node7, node8, node9, node10, 
             node11, node12, node13, node14, node15, node16, node17, node18, node19
         ));
 
         clusterAssignments.put(node1, nodes);
+        --- */
         
-        
-        /** --- Predefined Centroids Approach 
-        ArrayList<WorkflowComputingAppliance> centerNodes = new ArrayList<>();
-
-        centerNodes.add(node5);
-        centerNodes.add(node10);
-        centerNodes.add(node13);
-        centerNodes.add(node19);
-       
+        /** --- Centralised Clustering Approach  --- */      
         ArrayList<WorkflowComputingAppliance> nodesToBeClustered = new ArrayList<>();
         
         nodesToBeClustered.add(node0);
@@ -106,20 +100,25 @@ public class WorkflowSimulation {
         nodesToBeClustered.add(node2);
         nodesToBeClustered.add(node3);
         nodesToBeClustered.add(node4);
+        nodesToBeClustered.add(node5);
         nodesToBeClustered.add(node6);
         nodesToBeClustered.add(node7);
         nodesToBeClustered.add(node8);
         nodesToBeClustered.add(node9);
+        nodesToBeClustered.add(node10);
         nodesToBeClustered.add(node11);
         nodesToBeClustered.add(node12);
+        nodesToBeClustered.add(node13);
         nodesToBeClustered.add(node14);
         nodesToBeClustered.add(node15);
         nodesToBeClustered.add(node16);
         nodesToBeClustered.add(node17);
         nodesToBeClustered.add(node18);
+        nodesToBeClustered.add(node19);
         
-        clusterAssignments = CentralisedAntOptimiser.runOptimiser(centerNodes, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.1, 0.3);
-        --- */
+        //clusterAssignments = CentralisedAntOptimiser.runOptimiser(4, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.1, 0.3);
+        
+        clusterAssignments = Medoids.runOptimiser(new ArrayList<>(List.of(5, 10, 13, 19)), nodesToBeClustered);
         
         /** --- Self-organising Clustering Approach 
         double[][] globalPheromoneMatrix = DecentralisedAntOptimiser.runOptimiser(ComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
