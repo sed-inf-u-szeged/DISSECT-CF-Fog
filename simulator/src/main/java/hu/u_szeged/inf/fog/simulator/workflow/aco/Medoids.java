@@ -35,6 +35,7 @@ public class Medoids {
         }
 
         System.out.println("Iterations: " + iterationCounter);
+        System.out.println("Medoids: "  + newMedoids);
         CentralisedAntOptimiser.printClusterAssignments(clusters);
         //System.exit(0);
         return clusters;

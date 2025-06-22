@@ -85,6 +85,9 @@ public class CentralisedAntOptimiser {
         for (int i = 0; i < globalPheromoneMatrix.length; i++) {
             for (int j = 0; j < globalPheromoneMatrix[i].length; j++) {
                 globalPheromoneMatrix[i][j] *= (1 - evaporationRate);
+                if (globalPheromoneMatrix[i][j] < 0.01) {
+                    globalPheromoneMatrix[i][j] = 0.01;
+                }
             }
         }
     }
@@ -129,14 +132,16 @@ public class CentralisedAntOptimiser {
                     ant.fitness = Double.MAX_VALUE;
                     break;
                 }
+                
                 double sum = 0.0;
-
                 for (int i = 0; i < cluster.size(); i++) {
                     for (int j = i + 1; j < cluster.size(); j++) {
                         sum += calculateHeuristic(cluster.get(i), cluster.get(j));
                     }
                 }
-                ant.fitness += (2.0 * sum) / (cluster.size() * (cluster.size() - 1));
+                int numPairs = cluster.size() * (cluster.size() - 1) / 2;
+                double avgIntraDist = sum / numPairs;
+                ant.fitness += avgIntraDist * Math.pow(cluster.size(), 1.5); 
             }          
             //System.out.println(ant.fitness);
         }

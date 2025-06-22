@@ -92,7 +92,7 @@ public class WorkflowSimulation {
         clusterAssignments.put(node1, nodes);
         --- */
         
-        /** --- Centralised Clustering Approach  --- */      
+        /** --- Centralised Clustering Approach --- */ 
         ArrayList<WorkflowComputingAppliance> nodesToBeClustered = new ArrayList<>();
         
         nodesToBeClustered.add(node0);
@@ -116,12 +116,12 @@ public class WorkflowSimulation {
         nodesToBeClustered.add(node18);
         nodesToBeClustered.add(node19);
         
-        //clusterAssignments = CentralisedAntOptimiser.runOptimiser(4, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.1, 0.3);
-        
-        clusterAssignments = Medoids.runOptimiser(new ArrayList<>(List.of(5, 10, 13, 19)), nodesToBeClustered);
+        clusterAssignments = CentralisedAntOptimiser.runOptimiser(4, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.15, 0.3);
+        //clusterAssignments = Medoids.runOptimiser(new ArrayList<>(List.of(4, 18, 15, 13)), nodesToBeClustered);
+        //System.exit(0);;
         
         /** --- Self-organising Clustering Approach 
-        double[][] globalPheromoneMatrix = DecentralisedAntOptimiser.runOptimiser(ComputingAppliance.allComputingAppliances, 10, 50, 0.75, 0.15);
+        double[][] globalPheromoneMatrix = DecentralisedAntOptimiser.runOptimiser(ComputingAppliance.allComputingAppliances, 50, 200, 0.75, 0.15);
         ClusterMessenger cm = new ClusterMessenger(globalPheromoneMatrix, ComputingAppliance.allComputingAppliances, 1 * 60 * 1000);
         Timed.simulateUntilLastEvent();
         clusterAssignments = cm.clusterAssignments;

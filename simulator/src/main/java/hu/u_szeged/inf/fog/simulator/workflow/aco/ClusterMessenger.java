@@ -19,7 +19,7 @@ public class ClusterMessenger extends Timed {
     
     public static int clusterMessageCount;
     
-    public HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignments;
+    public HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignments;
 
     public ClusterMessenger(double[][] globalPheromoneMatrix, ArrayList<ComputingAppliance> nodes, long freq) {
         this.messageLogger = new HashMap<>();
@@ -95,7 +95,7 @@ public class ClusterMessenger extends Timed {
         }
     }
 
-    private HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> createClusters() {
+    private HashMap<Integer, ArrayList<WorkflowComputingAppliance>> createClusters() {
         HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterMap = new HashMap<>();
         HashSet<ComputingAppliance> visitedNodes = new HashSet<>();
         
@@ -115,6 +115,15 @@ public class ClusterMessenger extends Timed {
             }
         }
         
-        return clusterMap;
+        HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterMapWithIds = new HashMap<>();
+        int counter = 0;
+        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry : clusterMap.entrySet()) {
+            ArrayList<WorkflowComputingAppliance> value = entry.getValue();
+            value.add(entry.getKey());
+
+            clusterMapWithIds.put(counter++, value);
+        }
+        
+        return clusterMapWithIds;
     }
 }
