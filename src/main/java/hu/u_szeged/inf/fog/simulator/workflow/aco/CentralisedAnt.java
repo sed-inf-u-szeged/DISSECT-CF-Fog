@@ -1,16 +1,22 @@
 package hu.u_szeged.inf.fog.simulator.workflow.aco;
 
-import java.util.Arrays;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 
 /**
  * An agent to build a solution.
  */
 public class CentralisedAnt implements Comparable<CentralisedAnt> {
-
+    
+    int id;
+    
     int[] solution;
     
     double fitness;
     
+    public CentralisedAnt(int id) {
+        this.id = id;
+    }
+
     @Override
     public int compareTo(CentralisedAnt other) {
         if (this.fitness < other.fitness) {
@@ -23,11 +29,13 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
     }
 
     public void generateSolution(double[][] pheromoneMatrix, int numberOfNodes, double probability) {
-        int[] solution = new int[numberOfNodes];
+        int[] localSolution = new int[numberOfNodes];
+        
         double[] randomSolution = new double[numberOfNodes];
         for (int i = 0; i < numberOfNodes; i++) {
-            randomSolution[i] = Math.random();
+            randomSolution[i] = SeedSyncer.centralRnd.nextDouble();
         }
+        
         int maxIndex = 0;
         for (int i = 0; i < numberOfNodes; i++) {
             if (randomSolution[i] < probability) {
@@ -40,28 +48,27 @@ public class CentralisedAnt implements Comparable<CentralisedAnt> {
                     }
                 }
             } else {
-                double sum = 0;
-               
+                //maxIndex = (int) (SeedSyncer.centralRnd.nextInt(pheromoneMatrix[i].length));
+                double sum = 0.0;
+
                 for (int j = 0; j < pheromoneMatrix[i].length; j++) {
                     sum += pheromoneMatrix[i][j];
                 }
 
-                double randomNum = Math.random();
-                double cumulativeProbability = 0.0;
-                
-                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
-                    double num = pheromoneMatrix[i][j] / sum;
-                    cumulativeProbability += num;
+                double randomNum = SeedSyncer.centralRnd.nextDouble() * sum;
+                double cumulative = 0.0;
 
-                    if (randomNum < cumulativeProbability) {
+                for (int j = 0; j < pheromoneMatrix[i].length; j++) {
+                    cumulative += pheromoneMatrix[i][j];
+                    if (randomNum <= cumulative) {
                         maxIndex = j;
-                        break;  
+                        break;
                     }
                 }
             }
-            solution[i] = maxIndex;
+            localSolution[i] = maxIndex;
         }
         //System.out.println(Arrays.toString(solution));
-        this.solution = solution;
+        this.solution = localSolution;
     }
 }

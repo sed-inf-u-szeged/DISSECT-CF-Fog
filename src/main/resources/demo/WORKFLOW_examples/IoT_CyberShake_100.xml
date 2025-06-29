@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<adag name='App1' repeat='1'>
+<adag name='App' repeat='1'>
 	<job id='ID00000' runtime='0.34'>
 		<uses link='input' type='compute' amount='45' />
 	</job>

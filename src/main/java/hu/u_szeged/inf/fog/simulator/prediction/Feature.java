@@ -2,18 +2,31 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * The Feature class represents a measurable characteristic or property used in time series analysis.
  * It provides methods to compute, store, and retrieve the feature's values.
  */
+@NoArgsConstructor
 public abstract class Feature {
     
+    @Getter
     private String name;
+
+    @Getter
     private List<Double> values;
+
+    @Getter
+    @ToJsonParseIgnore
     private List<Prediction> predictions;
+
+    @Setter
+    @ToJsonParseIgnore
     private boolean hasNewValue;
 
     /**
@@ -38,33 +51,15 @@ public abstract class Feature {
 
     /**
      * Computes the feature's value and adds it to the list of values.
+     * If database is enabled creates a row in the database.
      */
     public void computeValue() {
-        values.add(compute());
-        hasNewValue = true;
-    }
+        double value = compute();
+        values.add(value);
 
-    /**
-     * Converts the feature's data to a JSON object.
-     *
-     * @return a JSONObject representing the feature's data
-     */
-    public JSONObject toJson() throws JSONException {
-        return new JSONObject()
-                .put("name", name)
-                .put("values", Utils.listToJsonArray(values));
-    }
-    
-    /**
-     * Converts the feature's data within a specified window size to a JSON object.
-     *
-     * @param windowSize the size of the window
-     * @return a JSONObject representing the feature's data within the window size
-     */
-    public JSONObject toJson(int windowSize) throws JSONException {
-        return new JSONObject()
-                .put("name", name)
-                .put("values", Utils.listToJsonArray(getWindowValues(windowSize)));
+        PredictionConfigurator.sqLiteManager.addRawDataToTable(getName(), value);
+
+        hasNewValue = true;
     }
 
     /**
@@ -81,30 +76,14 @@ public abstract class Feature {
         return values.subList(values.size() - windowSize, values.size());
     }
 
-    public void setHasNewValue(boolean hasNewValue) {
-        this.hasNewValue = hasNewValue;
-    }
-
     public boolean getHasNewValue() {
         return hasNewValue;
-    }
-    
-    public String getName() {
-        return name;
     }
 
     public void addPrediction(Prediction result) {
         predictions.add(result);
     }
 
-    public List<Double> getValues() {
-        return values;
-    }
-
-    public List<Prediction> getPredictions() {
-        return predictions;
-    }
-    
     @Override
     public String toString() {
         return "Feature{" 

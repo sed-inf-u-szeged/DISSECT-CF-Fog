@@ -1,10 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.node;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * The {@code WorkflowComputingAppliance} class extends the {@link ComputingAppliance} class
@@ -28,6 +31,17 @@ public class WorkflowComputingAppliance extends ComputingAppliance {
      */
     public PriorityQueue<WorkflowJob> workflowQueue;
     
+    public Set<String> cluster;
+    
+    public static ComputingAppliance getNodeByName(String name) {
+        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+            if (ca.name.equals(name)) {
+                return ca;
+            }
+        }
+        return null;
+    }
+    
     /**
      * Constructs a new {@code WorkflowComputingAppliance} with the specified parameters.
      *
@@ -38,5 +52,24 @@ public class WorkflowComputingAppliance extends ComputingAppliance {
      */
     public WorkflowComputingAppliance(String file, String name, GeoLocation geoLocation, long range) throws Exception {
         super(file, name, geoLocation, range);
+        this.cluster = new TreeSet<>();
+    }
+    
+    public WorkflowComputingAppliance(IaaSService iaas, GeoLocation geoLocation) {
+        super(iaas, geoLocation, "", "");
+        this.cluster = new TreeSet<>();
+        this.applications = new ArrayList<>();
+    }
+
+    public static void setDistanceBasedLatency() {
+        for (ComputingAppliance ca1 : ComputingAppliance.allComputingAppliances) {
+            for (ComputingAppliance ca2 : ComputingAppliance.allComputingAppliances) {
+                if (ca1 != ca2) {
+                    int distance = (int) ca1.geoLocation.calculateDistance(ca2.geoLocation) / 10_000;
+                    ca1.iaas.repositories.get(0).addLatencies(ca2.iaas.repositories.get(0).getName(), distance);
+                    ca2.iaas.repositories.get(0).addLatencies(ca1.iaas.repositories.get(0).getName(), distance);
+                }
+            }
+        }
     }
 }

@@ -224,7 +224,7 @@ public class Application extends Timed {
         try {
             if (this.turnOnVm() == false) {
                 for (PhysicalMachine pm : this.computingAppliance.iaas.machines) {
-                    if (pm.isReHostableRequest(this.instance.arc)) {
+                    if (pm.isCurrentlyHostableRequest(this.instance.arc)) {
                         VirtualMachine vm = pm.requestVM(this.instance.va, this.instance.arc,
                                 this.computingAppliance.iaas.repositories.get(0), 1)[0];
                         if (vm != null) {
@@ -251,7 +251,7 @@ public class Application extends Timed {
     private boolean turnOnVm() {
         for (AppVm appVm : this.utilisedVms) {
             if (appVm.vm.getState().equals(VirtualMachine.State.SHUTDOWN)
-                    && appVm.pm.isReHostableRequest(this.instance.arc)) {
+                    && appVm.pm.isCurrentlyHostableRequest(this.instance.arc)) {
                 try {
                     ResourceAllocation ra = appVm.pm.allocateResources(this.instance.arc, false,
                             PhysicalMachine.defaultAllocLen);
@@ -397,7 +397,7 @@ public class Application extends Timed {
         if (this.incomingData == 0 && this.taskInProgress == 0 && this.processedData == this.receivedData
                 && this.checkDeviceState()) {
             unsubscribe();
-
+            ComputingAppliance.stopEnergyMetering();
             try {
                 if (this.computingAppliance.broker.vm.getState().equals(VirtualMachine.State.RUNNING)) {
                     this.computingAppliance.broker.pm = this.computingAppliance.broker.vm.getResourceAllocation()

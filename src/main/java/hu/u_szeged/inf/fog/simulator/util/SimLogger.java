@@ -29,10 +29,10 @@ public class SimLogger {
     /**
      * Logs event occurring after (i.e. logging results).
      *
-     * @param string he message to log
+     * @param message he message to log
      */
-    public static void logRes(String string) {
-        simLogger.warning(string);
+    public static void logRes(Object message) {
+        simLogger.warning(String.valueOf(message)); 
     }
     
     /**
@@ -41,8 +41,7 @@ public class SimLogger {
      * @param string he error message to log
      */
     public static void logError(String string) {
-        simLogger.severe(string);
-        simLogger.severe("ERROR");
+        simLogger.severe("ERROR: " + string);
         System.exit(0);
     }
     

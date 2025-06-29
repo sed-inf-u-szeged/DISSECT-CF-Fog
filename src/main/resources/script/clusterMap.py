@@ -7,7 +7,14 @@ import os
 nodeInfo = sys.argv[1].split(";")
 
 # defining 20 different colors
-colors = ["red", "blue", "green", "yellow", "purple", "cyan", "magenta", "orange", "brown", "pink", "lime", "teal", "gray", "black", "white", "crimson", "turquoise", "indigo", "gold", "silver"]
+colors = [
+    "red", "blue", "green", "orange", "purple", "pink", 
+    "lightblue", "darkgreen", "darkblue", "lightred", "lightgreen", 
+    "darkred", "black", "darkpurple", "cadetblue", "lightgray", 
+    "white", "beige", "gray"
+]
+
+
 
 # set the map zoom based on the first node's info
 map = folium.Map(
@@ -23,7 +30,8 @@ for i, nodes in enumerate(nodeInfo):
         index2 = j + 1
         index3 = j + 2
     
-        popup = folium.Popup(node[index1], show=True, sticky=True)
+        popup_html = f'<div style="font-size:15px;">{node[index1]}</div>'
+        popup = folium.Popup(popup_html, show=True, sticky=True)
         folium.Marker(
             location=[float(node[index2]), float(node[index3])],
             popup=popup,

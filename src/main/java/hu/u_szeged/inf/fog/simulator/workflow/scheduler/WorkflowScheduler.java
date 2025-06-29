@@ -1,26 +1,40 @@
 package hu.u_szeged.inf.fog.simulator.workflow.scheduler;
 
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.StateChangeException;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
-import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.TreeMap;
 
 public abstract class WorkflowScheduler {
+    
+    public static ArrayList<WorkflowScheduler> schedulers = new ArrayList<WorkflowScheduler>();
+    
+    public TreeMap<String, Integer> vmTaskLogger = new TreeMap<>();
 
-    public static HashMap<WorkflowComputingAppliance, Instance> workflowArchitecture;
+    public ArrayList<WorkflowComputingAppliance> computeArchitecture;
 
-    public static ArrayList<Actuator> actuatorArchitecture;
+    public ArrayList<Actuator> actuatorArchitecture;
+    
+    public ArrayList<WorkflowJob> jobs;
+
+    public Instance instance;
+    
+    public long startTime;
+    
+    public long stopTime;
+
+    public String appName;
+    
+    public long timeOnNetwork;
+
+    public long bytesOnNetwork;
 
     WorkflowExecutor workflowExecutor;
 
@@ -29,7 +43,34 @@ public abstract class WorkflowScheduler {
     public abstract void schedule(WorkflowJob workflowJob);
 
     public abstract void init();
+    
+    public void addVm(WorkflowComputingAppliance ca, int num) {
+        try {
+            ca.workflowVms.addAll( Arrays.asList(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), num)));
+        } catch (VMManagementException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void shutdownVm(WorkflowComputingAppliance ca, int keepAlive) {
+        ArrayList<VirtualMachine> toShutDown = new ArrayList<>();
+        for (VirtualMachine vm : ca.iaas.listVMs()) {
+            if (vm.getState().equals(VirtualMachine.State.RUNNING) && vm.underProcessing.isEmpty()) {
+                toShutDown.add(vm);
+            }
+        }
+        if (toShutDown.size() > keepAlive) {
+            for (int i = 0; i < toShutDown.size() - keepAlive; i++) {
+                try {
+                    toShutDown.get(i).switchoff(false);
+                } catch (StateChangeException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
+    /*
     public void jobReAssign(WorkflowJob workflowJob, ComputingAppliance futureAppliance) {
 
         if (workflowJob.state.equals(WorkflowJob.State.SUBMITTED) && workflowJob.ca != futureAppliance
@@ -82,29 +123,5 @@ public abstract class WorkflowScheduler {
             }
         }
     }
-
-    public void addVm(WorkflowComputingAppliance ca) {
-        Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
-        try {
-            ca.workflowVms.add(ca.iaas.requestVM(i.va, i.arc, ca.iaas.repositories.get(0), 1)[0]);
-        } catch (VMManagementException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void shutdownVm(ComputingAppliance ca) {
-        for (VirtualMachine vm : ca.iaas.listVMs()) {
-
-            if (!vm.underProcessing.isEmpty()) {
-                try {
-                    vm.switchoff(false);
-                } catch (StateChangeException e) {
-                    e.printStackTrace();
-                }
-            }
-            break;
-        }
-
-    }
-
+     */
 }

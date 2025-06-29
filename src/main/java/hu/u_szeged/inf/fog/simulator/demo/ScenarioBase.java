@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.demo;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
@@ -14,26 +13,24 @@ import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.AwsProvider;
 import hu.u_szeged.inf.fog.simulator.provider.AzureProvider;
 import hu.u_szeged.inf.fog.simulator.provider.IbmProvider;
-import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.result.ActuatorEvents;
 import hu.u_szeged.inf.fog.simulator.util.result.Architecture;
 import hu.u_szeged.inf.fog.simulator.util.result.Cost;
 import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
 import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
-import hu.u_szeged.inf.fog.simulator.workflow.DecentralizedWorkflowExecutor;
-import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-import hu.u_szeged.inf.fog.simulator.workflow.scheduler.DecentralizedWorkflowScheduler;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
-
 import java.io.File;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
@@ -54,7 +51,7 @@ public class ScenarioBase {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
         Date date = new Date(System.currentTimeMillis());
         String path = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
-                .append("sim_res/" + formatter.format(date)).toString();
+                .append("sim_res").append(File.separator) + formatter.format(date);
         resultDirectory = path;
         new File(resultDirectory).mkdirs();
     }
@@ -75,9 +72,9 @@ public class ScenarioBase {
 
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes("Computing Appliance: " + ca.name);
-            SimLogger.logRes("\tEnergy consumption (kWh): " + ca.energyConsumption / 1000 / 3_600_000);
+            SimLogger.logRes("\tEnergy consumption (kWh): " + EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption / 1000 / 3_600_000);
             SimLogger.logRes("\tBroker: " + ca.broker);
-            totalEnergyConsumption += ca.energyConsumption;
+            totalEnergyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
 
             for (PhysicalMachine pm : ca.iaas.machines) {
                 if (pm.localDisk.getMaxStorageCapacity() - pm.localDisk.getFreeStorageCapacity() != 0) {
@@ -202,96 +199,97 @@ public class ScenarioBase {
     }
 
     public static void logStreamProcessing() {
-        SimLogger.logRes("\n~~Information about the simulation:~~\n");
-
+        SimLogger.logRes("\nSimulation completed.\n");
+        
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
-        for (ComputingAppliance wca : ComputingAppliance.getAllComputingAppliances()) {
-            WorkflowComputingAppliance ca = (WorkflowComputingAppliance) wca;
-            SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
-            for (VirtualMachine vm : ca.workflowVms) {
-                SimLogger.logRes("\t" + vm.hashCode() + " ");
+        int totalUtilisedVms = 0;
+        double avgExecutionTime = 0.0;
+        double avgPairwiseDistance = 0.0;
+        double avgBytesOnNetwork = 0.0;
+        double avgTimeOnNetwork = 0.0;
+        for(WorkflowScheduler scheduler : WorkflowScheduler.schedulers) {
+            SimLogger.logRes("App: " + scheduler.appName);
+            
+            SimLogger.logRes("\tUtilised VMs: " + scheduler.vmTaskLogger.size());
+            totalUtilisedVms += scheduler.vmTaskLogger.size();
+            for (Map.Entry<String, Integer> entry : scheduler.vmTaskLogger.entrySet()) {
+                String key = entry.getKey();
+                Integer value = entry.getValue();
+                SimLogger.logRes("\t\t" + key + " - " + value + " taks");
             }
-            SimLogger.logRes("\n");
-            Instance i = WorkflowScheduler.workflowArchitecture.get(ca);
-            SimLogger.logRes(ca.vmTime + " " + i.pricePerTick);
-            totalCost += WorkflowScheduler.workflowArchitecture.get(ca).calculateCloudCost(ca.vmTime);
-            SimLogger.logRes("Energy Cons. by " + ca.name + " " + ca.energyConsumption);
-            totalEnergyConsumption += ca.energyConsumption;
-        }
+            
+            long vmTime = 0;
+            double cost = 0.0;
+            double energyConsumption = 0.0;
+            for(WorkflowComputingAppliance ca : scheduler.computeArchitecture) {
+                cost += scheduler.instance.calculateCloudCost(ca.vmTime);
+                vmTime += ca.vmTime;
+                energyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
+            }
+            totalCost += cost;
+            totalEnergyConsumption += energyConsumption;
+            SimLogger.logRes("Cost (EUR): " + cost + " VM time: " + vmTime + " Price: " + scheduler.instance.pricePerTick);
+            SimLogger.logRes("Energy consumption (kWh): " + energyConsumption / 1000 / 3_600_000);
+            SimLogger.logRes("Time on network (seconds): "
+                    + TimeUnit.SECONDS.convert(scheduler.timeOnNetwork, TimeUnit.MILLISECONDS));
+            avgTimeOnNetwork += scheduler.timeOnNetwork;
+            SimLogger.logRes("Bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
+            avgBytesOnNetwork += scheduler.bytesOnNetwork;
+            SimLogger.logRes("Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
+            avgPairwiseDistance += CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
+            
 
-        for (Entry<Integer, Integer> entry : WorkflowExecutor.vmTaskLogger.entrySet()) {
-            SimLogger.logRes(entry.getKey() + ": " + entry.getValue() + " jobs");
+            int completed = 0;
+            for (WorkflowJob wj : scheduler.jobs) {
+                if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
+                    completed++;
+                }
+            }
+            SimLogger.logRes("Completed: " + completed + "/" + scheduler.jobs.size());
+            SimLogger.logRes("Execution time (min.): " 
+                    + (scheduler.stopTime - scheduler.startTime) / 1000 / 60);
+            avgExecutionTime += (scheduler.stopTime - scheduler.startTime) / 1000 / 60;
+                    
+            SimLogger.logRes("");
         }
+        SimLogger.logRes("Total cost (EUR): " + totalCost);
+        SimLogger.logRes("Total energy consumption (kWh): " + totalEnergyConsumption / 1000 / 3_600_000);
+        SimLogger.logRes("Total utilised VMs: " + totalUtilisedVms);
+        SimLogger.logRes("Avg time on network (seconds): "
+                + TimeUnit.SECONDS.convert((long) (avgTimeOnNetwork / WorkflowScheduler.schedulers.size()), TimeUnit.MILLISECONDS));
+        SimLogger.logRes("Avg bytes on network (MB): " + (long) avgBytesOnNetwork / WorkflowScheduler.schedulers.size() / 1024 / 1024);
+        SimLogger.logRes("Avg execution time (min): " + avgExecutionTime / WorkflowScheduler.schedulers.size());
+        SimLogger.logRes("Avg pairwise distance (km): " + avgPairwiseDistance / WorkflowScheduler.schedulers.size());
+        SimLogger.logRes("Messages required for clustering: " + ClusterMessenger.clusterMessageCount);
+
+        /*
         for (Entry<WorkflowJob, Integer> entry : WorkflowExecutor.jobReassigns.entrySet()) {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " re-assigning");
         }
         for (Entry<WorkflowJob, Integer> entry : WorkflowExecutor.actuatorReassigns.entrySet()) {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " actuator re-assigning");
-        }
-
-        int nonCompleted = 0;
-        for (WorkflowJob wj : WorkflowJob.workflowJobs) {
-            if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
-                nonCompleted++;
-            }
-        }
-        SimLogger.logRes("Completed: " + nonCompleted + "/" + WorkflowJob.workflowJobs.size());
-        SimLogger.logRes("Total cost: " + totalCost);
-        SimLogger.logRes("Total energy consumption: " + totalEnergyConsumption);
-        SimLogger.logRes("Execution time: " + Timed.getFireCount() + " Real execution time" + " "
-                + (Timed.getFireCount() - WorkflowExecutor.realStartTime) + "ms (~"
-                + (Timed.getFireCount() - WorkflowExecutor.realStartTime) / 1000 / 60 + " minutes)");
-
+        }    
+        */
     }
-    public static void logStreamProcessing(ArrayList<DecentralizedWorkflowScheduler> dws) {
-        SimLogger.logRes("\n~~Information about the simulation:~~\n");
-
-        double totalCost = 0.0;
-        double totalEnergyConsumption = 0.0;
-        for(DecentralizedWorkflowScheduler dw : dws) {
-            for (ComputingAppliance wca : dw.workflowArchitecture.keySet()) {
-                WorkflowComputingAppliance ca = (WorkflowComputingAppliance) wca;
-                SimLogger.logRes("\t" + ca.name + ":  " + ca.workflowVms.size() + " utilised VMs (IDs): ");
-                for (VirtualMachine vm : ca.workflowVms) {
-                    SimLogger.logRes("\t" + vm.hashCode() + " ");
-                }
-                SimLogger.logRes("\n");
-                Instance i = dw.workflowArchitecture.get(ca);
-                SimLogger.logRes(ca.vmTime + " " + i.pricePerTick);
-                totalCost += dw.workflowArchitecture.get(ca).calculateCloudCost(ca.vmTime);
-                SimLogger.logRes("Energy Cons. by " + ca.name + " " + ca.energyConsumption);
-                totalEnergyConsumption += ca.energyConsumption;
-            }
+    public static void logRenewableStreamProcessing() {
+        RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
+        float totalFossilUsed = 0;
+        float totalRenewableUsed = 0;
+        float totalMoneySpent = 0;
+        float totalRenewableProduced = 0;
+        for (hu.u_szeged.inf.fog.simulator.energyprovider.Provider provider : scheduler.providers) {
+            totalRenewableProduced += provider.totalRenewableProduced;
+            totalFossilUsed += provider.totalFossilUsed;
+            totalRenewableUsed += provider.totalRenewableUsed;
+            totalMoneySpent += provider.moneySpentOnFossil/1000;
+            totalMoneySpent += provider.moneySpentOnRenewable/1000;
         }
-
-        for (Entry<Integer, Integer> entry : DecentralizedWorkflowExecutor.vmTaskLogger.entrySet()) {
-            SimLogger.logRes(entry.getKey() + ": " + entry.getValue() + " jobs");
-        }
-        for (Entry<WorkflowJob, Integer> entry : DecentralizedWorkflowExecutor.jobReassigns.entrySet()) {
-            SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " re-assigning");
-        }
-        for (Entry<WorkflowJob, Integer> entry : DecentralizedWorkflowExecutor.actuatorReassigns.entrySet()) {
-            SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " actuator re-assigning");
-        }
-
-        int originalNum = 0;
-        int nonCompleted = 0;
-        for(DecentralizedWorkflowScheduler dw : dws) {
-            for (WorkflowJob wj : dw.workflowJobs) {
-                originalNum++;
-                if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
-                    nonCompleted++;
-                }
-            }
-        }
-        SimLogger.logRes("Completed: " + nonCompleted + "/" + originalNum);
-        SimLogger.logRes("Total cost: " + totalCost);
-        SimLogger.logRes("Total energy consumption: " + totalEnergyConsumption);
-        SimLogger.logRes("Execution time: " + Timed.getFireCount() + " Real execution time" + " "
-                + (Timed.getFireCount() - DecentralizedWorkflowExecutor.realStartTime) + "ms (~"
-                + (Timed.getFireCount() - DecentralizedWorkflowExecutor.realStartTime) / 1000 / 60 + " minutes)");
-
+        SimLogger.logRes("");
+        SimLogger.logRes("Total renewable produced (Wh): " + totalRenewableProduced);
+        SimLogger.logRes("Total fossil consumed (Wh): " + totalFossilUsed);
+        SimLogger.logRes("Total renewable consumed (Wh): " + totalRenewableUsed);
+        SimLogger.logRes("Total money cost (EUR): " + totalMoneySpent);
+        SimLogger.logRes("Total waiting time (min.): " + scheduler.totalWaitingTime/60_000);
     }
-
 }

@@ -1,26 +1,477 @@
-tosca_definitions_version: tosca_simple_yaml_1_0
+tosca_definitions_version: tosca_simple_yaml_1_3
 
-imports:
-  - https://raw.githubusercontent.com/micado-scale/tosca/v0.x.2/micado_types.yaml
+description: >
+  Topology of a Cloud/Fog/Edge application with a cloud node, two interconnected fog nodes,
+  and ten edge devices distributed across the two fog nodes.
 
 topology_template:
   node_templates:
-    worker_node:
-      type: tosca.nodes.MiCADO.EC2.Compute
-      properties:
-        region_name: ADD_YOUR_REGION_NAME_HERE (e.g. eu-west-1)
-        image_id: ADD_YOUR_IMAGE_ID_HERE (e.g. ami-061a2d878e5754b62)
-        instance_type: ADD_YOUR_INSTANCE_TYPE (e.g. t2.medium)
-        security_group_ids:
-          - ADD_YOUR_SECURITY_GROUP_ID_HERE (e.g. sg-93d46bf7)
-      interfaces:
-        Occopus:
-          create:
-            inputs:
-              interface_cloud: ec2
-              endpoint_cloud: ADD_YOUR_ENDPOINT (e.g https://ec2.eu-west-1.amazonaws.com )
+    # Cloud Node
+    cloud_node_1:
+      type: tosca.nodes.Compute
       capabilities:
         host:
           properties:
-            num_cpus: 1
-            mem_size: 1 GB
+            num_cpus: 2
+            mem_size: 4 GB
+            disk_size: 100 GB
+      requirements:
+        - cloud_network:
+            node: cloud_network
+
+    # Fog Node 1
+    fog_node_1:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+            disk_size: 50 GB
+      requirements:
+        - cloud_network:
+            node: cloud_network
+        - fog_network:
+            node: fog_network_1
+        - inter_fog_network:
+            node: inter_fog_network
+
+    # Fog Node 2
+    fog_node_2:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 4 GB
+            disk_size: 50 GB
+      requirements:
+        - cloud_network:
+            node: cloud_network
+        - fog_network:
+            node: fog_network_2
+        - inter_fog_network:
+            node: inter_fog_network
+
+    # Edge Devices 1 to 5 connected to Fog Node 1
+    edge_device_1:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_1
+
+    edge_device_2:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_1
+
+    edge_device_3:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_1
+
+    edge_device_4:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_1
+
+    edge_device_5:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_1
+
+    # Edge Devices 6 to 10 connected to Fog Node 2
+    smart_device_1:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_2
+
+    smart_device_2:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_2
+
+    smart_device_3:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_2
+
+    smart_device_4:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_2
+
+    smart_device_5:
+      type: tosca.nodes.Compute
+      capabilities:
+        host:
+          properties:
+            num_cpus: 2
+            mem_size: 2 GB
+            disk_size: 4 GB
+      requirements:
+        - fog_network:
+            node: fog_network_2
+
+  # Definition of Networks
+  groups:
+    cloud_network:
+      type: tosca.nodes.network.Network
+      members: [cloud_node_1, fog_node_1, fog_node_2]
+
+    fog_network_1:
+      type: tosca.nodes.network.Network
+      members: [fog_node_1, edge_device_1, edge_device_2, edge_device_3, edge_device_4, edge_device_5]
+
+    fog_network_2:
+      type: tosca.nodes.network.Network
+      members: [fog_node_2, smart_device_1, smart_device_2, smart_device_3, smart_device_4, smart_device_5]
+
+    inter_fog_network:
+      type: tosca.nodes.network.Network
+      members: [fog_node_1, fog_node_2]
+
+# Policies 
+  policies:
+    # Cloud Node Policy
+    cloud_node_1_policy:
+      type: CloudNodePolicy
+      targets: [cloud_node_1]
+      properties:
+        Application:
+          freq: 2.5 GHz
+          tasksize: 100 MB
+          instructions: 5000
+          ActivateRatio: 0.8
+          TransferDivider: 4
+        Instance:
+          va:
+            StartUpProcess: 100 ms
+          arc:
+            ProcessingPerCore: 0.001
+          PricePerTick: 0.02
+        ComputingAppliance:
+          Geolocation:
+            latitude: 47.45
+            longitude: 21.3
+          Range: 100 km
+
+    # Fog Node 1 Policy
+    fog_node_1_policy:
+      type: FogNodePolicy
+      targets: [fog_node_1]
+      properties:
+        Application:
+          freq: 2.0 GHz
+          tasksize: 80 MB
+          instructions: 4000
+          ActivateRatio: 0.7
+          TransferDivider: 3
+        Instance:
+          va:
+            StartUpProcess: 100 ms
+          arc:
+            ProcessingPerCore: 0.001
+          PricePerTick: 0.015
+        ComputingAppliance:
+          Geolocation:
+            latitude: 47.6
+            longitude: 17.9
+          Range: 50 km
+        Parent:
+          Name: cloud_node_1
+          Latency: 10 ms
+        Neighbor:
+          Name: fog_node_2
+          Latency: 5 ms
+
+    # Fog Node 2 Policy
+    fog_node_2_policy:
+      type: FogNodePolicy
+      targets: [fog_node_2]
+      properties:
+        Application:
+          freq: 2.0 GHz
+          tasksize: 80 MB
+          instructions: 4000
+          ActivateRatio: 0.7
+          TransferDivider: 3
+        Instance:
+          va:
+            StartUpProcess: 100 ms
+          arc:
+            ProcessingPerCore: 0.001
+          PricePerTick: 0.015
+        ComputingAppliance:
+          Geolocation:
+            latitude: 46.0
+            longitude: 18.2
+          Range: 50 km
+        Parent:
+          Name: cloud_node_1
+          Latency: 10 ms
+        Neighbor:
+          Name: fog_node_1
+          Latency: 5 ms
+
+    # Edge Device 1 Policy
+    edge_device_1_policy:
+      type: EdgeNodePolicy
+      targets: [edge_device_1]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 100 ms
+          TimeOff: 50 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Edge Device 2 Policy
+    edge_device_2_policy:
+      type: EdgeNodePolicy
+      targets: [edge_device_2]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 100 ms
+          TimeOff: 50 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Edge Device 3 Policy
+    edge_device_3_policy:
+      type: EdgeNodePolicy
+      targets: [edge_device_3]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 100 ms
+          TimeOff: 50 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Edge Device 4 Policy
+    edge_device_4_policy:
+      type: EdgeNodePolicy
+      targets: [edge_device_4]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 100 ms
+          TimeOff: 50 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Edge Device 5 Policy
+    edge_device_5_policy:
+      type: EdgeNodePolicy
+      targets: [edge_device_5]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 100 ms
+          TimeOff: 50 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Smart Device 1 Policy
+    smart_device_1_policy:
+      type: SmartNodePolicy
+      targets: [smart_device_1]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 150 ms
+          TimeOff: 75 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Smart Device 2 Policy
+    smart_device_2_policy:
+      type: SmartNodePolicy
+      targets: [smart_device_2]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 150 ms
+          TimeOff: 75 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Smart Device 3 Policy
+    smart_device_3_policy:
+      type: SmartNodePolicy
+      targets: [smart_device_3]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 150 ms
+          TimeOff: 75 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Smart Device 4 Policy
+    smart_device_4_policy:
+      type: SmartNodePolicy
+      targets: [smart_device_4]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 150 ms
+          TimeOff: 75 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2
+
+    # Smart Device 5 Policy
+    smart_device_5_policy:
+      type: SmartNodePolicy
+      targets: [smart_device_5]
+      properties:
+        LocalMachine:
+          PerCoreProcessing: 0.001
+          TimeOn: 150 ms
+          TimeOff: 75 ms
+        Repo:
+          maxInBW: 3250 Mbps
+          MaxOutBW: 3250 Mbps
+          DiskBW: 3250 Mbps
+        TransitionGenerator:
+          MinPower: 0.065 W
+          IdlePower: 1.475 W
+          MaxPower: 2 W
+          DiskDivider: 1
+          NetDivider: 2

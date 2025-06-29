@@ -25,7 +25,7 @@ public class ElectronLauncher extends Launcher {
     public Process openWindows() throws Exception {
         String startCommand = (!buildExists()) ? "build_and_run" : "run";
         return Runtime.getRuntime().exec(
-                String.format("C:/Windows/System32/cmd.exe /c cd %s & start npm.cmd run electron:%s", 
+                String.format("C:/Windows/System32/cmd.exe /c cd %s && start npm.cmd run electron:%s",
                         getProjectLocation(), startCommand));
     }
 
@@ -39,7 +39,7 @@ public class ElectronLauncher extends Launcher {
 
     private boolean buildExists() {
         return new File(new StringBuilder(
-                getProjectLocation()).append("dist").append(File.separator).append("dissect-cf-predictor-ui").toString()
+                getProjectLocation()).append(File.separator).append("dist").append(File.separator).append("dissect-cf-predictor-ui").toString()
         ).exists();
     }
 }

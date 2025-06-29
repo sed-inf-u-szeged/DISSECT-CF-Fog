@@ -94,15 +94,15 @@ public class MapVisualiser {
     }
 
     public static void clusterMapGenerator(
-            HashMap<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> clusterAssignment,
+            HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignment,
             String scriptPath, String resultDirectory) throws IOException {
         
         String nodeInfoForMapScript = "";
         
-        for (Map.Entry<WorkflowComputingAppliance, ArrayList<WorkflowComputingAppliance>> entry :
+        for (Map.Entry<Integer, ArrayList<WorkflowComputingAppliance>> entry :
             clusterAssignment.entrySet()) {
             
-            WorkflowComputingAppliance center = entry.getKey();
+            WorkflowComputingAppliance center = entry.getValue().get(0);
             ArrayList<WorkflowComputingAppliance> nodes = entry.getValue();
             
 

@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest
--------------------------------------------------------------------------------
-Tests run: 11, Failures: 0, Errors: 0, Skipped: 1, Time elapsed: 0.012 s - in at.ac.uibk.dps.cloud.simulator.test.simple.cloud.ResourceConsumptionTest

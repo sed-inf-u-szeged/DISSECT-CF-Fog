@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot.mobility;
 
+import java.util.Random;
+
 /**
  * The class represents a geographic location specified by latitude and longitude coordinates.
  */
@@ -89,6 +91,16 @@ public class GeoLocation {
         lat2 = Math.toDegrees(lat2);
         lon2 = Math.toDegrees(lon2);
         return new GeoLocation(lat2, lon2);
+    }
+    
+    /**
+     * It generates a random position.
+     */
+    public static GeoLocation generateRandomGeoLocation() {
+        Random random = new Random();
+        double latitude = -90.0 + (90.0 - (-90.0)) * random.nextDouble();
+        double longitude = -180.0 + (180.0 - (-180.0)) * random.nextDouble();
+        return new GeoLocation(latitude, longitude);
     }
     
     /**
