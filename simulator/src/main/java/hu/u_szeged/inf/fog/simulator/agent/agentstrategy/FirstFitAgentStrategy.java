@@ -16,9 +16,6 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
-
-        //resources.forEach(x -> System.out.println("canfulfill:" + x.cpu)); // minusz bug
-
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
         for (Resource resource : sortedResources) {
@@ -65,19 +62,17 @@ public class FirstFitAgentStrategy extends AgentStrategy {
     public List<Resource> sortingResourcesByCpuThenSize(List<Resource> originalResources) {
         List<Resource> sortedResources = new ArrayList<>(originalResources);
         sortedResources.sort((r1, r2) -> {
+            double r1EffectiveCpu = (r1.cpu != null) ? r1.cpu * (r1.instances != null ? r1.instances : 1) : -1;
+            double r2EffectiveCpu = (r2.cpu != null) ? r2.cpu * (r2.instances != null ? r2.instances : 1) : -1;
+
             if (r1.cpu != null && r2.cpu != null) {
-                if (r1.instances != null) {
-                    r1.cpu *= r1.instances;
-                }
-                if (r2.instances != null) {
-                    r2.cpu *= r2.instances;
-                }
-                return descending ? Double.compare(r2.cpu, r1.cpu) : Double.compare(r1.cpu, r2.cpu);
+                return descending ? Double.compare(r2EffectiveCpu, r1EffectiveCpu) : Double.compare(r1EffectiveCpu, r2EffectiveCpu);
             } else if (r1.cpu == null && r2.cpu == null) {
                 return descending ? Double.compare(r2.size, r1.size) : Double.compare(r1.size, r2.size);
             }
             return (r1.cpu == null) ? 1 : -1;
         });
+
 
         return sortedResources;
     }

@@ -11,75 +11,55 @@ public class MessageHandler {
     public static void executeMessaging(MessagingStrategy messagingStrategy,
                                         ResourceAgent gateway, AgentApplication app, int bcastMessageSize, String msg, Runnable customAction) {
         List<ResourceAgent> filteredAgents = messagingStrategy.filterAgents(gateway);
-
         gateway.setNetWorkingAgents(new HashSet<>(filteredAgents));
-        if (gateway.name.endsWith("1")) {
 
-            System.out.println("Networking agents " + app.name + " for gateway " + gateway.name + ":"); // debug
-            filteredAgents.forEach(resourceAgent -> System.out.println(resourceAgent.name));
-            System.out.println("hossz"+ filteredAgents.size());
-            System.out.println(msg);
-        }
+        System.out.println("Networking agents " + app.name + " for gateway " + gateway.name + ":"); // debug
+        filteredAgents.forEach(resourceAgent -> System.out.println(resourceAgent.name));
 
+        for (ResourceAgent agent : filteredAgents) {
+            String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";
+            StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
+            gateway.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
+            app.bcastCounter++;
 
+            try {
+                gateway.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                        reqName, agent.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
 
+                            @Override
+                            public void conComplete() {
+                                gateway.hostNode.iaas.repositories.get(0).deregisterObject(reqName);
+                                String resName = agent.name + "-" + gateway.name + "-" + app.name + "-" + msg + "-response";
+                                StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
+                                agent.hostNode.iaas.repositories.get(0).registerObject(resMessage);
 
-            for (ResourceAgent agent : filteredAgents) {
-                String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";
-                StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
-                gateway.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
-                app.bcastCounter++;
-                //System.out.println(app.name);
-                // System.out.println(app.bcastCounter);
+                                try {
+                                    agent.hostNode.iaas.repositories.get(0).requestContentDelivery(
+                                            resName, gateway.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
 
-                try {
-                    gateway.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                            reqName, agent.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
+                                                @Override
+                                                public void conComplete() {
+                                                    agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                    agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
+                                                    gateway.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
+                                                    app.bcastCounter--;
 
-                                @Override
-                                public void conComplete() {
-                                    gateway.hostNode.iaas.repositories.get(0).deregisterObject(reqName);
-                                    String resName = agent.name + "-" + gateway.name + "-" + app.name + "-" + msg + "-response";
-                                    StorageObject resMessage = new StorageObject(resName, bcastMessageSize, false);
-                                    agent.hostNode.iaas.repositories.get(0).registerObject(resMessage);
-
-                                    try {
-                                        agent.hostNode.iaas.repositories.get(0).requestContentDelivery(
-                                                resName, gateway.hostNode.iaas.repositories.get(0), new ConsumptionEventAdapter() {
-
-                                                    @Override
-                                                    public void conComplete() {
-                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
-                                                        gateway.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-
-                                                        app.bcastCounter--;
-                                                        if(app.name.endsWith("csaoApp")) {
-                                                            System.out.println(gateway.name + ": "+app.bcastCounter +"with"+ agent.name);
-                                                        }
-                                                        if (app.bcastCounter == 0) {
-
-                                                            if(app.name.endsWith("csaoApp")) {
-                                                                System.out.println("kajak "+ app.bcastCounter);
-                                                                System.out.println("erre kene deploy/broadcast:" + app.name);
-                                                            }
-                                                            customAction.run();
-                                                        }
+                                                    if (app.bcastCounter == 0) {
+                                                        customAction.run();
                                                     }
-                                                });
-                                    } catch (NetworkException e) {
-                                        e.printStackTrace();
-                                    }
+                                                }
+                                            });
+                                } catch (NetworkException e) {
+                                    e.printStackTrace();
                                 }
                             }
-                    );
-
-
-                } catch (NetworkException e) {
-                    e.printStackTrace();
-                }
-
+                        }
+                );
+            } catch (NetworkException e) {
+                e.printStackTrace();
             }
 
         }
+
     }
+}

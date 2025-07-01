@@ -75,7 +75,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     /**
      * Minimum score needs to be reached before the guided search actually selects the agents.
      */
-    private static final double MIN_SCORE_TO_USE_GUIDED_STRATEGY = 0.0;
+    private static final double MIN_SCORE_TO_USE_GUIDED_STRATEGY = 1.0;
     private Offer winningOffer;
 
     @Override
@@ -90,11 +90,12 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             return potentialAgents;
         } else {
             System.out.println("Working gateway: " + gateway.name);
+            List<ResourceAgent> selectedAgents = selectAgentsBasedOnScores(gateway, potentialAgents);
+
             if (maxScore < MIN_SCORE_TO_USE_GUIDED_STRATEGY) {
                 return potentialAgents;
             }
 
-            List<ResourceAgent> selectedAgents = selectAgentsBasedOnScores(gateway, potentialAgents);
             List<ResourceAgent> unselectedAgents = ResourceAgent.resourceAgents.stream()
                     .filter(agent -> !selectedAgents.contains(agent) && agent != gateway)
                     .collect(Collectors.toList());
@@ -102,9 +103,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             applySelectedReward(gateway, selectedAgents);
             applyPenalty(gateway, unselectedAgents);
             setWinningOffer(null);
-            if(gateway.name.endsWith("1")) {
-                System.out.println("ezt" + selectedAgents.size());
-            }
+
             return selectedAgents;
         }
     }
@@ -151,14 +150,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double currentScore = gateway.neighborScores.get(agent);
             gateway.neighborScores.put(agent, currentScore + normalized);
         }
-
-        // Debug output
-        /*
-        System.out.println("=== Init Neighbor Scores ===");
-        for (ResourceAgent agent : gateway.neighborScores.keySet()) {
-            System.out.printf("%s → normalized score: %.4f | distance: %.2f km | latency: %d ms%n",
-                    agent.name, gateway.neighborScores.get(agent), distances.get(agent), latencies.get(agent));
-        }*/
     }
 
 
@@ -189,15 +180,11 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
             double finalScore = winningBonus + normalizedResourceScore;
 
-            // System.out.printf("%s:  wBonus: %.4f resourceP: %.4f%n", agent.name, winningBonus, normalizedResourceScore);
-
             double currentScore = gateway.neighborScores.getOrDefault(agent, 0.0);
             gateway.neighborScores.put(agent, currentScore + finalScore);
 
             currentScore = gateway.neighborScores.getOrDefault(agent, 0.0);
-            if (gateway.name.endsWith("1")) {
-              //  System.out.println(agent.name + " final updated: " + currentScore);
-            }
+            System.out.println(agent.name + " final updated: " + currentScore);
         }
     }
 
@@ -212,9 +199,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         double cpuScore = Math.sqrt(cpu);
         double memoryScore = Math.sqrt(memoryGB);
         double storageScore = Math.sqrt(storageGB);
-
-        //System.out.println(cpu+ "sqr: " +cpuScore+ " "+ memoryScore +" "+storageScore);
-        //System.out.println(agent.name + " " + (cpuScore + memoryScore + storageScore) / 3.0);
 
         return (cpuScore + memoryScore + storageScore) / 3.0;
     }
@@ -256,20 +240,8 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private List<ResourceAgent> selectAgentsBasedOnScores(final ResourceAgent gateway, final List<ResourceAgent> potentialAgents) {
         updateScores(gateway);
         potentialAgents.sort((a, b) -> Double.compare(gateway.neighborScores.get(b), gateway.neighborScores.get(a)));
-
-        if(gateway.name.endsWith("1")) {
-            System.out.println("neigscores");
-            gateway.neighborScores.forEach((x, y) -> {
-                System.out.println(x.name);
-            });
-        }
         Map<ResourceAgent, Double> normalized = getNormalizedCopy(gateway.neighborScores);
 
-        /*System.out.println("Normalized scores for gateway " + gateway.name + ":");
-        normalized.entrySet().stream()
-                .sorted(Map.Entry.<ResourceAgent, Double>comparingByValue().reversed())
-                .forEach(entry -> System.out.printf("  %s -> %.4f%n", entry.getKey().name, entry.getValue()));
-*/
         if (normalized.values().stream().mapToDouble(Double::doubleValue).sum() == 0.0) {
             return potentialAgents;
         }
@@ -288,7 +260,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
             double probability = SeedSyncer.centralRnd.nextDouble();
 
-           // System.out.println("Agent: " + agent.name + ", Score: " + score + ", Random: " + probability);
+            // System.out.println("Agent: " + agent.name + ", Score: " + score + ", Random: " + probability);
 
             if (score >= probability) {
                 selected.add(agent);
@@ -310,8 +282,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double currentScore = agent.neighborScores.getOrDefault(gateway, 0.0);
             double updatedScore = currentScore + POINT_AWARDED_FOR_GATEWAY_CHOICE;
             agent.neighborScores.put(gateway, updatedScore);
-
-            //System.out.printf("%s → neighborScore for gateway %s: %.4f → %.4f%n", agent.name, gateway.name, currentScore, updatedScore);
         }
     }
 
@@ -320,8 +290,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double currentScore = agent.neighborScores.getOrDefault(gateway, 0.0);
             double updatedScore = currentScore - REJECTED_POINT_DEDUCTION;
             agent.neighborScores.put(gateway, updatedScore);
-
-            //System.out.printf("%s → neighborScore for gateway %s: %.4f → %.4f%n", agent.name, gateway.name, currentScore, updatedScore);
         }
     }
 }

@@ -87,9 +87,6 @@ public class ResourceAgent {
         long totalFreeMemory = capacities.stream().mapToLong(cap -> cap.memory).sum();
         long totalFreeStorage = capacities.stream().mapToLong(cap -> cap.storage).sum();
 
-        /*System.out.printf("%s not reserved (cpu: %.1f, memory: %d, storage: %d)%n",
-                this.name, totalFreeCpu, totalFreeMemory, totalFreeStorage
-        );*/
         return Triple.of(totalFreeCpu, totalFreeMemory, totalFreeStorage);
     }
 
@@ -152,9 +149,8 @@ public class ResourceAgent {
 
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-        //app.resources.forEach(x -> System.out.println("itt meg jo: "+ x.cpu)); // minusz bug
 
-        for (ResourceAgent agent : resourceAgents) {
+        for (ResourceAgent agent : networkingAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
 
@@ -352,14 +348,9 @@ public class ResourceAgent {
                     freeReservedResources(app.name, capacity);
                 }
             }
-            //System.out.println("find LR for " + app.name);
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
-        //System.out.println("ennyi van neki");
-        //System.out.println(app.name);
-        //System.out.println(app.bcastCounter);
-
     }
 
     private void freeReservedResources(final String appName, final Capacity capacity) {
