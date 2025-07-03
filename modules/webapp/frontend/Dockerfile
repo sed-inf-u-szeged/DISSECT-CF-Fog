@@ -1,20 +1,8 @@
-# Step 1: Build the Angular app
-FROM node:14 AS build
-
-# Set working directory
-WORKDIR /app
-
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
-# Install Angular dependencies
-RUN npm install
-
-# Copy the already built Angular app
-COPY ./dist/DISSECT-CF-Fog-WebApp .
-
-# Step 2: Serve the app with Nginx
+# Serve the pre-built app with Nginx
 FROM nginx:alpine
+
+# Copy the already built Angular app to nginx
+COPY ./dist/DISSECT-CF-Fog-WebApp /usr/share/nginx/html
 
 # Expose port 80 to serve the app
 EXPOSE 80
