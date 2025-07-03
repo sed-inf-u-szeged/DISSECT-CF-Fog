@@ -2,8 +2,11 @@ package hu.u_szeged.inf.fog.simulator.test.prediction;
 
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.Utils;
 import java.util.List;
+
+import hu.u_szeged.inf.fog.simulator.prediction.communication.sqlite.SqLiteManager;
 import org.json.JSONException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,6 +18,9 @@ class FeatureManagerTest {
 
     @Test
     void getFeaturesWithEnoughData() throws JSONException {
+
+        // Initialize SQLiteManager
+        PredictionConfigurator.sqLiteManager = new SqLiteManager();
 
         final int windowSize = 4;
         final String featureName = "Feature 1";

@@ -71,7 +71,7 @@ rem Function to download and set up Maven temporarily
         rem Set up Maven environment variable
         set MAVEN_HOME=%TEMP_DIR%\apache-maven-%MAVEN_VERSION%
         set PATH=%MAVEN_HOME%\bin;%PATH%
-        echo Temporary Maven setup complete. Don’t forget to add it to your system PATH later if needed.
+        echo Temporary Maven setup complete. Don't forget to add it to your system PATH later if needed.
     ) else (
         echo Please install Maven manually and re-run this script.
         pause
@@ -102,7 +102,7 @@ rem Function to download and set up npm temporarily
         rem Set up npm environment variable
         set NODE_HOME=%TEMP_DIR%\node-%NODE_VERSION%-win-x64
         set PATH=%NODE_HOME%;%NODE_HOME%\bin;%PATH%
-        echo Temporary Node.js and npm setup complete. Don’t forget to add them to your system PATH later if needed.
+        echo Temporary Node.js and npm setup complete. Don't forget to add them to your system PATH later if needed.
     ) else (
         echo Please install npm manually and re-run this script.
         pause
@@ -135,24 +135,24 @@ rem Run the script to install the dependencies
 echo Installing all the dependencies for the project
 echo This will take some time, please be patient
 
-echo Installing simulator...
-cd ./simulator
-call mvn clean install -Dmaven.compiler.source=%JAVA_VERSION% -Dmaven.compiler.target=%JAVA_VERSION%
+echo Installing root Maven project...
 cd ..
+call mvn clean install -Dmaven.compiler.source=%JAVA_VERSION% -Dmaven.compiler.target=%JAVA_VERSION%
+cd modules
 
 echo Installing executor...
 cd ./executor
 call mvn clean package -Dmaven.compiler.source=%JAVA_VERSION% -Dmaven.compiler.target=%JAVA_VERSION%
 cd ..
 
-echo Installing webapp...
-cd ./webapp
-cd ./frontend
+echo Installing webapp frontend...
+cd ./webapp/frontend
 call npm install
 call npm run build
-cd ..
+cd ../..
 
-cd ./backend
+echo Installing webapp backend...
+cd ./webapp/backend
 call npm install
 
 echo All dependencies installed successfully!

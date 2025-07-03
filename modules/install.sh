@@ -51,7 +51,7 @@ setup_maven() {
     # Set up Maven environment variable
     export MAVEN_HOME="$TEMP_DIR/apache-maven-$MAVEN_VERSION"
     export PATH="$MAVEN_HOME/bin:$PATH"
-    echo "Temporary Maven setup complete. Don’t forget to add it to your system PATH later if needed."
+    echo "Temporary Maven setup complete. Don't forget to add it to your system PATH later if needed."
   else
     echo "Please install Maven manually and re-run this script."
     exit 1
@@ -79,7 +79,7 @@ setup_npm() {
     # Set up npm environment variable
     export NODE_HOME="$TEMP_DIR/node-$NODE_VERSION-linux-x64"
     export PATH="$NODE_HOME/bin:$PATH"
-    echo "Temporary Node.js and npm setup complete. Don’t forget to add them to your system PATH later if needed."
+    echo "Temporary Node.js and npm setup complete. Don't forget to add them to your system PATH later if needed."
   else
     echo "Please install npm manually and re-run this script."
     exit 1
@@ -103,10 +103,10 @@ fi
 # Install project dependencies
 echo "Installing all the dependencies for the project. This will take some time, please be patient."
 
-echo "Installing simulator..."
-cd ./simulator || exit
+echo "Installing root Maven project..."
+cd .. || exit
 mvn clean install -Dmaven.compiler.source="$JAVA_VERSION" -Dmaven.compiler.target="$JAVA_VERSION"
-cd ..
+cd modules || exit
 
 echo "Installing executor..."
 cd ./executor || exit
@@ -114,13 +114,12 @@ mvn clean package -Dmaven.compiler.source="$JAVA_VERSION" -Dmaven.compiler.targe
 cd ..
 
 echo "Installing webapp..."
-cd ./webapp || exit
-cd ./frontend || exit
+cd ./webapp/frontend || exit
 npm install
 npm run build
-cd ..
+cd ../..
 
-cd ./backend || exit
+cd ./webapp/backend || exit
 npm install
 
 echo "All dependencies installed successfully!"

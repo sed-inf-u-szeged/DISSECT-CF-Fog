@@ -22,7 +22,7 @@
       <div class="title">{{data.title}}</div>
       <mat-form-field appearance="outline">
           <mat-label>E-mail</mat-label>
-          <input #email id="email" class="setText-center" matInput type="text" formControlName="email" (focusout)="getUniversitiesWithData()">
+          <input #email id="email" class="setText-center" matInput type="text" formControlName="email">
       </mat-form-field>
       <mat-form-field appearance="outline">
           <mat-label>Password</mat-label>
@@ -30,13 +30,10 @@
               formControlName="password">
       </mat-form-field>
       <mat-form-field appearance="outline">
-      <mat-label>University(ies)</mat-label>
-      <mat-select #select formControlName="select" [(value)]="selected">
-        <mat-option *ngFor="let uni of allUniName" [value]="uni">
-          {{uni}}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+          <mat-label>University</mat-label>
+          <input #university id="university" class="setText-center" matInput type="text" 
+              formControlName="university" placeholder="Enter your university name">
+      </mat-form-field>
     <div *ngIf="isRegisterFailed || isLoginFailed" id="dataFailedText" class="notification error">
       Email or password is invalid!
     </div>

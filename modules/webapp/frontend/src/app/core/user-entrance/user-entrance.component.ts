@@ -59,7 +59,7 @@ export class UserEntranceComponent implements OnInit {
     this.entranceForm = this.formBuilder.group({
       email: new UntypedFormControl('', [Validators.required]),
       password: new UntypedFormControl('', [Validators.required]),
-      select: new UntypedFormControl('', [Validators.required])
+      university: new UntypedFormControl('', [Validators.required])
     });
   }
 

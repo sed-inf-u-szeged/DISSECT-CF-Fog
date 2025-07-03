@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -172,7 +173,7 @@ public class ToscaParserFull {
     
     public static void main(String[] args) throws Exception {
         // Use fully qualified class name for the constructor
-    	Constructor constructor = new Constructor(ToscaParserFull.ToscaFile.class);
+    	Constructor constructor = new Constructor(ToscaParserFull.ToscaFile.class, new LoaderOptions());
         Yaml yaml = new Yaml(constructor);
 
         InputStream inputStream = null;
