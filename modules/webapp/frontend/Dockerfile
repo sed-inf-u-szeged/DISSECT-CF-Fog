@@ -10,17 +10,11 @@ COPY package*.json ./
 # Install Angular dependencies
 RUN npm install
 
-# Copy all files to the container
-COPY . .
-
-# Build the Angular app in production mode
-RUN npm run build --prod
+# Copy the already built Angular app
+COPY ./dist/DISSECT-CF-Fog-WebApp .
 
 # Step 2: Serve the app with Nginx
 FROM nginx:alpine
-
-# Copy the built Angular app from the previous step
-COPY --from=build /app/dist/DISSECT-CF-Fog-WebApp /usr/share/nginx/html
 
 # Expose port 80 to serve the app
 EXPOSE 80
