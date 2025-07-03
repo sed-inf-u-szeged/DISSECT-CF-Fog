@@ -1,0 +1,34 @@
+<div class="user-management">
+  <h1>Manage Users</h1>
+  <form [formGroup]="searchForm">
+    <input formControlName="search" placeholder="Search users..." />
+  </form>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>University</th>
+        <th>Simulations Run</th>
+        <th>Max Simulations</th>
+        <th>Total Runtime</th>
+        <th>Max Runtime</th>
+        <th>Reset Period</th>
+        <th>Last Reset</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of filteredUsers">
+        <td>{{ user.email }}</td>
+        <td>{{ user.university }}</td>
+        <td><input [(ngModel)]="user.simulationsRun" /></td>
+        <td><input [(ngModel)]="user.maxSimulations" /></td>
+        <td><input [(ngModel)]="user.totalRuntime" /></td>
+        <td><input [(ngModel)]="user.maxRuntime" /></td>
+        <td><input [(ngModel)]="user.resetPeriod" /></td>
+        <td>{{ user.lastReset | date:'medium' }}</td>
+        <td><button (click)="updateUser(user)">Update</button></td>
+      </tr>
+    </tbody>
+  </table>
+</div> 
