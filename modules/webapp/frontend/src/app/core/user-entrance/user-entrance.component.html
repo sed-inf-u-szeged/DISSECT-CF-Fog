@@ -29,7 +29,7 @@
           <input #password id="password" class="setText-center" matInput type="password" 
               formControlName="password">
       </mat-form-field>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" *ngIf="!isLogin">
           <mat-label>University</mat-label>
           <input #university id="university" class="setText-center" matInput type="text" 
               formControlName="university" placeholder="Enter your university name">

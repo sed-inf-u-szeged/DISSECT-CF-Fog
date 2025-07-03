@@ -61,6 +61,9 @@ export class UserEntranceComponent implements OnInit {
       password: new UntypedFormControl('', [Validators.required]),
       university: new UntypedFormControl('', [Validators.required])
     });
+    if (this.isLogin) {
+      this.entranceForm.removeControl('university');
+    }
   }
 
   public onSubmit(): void {
