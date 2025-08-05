@@ -16,20 +16,14 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
 
@@ -44,6 +38,7 @@ public class ResourceAgent {
     VirtualMachine service;
 
     public double hourlyPrice;
+    private PriceRange priceRange;
 
     public List<Capacity> capacities;
 
@@ -193,14 +188,14 @@ public class ResourceAgent {
 
             // TODO: revise these commands
             if (SystemUtils.IS_OS_WINDOWS) {
-                command = "cd /d " + rankingScriptDir
-                        + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
-                        + " --offers_loc " + inputfile;
+                command = "cd /d \"" + rankingScriptDir
+                        + "\" && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
+                        + " --offers_loc \"" + inputfile+"\"";
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
             } else if (SystemUtils.IS_OS_LINUX) {
                 command = "cd " + rankingScriptDir
                         + " && python3 call_ranking_func.py --method_name " + rankingMethodName
-                        + " --offers_loc " + inputfile;
+                        + " --offers_loc " + inputfile ;
 
                 processBuilder = new ProcessBuilder("bash", "-c", command);
             } else {
@@ -352,4 +347,35 @@ public class ResourceAgent {
 
         return leadResource;
     }
+
+    public class PriceRange {
+        private final double minPrice;
+        private final double maxPrice;
+
+        public PriceRange(double minPrice, double maxPrice) {
+            if (minPrice > maxPrice) {
+                throw new IllegalArgumentException("Minimum price cannot be greater than max price.");
+            }
+            this.minPrice = minPrice;
+            this.maxPrice = maxPrice;
+        }
+
+        public double getMinPrice() {
+            return minPrice;
+        }
+
+        public double getMaxPrice() {
+            return maxPrice;
+        }
+
+        public double getAvaragePrice() {
+            return maxPrice + minPrice / 2;
+        }
+
+        @Override
+        public String toString() {
+            return "[" + minPrice + " - " + maxPrice + "]";
+        }
+    }
+
 }
