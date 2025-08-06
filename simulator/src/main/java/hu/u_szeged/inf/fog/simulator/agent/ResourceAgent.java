@@ -16,20 +16,14 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
 
@@ -56,11 +50,11 @@ public class ResourceAgent {
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
+        validateAndAddCapacitiesLimit(Arrays.asList(capacities));
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
-        this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
     }
 
@@ -352,4 +346,35 @@ public class ResourceAgent {
 
         return leadResource;
     }
+
+    private void validateAndAddCapacitiesLimit(List<Capacity> capacities) {
+        double totalCpuRequested = 0.0;
+        long totalMemoryRequested = 0L;
+        long totalStorageRequested = 0L;
+        ComputingAppliance commonNode = null;
+
+        for (Capacity cap : capacities) {
+            totalCpuRequested += cap.cpu;
+            totalMemoryRequested += cap.memory;
+            totalStorageRequested += cap.storage;
+
+            if (commonNode == null) {
+                commonNode = cap.node;
+            } else if (!commonNode.equals(cap.node)) {
+                throw new IllegalArgumentException(
+                        "All capacities for a single ResourceAgent must belong to the same ComputingAppliance node");
+            }
+        }
+
+        double maxCpu = commonNode.iaas.getCapacities().getRequiredCPUs();
+        long maxMemory = commonNode.iaas.getCapacities().getRequiredMemory();
+        long maxStorage = commonNode.getAvailableStorage();
+
+        if (totalCpuRequested > maxCpu || totalMemoryRequested > maxMemory || totalStorageRequested > maxStorage) {
+            throw new IllegalArgumentException("Requested resources exceed available capacities of " + commonNode.name);
+        }
+
+        this.capacities.addAll(capacities);
+    }
+
 }
