@@ -40,7 +40,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
     // Decay and learning parameters
     private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
-    private static final double LEARNING_RATE = 0.25;      // How fast to adapt
+    private static final double LEARNING_RATE = 0.20;      // How fast to adapt
     private static final double SUCCESS_BONUS = 1.0;      // Reward for being in winning offer
     private static final double SELECTION_BONUS = 0.5;    // Reward for being selected
 
@@ -71,12 +71,12 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         List<ResourceAgent> potentialAgents = getPotentialAgents(gateway);
         System.out.println("Working gateway: " + gateway.name);
 
-        if (isFirstRound(gateway)) {
+        if (isFirstRound(gateway) || winningOffer == null) {
             initializeStaticScores(gateway, potentialAgents);
             gateway.servedAsGatewayCount++;
             return potentialAgents;
         }
-
+        System.out.println(gateway.servedAsGatewayCount +" mi "+ MIN_ROUNDS_TO_USE_ACTIVATE);
         if (gateway.servedAsGatewayCount >= MIN_ROUNDS_TO_USE_ACTIVATE) {
             return potentialAgents;
         }
@@ -88,6 +88,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
         updateReputationScores(gateway, selectedAgents, potentialAgents);
         setWinningOffer(null);
+        gateway.servedAsGatewayCount++;
 
         return selectedAgents;
     }
@@ -119,7 +120,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double distanceKm = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000.0;
             int latencyMs = getLatencyToNode(agent, gatewayNode);
 
-            // inverse scoring: closer and lower latency = higher score
             double distanceScore = 1.0 / (Math.log(distanceKm + 1) + 1);
             double latencyScore = 1.0 / (latencyMs + 1);
             double combinedScore = (DISTANCE_WEIGHT * distanceScore + LATENCY_WEIGHT * latencyScore);
@@ -128,8 +128,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         }
 
         Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.0, 1.0);
-
-        System.out.println("init gateway: " + gateway.name);
 
         for (ResourceAgent agent : potentialAgents) {
             double staticScore = normalizedStatic.get(agent);
@@ -189,7 +187,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double memoryGB = free.getMiddle() / (1024.0 * 1024 * 1024);
             double storageGB = free.getRight() / (1024.0 * 1024 * 1024);
 
-            // Use log scaling for resource scores to handle wide ranges
             double cpuScore = Math.log(cpu + 1);
             double memoryScore = Math.log(memoryGB + 1);
             double storageScore = Math.log(storageGB + 1);
@@ -206,24 +203,20 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      */
     private void updateReputationScores(ResourceAgent gateway, List<ResourceAgent> selectedAgents, List<ResourceAgent> allAgents) {
         for (ResourceAgent agent : allAgents) {
-            double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
-            double reputationDelta = 0.0;
+            double reputationIncrement = 0.0;
 
-            // Reward for being selected
             if (selectedAgents.contains(agent)) {
-                reputationDelta += SELECTION_BONUS * LEARNING_RATE;
+                reputationIncrement += SELECTION_BONUS * LEARNING_RATE;
             }
 
-            // Additional reward for being in winning offer
             if (winningOffer != null && winningOffer.agentResourcesMap.containsKey(agent)) {
-                reputationDelta += SUCCESS_BONUS * LEARNING_RATE;
+                reputationIncrement += SUCCESS_BONUS * LEARNING_RATE;
                 agent.winningOfferSelectionCount++;
-                System.out.println(agent.name + " winning" + reputationDelta);
-                System.out.println(agent.name + " successbonus" + SUCCESS_BONUS);
-
             }
 
-            double newReputation = currentReputation + reputationDelta;
+            double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
+            double newReputation = Math.min(1.0, currentReputation + reputationIncrement); // Cap reputation at 1.0 to keep it from outweighing static and resource scores
+
             gateway.reputationScores.put(agent, Math.max(0.0, newReputation)); // Keep non-negative
         }
     }
@@ -249,16 +242,12 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         List<ResourceAgent> selected = new ArrayList<>();
         for (Map.Entry<ResourceAgent, Double> entry : probabilities.entrySet()) {
             double randomValue = SeedSyncer.centralRnd.nextDouble();
-            System.out.println(entry.getKey().name + " " + randomValue + " - " + entry.getValue());
 
             if (randomValue <= entry.getValue()) {
                 selected.add(entry.getKey());
             }
         }
 
-
-        System.out.println("SELECTED");
-        selected.forEach(x -> System.out.println(x.name));
         return selected;
     }
 
