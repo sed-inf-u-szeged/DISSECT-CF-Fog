@@ -50,9 +50,10 @@ public class ResourceAgent {
 
     public int reBroadcastCounter;
 
-    public Map<ResourceAgent, Double> neighborScores = new HashMap<>();
-    public boolean servedAsGateway = false;
+    public int servedAsGatewayCount = 0;
     public int winningOfferSelectionCount = 0;
+    public Map<ResourceAgent, Double> staticScores = new HashMap<>();
+    public Map<ResourceAgent, Double> reputationScores = new HashMap<>();
     private Set<ResourceAgent> networkingAgents;
 
     private final MessagingStrategy messagingStrategy;
@@ -67,15 +68,6 @@ public class ResourceAgent {
         this.capacities.addAll(Arrays.asList(capacities));
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
         this.messagingStrategy = messagingStrategy;
-
-        if (messagingStrategy instanceof GuidedSearchMessagingStrategy) {
-            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                if (agent != this) {
-                    agent.neighborScores.put(this, 0.0);
-                    this.neighborScores.put(agent, 0.0);
-                }
-            }
-        }
     }
 
     public void registerCapacity(Capacity capacity) {

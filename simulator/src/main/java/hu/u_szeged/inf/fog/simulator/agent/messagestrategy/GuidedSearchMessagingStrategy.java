@@ -5,6 +5,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.Offer;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.apache.commons.lang3.tuple.Triple;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,20 +33,16 @@ import java.util.stream.Collectors;
  * @see hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy
  */
 public class GuidedSearchMessagingStrategy extends MessagingStrategy {
-    /**
-     * The importance of the combined score of latency and distance between 0-1.
-     */
-    private static final double DISTANCE_LATENCY_WEIGHT = 0.4;
+    // Base component weights (must sum to 1.0)
+    private static final double STATIC_WEIGHT = 0.3;
+    private static final double RESOURCE_WEIGHT = 0.4;
+    private static final double REPUTATION_WEIGHT = 0.3;  // Historical performance
 
-    /**
-     * The importance of the resource score of an agent between 0-1.
-     */
-    private static final double RESOURCE_WEIGHT = 0.6;
-
-    /**
-     * The score awarded to an agent when it's in the winning offer.
-     */
-    private static final double WINNING_OFFER_WEIGHT = 0.2;
+    // Decay and learning parameters
+    private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
+    private static final double LEARNING_RATE = 0.25;      // How fast to adapt
+    private static final double SUCCESS_BONUS = 1.0;      // Reward for being in winning offer
+    private static final double SELECTION_BONUS = 0.5;    // Reward for being selected
 
     /**
      * The importance of the distance in the distance-latency score between 0-1.
@@ -56,16 +53,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      * The importance of the latency in the distance-latency score between 0-1.
      */
     private static final double LATENCY_WEIGHT = 0.8;
-    /**
-     * The score awarded to this gateway agent and stored in the neighborScore map
-     * of each selected agent that chose this gateway.
-     */
-    private static final double POINT_AWARDED_FOR_GATEWAY_CHOICE = 0.1;
-
-    /**
-     * The amount by which an agent's score is reduced due to being unselected over time.
-     */
-    private static final double REJECTED_POINT_DEDUCTION = 0.1;
 
     /**
      * Minimum chance for an agent to get selected for networking.
@@ -73,39 +60,36 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private static final double MIN_SELECTION_PROBABILITY = 0.10;
 
     /**
-     * Minimum score needs to be reached before the guided search actually selects the agents.
+     * Minimum reputation score needs to be reached before the guided search actually selects the agents.
      */
-    private static final double MIN_SCORE_TO_USE_GUIDED_STRATEGY = 1.0;
+    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 2;
+
     private Offer winningOffer;
 
     @Override
     public List<ResourceAgent> filterAgents(final ResourceAgent gateway) {
         List<ResourceAgent> potentialAgents = getPotentialAgents(gateway);
+        System.out.println("Working gateway: " + gateway.name);
 
-        double maxScore = getMaxNeighborScore(gateway);
-
-        if (isFirstRound(gateway) || winningOffer == null) {
-            initializeDistanceScores(gateway);
-            gateway.servedAsGateway = true;
+        if (isFirstRound(gateway)) {
+            initializeStaticScores(gateway, potentialAgents);
+            gateway.servedAsGatewayCount++;
             return potentialAgents;
-        } else {
-            System.out.println("Working gateway: " + gateway.name);
-            List<ResourceAgent> selectedAgents = selectAgentsBasedOnScores(gateway, potentialAgents);
-
-            if (maxScore < MIN_SCORE_TO_USE_GUIDED_STRATEGY) {
-                return potentialAgents;
-            }
-
-            List<ResourceAgent> unselectedAgents = ResourceAgent.resourceAgents.stream()
-                    .filter(agent -> !selectedAgents.contains(agent) && agent != gateway)
-                    .collect(Collectors.toList());
-
-            applySelectedReward(gateway, selectedAgents);
-            applyPenalty(gateway, unselectedAgents);
-            setWinningOffer(null);
-
-            return selectedAgents;
         }
+
+        if (gateway.servedAsGatewayCount >= MIN_ROUNDS_TO_USE_ACTIVATE) {
+            return potentialAgents;
+        }
+
+        applyReputationDecay(gateway);
+
+        Map<ResourceAgent, Double> compositeScores = calculateCompositeScores(gateway, potentialAgents);
+        List<ResourceAgent> selectedAgents = selectAgentsByProbability(compositeScores);
+
+        updateReputationScores(gateway, selectedAgents, potentialAgents);
+        setWinningOffer(null);
+
+        return selectedAgents;
     }
 
     public void setWinningOffer(final Offer winningOffer) {
@@ -121,88 +105,128 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     }
 
     private boolean isFirstRound(final ResourceAgent gateway) {
-        return !gateway.servedAsGateway;
+        return gateway.servedAsGatewayCount == 0;
     }
 
-    private void initializeDistanceScores(final ResourceAgent gateway) {
-        Map<ResourceAgent, Double> rawScores = new HashMap<>();
+    /**
+     * Initialize static scores based on distance and latency (one-time calculation)
+     */
+    private void initializeStaticScores(ResourceAgent gateway, List<ResourceAgent> potentialAgents) {
         NetworkNode gatewayNode = gateway.hostNode.iaas.repositories.get(0);
+        Map<ResourceAgent, Double> rawStaticScores = new HashMap<>();
 
-        double minScore = Double.MAX_VALUE;
-        double maxScore = Double.MIN_VALUE;
-
-        for (ResourceAgent agent : gateway.neighborScores.keySet()) {
+        for (ResourceAgent agent : potentialAgents) {
             double distanceKm = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000.0;
             int latencyMs = getLatencyToNode(agent, gatewayNode);
-            double distScaled = Math.log(distanceKm + 1);
-            double weightedSum = LATENCY_WEIGHT * latencyMs + DISTANCE_WEIGHT * distScaled;
-            double score = 1.0 / (weightedSum + 1e-6);
 
-            rawScores.put(agent, score);
-            if (score < minScore) minScore = score;
-            if (score > maxScore) maxScore = score;
+            // inverse scoring: closer and lower latency = higher score
+            double distanceScore = 1.0 / (Math.log(distanceKm + 1) + 1);
+            double latencyScore = 1.0 / (latencyMs + 1);
+            double combinedScore = (DISTANCE_WEIGHT * distanceScore + LATENCY_WEIGHT * latencyScore);
+
+            rawStaticScores.put(agent, combinedScore);
         }
 
-        for (ResourceAgent agent : gateway.neighborScores.keySet()) {
-            double raw = rawScores.get(agent);
-            double normalized = (maxScore == minScore) ? 1.0 : (raw - minScore) / (maxScore - minScore);
-            normalized *= DISTANCE_LATENCY_WEIGHT;
-            double currentScore = gateway.neighborScores.get(agent);
-            gateway.neighborScores.put(agent, currentScore + normalized);
+        Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.0, 1.0);
+
+        System.out.println("init gateway: " + gateway.name);
+
+        for (ResourceAgent agent : potentialAgents) {
+            double staticScore = normalizedStatic.get(agent);
+            gateway.staticScores.put(agent, staticScore);
+            gateway.reputationScores.put(agent, 0.0);
         }
     }
 
+    /**
+     * Apply exponential decay to reputation scores to prevent unbounded growth
+     */
+    private void applyReputationDecay(ResourceAgent gateway) {
+        for (Map.Entry<ResourceAgent, Double> entry : gateway.reputationScores.entrySet()) {
+            double currentScore = entry.getValue();
+            double decayedScore = currentScore * REPUTATION_DECAY;
+            entry.setValue(decayedScore);
+        }
+    }
 
-    private void updateScores(final ResourceAgent gateway) {
-        if (winningOffer == null || winningOffer.id == -1) return;
+    /**
+     * Calculate composite scores combining static, resource, and reputation components
+     */
+    private Map<ResourceAgent, Double> calculateCompositeScores(ResourceAgent gateway, List<ResourceAgent> potentialAgents) {
+        Map<ResourceAgent, Double> compositeScores = new HashMap<>();
+        Map<ResourceAgent, Double> resourceScores = calculateResourceScores(potentialAgents);
 
-        // Collect all raw resource scores and find max
-        Map<ResourceAgent, Double> rawResourceScores = new HashMap<>();
-        double maxScore = Double.NEGATIVE_INFINITY;
+        for (ResourceAgent agent : potentialAgents) {
+            double staticScore = gateway.staticScores.getOrDefault(agent, 0.0);
+            double resourceScore = resourceScores.getOrDefault(agent, 0.0);
+            double reputationScore = gateway.reputationScores.getOrDefault(agent, 0.0);
 
-        for (ResourceAgent agent : gateway.neighborScores.keySet()) {
-            double raw = getAvailableResourceScore(agent);
-            rawResourceScores.put(agent, raw);
-            if (raw > maxScore) maxScore = raw;
+            // Weighted combination for FINAL point
+            double composite = STATIC_WEIGHT * staticScore +
+                    RESOURCE_WEIGHT * resourceScore +
+                    REPUTATION_WEIGHT * reputationScore;
+
+            compositeScores.put(agent, composite);
+
+            System.out.println(agent.name + " - Static: " + String.format("%.3f", staticScore) +
+                    ", Resource: " + String.format("%.3f", resourceScore) +
+                    ", Reputation: " + String.format("%.3f", reputationScore) +
+                    ", Composite: " + String.format("%.3f", composite));
         }
 
-        for (ResourceAgent agent : gateway.neighborScores.keySet()) {
-            boolean wasHelping = winningOffer.agentResourcesMap.containsKey(agent);
-            if (wasHelping) {
-                agent.winningOfferSelectionCount++;
+        return compositeScores;
+    }
+
+    /**
+     * Calculate current resource availability scores (normalized to 0-1)
+     */
+    private Map<ResourceAgent, Double> calculateResourceScores(List<ResourceAgent> agents) {
+        Map<ResourceAgent, Double> resourceScores = new HashMap<>();
+
+        for (ResourceAgent agent : agents) {
+            Triple<Double, Long, Long> free = agent.getAllFreeResources();
+            double cpu = free.getLeft();
+            double memoryGB = free.getMiddle() / (1024.0 * 1024 * 1024);
+            double storageGB = free.getRight() / (1024.0 * 1024 * 1024);
+
+            // Use log scaling for resource scores to handle wide ranges
+            double cpuScore = Math.log(cpu + 1);
+            double memoryScore = Math.log(memoryGB + 1);
+            double storageScore = Math.log(storageGB + 1);
+
+            double combinedScore = (cpuScore + memoryScore + storageScore) / 3.0;
+            resourceScores.put(agent, combinedScore);
+        }
+
+        return normalizeToRange(resourceScores, 0.0, 1.0);
+    }
+
+    /**
+     * Update reputation scores based on selection and winning offer participation
+     */
+    private void updateReputationScores(ResourceAgent gateway, List<ResourceAgent> selectedAgents, List<ResourceAgent> allAgents) {
+        for (ResourceAgent agent : allAgents) {
+            double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
+            double reputationDelta = 0.0;
+
+            // Reward for being selected
+            if (selectedAgents.contains(agent)) {
+                reputationDelta += SELECTION_BONUS * LEARNING_RATE;
             }
 
-            double winningBonus = wasHelping ? WINNING_OFFER_WEIGHT / agent.winningOfferSelectionCount : 0;
+            // Additional reward for being in winning offer
+            if (winningOffer != null && winningOffer.agentResourcesMap.containsKey(agent)) {
+                reputationDelta += SUCCESS_BONUS * LEARNING_RATE;
+                agent.winningOfferSelectionCount++;
+                System.out.println(agent.name + " winning" + reputationDelta);
+                System.out.println(agent.name + " successbonus" + SUCCESS_BONUS);
 
-            double rawScore = rawResourceScores.get(agent);
-            double normalizedResourceScore = (maxScore > 0) ? rawScore / maxScore : 0.0;
-            normalizedResourceScore *= RESOURCE_WEIGHT;
+            }
 
-            double finalScore = winningBonus + normalizedResourceScore;
-
-            double currentScore = gateway.neighborScores.getOrDefault(agent, 0.0);
-            gateway.neighborScores.put(agent, currentScore + finalScore);
-
-            currentScore = gateway.neighborScores.getOrDefault(agent, 0.0);
-            System.out.println(agent.name + " final updated: " + currentScore);
+            double newReputation = currentReputation + reputationDelta;
+            gateway.reputationScores.put(agent, Math.max(0.0, newReputation)); // Keep non-negative
         }
     }
-
-
-    private double getAvailableResourceScore(ResourceAgent agent) {
-        Triple<Double, Long, Long> free = agent.getAllFreeResources();
-
-        double cpu = free.getLeft();
-        double memoryGB = free.getMiddle() / (1024.0 * 1024 * 1024);
-        double storageGB = free.getRight() / (1024.0 * 1024 * 1024);
-
-        double cpuScore = Math.sqrt(cpu);
-        double memoryScore = Math.sqrt(memoryGB);
-        double storageScore = Math.sqrt(storageGB);
-
-        return (cpuScore + memoryScore + storageScore) / 3.0;
-    }
-
 
     private int getLatencyToNode(ResourceAgent agent, NetworkNode targetNode) {
         try {
@@ -211,85 +235,67 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
             return latencies.getOrDefault(targetName, Integer.MAX_VALUE);
         } catch (Exception e) {
-            System.out.println("Failed to read latency for agent " + agent.name);
+            SimLogger.logRes("Failed to read latency for agent " + agent.name);
             return Integer.MAX_VALUE;
         }
     }
 
-    private Map<ResourceAgent, Double> getNormalizedCopy(Map<ResourceAgent, Double> original) {
-        Map<ResourceAgent, Double> copy = new HashMap<>(original);
+    /**
+     * Select agents probabilistically based on composite scores
+     */
+    private List<ResourceAgent> selectAgentsByProbability(Map<ResourceAgent, Double> compositeScores) {
+        Map<ResourceAgent, Double> probabilities = normalizeToProbabilities(compositeScores);
 
-        final double TARGET_MAX = 1.0;
-        final double TARGET_MIN = MIN_SELECTION_PROBABILITY;
+        List<ResourceAgent> selected = new ArrayList<>();
+        for (Map.Entry<ResourceAgent, Double> entry : probabilities.entrySet()) {
+            double randomValue = SeedSyncer.centralRnd.nextDouble();
+            System.out.println(entry.getKey().name + " " + randomValue + " - " + entry.getValue());
 
-        double maxScore = copy.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
-        double minScore = copy.values().stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
-        double range = maxScore - minScore;
+            if (randomValue <= entry.getValue()) {
+                selected.add(entry.getKey());
+            }
+        }
+
+
+        System.out.println("SELECTED");
+        selected.forEach(x -> System.out.println(x.name));
+        return selected;
+    }
+
+    /**
+     * Normalize scores to probability range [MIN_SELECTION_PROBABILITY, 1.0]
+     */
+    private Map<ResourceAgent, Double> normalizeToProbabilities(Map<ResourceAgent, Double> scores) {
+        double min = scores.values().stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
+        double max = scores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
+        double range = max - min;
+
+        Map<ResourceAgent, Double> probabilities = new HashMap<>();
+        for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
+            double normalized = (range > 1e-9) ? (entry.getValue() - min) / range : 0.5;
+            double probability = MIN_SELECTION_PROBABILITY + normalized * (1.0 - MIN_SELECTION_PROBABILITY);
+
+            probabilities.put(entry.getKey(), probability);
+        }
+
+        return probabilities;
+    }
+
+    /**
+     * Generic normalization to specified range
+     */
+    private Map<ResourceAgent, Double> normalizeToRange(Map<ResourceAgent, Double> scores, double minVal, double maxVal) {
+        double min = scores.values().stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
+        double max = scores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
+        double range = max - min;
 
         Map<ResourceAgent, Double> normalized = new HashMap<>();
-        for (Map.Entry<ResourceAgent, Double> entry : copy.entrySet()) {
-            double norm = (entry.getValue() - minScore) / Math.max(range, 1e-9);
-            double scaled = TARGET_MIN + norm * (TARGET_MAX - TARGET_MIN);
+        for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
+            double norm = (range > 1e-9) ? (entry.getValue() - min) / range : 0.5;
+            double scaled = minVal + norm * (maxVal - minVal);
             normalized.put(entry.getKey(), scaled);
         }
 
         return normalized;
-    }
-
-
-    private List<ResourceAgent> selectAgentsBasedOnScores(final ResourceAgent gateway, final List<ResourceAgent> potentialAgents) {
-        updateScores(gateway);
-        potentialAgents.sort((a, b) -> Double.compare(gateway.neighborScores.get(b), gateway.neighborScores.get(a)));
-        Map<ResourceAgent, Double> normalized = getNormalizedCopy(gateway.neighborScores);
-
-        if (normalized.values().stream().mapToDouble(Double::doubleValue).sum() == 0.0) {
-            return potentialAgents;
-        }
-
-        return weightedSample(normalized);
-    }
-
-    private List<ResourceAgent> weightedSample(Map<ResourceAgent, Double> scores) {
-        List<ResourceAgent> selected = new ArrayList<>();
-        Map<ResourceAgent, Double> available = new HashMap<>(scores);
-        List<Map.Entry<ResourceAgent, Double>> agentList = new ArrayList<>(available.entrySet());
-
-        for (Map.Entry<ResourceAgent, Double> entry : agentList) {
-            ResourceAgent agent = entry.getKey();
-            double score = entry.getValue();
-
-            double probability = SeedSyncer.centralRnd.nextDouble();
-
-            // System.out.println("Agent: " + agent.name + ", Score: " + score + ", Random: " + probability);
-
-            if (score >= probability) {
-                selected.add(agent);
-            }
-        }
-
-        return selected;
-    }
-
-    private double getMaxNeighborScore(ResourceAgent gateway) {
-        return gateway.neighborScores.values().stream()
-                .mapToDouble(Double::doubleValue)
-                .max()
-                .orElse(0.0);
-    }
-
-    private void applySelectedReward(ResourceAgent gateway, final List<ResourceAgent> selectedAgents) {
-        for (ResourceAgent agent : selectedAgents) {
-            double currentScore = agent.neighborScores.getOrDefault(gateway, 0.0);
-            double updatedScore = currentScore + POINT_AWARDED_FOR_GATEWAY_CHOICE;
-            agent.neighborScores.put(gateway, updatedScore);
-        }
-    }
-
-    private void applyPenalty(ResourceAgent gateway, List<ResourceAgent> rejectedAgents) {
-        for (ResourceAgent agent : rejectedAgents) {
-            double currentScore = agent.neighborScores.getOrDefault(gateway, 0.0);
-            double updatedScore = currentScore - REJECTED_POINT_DEDUCTION;
-            agent.neighborScores.put(gateway, updatedScore);
-        }
     }
 }
