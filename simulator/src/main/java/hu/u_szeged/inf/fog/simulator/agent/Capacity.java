@@ -57,12 +57,6 @@ public class Capacity {
         }
     }
 
-    public static class CapacityHandlingException extends RuntimeException {
-        private static final long serialVersionUID = -474479716001109155L;
-
-        CapacityHandlingException(final String s){super(s);}
-    }
-
     public double cpu;
 
     public long memory;
@@ -73,19 +67,7 @@ public class Capacity {
 
     public List<Utilisation> utilisations;
 
-    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) throws CapacityHandlingException {
-        /*
-        if (cpu > node.iaas.getCapacities().getRequiredCPUs()) {
-            throw new CapacityHandlingException("CPU allocation exceeds the available CPUs provided by " +  node.name);
-        }
-        System.out.println(memory+ " " + node.iaas.getCapacities().getRequiredMemory());
-        if (memory > node.iaas.getCapacities().getRequiredMemory()) {
-            throw new CapacityHandlingException("Memory allocation exceeds the available memory provided by " +  node.name);
-        }
-        if (storage > node.getAvailableStorage()) {
-            throw new CapacityHandlingException("Storage allocation exceeds the available storage provided by " +  node.name);
-        }
-        */
+    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) {
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;
