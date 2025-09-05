@@ -30,7 +30,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                     for (Capacity capacity : agent.capacities) {                   
                         if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                                 && (resource.location == null || resource.location.equals(capacity.node.location))
-                                && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory) {
+                                && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory && resource.edge == capacity.node.edge) {
 
                             capacity.reserveCapacity(resource);
                             reservedCapacity.add(capacity);
@@ -58,7 +58,8 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
             }
         }
-        
+        //System.out.println(agentResourcePairs.get(0).getLeft().name + " " + agentResourcePairs.get(0).getRight().name);
+        //System.out.println(agent.capacities);
         return agentResourcePairs;
     } 
 

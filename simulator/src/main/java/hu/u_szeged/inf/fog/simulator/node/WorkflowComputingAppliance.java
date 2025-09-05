@@ -56,7 +56,7 @@ public class WorkflowComputingAppliance extends ComputingAppliance {
     }
     
     public WorkflowComputingAppliance(IaaSService iaas, GeoLocation geoLocation) {
-        super(iaas, geoLocation, "", "");
+        super(iaas, geoLocation, "", "", false);
         this.cluster = new TreeSet<>();
         this.applications = new ArrayList<>();
     }

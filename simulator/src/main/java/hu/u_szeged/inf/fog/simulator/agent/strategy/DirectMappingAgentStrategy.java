@@ -1,0 +1,42 @@
+package hu.u_szeged.inf.fog.simulator.agent.strategy;
+
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
+
+public class DirectMappingAgentStrategy extends AgentStrategy {
+
+    Map<String, String> mapping;
+    
+    public DirectMappingAgentStrategy(Map<String, String> mapping) {
+        this.mapping = mapping;
+    }
+    
+    @Override
+    public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
+        
+        List<Pair<ResourceAgent, Resource>> agentResourcePair = new ArrayList<>();
+        
+        for (Map.Entry<String, String> entry : mapping.entrySet()) {
+            String ra = entry.getKey();
+            String name = entry.getValue();
+
+            if (agent.name.equals(ra)) {
+                for (Resource resource : resources) {
+                    if (resource.name.equals(name)) {
+                        agentResourcePair.add(Pair.of(agent, resource));
+                        agent.capacities.get(0).reserveCapacity(resource);
+                        return agentResourcePair;
+                    }
+                }
+            }
+        }
+        
+        return Collections.emptyList();
+    }
+}

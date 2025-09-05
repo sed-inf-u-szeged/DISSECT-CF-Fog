@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
+    
+    public static final long aDayInMilisec = 24 * 60 * 60 * 1000;
         
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
             .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)

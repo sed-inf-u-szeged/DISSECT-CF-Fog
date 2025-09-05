@@ -94,7 +94,7 @@ public class ResourceAgent {
         this.generateOffers(app);
 
         if (!app.offers.isEmpty()) {
-            this.writeFile(app);
+            this.writeFile(app); // TODO: this takes time..
             app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
@@ -186,7 +186,6 @@ public class ResourceAgent {
 
     private int callRankingScript(AgentApplication app) {
         String inputfile = ScenarioBase.resultDirectory + File.separator + app.name + "-offers.json";
-
         try {
             String command;
             ProcessBuilder processBuilder;
@@ -309,7 +308,7 @@ public class ResourceAgent {
                 releaseResourcesAndNotifyNoOffers(app);
                 return;
             }
-
+            
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
                     if (offer.agentResourcesMap.containsKey(agent)) {
@@ -319,7 +318,7 @@ public class ResourceAgent {
                     freeReservedResources(app.name, capacity);
                 }
             }
-
+            
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });

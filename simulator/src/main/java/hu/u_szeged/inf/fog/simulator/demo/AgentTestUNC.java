@@ -31,6 +31,7 @@ import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
@@ -41,7 +42,7 @@ import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 
-public class AgentTest {
+public class AgentTestUNC {
 
     public static void main(String[] args) throws NetworkException, IOException {
         
@@ -77,30 +78,30 @@ public class AgentTest {
         double capacity = 256; 
         
         ComputingAppliance node1 = new ComputingAppliance(
-                createNode("node1", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
-                new GeoLocation(47.50, 19.08), "EU", "AWS", false); // Budapest
+                createNode("node1", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
+                new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
 
             ComputingAppliance node2 = new ComputingAppliance(
-                createNode("node2", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
-                new GeoLocation(48.86, 2.35), "EU", "Azure", false); // Paris
+                createNode("node2", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+                new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
 
             ComputingAppliance node3 = new ComputingAppliance(
-                createNode("node3", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
-                new GeoLocation(52.52, 13.40), "EU", "AWS", false); // Berlin
+                createNode("node3", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
+                new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
                 
             ComputingAppliance node4 = new ComputingAppliance(
-                createNode("node4", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
-                new GeoLocation(41.90, 12.50), "EU", "Azure", false); // Rome
-            
-            /*
+                createNode("node4", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
+                new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
+              
             ComputingAppliance node5 = new ComputingAppliance(
-                createNode("node5", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
-                new GeoLocation(40.71, -74.00), "US", "AWS"); // New York
-
+                createNode("node5", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
+                new GeoLocation(40.71, -74.00), "EU", "AWS", true); // New York
+           
             ComputingAppliance node6 = new ComputingAppliance(
                 createNode("node6", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
-                new GeoLocation(34.05, -118.25), "US", "Azure"); // Los Angeles
-
+                new GeoLocation(34.05, -118.25), "US", "Azure", false); // Los Angeles
+         
+            /*
             ComputingAppliance node7 = new ComputingAppliance(
                 createNode("node7", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
                 new GeoLocation(37.77, -122.42), "US", "AWS"); // San Francisco
@@ -123,24 +124,33 @@ public class AgentTest {
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
-        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), 
-                new Capacity(node1, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put("Agent-1", "UNC-Res-1");
+        mapping.put("Agent-2", "UNC-Res-2");
+        mapping.put("Agent-3", "UNC-Res-3");
+        mapping.put("Agent-4", "UNC-Res-4");
+        mapping.put("Agent-5", "UNC-Res-5");
         
-        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node2, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        
+        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping), 
+                new Capacity(node1, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        
+        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
+                new Capacity(node2, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 
-        new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node3, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
+                new Capacity(node3, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
 
-        new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node4, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        /*
-        new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node5, 16, 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
+        new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
+                new Capacity(node4, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        
+        new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
+                new Capacity(node5, 5, 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
         
         new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
+        /*
         new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
@@ -316,5 +326,36 @@ public class AgentTest {
         }
         
         return iaas;
+    }
+}
+
+class CsvExporter extends Timed {
+
+    Sun sun;
+        
+    public CsvExporter(Sun sun) {
+
+        this.sun = sun;
+        subscribe(10_000);
+    }
+
+    @Override
+    public void tick(long fires) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(ScenarioBase.resultDirectory + "/temperature.csv", true))) {
+            StringBuilder row = new StringBuilder();
+            row.append(String.format(Locale.ROOT, "%.5f",Timed.getFireCount() / 1000.0 / 60.0 / 60.0)); 
+
+            for (Object o : SwarmAgent.allComponents) {
+                if (o instanceof NoiseSensor) {
+                    NoiseSensor ns = (NoiseSensor) o;
+                    row.append(",");
+                    row.append(String.format(Locale.ROOT, "%.5f", ns.cpuTemp));
+                }
+            }
+
+            writer.println(row.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

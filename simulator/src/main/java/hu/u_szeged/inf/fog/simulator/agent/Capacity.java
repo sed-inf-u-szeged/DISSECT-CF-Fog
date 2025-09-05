@@ -22,7 +22,7 @@ public class Capacity {
 
         State state;
 
-        Resource resource;
+        public Resource resource;
 
         public double utilisedCpu;
 
@@ -74,16 +74,18 @@ public class Capacity {
     public List<Utilisation> utilisations;
 
     public Capacity(ComputingAppliance node, double cpu, long memory, long storage) throws CapacityHandlingException {
+        /*
         if (cpu > node.iaas.getCapacities().getRequiredCPUs()) {
-            throw new CapacityHandlingException("CPU allocation exceeds the available CPUs of the ComputingAppliance");
+            throw new CapacityHandlingException("CPU allocation exceeds the available CPUs provided by " +  node.name);
         }
+        System.out.println(memory+ " " + node.iaas.getCapacities().getRequiredMemory());
         if (memory > node.iaas.getCapacities().getRequiredMemory()) {
-            throw new CapacityHandlingException("Memory allocation exceeds the available memory of the ComputingAppliance");
+            throw new CapacityHandlingException("Memory allocation exceeds the available memory provided by " +  node.name);
         }
         if (storage > node.getAvailableStorage()) {
-            throw new CapacityHandlingException("Storage allocation exceeds the available storage of the ComputingAppliance");
+            throw new CapacityHandlingException("Storage allocation exceeds the available storage provided by " +  node.name);
         }
-
+        */
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;

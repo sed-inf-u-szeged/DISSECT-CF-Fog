@@ -96,6 +96,8 @@ public class ComputingAppliance {
     public String provider;
     
     public String location;
+    
+    public Boolean edge;
 
     /**
      * Constructs a new {@code ComputingAppliance} with the specified parameters.
@@ -121,7 +123,7 @@ public class ComputingAppliance {
         ComputingAppliance.allComputingAppliances.add(this);
     }
     
-    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
+    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider, boolean edge) {
         this.iaas = iaas;
         this.name = iaas.repositories.get(0).getName().contains("-") 
                 ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
@@ -129,6 +131,7 @@ public class ComputingAppliance {
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
+        this.edge = edge;
         this.neighbors = new ArrayList<>();
         this.range = Integer.MAX_VALUE;
         ComputingAppliance.allComputingAppliances.add(this);
