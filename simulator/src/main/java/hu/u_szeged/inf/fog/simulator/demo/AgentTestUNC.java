@@ -52,7 +52,7 @@ public class AgentTestUNC {
         SeedSyncer.modifySeed(9876543210L);
         
         long simLength = 3 * 24 * 60 * 60 * 1000; 
-        int numOfApps = 1;
+        int numOfApps = 2;
 
         /** ranking config */
         //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
@@ -72,83 +72,94 @@ public class AgentTestUNC {
         /** nodes */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
-        double capacity = 256; 
+        double capacity = 256 * 2; 
         
-        ComputingAppliance node1 = new ComputingAppliance(
-                createNode("Node-1", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
-                new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
+        for(int i = 0; i < numOfApps; i++) {
+        	//for(int j = 0; j < 5; j++) {
+        	    ComputingAppliance node1 = new ComputingAppliance(
+                    createNode("Node1" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
+                    new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
 
-            ComputingAppliance node2 = new ComputingAppliance(
-                createNode("Node-2", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
-                new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
+                ComputingAppliance node2 = new ComputingAppliance(
+                    createNode("Node2" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+                    new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
 
-            ComputingAppliance node3 = new ComputingAppliance(
-                createNode("Node-3", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
-                new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
+                ComputingAppliance node3 = new ComputingAppliance(
+                    createNode("Node3" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
+                    new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
+                        
+                ComputingAppliance node4 = new ComputingAppliance(
+                    createNode("Node4" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
+                    new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
+                      
+                ComputingAppliance node5 = new ComputingAppliance(
+                    createNode("Node5" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
+                    new GeoLocation(40.71, -74.00), "EU", "AWS", true); // New York
                 
-            ComputingAppliance node4 = new ComputingAppliance(
-                createNode("Node-4", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
-                new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
-              
-            ComputingAppliance node5 = new ComputingAppliance(
-                createNode("Node-5", 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
-                new GeoLocation(40.71, -74.00), "EU", "AWS", true); // New York
-           
-            ComputingAppliance node6 = new ComputingAppliance(
-                createNode("Node-6", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
-                new GeoLocation(34.05, -118.25), "US", "Azure", false); // Los Angeles
+                new EnergyDataCollector("Node1" + i, node1.iaas, true);
+                new EnergyDataCollector("Node2" + i, node2.iaas, true);
+                new EnergyDataCollector("Node3" + i, node3.iaas, true);
+                new EnergyDataCollector("Node4" + i, node4.iaas, true);
+                new EnergyDataCollector("Node5" + i, node5.iaas, true);
+        	//}
+        }
+        
+        ComputingAppliance node6 = new ComputingAppliance(
+            createNode("Node6", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+            new GeoLocation(34.05, -118.25), "US", "Azure", false); // Los Angeles
          
-            ComputingAppliance node7 = new ComputingAppliance(
-                createNode("Node-7", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
-                new GeoLocation(37.77, -122.42), "US", "AWS", false); // San Francisco
+        ComputingAppliance node7 = new ComputingAppliance(
+            createNode("Node7", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+            new GeoLocation(37.77, -122.42), "US", "AWS", false); // San Francisco
 
-            ComputingAppliance node8 = new ComputingAppliance(
-                createNode("Node-8", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
-                new GeoLocation(41.88, -87.63), "US", "Azure", false); // Chicago
+        ComputingAppliance node8 = new ComputingAppliance(
+            createNode("Node8", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+            new GeoLocation(41.88, -87.63), "US", "Azure", false); // Chicago
             
-        new EnergyDataCollector("Node-1", node1.iaas, true);
-        new EnergyDataCollector("Node-2", node2.iaas, true);
-        new EnergyDataCollector("Node-3", node3.iaas, true);
-        new EnergyDataCollector("Node-4", node4.iaas, true);
-        new EnergyDataCollector("Node-5", node5.iaas, true);
-        new EnergyDataCollector("Node-6", node6.iaas, true);
-        new EnergyDataCollector("Node-7", node7.iaas, true);
-        new EnergyDataCollector("Node-8", node8.iaas, true);
+        new EnergyDataCollector("Node6", node6.iaas, true);
+        new EnergyDataCollector("Node7", node7.iaas, true);
+        new EnergyDataCollector("Node8", node8.iaas, true);
 
         /** agents */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
         Map<String, String> mapping = new HashMap<>();
-        mapping.put("Agent-1", "UNC-Res-1");
-        mapping.put("Agent-2", "UNC-Res-2");
-        mapping.put("Agent-3", "UNC-Res-3");
-        mapping.put("Agent-4", "UNC-Res-4");
-        mapping.put("Agent-5", "UNC-Res-5");
         
+        ResourceAgent ra1 = new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+        ResourceAgent ra2 = new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+        ResourceAgent ra3 = new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+        ResourceAgent ra4 = new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+        ResourceAgent ra5 = new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+        		
+        for(int i = 0; i < numOfApps; i++) {
+        	
+        	mapping.put("UNC-" + i + "-Res-1", "Agent-1");
+        	mapping.put("UNC-" + i + "-Res-2", "Agent-2");
+        	mapping.put("UNC-" + i + "-Res-3", "Agent-3");
+        	mapping.put("UNC-" + i + "-Res-4", "Agent-4");
+        	mapping.put("UNC-" + i + "-Res-5", "Agent-5");
+            
+        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node1" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node2" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node3" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node4" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node5" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        }
         
-        new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping), 
-                new Capacity(node1, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
-                new Capacity(node2, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-
-        new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
-                new Capacity(node3, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-
-        new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
-                new Capacity(node4, 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping),
-                new Capacity(node5, 5, 16 * 1_073_741_824L, (long) 16 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+        ra1.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        ra2.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        ra3.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        ra4.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        ra5.initResourceAgent(resourceAgentVa, resourceAgentArc);
+            
+        ResourceAgent ra6 = new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
-        new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+        ResourceAgent ra7 = new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         
-        new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+        ResourceAgent ra8 = new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
                 
         /** Image service */
@@ -266,7 +277,7 @@ public class AgentTestUNC {
         }
         
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
-        SimLogger.logRes("Number of sound files on the remote server: " + soundFilesRs);
+        //SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
         
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
         
@@ -292,7 +303,6 @@ public class AgentTestUNC {
     
     static IaaSService createNode(String name, double cpu, double perCoreProcessing, long memory, long storage, double minpower, 
             double idlepower, double maxpower, long bandwidth, int latency, Map<String, Integer> latencyMap) { 
-        
         IaaSService iaas = null;
         
         try {

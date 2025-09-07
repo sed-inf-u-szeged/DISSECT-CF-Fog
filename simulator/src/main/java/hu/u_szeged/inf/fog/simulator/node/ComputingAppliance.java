@@ -287,4 +287,13 @@ public class ComputingAppliance {
                 .mapToLong(Repository::getFreeStorageCapacity).
                 sum();
     }
+    
+    public static ComputingAppliance findApplianceByName(String name) {
+    	for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+    		if (ca.name.equals(name)) {
+    			return ca;
+    		}
+    	}
+    	return null;
+    }
 }

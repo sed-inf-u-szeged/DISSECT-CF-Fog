@@ -50,7 +50,7 @@ public class ResourceAgent {
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
-        validateAndAddCapacitiesLimit(Arrays.asList(capacities));
+        validateAndAddCapacitiesLimit(Arrays.asList(capacities));        
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
@@ -58,11 +58,22 @@ public class ResourceAgent {
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
     }
 
+    public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
+            AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy) {
+    	this.capacities = new ArrayList<>();
+
+    	this.name = name;
+    	this.hourlyPrice = hourlyPrice;
+    	ResourceAgent.resourceAgents.add(this);
+    	this.agentStrategy = agentStrategy;
+    	//this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+    }
+    
     public void registerCapacity(Capacity capacity) {
         this.capacities.add(capacity);
     }
 
-    private void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
+    public void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc) {
         try {
             this.hostNode = this.capacities.get(SeedSyncer.centralRnd.nextInt(this.capacities.size())).node;
             VirtualAppliance va = resourceAgentVa.newCopy(this.name + "-VA");
@@ -334,6 +345,7 @@ public class ResourceAgent {
 
     private Pair<ComputingAppliance, Utilisation> findLeadResource(List<Pair<ComputingAppliance, Utilisation>> utilisations) {
         Pair<ComputingAppliance, Utilisation> leadResource = null;
+        
         double maxCpu = Integer.MIN_VALUE;
 
         for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {

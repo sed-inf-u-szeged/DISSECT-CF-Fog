@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent.strategy;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,14 +23,23 @@ public class DirectMappingAgentStrategy extends AgentStrategy {
         List<Pair<ResourceAgent, Resource>> agentResourcePair = new ArrayList<>();
         
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
-            String ra = entry.getKey();
-            String name = entry.getValue();
+            String name = entry.getKey();
+            String ra = entry.getValue();
 
             if (agent.name.equals(ra)) {
                 for (Resource resource : resources) {
                     if (resource.name.equals(name)) {
-                        agentResourcePair.add(Pair.of(agent, resource));
-                        agent.capacities.get(0).reserveCapacity(resource);
+                    	for (Capacity c : agent.capacities) {
+                    		if (c.cpu >= resource.cpu) {
+                    			 agentResourcePair.add(Pair.of(agent, resource));
+                                 c.reserveCapacity(resource);
+      
+                        		break;
+                    		}
+                    		
+                    	}
+                    	//System.exit(0);
+                       
                         return agentResourcePair;
                     }
                 }
