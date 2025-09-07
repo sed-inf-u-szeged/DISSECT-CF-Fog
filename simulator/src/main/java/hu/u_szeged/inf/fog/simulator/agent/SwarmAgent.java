@@ -1,14 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
-
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
-import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 public class SwarmAgent extends Timed {
 
@@ -18,20 +15,23 @@ public class SwarmAgent extends Timed {
     
     private int currentIndex;
     
-    public static ArrayList<Object> allComponents = new ArrayList<>(); // TODO: replace it with a non-static SA list?
+    public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>(); 
     
     private final Deque<CpuTempSample> cpuTempSamples;
+    
+    public AgentApplication app;
 
-    public SwarmAgent() {
+    public SwarmAgent(AgentApplication app) {
+        this.app = app;
         this.components = new ArrayList<>();
         cpuTempSamples = new ArrayDeque<>();
         this.noiseSensorsWithClassification = new ArrayList<>();
+        allSwarmAgents.add(this);
         subscribe(10_000);
     }
     
     public void registerComponent(Object component) {
         this.components.add(component);
-        allComponents.add(component);
     }
 
     @Override
@@ -72,7 +72,7 @@ public class SwarmAgent extends Timed {
         return (count > 0) ? (sum / count) : 0.0;
     }
     
-    private double avgCpu() {
+    public double avgCpu() {
         int noiseSensors = 0;
         double load = 0.0;
         for (Object o : this.components) {
@@ -116,7 +116,7 @@ public class SwarmAgent extends Timed {
     }
     
     private void scale(double currentCpuLoad) {      
-        /**/
+        /*
         for (Object o : this.components) {
             if (o.getClass().equals(NoiseSensor.class)) {
                 NoiseSensor ns = (NoiseSensor) o;
@@ -124,22 +124,24 @@ public class SwarmAgent extends Timed {
                 + ns.isClassificationRunning + " " + ns.filesToBeProcessed.size() + " " + noiseSensorsWithClassification.size());
             }
         }
-        
+        */
         
         if (noiseSensorsWithClassification.size() < 2) {
             NoiseSensor ns = findSensorByCpuTemp(true);
             if (ns != null) {
-                SimLogger.logRun(ns.hashCode() + " noise sensor is set running at " + Timed.getFireCount()/1000/60 + " due to min. requirement");
+                SimLogger.logRun(this.app.getComponentName(ns.util.resource.name) + "'classifier was started at: " 
+                        + Timed.getFireCount() / 1000.0 / 60.0 + " min. due to minimum requirement");
                 noiseSensorsWithClassification.add(ns);
                 ns.isClassificationRunning = true;
             } else {
-                SimLogger.logRun("SA did not find any suitable noise sensor to start the classifier at: " + Timed.getFireCount()/1000/60/60);
+                //SimLogger.logRun("SA did not find any suitables sensor to start
                 
             }
         } else if (currentCpuLoad > 70) {
             NoiseSensor ns = findSensorByCpuTemp(true);
             if (ns != null) {
-                SimLogger.logRun(ns.hashCode() + " noise sensor is set running at " + Timed.getFireCount()/1000/60 + " due to large load");
+                SimLogger.logRun(this.app.getComponentName(ns.util.resource.name) + "'classifier was started at: " 
+                    + Timed.getFireCount() / 1000 / 60 + " min. due to large load");
                 noiseSensorsWithClassification.add(ns);
                 ns.isClassificationRunning = true;
             }
@@ -147,7 +149,8 @@ public class SwarmAgent extends Timed {
         } else if (getCpuLoadAvgLastMin() < 30) {
             NoiseSensor ns = findSensorByCpuTemp(false);
             if (ns != null && noiseSensorsWithClassification.size() > 2) {
-                SimLogger.logRun(ns.hashCode() + " noise sensor is turned off at " + Timed.getFireCount()/1000/60  + " due to small load");
+                SimLogger.logRun(this.app.getComponentName(ns.util.resource.name) + "'classifier was turned off at: "
+                    + Timed.getFireCount() / 1000.0 / 60.0  + " min. due to small load");
                 noiseSensorsWithClassification.remove(ns);
                 ns.isClassificationRunning = false;    
             }
@@ -174,7 +177,9 @@ public class SwarmAgent extends Timed {
                 NoiseSensor ns = (NoiseSensor) component;
                 noiseSensorsWithClassification.add(ns);
                 ns.isClassificationRunning = true;
-                System.out.println(ns.hashCode() + " noise sensor is set running");
+                
+                SimLogger.logRun(this.app.getComponentName(ns.util.resource.name) + "'classifier was started at: "
+                    + Timed.getFireCount() / 1000.0 / 60.0 + " min. due to minimum requirement");
                 count++;
                 if (count >= num) {
                     break; 

@@ -98,7 +98,7 @@ public class ComputingAppliance {
     public String location;
     
     public Boolean edge;
-
+    
     /**
      * Constructs a new {@code ComputingAppliance} with the specified parameters.
      * It also starts the energy measurement for this instance.
@@ -137,7 +137,13 @@ public class ComputingAppliance {
         ComputingAppliance.allComputingAppliances.add(this);
     }
 
-    /**
+    public ComputingAppliance(String id) {
+        this.geoLocation = null;
+        this.range = 0; // TODO: check the FL extension
+        this.name = "";
+    }
+
+	/**
      * Calculates and returns the load of CPU resources for this computing appliance.
      * The load is represented as a percentage of the used CPU capacity measured to 
      * the total CPU capacity.

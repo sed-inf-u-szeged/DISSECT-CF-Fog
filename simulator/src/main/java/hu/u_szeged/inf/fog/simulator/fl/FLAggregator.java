@@ -203,7 +203,7 @@ public class FLAggregator extends ComputingAppliance {
       * @param modelSize number of parameters in the global model; must be {@code > 0}.
       */
      public FLAggregator(String id, int modelSize) {
-         super(id);
+         super(id); 
          this.id = id;
          if (modelSize <= 0) modelSize = 1; // guard
          this.globalModel = new double[modelSize];
@@ -220,7 +220,7 @@ public class FLAggregator extends ComputingAppliance {
       * @param initialWeights initial model weights (copied defensively).
       */
      public FLAggregator(String id, double[] initialWeights) {
-         super(id);
+         super(id); 
          this.id = id;
          if (initialWeights != null && initialWeights.length > 0) {
              this.globalModel = initialWeights.clone();

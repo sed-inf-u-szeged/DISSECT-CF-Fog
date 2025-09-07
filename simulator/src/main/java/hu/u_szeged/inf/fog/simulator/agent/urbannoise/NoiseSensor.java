@@ -210,7 +210,8 @@ public class NoiseSensor extends Timed {
                 e.printStackTrace();
             } 
         } else if (cpuTemp > 95.0) {
-            SimLogger.logRun(this.hashCode() + " noise sensor is turned off at " + Timed.getFireCount()/1000/60  + " due to large temp. (" + cpuTemp + ")");
+            SimLogger.logRun(this.sa.app.getComponentName(this.util.resource.name) + "'classifier was turned off at: "
+                + Timed.getFireCount() / 1000.0 / 60.0  + " min. due to large temperature");
             this.isClassificationRunning = false;
             this.sa.noiseSensorsWithClassification.remove(this);
         }

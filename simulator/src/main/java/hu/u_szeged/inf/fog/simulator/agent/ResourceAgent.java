@@ -71,8 +71,8 @@ public class ResourceAgent {
                     this.hostNode.iaas.repositories.get(0), 1)[0];
             this.service = vm;
 
-            SimLogger.logRun(name + " agent started working at: " + Timed.getFireCount()
-                    + ", hosted on: " + this.hostNode.name);
+            SimLogger.logRun(name + " (RA) was assigned to: " + this.hostNode.name + " at: " 
+                + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -127,11 +127,12 @@ public class ResourceAgent {
 
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
-        // TODO: only for debugging, needs to be deleted
+        /* TODO: only for debugging, needs to be deleted
         System.out.println(app.name);
         for (Offer o : app.offers) {
             System.out.println(o);
         }
+        */
     }
 
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
@@ -208,7 +209,7 @@ public class ResourceAgent {
                 StringBuilder arrayContent = new StringBuilder();
 
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
+                    //System.out.println(line);
                     arrayContent.append(line).append(" ");
                 }
 
@@ -222,11 +223,11 @@ public class ResourceAgent {
                         .collect(Collectors.toList());
 
                 int firstNumber = numberList.get(0);
-                int lastNumber = numberList.get(numberList.size() - 1);
+                //int lastNumber = numberList.get(numberList.size() - 1);
 
                 SimLogger.logRun(app.offers.size() + " offers were ranked for "
-                        + app.name + " at: " + Timed.getFireCount()
-                        + " as follows: first = " + firstNumber + ", last = " + lastNumber);
+                        + app.name + " at: " + Timed.getFireCount() / 1000.0 / 60.
+                        + " min., the winning offer index is: " + firstNumber);
 
                 return firstNumber;
                 //return lastNumber;
@@ -295,8 +296,8 @@ public class ResourceAgent {
 
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "ack", () -> {
-            SimLogger.logRun("All ack. messages receieved for " + app.name
-                    + " at: " + Timed.getFireCount());
+            SimLogger.logRun("All acknowledge messages received for " + app.name
+                    + " at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
 
             if (offer.id == -1) {
                 releaseResourcesAndNotifyNoOffers(app);
@@ -312,7 +313,7 @@ public class ResourceAgent {
                     freeReservedResources(app.name, capacity);
                 }
             }
-            
+            SimLogger.logRun("Winning offer for " + app.name + " was " + offer);
             Pair<ComputingAppliance, Utilisation> leadResource = findLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });

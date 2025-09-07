@@ -1,14 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.agent.urbannoise;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SplittableRandom;

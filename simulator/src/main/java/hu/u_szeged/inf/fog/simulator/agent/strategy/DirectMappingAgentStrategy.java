@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.strategy;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
-import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
 import java.util.Collections;

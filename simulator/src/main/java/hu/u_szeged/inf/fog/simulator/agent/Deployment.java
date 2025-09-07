@@ -4,8 +4,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
@@ -15,7 +13,6 @@ import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -79,7 +76,7 @@ public class Deployment extends Timed {
         } else if (leadResource != null && this.leadResource.getRight().vm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.leadResource.getRight().setToAllocated();
             SimLogger.logRun("Lead Resource (" + this.leadResource.getRight().resource.name + ") for " 
-                    + this.app.name + " was initilised at: " + Timed.getFireCount());
+                    + this.app.name + " was initilised at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
             unsubscribe();
 
             new Deployment(null, this.offer, this.app);
@@ -87,7 +84,6 @@ public class Deployment extends Timed {
                 
         if (this.leadResource == null && offer.isRemainingDeploymentStarted == false) {
             offer.isRemainingDeploymentStarted = true;
-            System.out.println(offer);
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 
                 //System.out.println("asd:" + util.getLeft().name + " " + util.getRight().resource.name + " " + util.getRight().type);
@@ -97,17 +93,18 @@ public class Deployment extends Timed {
                 } 
             }
         } else if (this.leadResource == null && checkRemainingDeployment() == true) {
-            SimLogger.logRun("Remaining resources for " + this.app.name + " were initilised at: " + Timed.getFireCount());
+            SimLogger.logRun("Remaining resources for " + this.app.name + " were initilised at: " 
+                + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
             app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
             unsubscribe();
             
             // The deployment is now done!
-            SwarmAgent sa = new SwarmAgent();
+            SwarmAgent sa = new SwarmAgent(app);
             
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 if (util.getRight().utilisedCpu > 0) {
                     
-                    System.out.println(this.app.getComponentName(util.getRight().resource.name));
+                    //System.out.println(this.app.getComponentName(util.getRight().resource.name));
                     if (this.app.getComponentName(util.getRight().resource.name).contains("Noise-Sensor")) {
                         new NoiseSensor(app, sa, util.getRight(), 10_000, 70, SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {

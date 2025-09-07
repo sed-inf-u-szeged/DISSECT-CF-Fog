@@ -10,7 +10,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -22,9 +21,6 @@ import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.DecentralisedAntOptimiser;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.Medoids;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 public class WorkflowSimulation {
@@ -55,27 +51,27 @@ public class WorkflowSimulation {
         WorkflowComputingAppliance node19 = new WorkflowComputingAppliance(cloudfile, "node19", new GeoLocation(51.1657, 10.4515), 0); 
    
         WorkflowComputingAppliance node18 = new WorkflowComputingAppliance(
-                AgentTest.createNode("node18", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
+                AgentTestUNC.createNode("node18", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
                 		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(55.9533, -3.1883));
         
         WorkflowComputingAppliance node15 = new WorkflowComputingAppliance(
-                AgentTest.createNode("node15", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
+        		AgentTestUNC.createNode("node15", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
                 		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(40.4168, -3.7038));
         
         WorkflowComputingAppliance node4 = new WorkflowComputingAppliance(
-                AgentTest.createNode("node4", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
+        		AgentTestUNC.createNode("node4", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
                 		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(41.0082, 28.9784));
         
         WorkflowComputingAppliance node7 = new WorkflowComputingAppliance(
-                AgentTest.createNode("node7", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
+        		AgentTestUNC.createNode("node7", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
                 		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(59.3293, 18.0686));
         
         WorkflowComputingAppliance node2 = new WorkflowComputingAppliance(
-                AgentTest.createNode("node2", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
+        		AgentTestUNC.createNode("node2", 4, 0.001, 4 * 1_073_741_824L, 32 * 1_073_741_824L, 
                 		1, 3.5, 7.5, 62_500, 15, new HashMap<>()),
                 new GeoLocation(52.5200, 13.4050));
 
