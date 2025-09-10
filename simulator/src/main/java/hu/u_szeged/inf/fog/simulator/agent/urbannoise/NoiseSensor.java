@@ -20,7 +20,8 @@ public class NoiseSensor extends Timed {
     
     public static long generatedFiles;
 
-    //public static long offloadedFiles;
+    public static long offloadedFiles;
+    
     public static long soundEventsReqProcessing;
     
     public static long processedFiles;
@@ -132,7 +133,7 @@ public class NoiseSensor extends Timed {
 
         delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * noise;
 
-        this.cpuTemp += delta * 0.7;
+        this.cpuTemp += delta * 0.5;
 
         if (this.cpuTemp < 70.0) {
             this.cpuTemp = 70.0;
@@ -155,7 +156,7 @@ public class NoiseSensor extends Timed {
                         
                         @Override
                         public void conComplete() {
-                            //offloadedFiles++;
+                            offloadedFiles++;
                             NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
                             ns.filesToBeProcessed.add(so);
                             pm.localDisk.deregisterObject(so);
@@ -184,6 +185,7 @@ public class NoiseSensor extends Timed {
         if (this.cpuTemp <= 95.0 && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
             this.cpuTemp += 0.005;
+           
             try {
 
                 this.util.vm.newComputeTask(1_700 * util.utilisedCpu, ResourceConsumption.unlimitedProcessing, 
@@ -191,8 +193,11 @@ public class NoiseSensor extends Timed {
                                             
                             @Override
                             public void conComplete() {
+                            	startSoundClassification();
+                            	cpuTemp += 0.005;
                                 RemoteServer rs = findRemoteServer();
                                 try {
+                                	
                                 	long actualTime = Timed.getFireCount();
                                     pm.localDisk.requestContentDelivery(so.id, rs.util.vm.getResourceAllocation().getHost().localDisk,
                                             new ConsumptionEventAdapter() {
@@ -202,8 +207,8 @@ public class NoiseSensor extends Timed {
                                                 processedFiles++;
                                                 NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
                                                 pm.localDisk.deregisterObject(so.id);
-                                                startSoundClassification();
-                                                cpuTemp += 0.005;
+                                                
+                                                
                                             }
                                             
                                         });

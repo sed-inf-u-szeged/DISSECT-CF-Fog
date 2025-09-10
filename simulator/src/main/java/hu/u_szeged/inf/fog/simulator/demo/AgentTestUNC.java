@@ -68,6 +68,7 @@ public class AgentTestUNC {
         
         /** applications */
         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        //Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
         
         /** nodes */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
@@ -116,9 +117,9 @@ public class AgentTestUNC {
             createNode("Node8", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
             new GeoLocation(41.88, -87.63), "US", "Azure", false); // Chicago
             
-        new EnergyDataCollector("Node11", node6.iaas, true);
-        new EnergyDataCollector("Node12", node7.iaas, true);
-        new EnergyDataCollector("Node13", node8.iaas, true);
+        new EnergyDataCollector("Node6", node6.iaas, true);
+        new EnergyDataCollector("Node7", node7.iaas, true);
+        new EnergyDataCollector("Node8", node8.iaas, true);
 
         /** agents */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
@@ -246,6 +247,8 @@ public class AgentTestUNC {
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + (NoiseSensor.timeOnNetwork / 1000.0) / NoiseSensor.generatedFiles);	
         
         SimLogger.logRes("Number of sound events (pc.): " + NoiseSensor.generatedFiles);
+        
+        SimLogger.logRes("Number of offloaded sound events (pc.): " + NoiseSensor.offloadedFiles);
         
         SimLogger.logRes("Number of sound events requiring processing (pc.): " + NoiseSensor.soundEventsReqProcessing);
         
