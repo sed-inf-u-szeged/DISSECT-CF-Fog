@@ -51,8 +51,8 @@ public class AgentTestUNC {
         
         SeedSyncer.modifySeed(9876543210L);
         
-        long simLength = 3 * 24 * 60 * 60 * 1000; 
-        int numOfApps = 2;
+        long simLength = 1 * 24 * 60 * 60 * 1000; 
+        int numOfApps = 5;
 
         /** ranking config */
         //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
@@ -116,9 +116,9 @@ public class AgentTestUNC {
             createNode("Node8", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
             new GeoLocation(41.88, -87.63), "US", "Azure", false); // Chicago
             
-        new EnergyDataCollector("Node6", node6.iaas, true);
-        new EnergyDataCollector("Node7", node7.iaas, true);
-        new EnergyDataCollector("Node8", node8.iaas, true);
+        new EnergyDataCollector("Node11", node6.iaas, true);
+        new EnergyDataCollector("Node12", node7.iaas, true);
+        new EnergyDataCollector("Node13", node8.iaas, true);
 
         /** agents */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
@@ -139,7 +139,7 @@ public class AgentTestUNC {
         	mapping.put("UNC-" + i + "-Res-3", "Agent-3");
         	mapping.put("UNC-" + i + "-Res-4", "Agent-4");
         	mapping.put("UNC-" + i + "-Res-5", "Agent-5");
-            
+        	
         	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node1" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node2" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node3" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
@@ -242,6 +242,8 @@ public class AgentTestUNC {
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 
         SimLogger.logRes("Size of generated files (MB): " + NoiseSensor.generatedFileSize / 1_048_576);
+        
+        SimLogger.logRes("Average time to transfer a file over the network (sec.): " + (NoiseSensor.timeOnNetwork / 1000.0) / NoiseSensor.generatedFiles);	
         
         SimLogger.logRes("Number of sound events (pc.): " + NoiseSensor.generatedFiles);
         
@@ -349,6 +351,19 @@ class CsvExporter extends Timed {
 
     @Override
     public void tick(long fires) {
+    	try (PrintWriter writer = new PrintWriter(new FileWriter(ScenarioBase.resultDirectory + "/classifiers.csv", true))) {
+            StringBuilder row = new StringBuilder();
+            row.append(String.format(Locale.ROOT, "%.5f",Timed.getFireCount() / 1000.0 / 60.0 / 60.0)); 
+
+            if(SwarmAgent.allSwarmAgents.size() > 0) {
+            	row.append(",");
+                row.append(String.format(Locale.ROOT, "%d", SwarmAgent.allSwarmAgents.get(0).noiseSensorsWithClassification.size()));
+            }
+            writer.println(row.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    	
     	try (PrintWriter writer = new PrintWriter(new FileWriter(ScenarioBase.resultDirectory + "/cpuload.csv", true))) {
             StringBuilder row = new StringBuilder();
             row.append(String.format(Locale.ROOT, "%.5f",Timed.getFireCount() / 1000.0 / 60.0 / 60.0)); 

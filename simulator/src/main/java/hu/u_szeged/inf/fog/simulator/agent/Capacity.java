@@ -74,6 +74,7 @@ public class Capacity {
         this.storage = storage;
         this.utilisations = new ArrayList<>();
     }
+    
     public void reserveCapacity(Resource resource) {
         Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
         this.utilisations.add(utilisation);

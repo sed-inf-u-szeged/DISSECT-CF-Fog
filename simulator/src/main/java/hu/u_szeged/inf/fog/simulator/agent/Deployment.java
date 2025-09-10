@@ -31,7 +31,7 @@ public class Deployment extends Timed {
         this.app = app;
         this.offer = offer;
         this.leadResource = leadResource;
-        subscribe(1);
+        subscribe(10);
     }
     
     public static void setImageRegistry(Repository repository) {
@@ -106,7 +106,7 @@ public class Deployment extends Timed {
                     
                     //System.out.println(this.app.getComponentName(util.getRight().resource.name));
                     if (this.app.getComponentName(util.getRight().resource.name).contains("Noise-Sensor")) {
-                        new NoiseSensor(app, sa, util.getRight(), 10_000, 70, SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
+                        new NoiseSensor(app, sa, util.getRight(), 10_000, 50, SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
                         new RemoteServer(sa, util.getRight());
                     } else {

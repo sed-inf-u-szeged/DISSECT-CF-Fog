@@ -28,17 +28,18 @@ public class DirectMappingAgentStrategy extends AgentStrategy {
 
             if (agent.name.equals(ra)) {
                 for (Resource resource : resources) {
+                	
                     if (resource.name.equals(name)) {
                     	for (Capacity c : agent.capacities) {
                     		if (c.cpu >= resource.cpu) {
                     			 agentResourcePair.add(Pair.of(agent, resource));
                                  c.reserveCapacity(resource);
-      
+                                 
                         		break;
                     		}
                     		
                     	}
-                    	//System.exit(0);
+                    	
                        
                         return agentResourcePair;
                     }

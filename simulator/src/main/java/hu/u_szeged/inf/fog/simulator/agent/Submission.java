@@ -36,7 +36,7 @@ public class Submission extends Timed {
         this.agent = ResourceAgent.resourceAgents.get(random);
         this.registerImages(app.components);
         this.delay = delay;
-        subscribe(1);
+        subscribe(10);
     }
    
     private void registerImages(List<Component> components) {
