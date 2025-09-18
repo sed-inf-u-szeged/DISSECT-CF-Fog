@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -15,7 +14,8 @@ public class Charge extends Timed {
 
 
     /**
-     * Recurring Timed event that charges the battery of a Provider with the given renewable sources
+     * Recurring Timed event that charges the battery of a Provider with the given renewable sources.
+     *
      * @param provider The provider to be charged
      */
     Charge(Provider provider) {
@@ -24,10 +24,8 @@ public class Charge extends Timed {
     }
 
     /**
-     *
-     * Charges the battery of it's corresponding provider and logs every charge
+     * Charges the battery of it's corresponding provider and logs every charge.
      */
-
     @Override
     public void tick(long fires) {
         this.lastTotalAdded = getTotalProduction();
@@ -63,10 +61,10 @@ public class Charge extends Timed {
         for (EnergySource source : this.provider.renewableSources) {
             float[] helper = {Timed.getFireCount(), source.production(Timed.getFireCount(), getFrequency())};
             if (source instanceof Solar) {
-                this.provider.solarRecords.add( helper );
+                this.provider.solarRecords.add(helper);
                 this.provider.totalSolarProduced += source.production(Timed.getFireCount(), getFrequency());
-            }else {
-                this.provider.windRecords.add( helper );
+            } else {
+                this.provider.windRecords.add(helper);
                 this.provider.totalWindProduced += source.production(Timed.getFireCount(), getFrequency());
             }
             sum += source.production(Timed.getFireCount(), getFrequency());

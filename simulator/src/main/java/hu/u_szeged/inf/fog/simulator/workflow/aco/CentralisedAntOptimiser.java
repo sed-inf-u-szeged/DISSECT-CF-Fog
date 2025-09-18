@@ -201,11 +201,11 @@ public class CentralisedAntOptimiser {
 
         return clusters.entrySet().stream()
             .map(entry -> {
-               // WorkflowComputingAppliance key = entry.getKey();
+                // WorkflowComputingAppliance key = entry.getKey();
                 ArrayList<WorkflowComputingAppliance> value = entry.getValue();
 
                 ArrayList<WorkflowComputingAppliance> mergedList = new ArrayList<>();
-              //  mergedList.add(key);
+                //  mergedList.add(key);
                 mergedList.addAll(value);
 
                 double avgDistance = calculateAvgPairwiseDistance(mergedList);

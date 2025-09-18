@@ -31,8 +31,9 @@ public class GlobalModelBroadcastEvent extends DeferredEvent {
         epochMultiplier = Math.max(0.01, v);
     }
 
-    /** @return current epoch multiplier for compute-delay estimation */
-    public static double getEpochMultiplier( ){
+    /**
+     * @return current epoch multiplier for compute-delay estimation */
+    public static double getEpochMultiplier(){
         return epochMultiplier;
     }
 

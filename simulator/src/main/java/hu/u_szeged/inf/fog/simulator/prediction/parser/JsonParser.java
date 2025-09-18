@@ -3,20 +3,25 @@ package hu.u_szeged.inf.fog.simulator.prediction.parser;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.FromJsonFieldAliases;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonFieldName;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.ClassUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-import java.util.*;
-
 /**
  * The class that implements the methods for the handling of
- * JSON mapping from Java classes into JSONObject classes
+ * JSON mapping from Java classes into JSONObject classes.
  */
 public class JsonParser {
 
@@ -24,6 +29,7 @@ public class JsonParser {
 
     /**
      * The method that converts Java objects to JSONObject using reflection.
+     *
      * @param object The object to convert
      * @param clazz The class of the object
      * @return The converted JSONObject object.
@@ -40,6 +46,7 @@ public class JsonParser {
 
     /**
      * The method that converts Java objects to JSONArray using reflection.
+     *
      * @param object The object to convert
      * @param clazz The class of the object
      * @return The converted JSONObject object.
@@ -56,6 +63,7 @@ public class JsonParser {
 
     /**
      * Checks if the given object is an object of the given class.
+     *
      * @param result The object to check the class of.
      * @param parseToClass The class that it is supposed to be.
      * @throws JSONException If the given object is not of the given class
@@ -66,15 +74,15 @@ public class JsonParser {
         }
 
         if (result.getClass() != parseToClass) {
-            String sb = "Parse Failed! Object: " +
-                    result + " couldn't parse to: " +
-                    parseToClass;
+            String sb = "Parse Failed! Object: " 
+                         + result + " couldn't parse to: " + parseToClass;
             throw new JSONException(sb);
         }
     }
 
     /**
      * Handles the recursive conversion of Java Object to JSONObject object.
+     *
      * @param object The Java object to convert
      * @param clazz The class of the object.
      * @return The converted object or null if empty object.
@@ -118,6 +126,7 @@ public class JsonParser {
 
     /**
      * Handles the conversion of object to String, Primitive or Primitive Wrapper.
+     *
      * @param object The object to convert
      * @param clazz the object's class
      * @return The converted object or null if the object wasn't String, Primitive or Primitive Wrapper
@@ -136,6 +145,7 @@ public class JsonParser {
 
     /**
      * Handles the conversion of an array object to JSONArray.
+     *
      * @param object the obejct to convert
      * @return the converted JSONArray object or null if couldn't convert from an array.
      * @throws JSONException If the recursive conversion failed
@@ -162,6 +172,7 @@ public class JsonParser {
 
     /**
      * Handles the conversion of a collection object to JSONArray.
+     *
      * @param object the obejct to convert
      * @return the converted JSONArray object or null if couldn't convert from a collection.
      * @throws JSONException If the recursive conversion failed
@@ -184,6 +195,7 @@ public class JsonParser {
     /**
      * Handles the conversion of a Map object to JSONObject.
      * In the format of key: value -> fieldName: value
+     *
      * @param object the obejct to convert
      * @return the converted JSONObject object or null if couldn't convert from a Map.
      * @throws JSONException If the recursive conversion failed
@@ -209,6 +221,7 @@ public class JsonParser {
 
     /**
      * Handles the conversion of a Object object to JSONObject based on the given class using reflection.
+     *
      * @param object the object to convert
      * @param clazz the class of the object
      * @return the converted JSONObject.
@@ -242,10 +255,11 @@ public class JsonParser {
     /**
      * Converts a JSON string to the given class using reflection and generic methods.
      * Requires a zero parameter constructor for object initialization.
+     *
      * @param json the json string to convert from
      * @param clazz the class to convert into
-     * @return The object with the given class from the JSON string.
      * @param <T> The class of the object to convert to
+     * @return The object with the given class from the JSON string.
      */
     public static <T> T fromJsonString(String json, Class<T> clazz) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return fromJsonObject(new JSONObject(json), clazz, null);
@@ -254,16 +268,10 @@ public class JsonParser {
     /**
      * Converts a JSONObject to the given class using reflection and generic methods.
      * Requires a zero parameter constructor for object initialization.
+     *
      * @param json the JSONObject to convert from
      * @param clazz the class to convert to
      * @param parent the parent of the object to convert.
-     * @return
-     * @param <T>
-     * @throws JSONException
-     * @throws NoSuchMethodException
-     * @throws InvocationTargetException
-     * @throws InstantiationException
-     * @throws IllegalAccessException
      */
     public static <T> T fromJsonObject(JSONObject json, Class<T> clazz, Object parent) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         T instance = createInstance(clazz, parent);
@@ -281,6 +289,7 @@ public class JsonParser {
 
     /**
      * Creates the default instance of the given class.
+     *
      * @param clazz the class to create the instance of
      * @param parent the parent object which the class needs to be created in.
      * @return The created object.
@@ -296,8 +305,7 @@ public class JsonParser {
             } else {
                 instance = clazz.getConstructor(parent.getClass()).newInstance(parent);
             }
-        }
-        else {
+        } else {
             instance = clazz.getDeclaredConstructor().newInstance();
         }
 
@@ -306,6 +314,7 @@ public class JsonParser {
 
     /**
      * Creates a Map from the given JSONObject.
+     *
      * @param json the JSONObject to create from
      * @param clazz the class of the object to create to.
      * @return The map from the JSONObject.
@@ -341,6 +350,7 @@ public class JsonParser {
 
     /**
      * Method used for assigning the json object's value to the Java object's corresponding field.
+     *
      * @param json the JSONObject to assign from.
      * @param field the Java field to assign to.
      * @param instance The instance of the object. (Reflection requires)
@@ -350,9 +360,10 @@ public class JsonParser {
 
         List<String> jsonFieldNames = new ArrayList<>();
         jsonFieldNames.add(field.getName());
-        if (field.isAnnotationPresent(FromJsonFieldAliases.class))
+        if (field.isAnnotationPresent(FromJsonFieldAliases.class)) {
             Collections.addAll(jsonFieldNames, field.getAnnotation(FromJsonFieldAliases.class).fieldNames());
-
+        }
+            
         for (String jsonFieldName : jsonFieldNames) {
             if (json.has(jsonFieldName)) {
                 Object value = json.get(jsonFieldName);
@@ -383,6 +394,7 @@ public class JsonParser {
 
     /**
      * Converts the given JSONArray to the given class.
+     *
      * @param jsonArray the JSONArray to convert from.
      * @param clazz the class to convert to.
      * @return the created Object.

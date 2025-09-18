@@ -22,7 +22,7 @@ public class Submission extends Timed {
 
     
     public Submission(String filepath, int bcastMessageSize, int delay) {
-    	
+    
         SimLogger.logRun("Application description " + filepath 
             + " was submitted at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
         

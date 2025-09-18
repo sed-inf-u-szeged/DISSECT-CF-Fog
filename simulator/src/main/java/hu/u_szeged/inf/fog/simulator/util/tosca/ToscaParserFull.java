@@ -23,12 +23,15 @@ import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.MapVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
-import java.util.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -84,17 +87,17 @@ public class ToscaParserFull {
 
         // Convert based on the unit
         switch (unit) {
-            case "TB":
-                return value * 1024L * 1024L * 1024L * 1024L;  // TB to bytes
-            case "GB":
-                return value * 1024L * 1024L * 1024L;           // GB to bytes
-            case "MB":
-                return value * 1024L * 1024L;                   // MB to bytes
-            case "KB":
-                return value * 1024L;                           // KB to bytes
+          case "TB":
+              return value * 1024L * 1024L * 1024L * 1024L;  // TB to bytes
+          case "GB":
+              return value * 1024L * 1024L * 1024L;           // GB to bytes
+          case "MB":
+              return value * 1024L * 1024L;                   // MB to bytes
+          case "KB":
+              return value * 1024L;                           // KB to bytes
             
-            default:
-                throw new IllegalArgumentException("Unsupported unit: " + unit);
+          default:
+              throw new IllegalArgumentException("Unsupported unit: " + unit);
         }
     }
     
@@ -172,7 +175,7 @@ public class ToscaParserFull {
     
     public static void main(String[] args) throws Exception {
         // Use fully qualified class name for the constructor
-    	Constructor constructor = new Constructor(ToscaParserFull.ToscaFile.class);
+        Constructor constructor = new Constructor(ToscaParserFull.ToscaFile.class);
         Yaml yaml = new Yaml(constructor);
 
         InputStream inputStream = null;
@@ -225,7 +228,7 @@ public class ToscaParserFull {
         System.out.println("-----------------------------------");
         
         //Useful for the simulation
-    	SimLogger.setLogging(1, true);
+        SimLogger.setLogging(1, true);
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
               
         // Extract Capabilities/Requirements for all nodes and devices
@@ -233,11 +236,11 @@ public class ToscaParserFull {
         int cloudCounter = 1;
         int fogCounter = 1;
         int deviceCounter = 1;
-        long MemSizeInBytes = 0;
-        long DiskSizeInBytes = 0;
+        long memSizeInBytes = 0;
+        long diskSizeInBytes = 0;
         
         for (Map.Entry<String, NodeTemplate> nodeEntry : nodeTemplates.entrySet()) {
-        	String nodeName = nodeEntry.getKey();
+            String nodeName = nodeEntry.getKey();
             NodeTemplate node = nodeEntry.getValue();
             System.out.println("Node Name: " + nodeName);
             System.out.println("Node Type: " + node.type);
@@ -252,166 +255,165 @@ public class ToscaParserFull {
                     Object memSize = properties.get("mem_size");
                     //Transform MemSize to Bytes (long format)
                     if (memSize != null) {
-                        MemSizeInBytes = convertToBytes(memSize.toString());
+                        memSizeInBytes = convertToBytes(memSize.toString());
                         //System.out.println(memSize + " is " + MemSizeInBytes + " bytes.");
                     }
                     Object diskSize = properties.get("disk_size");
-                   //Transform DiskSize to Bytes (long format)
+                    //Transform DiskSize to Bytes (long format)
                     if (diskSize != null) {
-                    	DiskSizeInBytes = convertToBytes(diskSize.toString());
-                       //System.out.println(diskSize + " is " + DiskSizeInBytes + " bytes.");
+                        diskSizeInBytes = convertToBytes(diskSize.toString());
+                        //System.out.println(diskSize + " is " + DiskSizeInBytes + " bytes.");
                     }
                     System.out.println("Num CPUs/Cores: " + numCores);
                     System.out.println("Memory Size: " + memSize);
-                    System.out.println("Memory Size in Bytes: " + MemSizeInBytes);
+                    System.out.println("Memory Size in Bytes: " + memSizeInBytes);
                     System.out.println("Disk Size: " + diskSize);
                           
                     if (nodeName.startsWith("cloud_node")) {
-                    	 System.out.println("Node Requirements: " + node.requirements);
-                         // Extract Policies values from TOSCA
-                     	 PolicyExtractor policyExtractor = new PolicyExtractor();
-                    	 List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
-                   	     // Print all extracted policies
-                    	 for (Map<String, Object> policy : policies) {
-                    	   System.out.println("Extracted Policy: " + policy);
-                    	 }
-                   	     // Retrieve specific values
-                   	     double latitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "latitude"));
-                   	     double longitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "longitude"));  	     
-                   	     long Range = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "Range"));
-                   	     double StartUpProcess = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "StartUpProcess"));
-                   	     double ProcessingPerCore = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "ProcessingPerCore"));
-                   	     System.out.println("Latitude: " + latitude);
-                   	     System.out.println("Longitude: " + longitude);
-                   	     System.out.println("Range: " + Range);
-                   	     System.out.println("StartUpProcess: " + StartUpProcess);
-                   	     System.out.println("ProcessingPerCore: " + ProcessingPerCore);
-                         // ------ HERE IT ENDS (Assigning the variables to each feature) --------------------
-                    	 System.out.println("Creting a Cloud Node"); 
-                    	 // Create VirtualAppliance and AlterableResourceConstraints
-                    	 String vaName = "vac_" + cloudCounter;
-                    	 String InstanceName = "CloudInstance_" + cloudCounter;
-                    	 String ApplicationName = "App-" + cloudCounter;
-                    	 VirtualAppliance va = new VirtualAppliance(vaName, StartUpProcess, 0, false, 1_073_741_824L);
-                         AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, ProcessingPerCore, MemSizeInBytes);
-                         Instance Instance = new Instance(InstanceName, va, arc, 0.102 / 60 / 60 / 1000);
-                         ComputingAppliance CAcloud = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), Range);
-                         new EnergyDataCollector(nodeName, CAcloud.iaas, true);
-                         Application application = new Application(ApplicationName, 1 * 60 * 1000, 250, 2500, false,
-                                 new RuntimeAwareApplicationStrategy(0.9, 2.0), Instance);
-                         CAcloud.addApplication(application);
-                         // Add to cloud lists
-                         cloudVaList.add(va);
-                         cloudArcList.add(arc);
-                         cloudInstList.add(Instance);
-                         cloudCAList.add(CAcloud);
-                         cloudAppList.add(application);
+                        System.out.println("Node Requirements: " + node.requirements);
+                        // Extract Policies values from TOSCA
+                        PolicyExtractor policyExtractor = new PolicyExtractor();
+                        List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
+                        // Print all extracted policies
+                        for (Map<String, Object> policy : policies) {
+                            System.out.println("Extracted Policy: " + policy);
+                        }
+                        // Retrieve specific values
+                        double latitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "latitude"));
+                        double longitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "longitude")); 
+                        long range = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "Range"));
+                        double startUpProcess = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "StartUpProcess"));
+                        double processingPerCore = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "ProcessingPerCore"));
+                        System.out.println("Latitude: " + latitude);
+                        System.out.println("Longitude: " + longitude);
+                        System.out.println("Range: " + range);
+                        System.out.println("StartUpProcess: " + startUpProcess);
+                        System.out.println("ProcessingPerCore: " + processingPerCore);
+                        // ------ HERE IT ENDS (Assigning the variables to each feature) --------------------
+                        System.out.println("Creting a Cloud Node"); 
+                        // Create VirtualAppliance and AlterableResourceConstraints
+                        String vaName = "vac_" + cloudCounter;
+                        String instanceName = "CloudInstance_" + cloudCounter;
+                        String applicationName = "App-" + cloudCounter;
+                        VirtualAppliance va = new VirtualAppliance(vaName, startUpProcess, 0, false, 1_073_741_824L);
+                        AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, processingPerCore, memSizeInBytes);
+                        Instance instance = new Instance(instanceName, va, arc, 0.102 / 60 / 60 / 1000);
+                        ComputingAppliance cAcloud = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
+                        new EnergyDataCollector(nodeName, cAcloud.iaas, true);
+                        Application application = new Application(applicationName, 1 * 60 * 1000, 250, 2500, false,
+                                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance);
+                        cAcloud.addApplication(application);
+                        // Add to cloud lists
+                        cloudVaList.add(va);
+                        cloudArcList.add(arc);
+                        cloudInstList.add(instance);
+                        cloudCAList.add(cAcloud);
+                        cloudAppList.add(application);
                          
-                         // Increment the cloud node counter
-                         cloudCounter++;
+                        // Increment the cloud node counter
+                        cloudCounter++;
                          
                     } else if (nodeName.startsWith("fog_node")) {
-                    	 System.out.println("Creting a Fog Node");
-                    	 // Extract Policies values from TOSCA
-                  	     PolicyExtractor policyExtractor = new PolicyExtractor();
-                 	     List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
-                	     // Print all extracted policies
-                 	     for (Map<String, Object> policy : policies) {
-                 	      System.out.println("Extracted Policy: " + policy);
-                 	     }
-                 	     // Retrieve specific values
-                 	     double latitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "latitude"));
-                  	     double longitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "longitude"));  	     
-                  	     long Range = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "Range"));
-                  	     double StartUpProcess = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "StartUpProcess"));
-                  	     double ProcessingPerCore = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "ProcessingPerCore"));
-                  	     System.out.println("Latitude: " + latitude);
-                 	     System.out.println("Longitude: " + longitude);
-                 	     System.out.println("Range: " + Range);
-                 	     System.out.println("StartUpProcess: " + StartUpProcess);
-                 	     System.out.println("ProcessingPerCore: " + ProcessingPerCore);
-                    	 // Create VirtualAppliance and AlterableResourceConstraints
-                    	 String vaName = "vaf_" + fogCounter;
-                    	 String InstanceName = "FogInstance_" + fogCounter;
-                    	 String ApplicationName = "App-" + fogCounter;
-                         VirtualAppliance va = new VirtualAppliance(vaName, StartUpProcess, 0, false, 1_073_741_824L);
-                         AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, ProcessingPerCore, MemSizeInBytes);
-                         Instance Instance = new Instance(InstanceName, va, arc, 0.051 / 60 / 60 / 1000);
-                         ComputingAppliance CAfog = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), Range);
-                         new EnergyDataCollector(nodeName, CAfog.iaas, true);
-                         Application application = new Application(ApplicationName, 1 * 60 * 1000, 250, 2500, true,
-                                 new RuntimeAwareApplicationStrategy(0.9, 2.0), Instance);
-                         CAfog.addApplication(application);
+                        System.out.println("Creting a Fog Node");
+                        // Extract Policies values from TOSCA
+                        PolicyExtractor policyExtractor = new PolicyExtractor();
+                        List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
+                        // Print all extracted policies
+                        for (Map<String, Object> policy : policies) {
+                            System.out.println("Extracted Policy: " + policy);
+                        }
+                        // Retrieve specific values
+                        double latitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "latitude"));
+                        double longitude = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "longitude")); 
+                        long range = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "Range"));
+                        double startUpProcess = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "StartUpProcess"));
+                        double processingPerCore = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "ProcessingPerCore"));
+                        System.out.println("Latitude: " + latitude);
+                        System.out.println("Longitude: " + longitude);
+                        System.out.println("Range: " + range);
+                        System.out.println("StartUpProcess: " + startUpProcess);
+                        System.out.println("ProcessingPerCore: " + processingPerCore);
+                        // Create VirtualAppliance and AlterableResourceConstraints
+                        String vaName = "vaf_" + fogCounter;
+                        String instanceName = "FogInstance_" + fogCounter;
+                        String applicationName = "App-" + fogCounter;
+                        VirtualAppliance va = new VirtualAppliance(vaName, startUpProcess, 0, false, 1_073_741_824L);
+                        AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, processingPerCore, memSizeInBytes);
+                        Instance instance = new Instance(instanceName, va, arc, 0.051 / 60 / 60 / 1000);
+                        ComputingAppliance cAfog = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
+                        new EnergyDataCollector(nodeName, cAfog.iaas, true);
+                        Application application = new Application(applicationName, 1 * 60 * 1000, 250, 2500, true,
+                                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance);
+                        cAfog.addApplication(application);
                          
-                         // Add to fog lists
-                         fogVaList.add(va);
-                         fogArcList.add(arc);
-                         fogInstList.add(Instance);
-                         fogCAList.add(CAfog);
-                         fogAppList.add(application);
+                        // Add to fog lists
+                        fogVaList.add(va);
+                        fogArcList.add(arc);
+                        fogInstList.add(instance);
+                        fogCAList.add(cAfog);
+                        fogAppList.add(application);
                          
-                         // Increment the fog node counter
-                         fogCounter++;      
+                        // Increment the fog node counter
+                        fogCounter++;      
                          
                     } else if (nodeName.startsWith("edge_device") || nodeName.startsWith("smart_device")) {
-                    	 System.out.println("Node Requirements: " + node.requirements);
-                    	 System.out.println("Creting a Device");
-                    	 
-                    	 
-                    	 // Extract Policies values from TOSCA
-                  	     PolicyExtractor policyExtractor = new PolicyExtractor();
-                 	     List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
-                	     // Print all extracted policies
-                 	     for (Map<String, Object> policy : policies) {
-                 	      System.out.println("Extracted Policy: " + policy);
-                 	     }
-                 	     long maxInBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "maxInBW"));
-                 	     long maxOutBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "MaxOutBW"));
-                 	     long DiskBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "DiskBW"));
-                 	     double MinPower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "MinPower"));
-                 	     double IdlePower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "IdlePower"));
-                 	     double MaxPower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "MaxPower"));
-                 	     double DiskDivider = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "DiskDivider"));
-                 	     double NetDivider = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "NetDivider"));
-                  	     double PerCoreProcessing = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "PerCoreProcessing"));
-                 	     
-	                  	 System.out.println("Max Input Bandwidth: " + maxInBW);
-	                  	 System.out.println("Max Output Bandwidth: " + maxOutBW);
-	                  	 System.out.println("Disk Bandwidth: " + DiskBW);
-	                  	 System.out.println("Min Power: " + MinPower);
-	                  	 System.out.println("Idle Power: " + IdlePower);
-	                  	 System.out.println("Max Power: " + MaxPower);
-	                  	 System.out.println("Disk Divider: " + DiskDivider);
-	                  	 System.out.println("Network Divider: " + NetDivider);
-	                  	 System.out.println("Per Core Processing: " + PerCoreProcessing);
-                  	     
-                  	     
-                         int i = deviceCounter;
-                    	 
-                    	 HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
-                         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = 
-                                 PowerTransitionGenerator.generateTransitions(MinPower, IdlePower, MaxPower, DiskDivider, NetDivider);
+                        System.out.println("Node Requirements: " + node.requirements);
+                        System.out.println("Creting a Device");
 
-                         final Map<String, PowerState> cpuTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
-                         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
-                         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
+                        // Extract Policies values from TOSCA
+                        PolicyExtractor policyExtractor = new PolicyExtractor();
+                        List<Map<String, Object>> policies = policyExtractor.extractPolicies(toscaFile, nodeName);
+                        // Print all extracted policies
+                        for (Map<String, Object> policy : policies) {
+                            System.out.println("Extracted Policy: " + policy);
+                        }
+                        long maxInBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "maxInBW"));
+                        long maxOutBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "MaxOutBW"));
+                        long diskBW = parseObjectToLong(policyExtractor.getPolicyValueByKey(policies, "DiskBW"));
+                        double minPower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "MinPower"));
+                        double idlePower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "IdlePower"));
+                        double maxPower = parseObjectToDoubleUnits(policyExtractor.getPolicyValueByKey(policies, "MaxPower"));
+                        double diskDivider = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "DiskDivider"));
+                        double netDivider = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "NetDivider"));
+                        double perCoreProcessing = parseObjectToDouble(policyExtractor.getPolicyValueByKey(policies, "PerCoreProcessing"));
 
-                         Repository repo = new Repository(DiskSizeInBytes, "mc-repo" + i, maxInBW, maxOutBW, DiskBW, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
-                         PhysicalMachine localMachine = new PhysicalMachine(numCores, PerCoreProcessing, MemSizeInBytes, repo, 0, 0, cpuTransitions);
+                        System.out.println("Max Input Bandwidth: " + maxInBW);
+                        System.out.println("Max Output Bandwidth: " + maxOutBW);
+                        System.out.println("Disk Bandwidth: " + diskBW);
+                        System.out.println("Min Power: " + minPower);
+                        System.out.println("Idle Power: " + idlePower);
+                        System.out.println("Max Power: " + maxPower);
+                        System.out.println("Disk Divider: " + diskDivider);
+                        System.out.println("Network Divider: " + netDivider);
+                        System.out.println("Per Core Processing: " + perCoreProcessing);
 
-                         Device device;
-                         double step = SeedSyncer.centralRnd.nextDouble(); 
-                         if(nodeName.startsWith("edge_device")) {
-                             device = new EdgeDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
+
+                        int i = deviceCounter;
+
+                        HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+                        EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = 
+                                 PowerTransitionGenerator.generateTransitions(minPower, idlePower, maxPower, diskDivider, netDivider);
+
+                        final Map<String, PowerState> cpuTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
+                        final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
+                        final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
+
+                        Repository repo = new Repository(diskSizeInBytes, "mc-repo" + i, maxInBW, maxOutBW, diskBW, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
+                        PhysicalMachine localMachine = new PhysicalMachine(numCores, perCoreProcessing, memSizeInBytes, repo, 0, 0, cpuTransitions);
+
+                        Device device;
+                        double step = SeedSyncer.centralRnd.nextDouble(); 
+                        if (nodeName.startsWith("edge_device")) {
+                            device = new EdgeDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
                                      new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10000),
                                      new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
-                         }else {
-                             device  = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
+                        } else {
+                            device  = new SmartDevice(0, 10 * 60 * 60 * 1000, 100, 60 * 1000, 
                                      new RandomWalkMobilityStrategy(new GeoLocation(47 - step, 19 + - step), 0.0027, 0.0055, 10000),
                                      new RandomDeviceStrategy(), localMachine, 50, true);
-                         }
-                         deviceList.add(device);
-                         deviceCounter++;
+                        }
+                        deviceList.add(device);
+                        deviceCounter++;
                     }     
                 }
             }
@@ -422,77 +424,73 @@ public class ToscaParserFull {
         System.out.println("-----------------------------------");
         
         // -------------------------HERE WE WILL SET NEIGHBORS AND PARENTS ------------------------------
-	    // Extract the group members from the topology_template.groups
-	    Map<String, GroupTemplate> groups = toscaFile.topology_template.groups;
-	    // Define variables to store fog node memberships across networks
-	    Map<String, List<String>> fogNetworks = new HashMap<>();
-	    Map<String, List<String>> interFogNetworks = new HashMap<>();
-	    Map<String, List<String>> cloudNetworks = new HashMap<>();
-	    // Check if groups are present in the YAML file
-	    if (groups != null) {
-        // Iterate through the group templates
-           for (Map.Entry<String, GroupTemplate> groupEntry : groups.entrySet()) {
-               String groupName = groupEntry.getKey();
-               GroupTemplate group = groupEntry.getValue();
-               // Extract cloud network members
-               if (groupName.startsWith("cloud_network")) {
-                 cloudNetworks.put(groupName, group.members);
-               }
-               // Extract fog network members
-               else if (groupName.startsWith("fog_network")) {
-                 fogNetworks.put(groupName, group.members);
-               }
-               // Extract inter-fog network members
-               else if (groupName.startsWith("inter_fog_network")) {
-                 interFogNetworks.put(groupName, group.members);
-               }
-           }
-	    }
+        // Extract the group members from the topology_template.groups
+        Map<String, GroupTemplate> groups = toscaFile.topology_template.groups;
+        // Define variables to store fog node memberships across networks
+        Map<String, List<String>> fogNetworks = new HashMap<>();
+        Map<String, List<String>> interFogNetworks = new HashMap<>();
+        Map<String, List<String>> cloudNetworks = new HashMap<>();
+        // Check if groups are present in the YAML file
+        if (groups != null) {
+            // Iterate through the group templates
+            for (Map.Entry<String, GroupTemplate> groupEntry : groups.entrySet()) {
+                String groupName = groupEntry.getKey();
+                GroupTemplate group = groupEntry.getValue();
+                // Extract cloud network members
+                if (groupName.startsWith("cloud_network")) {
+                    cloudNetworks.put(groupName, group.members);
+                } else if (groupName.startsWith("fog_network")) { // Extract fog network members
+                    fogNetworks.put(groupName, group.members);
+                } else if (groupName.startsWith("inter_fog_network")) { // Extract inter-fog network members
+                    interFogNetworks.put(groupName, group.members);
+                }
+            } 
+        }
     
-	    // Now, we ASSIGN the corresponding NEIGHBOR for the current FOG NODE in the FOG NETWORK                 	                     
-	    for (Map.Entry<String, List<String>> interFogEntry : interFogNetworks.entrySet()) {
-	        List<String> interFogMembers = interFogEntry.getValue();
-	        // Iterate over the nodes within the same inter-fog network
-	        for (String fogNode : interFogMembers) {
-	            for (String neighbor : interFogMembers) {
-	                // Ensure the neighbor is not the same node
-	                if (!neighbor.equals(fogNode)) {
-	                    ComputingAppliance neighbor1 = null;
-	                    ComputingAppliance fogNode1 = null;
+        // Now, we ASSIGN the corresponding NEIGHBOR for the current FOG NODE in the FOG NETWORK 
+        for (Map.Entry<String, List<String>> interFogEntry : interFogNetworks.entrySet()) {
+            List<String> interFogMembers = interFogEntry.getValue();
+            // Iterate over the nodes within the same inter-fog network
+            for (String fogNode : interFogMembers) {
+                for (String neighbor : interFogMembers) {
+                    // Ensure the neighbor is not the same node
+                    if (!neighbor.equals(fogNode)) {
+                        ComputingAppliance neighbor1 = null;
+                        ComputingAppliance fogNode1 = null;
                         // Assign neighbor1 using the name from the inter-fog network
-	                    for (ComputingAppliance ca : fogCAList) {
-	                        if (ca.name.equals(neighbor)) {
-	                            neighbor1 = ca; // Assign the neighbor object
-	                            break; // Exit the loop after finding the neighbor
-	                        }
-	                    }
+                        for (ComputingAppliance ca : fogCAList) {
+                            if (ca.name.equals(neighbor)) {
+                                neighbor1 = ca; // Assign the neighbor object
+                                break; // Exit the loop after finding the neighbor
+                            }
+                        }
                         // Assign fogNode1 (the current node) using its name
-	                    for (ComputingAppliance ca1 : fogCAList) {
-	                        if (ca1.name.equals(fogNode)) {
-	                            fogNode1 = ca1; // Assign the fogNode object
-	                            break; // Exit the loop after finding the fog node
-	                        }
-	                    }
-	                    // Now, both neighbor1 and fogNode1 are available for use after the loop
-	                    if (fogNode1 != null && neighbor1 != null) {
-	                        // Use the fogNode1 and neighbor1 objects to assign neighbors
-	                        System.out.println("Assigning " + neighbor1.name + " as a neighbor of " + fogNode1.name);
-	                        // Here the method to set the neighbor relationship:
-	                        fogNode1.addNeighbor(neighbor1, 33); // Replace 33 with actual latency value if needed
-	                    }                   	                    
-	                }
-	            }
-	        }
-	    }
-	    
-	    // Now, we ASSIGN the corresponding PARENT for the current FOG NODE in the CLOUD NETWORK
-	    for (Map.Entry<String, List<String>> cloudNetworkEntry : cloudNetworks.entrySet()) {
-	        List<String> cloudNetworkMembers = cloudNetworkEntry.getValue();
+                        for (ComputingAppliance ca1 : fogCAList) {
+                            if (ca1.name.equals(fogNode)) {
+                                fogNode1 = ca1; // Assign the fogNode object
+                                break; // Exit the loop after finding the fog node
+                            }
+                        }
+                        // Now, both neighbor1 and fogNode1 are available for use after the loop
+                        if (fogNode1 != null && neighbor1 != null) {
+                            // Use the fogNode1 and neighbor1 objects to assign neighbors
+                            System.out.println("Assigning " + neighbor1.name + " as a neighbor of " + fogNode1.name);
+                            // Here the method to set the neighbor relationship:
+                            fogNode1.addNeighbor(neighbor1, 33); // Replace 33 with actual latency value if needed
+                        } 
+                    }
+                }
+            }
+        }
+
+        // Now, we ASSIGN the corresponding PARENT for the current FOG NODE in the CLOUD NETWORK
+        for (Map.Entry<String, List<String>> cloudNetworkEntry : cloudNetworks.entrySet()) {
+            List<String> cloudNetworkMembers = cloudNetworkEntry.getValue();
             // The first element in the list is the parent (cloud node)
-	        String parentNode = cloudNetworkMembers.get(0); 
-	        // Iterate over the rest of the members (fog nodes)
-	        for (int i = 1; i < cloudNetworkMembers.size(); i++) {
-	            String fogNode = cloudNetworkMembers.get(i);
+            String parentNode = cloudNetworkMembers.get(0); 
+            // Iterate over the rest of the members (fog nodes)
+            for (int i = 1; i < cloudNetworkMembers.size(); i++) {
+                String fogNode = cloudNetworkMembers.get(i);
                 // Assign parent to the fog node. Here the method to actually assign the parent is set:
                 ComputingAppliance parentNode1 = null;
                 ComputingAppliance fogNode1 = null;
@@ -517,15 +515,15 @@ public class ToscaParserFull {
                     // Here the method to set the parent relationship:
                     fogNode1.setParent(parentNode1, 77); // Replace 33 with actual latency value if needed
                 } 
-	           
-	        }
-	    }
-	    
-	    // ----------------------------- FINAL OVERVIEW ------------------------------------
-	    System.out.println("Cloud VirtualAppliances and ARC:");
+
+            }
+        }
+    
+        // ----------------------------- FINAL OVERVIEW ------------------------------------
+        System.out.println("Cloud VirtualAppliances and ARC:");
         for (int i = 0; i < cloudVaList.size(); i++) {
-        	//If I just want to get the id is: cloudVaList.get(i).id
-            System.out.println("Cloud VA: " + cloudVaList.get(i).toString() + " with ARC: " + cloudArcList.get(i).toString() + " with INST: " + cloudInstList.get(i).toString() + " with CA: " + cloudCAList.get(i).toString() + " with App: " + cloudAppList.get(i).toString() );
+            //If I just want to get the id is: cloudVaList.get(i).id
+            System.out.println("Cloud VA: " + cloudVaList.get(i).toString() + " with ARC: " + cloudArcList.get(i).toString() + " with INST: " + cloudInstList.get(i).toString() + " with CA: " + cloudCAList.get(i).toString() + " with App: " + cloudAppList.get(i).toString());
         }
         System.out.println("-----------------------------------");
         System.out.println("Fog VirtualAppliances and ARC:");
@@ -544,19 +542,19 @@ public class ToscaParserFull {
             System.out.println("Group Members: " + groupEntry.getValue().members);
             System.out.println("-----------------------------------");
         }
-	    
-    // ---------------------- HERE THE SIMULATION IS EXECUTED --------------------------
-    // -------- (YOU CAN COMMENT THE UPCOMING LINES TO CHECK THE PARSING FIRST) --------
-	    
-     long starttime = System.nanoTime();
-     Timed.simulateUntilLastEvent();
-     long stoptime = System.nanoTime();
 
-     ScenarioBase.calculateIoTCost();
-     ScenarioBase.logBatchProcessing(stoptime - starttime);
-     TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-     MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
-     EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);   
+        // ---------------------- HERE THE SIMULATION IS EXECUTED --------------------------
+        // -------- (YOU CAN COMMENT THE UPCOMING LINES TO CHECK THE PARSING FIRST) --------
+
+        long starttime = System.nanoTime();
+        Timed.simulateUntilLastEvent();
+        long stoptime = System.nanoTime();
+
+        ScenarioBase.calculateIoTCost();
+        ScenarioBase.logBatchProcessing(stoptime - starttime);
+        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
+        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);   
        
     }
 }

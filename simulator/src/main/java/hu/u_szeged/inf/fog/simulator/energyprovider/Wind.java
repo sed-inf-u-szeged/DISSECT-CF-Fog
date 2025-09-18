@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-
 import java.util.Random;
 
 public class Wind extends EnergySource{
@@ -19,7 +18,8 @@ public class Wind extends EnergySource{
     }
 
     /**
-     * Calls the built function that calculates the multiplier for this wind farm and scales it down to the frequency Charge is called
+     * Calls the built function that calculates the multiplier for this wind farm and scales it down to the frequency Charge is called.
+     *
      * @param frequency The frequency of the Charge instance that belongs to this Wind class
      * @return The total production belonging to this wind farm
      */
@@ -30,9 +30,8 @@ public class Wind extends EnergySource{
     }
 
     /**
-     * Changes the production factor of this wind farm every hour
-     * Changes it by [-0.2;0.2]
-     * @return
+     * Changes the production factor of this wind farm every hour.
+     * Changes it by [-0.2;0.2].
      */
     float calculateOutputFactor() {
         if (this.currentHour < calculateHours()) {
@@ -45,7 +44,7 @@ public class Wind extends EnergySource{
     }
 
     int calculateHours() {
-        int hours = (int) Math.floor((double) Timed.getFireCount() /3_600_000);
+        int hours = (int) Math.floor((double) Timed.getFireCount() / 3_600_000);
         return hours;
     }
 

@@ -1,13 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
-import hu.u_szeged.inf.fog.simulator.prediction.Utils;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import lombok.*;
-import org.json.JSONException;
-import org.json.JSONObject;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Setter
 @Getter

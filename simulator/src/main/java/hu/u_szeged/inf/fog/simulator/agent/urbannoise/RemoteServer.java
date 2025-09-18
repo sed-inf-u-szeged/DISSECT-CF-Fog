@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.agent.urbannoise;
 
-import java.util.ArrayList;
-
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;

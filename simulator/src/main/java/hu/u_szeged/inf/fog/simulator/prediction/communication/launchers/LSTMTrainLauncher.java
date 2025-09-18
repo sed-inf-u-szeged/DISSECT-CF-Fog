@@ -3,11 +3,8 @@ package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
-import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.TrainSettings;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -41,9 +38,8 @@ public class LSTMTrainLauncher extends Launcher {
 
     @Override
     public Process openWindows() throws Exception {
-        String command = "cd /d " +
-                getProjectLocation() +
-                String.format(
+        String command = "cd /d " + getProjectLocation() 
+                          + String.format(
                         " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
                         getProjectLocation(),
                         getProjectLocation(),
@@ -53,7 +49,7 @@ public class LSTMTrainLauncher extends Launcher {
                 );
 
         ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
-//        pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
+        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
 
         PredictionLogger.info("LSTM trainer", "Opening trainer");
         return pb.start();
@@ -61,9 +57,7 @@ public class LSTMTrainLauncher extends Launcher {
 
     @Override
     public Process openLinux() throws Exception {
-        String command = "cd /d " +
-                getProjectLocation() +
-                String.format(
+        String command = "cd /d " + getProjectLocation() + String.format(
                         " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
                         getProjectLocation(),
                         getProjectLocation(),
@@ -73,7 +67,7 @@ public class LSTMTrainLauncher extends Launcher {
                 );
 
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-//        pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
+        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
 
         PredictionLogger.info("LSTM trainer", "Opening trainer");
         return pb.start();

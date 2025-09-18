@@ -1,14 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import java.io.File;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
  * The class is used to manage settings related to exporting data

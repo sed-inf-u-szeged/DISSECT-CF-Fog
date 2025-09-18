@@ -2,18 +2,22 @@ package hu.u_szeged.inf.fog.simulator.fl.demos;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
-import hu.u_szeged.inf.fog.simulator.fl.FLOrchestrator;
 import hu.u_szeged.inf.fog.simulator.fl.FLAggregator;
 import hu.u_szeged.inf.fog.simulator.fl.FLEdgeDevice;
+import hu.u_szeged.inf.fog.simulator.fl.FLOrchestrator;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom; 
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 /** 
  * Demo that models a minimal FL scenario on top of DISSECT-CF-Fog and runs it to completion.
@@ -34,8 +38,8 @@ import java.util.*;
 */
 
 public class FLSimulationExample {
-	
-	/**
+
+    /**
      * Starts the demo FL simulation. See source for tunables.
      *
      * @param args unused.
@@ -78,7 +82,7 @@ public class FLSimulationExample {
                 long stopTime = 1 * 60 * 60 * 1000;      // 1 hour of simulation time.
                 // Heterogeneous data & workload              
                 long fileSize = 50 + rng.nextInt(151);   // dummy file size (50 – 200 B)
-                long freq = 30_000 + rng.nextInt(90_001);// dummy frequency (30 – 120 s)
+                long freq = 30_000 + rng.nextInt(90_001); // dummy frequency (30 – 120 s)
                 // Mobility
                 GeoLocation location = new GeoLocation(47.0 + (i * 0.01), 19.0 + (i * 0.01));
                 RandomWalkMobilityStrategy mobilityStrategy = new RandomWalkMobilityStrategy(location, 0.0027, 0.0055, 10000);
@@ -148,13 +152,13 @@ public class FLSimulationExample {
         final boolean fixedCadence = true; // true = start-to-start heartbeat; false = cool-down after finish
         // Broadcast Policy
         final boolean broadcastSelectedOnly = true; // true  = broadcast model only to selected participants (typical FL)
-        											// false = broadcast model to all the participants 
+        // false = broadcast model to all the participants 
         
         //    Privacy and Security Knobs
         boolean secureAgg      = true;     // enable Secure Aggregation
         long    extraBytes     = 256;      // per-client ciphertext+MAC
         double  dlCompFactor   = 0.5;      // downlink model compression factor [0..1]
-        double  ulCompFactor   = 0.5;	   // uplink model compression factor [0..1]
+        double  ulCompFactor   = 0.5;      // uplink model compression factor [0..1]
         
         double  sigma          = 0.01;     // server-side DP Gaussian σ
         
@@ -164,7 +168,7 @@ public class FLSimulationExample {
         
         // 4) Create and schedule the first FLOrchestrator (round 0):
         new FLOrchestrator(1000, 
-        		desiredRounds,
+                desiredRounds,
                 flDevices,
                 aggregator,
                 samplingFraction,

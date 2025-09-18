@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The annotation which could be placed on a Field, for handling multiple variations of names for a JSON string field
+ * The annotation which could be placed on a Field, for handling multiple variations of names for a JSON string field.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

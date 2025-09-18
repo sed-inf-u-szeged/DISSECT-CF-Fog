@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.fl;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
-
 import java.util.Random;
 
 /**

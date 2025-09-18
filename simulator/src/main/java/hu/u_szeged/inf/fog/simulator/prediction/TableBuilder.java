@@ -1,9 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
-import lombok.Getter;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Helper class for building tables with rows and headers.

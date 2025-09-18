@@ -1,9 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
 import java.util.ArrayList;
 import java.util.List;
-
-import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

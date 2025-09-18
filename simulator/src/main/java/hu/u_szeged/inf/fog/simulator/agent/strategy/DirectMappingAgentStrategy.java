@@ -4,7 +4,6 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,32 +20,28 @@ public class DirectMappingAgentStrategy extends AgentStrategy {
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         
         List<Pair<ResourceAgent, Resource>> agentResourcePair = new ArrayList<>();
-        
+        int i = 0;
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
-            String name = entry.getKey();
+            String resourceName = entry.getKey();
             String ra = entry.getValue();
 
             if (agent.name.equals(ra)) {
+        
                 for (Resource resource : resources) {
-                	
-                    if (resource.name.equals(name)) {
-                    	for (Capacity c : agent.capacities) {
-                    		if (c.cpu >= resource.cpu) {
-                    			 agentResourcePair.add(Pair.of(agent, resource));
-                                 c.reserveCapacity(resource);
+          
+                    if (resource.name.equals(resourceName)) {
+                        for (Capacity c : agent.capacities) {
+                            if (c.cpu >= resource.cpu) {
+                                agentResourcePair.add(Pair.of(agent, resource));
+                                c.reserveCapacity(resource);
                                  
-                        		break;
-                    		}
-                    		
-                    	}
-                    	
-                       
-                        return agentResourcePair;
+                                break;
+                            }
+                        }  
                     }
                 }
             }
         }
-        
-        return Collections.emptyList();
+        return agentResourcePair;
     }
 }

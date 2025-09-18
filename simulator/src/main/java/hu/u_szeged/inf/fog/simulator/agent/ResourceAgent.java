@@ -16,14 +16,20 @@ import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class ResourceAgent {
 
@@ -46,6 +52,8 @@ public class ResourceAgent {
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
 
     public int reBroadcastCounter;
+    
+    int callcounter;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, Capacity... capacities) {
@@ -60,13 +68,12 @@ public class ResourceAgent {
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
             AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy) {
-    	this.capacities = new ArrayList<>();
-
-    	this.name = name;
-    	this.hourlyPrice = hourlyPrice;
-    	ResourceAgent.resourceAgents.add(this);
-    	this.agentStrategy = agentStrategy;
-    	//this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        this.capacities = new ArrayList<>();
+        this.name = name;
+        this.hourlyPrice = hourlyPrice;
+        ResourceAgent.resourceAgents.add(this);
+        this.agentStrategy = agentStrategy;
+        //this.initResourceAgent(resourceAgentVa, resourceAgentArc);
     }
     
     public void registerCapacity(Capacity capacity) {
@@ -109,7 +116,7 @@ public class ResourceAgent {
                     if (reBroadcastCounter < AgentApplicationReader.appCount) {
                         broadcast(app, bcastMessageSize);
                         reBroadcastCounter++;
-                        SimLogger.logRes("Rebroadcast " + reBroadcastCounter + " for " + app.name);
+                        SimLogger.logRun("Rebroadcast " + reBroadcastCounter + " for " + app.name);
                     }
                 }
             };
@@ -135,9 +142,9 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-
+       
         generateUniqueOfferCombinations(agentResourcePairs, app);
-
+        
         /* TODO: only for debugging, needs to be deleted
         System.out.println(app.name);
         for (Offer o : app.offers) {
@@ -148,10 +155,8 @@ public class ResourceAgent {
 
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
-        Set<Pair<ResourceAgent, Resource>> currentCombination = new LinkedHashSet<>();
-        Set<Resource> includedResources = new LinkedHashSet<>();
 
-        generateCombinations(pairs, app.resources.size(), uniqueCombinations, currentCombination, includedResources);
+        generateCombinations(pairs, app.resources.size(), uniqueCombinations, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
 
         for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
@@ -163,7 +168,7 @@ public class ResourceAgent {
                 agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
                 agentResourcesMap.get(agent).add(resource);
             }
-
+            
             app.offers.add(new Offer(agentResourcesMap, app.offers.size()));
         }
     }
@@ -171,10 +176,21 @@ public class ResourceAgent {
     private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
                                       Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
                                       Set<Pair<ResourceAgent, Resource>> currentCombination,
-                                      Set<Resource> includedResources) {
+                                      Set<Resource> includedResources,
+                                      Set<String> seenStates) {
+    
         if (includedResources.size() == resourceCount) {
+        
             uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
             return;
+        }
+        
+        String stateKey = includedResources.stream()
+                .map(r -> r.name)        
+                .sorted()
+                .collect(Collectors.joining(","));
+        if (!seenStates.add(stateKey)) {
+            return; 
         }
 
         for (Pair<ResourceAgent, Resource> pair : pairs) {
@@ -182,7 +198,7 @@ public class ResourceAgent {
                 currentCombination.add(pair);
                 includedResources.add(pair.getRight());
 
-                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources);
+                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources, seenStates);
 
                 currentCombination.remove(pair);
                 includedResources.remove(pair.getRight());

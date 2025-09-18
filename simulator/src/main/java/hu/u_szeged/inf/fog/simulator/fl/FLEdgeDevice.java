@@ -1,11 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.fl;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
-
 import java.util.Random;
 
 /**
@@ -85,32 +84,38 @@ public class FLEdgeDevice extends EdgeDevice {
         this.dpSigma            = dpSigma;
     }
 
-    /** @return instructions per byte used for compute-delay estimation. */
+    /**
+     * @return instructions per byte used for compute-delay estimation. */
     public double getInstructionPerByte() {
         return instructionPerByte;
     }
 
-    /** @return synthetic local data size (bytes). */
+    /**
+     * @return synthetic local data size (bytes). */
     public long getFileSize() {
         return fileSize;
     }
 
-    /** @return physical machine backing this device. */
+    /**
+     * @return physical machine backing this device. */
     public PhysicalMachine getLocalMachine() {
         return localMachine;
     }
 
-    /** @return network latency (ticks). */
+    /**
+     * @return network latency (ticks). */
     public int getLatency() {
         return latency;
     }
 
-    /** @return bandwidth (bytes/tick). */
+    /**
+     * @return bandwidth (bytes/tick). */
     public long getBandwidth() {
         return bandwidth;
     }
 
-    /** @return compute throughput (instructions/tick). */
+    /**
+     * @return compute throughput (instructions/tick). */
     public double getThroughput() {
         return throughput;
     }
@@ -126,9 +131,7 @@ public class FLEdgeDevice extends EdgeDevice {
 
     /**
      * Performs synthetic local training and returns a {@link FLModelUpdate}.
-     *
      * Steps:
-     * 
      *   - Create a synthetic delta vector (dimension = model length if available, else 1).
      *   - Apply L2 clipping (if {@code clipNorm > 0}).
      *   - Apply client-side Gaussian noise (if {@code dpSigma > 0}).
@@ -139,9 +142,7 @@ public class FLEdgeDevice extends EdgeDevice {
      * @param baseModelVersion model version the device used to train.
      * @return immutable update object (defensive copies inside).
      */
-    public FLModelUpdate performLocalTraining(int round, 
-    										  double ulCompressionFactor, 
-    										  int baseModelVersion) {
+    public FLModelUpdate performLocalTraining(int round, double ulCompressionFactor, int baseModelVersion) {
         ulCompressionFactor = Math.max(0.0, Math.min(1.0, ulCompressionFactor));
         
         Random rng = SimRandom.get();
@@ -161,11 +162,15 @@ public class FLEdgeDevice extends EdgeDevice {
         // L2 Clipping
         if (clipNorm > 0.0) {
             double l2 = 0.0;
-            for (double v : delta) l2 += v * v;
+            for (double v : delta) {
+                l2 += v * v;
+            }
             l2 = Math.sqrt(l2);
             if (l2 > clipNorm) {
                 double scale = clipNorm / l2;
-                for (int i = 0; i < delta.length; i++) delta[i] *= scale;
+                for (int i = 0; i < delta.length; i++) {
+                    delta[i] *= scale;
+                }
             }
         }
 

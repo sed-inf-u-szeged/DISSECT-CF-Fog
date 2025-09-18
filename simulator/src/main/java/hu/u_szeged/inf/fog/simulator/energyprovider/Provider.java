@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.energyprovider;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -36,11 +35,10 @@ public class Provider {
     public float moneySpentOnFossil = 0;
     public float moneySpentOnRenewable = 0;
 
-    public Provider(String id, Battery renewableBattery, ArrayList<EnergySource> renewableSources,FossilSource fossilSource,
+    public Provider(String id, Battery renewableBattery, ArrayList<EnergySource> renewableSources, FossilSource fossilSource,
                     long chargeFreq,
                     float renewableBasePrice, float fossilPrice,
-                    int maxPriceChange, int referenceLevel)
-    {
+                    int maxPriceChange, int referenceLevel) {
         this.id = id;
         this.renewableSources = renewableSources;
         this.renewableBattery = renewableBattery;
@@ -50,17 +48,17 @@ public class Provider {
         this.renewableBasePrice = renewableBasePrice;
         this.maxPriceChange = (float) (maxPriceChange / 100.0);
         this.referenceLevel = referenceLevel;
-        this.renewablePrice = this.renewableBasePrice *
-                            (1 + this.maxPriceChange *
-                            ((this.referenceLevel - this.renewableBattery.getBatteryPercentage()) /
-                            this.referenceLevel));
+        this.renewablePrice = this.renewableBasePrice 
+                * (1 + this.maxPriceChange 
+                * ((this.referenceLevel - this.renewableBattery.getBatteryPercentage()) 
+                / this.referenceLevel));
         this.fossilPrice = fossilPrice;
         this.charge = new Charge(this);
     }
 
 
     /**
-     * Call this if you want to recalculate the renewablePrice belonging to this provider
+     * Call this if you want to recalculate the renewablePrice belonging to this provider.
      * If referenceLevel is at 50 and battery percentage is also at 50 the price doesn't change compared to renewableBasePrice
      * If referenceLevel is at 50 and battery percentage is at 75% and maxPriceChange is 20 then the price decreases by 10%
      * If referenceLevel is at 50 and battery percentage is at 100% and maxPriceChange is 20 then the price decreases by 20%
@@ -87,7 +85,7 @@ public class Provider {
     }
 
     /**
-     * Stops the Charge instance belonging to this provider then logs information about this provider
+     * Stops the Charge instance belonging to this provider then logs information about this provider.
      */
     public void stopProcessing() {
         this.charge.stop();
@@ -111,17 +109,22 @@ public class Provider {
         System.out.println("Total money spent (EUR): " + (moneySpentOnRenewable+moneySpentOnFossil));
     }
 
-    public float getRenewablePrice(){
+    public float getRenewablePrice() {
         return this.renewablePrice;
     }
-    public float getFossilPrice(){
+    
+    public float getFossilPrice() {
         return this.renewableBasePrice;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Provider provider = (Provider) o;
 

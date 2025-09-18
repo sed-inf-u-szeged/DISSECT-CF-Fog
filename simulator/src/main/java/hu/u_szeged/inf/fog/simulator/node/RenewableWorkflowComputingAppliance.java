@@ -2,9 +2,6 @@ package hu.u_szeged.inf.fog.simulator.node;
 
 import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-
-import java.util.PriorityQueue;
 
 public class RenewableWorkflowComputingAppliance extends WorkflowComputingAppliance {
 

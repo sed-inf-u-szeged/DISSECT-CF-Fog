@@ -6,9 +6,8 @@ import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-import org.json.JSONObject;
-
 import java.io.File;
+import org.json.JSONObject;
 
 /**
  * The class provides implementations for starting the Python-based prediction application.
@@ -32,9 +31,7 @@ public class PredictorLauncher extends Launcher {
     @Override
     public Process openWindows() throws Exception {
         for (var predictionSetting : SimulationSettings.get().getPredictionSettings()) {
-            String command = "cd /d " +
-                    getProjectLocation() +
-                    String.format(
+            String command = "cd /d " + getProjectLocation() + String.format(
                             " && %s/venv/Scripts/python.exe %s/main.py %s",
                             getProjectLocation(),
                             getProjectLocation(),
@@ -62,9 +59,7 @@ public class PredictorLauncher extends Launcher {
     @Override
     public Process openLinux() throws Exception {
         for (var predictionSetting : SimulationSettings.get().getPredictionSettings()) {
-            String command = "cd /d " +
-                    getProjectLocation() +
-                    String.format(
+            String command = "cd /d " + getProjectLocation() + String.format(
                             " && %s/venv/Scripts/python.exe %s/main.py %s",
                             getProjectLocation(),
                             getProjectLocation(),

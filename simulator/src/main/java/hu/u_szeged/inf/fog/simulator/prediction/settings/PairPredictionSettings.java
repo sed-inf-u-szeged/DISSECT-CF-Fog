@@ -4,12 +4,10 @@ import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.FromJsonFieldAliases;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonFieldName;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
+import java.util.Collection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Collection;
-
 
 /**
  * The implementation for the grouping of the PredictionSettings class and the PredictorSettings class
@@ -62,6 +60,7 @@ public class PairPredictionSettings {
 
     /**
      * Increases the best predictor counter for multiple predictions at once.
+     *
      * @param predictions The best predictions.
      */
     public static void increaseBestPredictorCounterFromPredictions(Collection<Prediction> predictions) {
@@ -71,7 +70,8 @@ public class PairPredictionSettings {
     }
 
     /**
-     * Increases the predictor setting's best predictor counter from the given prediction
+     * Increases the predictor setting's best predictor counter from the given prediction.
+     *
      * @param prediction the best prediction.
      */
     public static void increaseBestPredictorCounterFromPrediction(Prediction prediction) {
@@ -88,6 +88,7 @@ public class PairPredictionSettings {
 
     /**
      * Returns the predictor setting with the given name.
+     *
      * @param name The name of the predictor.
      * @return The PairPredictionSettings object with the given name.
      */

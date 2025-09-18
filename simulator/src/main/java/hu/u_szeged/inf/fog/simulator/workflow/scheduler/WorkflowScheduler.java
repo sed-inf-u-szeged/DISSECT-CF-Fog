@@ -46,7 +46,7 @@ public abstract class WorkflowScheduler {
     
     public void addVm(WorkflowComputingAppliance ca, int num) {
         try {
-            ca.workflowVms.addAll( Arrays.asList(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), num)));
+            ca.workflowVms.addAll(Arrays.asList(ca.iaas.requestVM(this.instance.va, this.instance.arc, ca.iaas.repositories.get(0), num)));
         } catch (VMManagementException e) {
             e.printStackTrace();
         }

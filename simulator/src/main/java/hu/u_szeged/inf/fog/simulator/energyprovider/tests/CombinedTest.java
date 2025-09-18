@@ -1,8 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.energyprovider.tests;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.u_szeged.inf.fog.simulator.energyprovider.*;
-
+import hu.u_szeged.inf.fog.simulator.energyprovider.Battery;
+import hu.u_szeged.inf.fog.simulator.energyprovider.EnergySource;
+import hu.u_szeged.inf.fog.simulator.energyprovider.FossilSource;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
+import hu.u_szeged.inf.fog.simulator.energyprovider.RenewableVisualiser;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Wind;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -13,12 +17,12 @@ public class CombinedTest extends Timed {
     CombinedTest() throws IOException {
         subscribe(3_500_000);
 
-        Wind wind = new Wind(1,100);
+        Wind wind = new Wind(1, 100);
         //Solar solar = new Solar(1,300);
-        Battery battery = new Battery(40_000,0);
+        Battery battery = new Battery(40_000, 0);
         FossilSource fossilSource = new FossilSource(1000);
 
-        this.provider = new Provider("01", battery,new ArrayList<EnergySource>(),fossilSource,3_600_000, 1,1, 75,50);
+        this.provider = new Provider("01", battery, new ArrayList<EnergySource>(), fossilSource, 3_600_000, 1, 1, 75, 50);
 
         provider.addEnergySource(wind);
         //provider.addEnergySource(solar);

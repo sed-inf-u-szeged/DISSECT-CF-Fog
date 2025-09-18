@@ -1,13 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -235,7 +236,7 @@ public class FeatureManager {
                     PredictionConfigurator.predictor_reader.get(predictorName).readLine()
             );
             String predictionString = PredictionConfigurator.predictor_reader.get(predictorName).readLine();
-//            PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
+            // PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
 
             result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
 

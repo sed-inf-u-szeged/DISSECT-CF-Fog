@@ -2,7 +2,6 @@ package hu.u_szeged.inf.fog.simulator.fl;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
-
 import java.util.Random;
 
 /**
@@ -81,19 +80,19 @@ public class LocalTrainingEvent extends DeferredEvent {
         long modelPayloadBytes = update.getUpdateSize();                     // compressed payload bytes
         long ulBytesForDelay   = modelPayloadBytes;
         if (aggregator.isSecureAggregationEnabled()) {
-        	ulBytesForDelay += aggregator.getSecureExtraBytesPerClient();    // [CHANGED]
+            ulBytesForDelay += aggregator.getSecureExtraBytesPerClient();    // [CHANGED]
         }
         long latency    = device.getLatency();
         long bandwidth  = device.getBandwidth();
         long commDelay  = latency + (long) Math.ceil(ulBytesForDelay / (double) bandwidth);
 
         System.out.println("LocalTrainingEvent: scheduling upload for device "
-                + device.hashCode() + " with commDelay=" + commDelay + 
-                " (payload=" + modelPayloadBytes + " B, includedSecOverhead=" 
-                + (aggregator.isSecureAggregationEnabled()? String.valueOf(aggregator.getSecureExtraBytesPerClient()) : "0") + " B)" );
+                + device.hashCode() + " with commDelay=" + commDelay
+                + " (payload=" + modelPayloadBytes + " B, includedSecOverhead=" 
+                + (aggregator.isSecureAggregationEnabled() ? String.valueOf(aggregator.getSecureExtraBytesPerClient()) : "0") + " B)");
 
         new ParameterUploadEvent(
-        		commDelay,
+                commDelay,
                 update,
                 aggregator,
                 inTransitFailureProb,                        // pass in-transit loss probability

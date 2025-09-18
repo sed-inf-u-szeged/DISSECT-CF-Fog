@@ -3,10 +3,12 @@ package hu.u_szeged.inf.fog.simulator.prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.FromJsonFieldAliases;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonFieldName;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -41,6 +43,7 @@ public class Prediction {
         private List<Integer> timestamp;
         private List<Double> data;
     }
+    
     @ToJsonFieldName(value = "feature_name")
     @FromJsonFieldAliases(fieldNames = {"feature_name"})
     private String featureName;
@@ -80,6 +83,7 @@ public class Prediction {
     /**
      * Returns the best predictions for features from the given predictions.
      * The deceison is based on the getBestPrediction method.
+     *
      * @param predictions the given predictions with possibly multiple predictions for a feature
      * @return The best prediction for the given features
      */
@@ -96,8 +100,8 @@ public class Prediction {
 
     /**
      * Returns the best prediction in the given collection based on the average of the error metrics.
+     *
      * @param predictions The predictions to decide from.
-     * @return
      */
     public static Prediction getBestPrediction(Collection<Prediction> predictions) {
         return predictions.stream().min(Comparator.comparingDouble(
@@ -110,6 +114,7 @@ public class Prediction {
 
     /**
      * Separates the predictions of the given feature from all feature predictions.
+     *
      * @param predictions The predictions for possibly multiple features.
      * @param featureName The name of the feature to separate.
      * @return The predictions for the given feature.

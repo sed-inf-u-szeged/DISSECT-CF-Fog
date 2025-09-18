@@ -5,9 +5,15 @@ import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.LSTMTrai
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.sqlite.SqLiteManager;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The {@code PredictionConfigurator} class is responsible for configuring and managing
@@ -57,6 +63,7 @@ public class PredictionConfigurator {
 
     /**
      * Adds a predictor process to the list of predictions alongside with it's reader and writer streams.
+     *
      * @param name The name of the predictor
      * @param predictorProcess The predictor's process
      */
@@ -69,7 +76,7 @@ public class PredictionConfigurator {
     /**
      * Executes the prediction simulation by opening processes and applications,
      * running the simulation, closing input/output streams, exporting results,
-     * starting LSTM training based on configuration, and printing information
+     * starting LSTM training based on configuration, and printing information.
      */
     public void execute() throws Exception {
         for (Launcher application : launchers) {
@@ -86,11 +93,12 @@ public class PredictionConfigurator {
 
         simulationDefinition.simulation();
 
-        for (BufferedReader reader : predictor_reader.values())
+        for (BufferedReader reader : predictor_reader.values()) {
             reader.close();
-        for (BufferedWriter writer : predictor_writer.values())
+        }
+        for (BufferedWriter writer : predictor_writer.values()) {
             writer.close();
-
+        }
         export();
 
         if (SimulationSettings.get().getTrainSettings() != null) {

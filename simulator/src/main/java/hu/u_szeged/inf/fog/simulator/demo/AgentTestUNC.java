@@ -52,8 +52,8 @@ public class AgentTestUNC {
         SeedSyncer.modifySeed(9876543210L);
         
         long simLength = 1 * 24 * 60 * 60 * 1000; 
-        int numOfApps = 5;
-
+        int numOfApps = 2;
+ 
         /** ranking config */
         //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
         ResourceAgent.rankingScriptDir = "/home/markus/Documents/projects/swarm-deployment/for_simulator";
@@ -67,13 +67,13 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "random";
         
         /** applications */
-        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
-        //Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
+        //Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
         
         /** nodes */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
-        double capacity = 256 * 2; 
+        double capacity = 256 * numOfApps; 
         
         for(int i = 0; i < numOfApps; i++) {
         	//for(int j = 0; j < 5; j++) {
@@ -97,11 +97,36 @@ public class AgentTestUNC {
                     createNode("Node5" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
                     new GeoLocation(40.71, -74.00), "EU", "AWS", true); // New York
                 
+                ComputingAppliance node9 = new ComputingAppliance(
+                        createNode("Node9" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
+                        new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
+
+                    ComputingAppliance node10 = new ComputingAppliance(
+                        createNode("Node10" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
+                        new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
+
+                    ComputingAppliance node11 = new ComputingAppliance(
+                        createNode("Node11" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
+                        new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
+                            
+                    ComputingAppliance node12 = new ComputingAppliance(
+                        createNode("Node12" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
+                        new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
+                          
+                    ComputingAppliance node13 = new ComputingAppliance(
+                        createNode("Node13" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
+                        new GeoLocation(40.71, -74.00), "EU", "AWS", true);
+                
                 new EnergyDataCollector("Node1" + i, node1.iaas, true);
                 new EnergyDataCollector("Node2" + i, node2.iaas, true);
                 new EnergyDataCollector("Node3" + i, node3.iaas, true);
                 new EnergyDataCollector("Node4" + i, node4.iaas, true);
                 new EnergyDataCollector("Node5" + i, node5.iaas, true);
+                new EnergyDataCollector("Node9" + i, node1.iaas, true);
+                new EnergyDataCollector("Node10" + i, node2.iaas, true);
+                new EnergyDataCollector("Node11" + i, node3.iaas, true);
+                new EnergyDataCollector("Node12" + i, node4.iaas, true);
+                new EnergyDataCollector("Node13" + i, node5.iaas, true);
         	//}
         }
         
@@ -141,11 +166,24 @@ public class AgentTestUNC {
         	mapping.put("UNC-" + i + "-Res-4", "Agent-4");
         	mapping.put("UNC-" + i + "-Res-5", "Agent-5");
         	
+        	mapping.put("UNC-" + i + "-Res-6", "Agent-1");
+        	mapping.put("UNC-" + i + "-Res-7", "Agent-2");
+        	mapping.put("UNC-" + i + "-Res-8", "Agent-3");
+        	mapping.put("UNC-" + i + "-Res-9", "Agent-4");
+        	mapping.put("UNC-" + i + "-Res-10", "Agent-5");
+        	
         	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node1" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node2" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node3" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node4" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
         	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node5" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        
+        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node9" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node10" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node11" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node12" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node13" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        
         }
         
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc);

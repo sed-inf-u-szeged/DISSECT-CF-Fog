@@ -143,7 +143,7 @@ public class ComputingAppliance {
         this.name = "";
     }
 
-	/**
+    /**
      * Calculates and returns the load of CPU resources for this computing appliance.
      * The load is represented as a percentage of the used CPU capacity measured to 
      * the total CPU capacity.
@@ -284,16 +284,15 @@ public class ComputingAppliance {
      */
     public long getAvailableStorage() {
         return iaas.repositories.stream()
-                .mapToLong(Repository::getFreeStorageCapacity).
-                sum();
+                .mapToLong(Repository::getFreeStorageCapacity).sum();
     }
     
     public static ComputingAppliance findApplianceByName(String name) {
-    	for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
-    		if (ca.name.equals(name)) {
-    			return ca;
-    		}
-    	}
-    	return null;
+        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+            if (ca.name.equals(name)) {
+                return ca;
+            }
+        }
+        return null;
     }
 }

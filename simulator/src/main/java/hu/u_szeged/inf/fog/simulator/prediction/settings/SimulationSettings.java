@@ -2,13 +2,12 @@ package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.TableBuilder;
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-
-import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

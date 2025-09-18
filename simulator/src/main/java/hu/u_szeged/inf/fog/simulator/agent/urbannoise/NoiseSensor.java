@@ -1,7 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.agent.urbannoise;
 
-import java.util.ArrayList;
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -11,8 +9,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import java.util.ArrayList;
 
 public class NoiseSensor extends Timed {
     
@@ -80,13 +79,13 @@ public class NoiseSensor extends Timed {
         } else {
             RemoteServer rs = findRemoteServer();
             try {
-            	long actualTime = Timed.getFireCount();
+                long actualTime = Timed.getFireCount();
                 this.pm.localDisk.requestContentDelivery(filename, rs.util.vm.getResourceAllocation().getHost().localDisk,
                         new ConsumptionEventAdapter() {
                             
                         @Override
                         public void conComplete() {
-                        	NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
+                            NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
                             pm.localDisk.deregisterObject(filename);
                         }
                         
@@ -193,12 +192,13 @@ public class NoiseSensor extends Timed {
                                             
                             @Override
                             public void conComplete() {
-                            	startSoundClassification();
-                            	cpuTemp += 0.005;
+                                startSoundClassification();
+                                cpuTemp += 0.005;
                                 RemoteServer rs = findRemoteServer();
                                 try {
-                                	
-                                	long actualTime = Timed.getFireCount();
+                                
+                                    long actualTime = Timed.getFireCount();
+                                
                                     pm.localDisk.requestContentDelivery(so.id, rs.util.vm.getResourceAllocation().getHost().localDisk,
                                             new ConsumptionEventAdapter() {
                                                 
@@ -214,7 +214,7 @@ public class NoiseSensor extends Timed {
                                         });
                                 } catch (NetworkException e) {
                                     e.printStackTrace();
-                                }     
+                                }   
                             }
                         });
             } catch (NetworkException e) {

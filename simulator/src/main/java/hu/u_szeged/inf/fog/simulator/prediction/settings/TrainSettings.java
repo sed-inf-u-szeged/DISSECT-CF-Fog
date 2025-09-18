@@ -5,9 +5,6 @@ import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.FromJsonFieldAliases;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonFieldName;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 @Data
 @AllArgsConstructor

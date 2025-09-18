@@ -13,12 +13,12 @@ import java.util.Random;
  * accidental concurrent access. 
  */
 public final class SimRandom {
-	
-	// Thread-safe Random wrapper
-	private static volatile Random RNG = new Random();   // default: non-deterministic
-	
-	private static final Object LOCK = new Object();
-	
+
+    // Thread-safe Random wrapper
+    private static volatile Random RNG = new Random();   // default: non-deterministic
+
+    private static final Object LOCK = new Object();
+
     private SimRandom() { } // utility class - no instantiation
 
     /**
@@ -28,7 +28,9 @@ public final class SimRandom {
      * @param seed seed value.
      */
     public static void setSeed(long seed) {
-        synchronized (LOCK) { RNG = new Random(seed); }
+        synchronized (LOCK) {
+            RNG = new Random(seed); 
+        }
     }
 
     /**
@@ -42,7 +44,9 @@ public final class SimRandom {
         Random r = RNG;
         if (r == null) {
             synchronized (LOCK) {
-                if (RNG == null) RNG = new Random();
+                if (RNG == null) {
+                    RNG = new Random();
+                }
                 r = RNG;
             }
         }
