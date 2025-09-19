@@ -25,7 +25,6 @@ import java.util.Set;
 /**
  * Central server-side component that aggregates client updates, maintains the global model,
  * and emits round-level telemetry.
- * 
  *  What is modeled? 
  *    - FedAvg of client deltas: (weighted by synthetic sample counts).
  *    - Server-side DP: (Gaussian noise added to aggregated delta).
@@ -40,7 +39,6 @@ import java.util.Set;
  *  What is not modeled?
  *    - Cryptographic details of secure aggregation.
  *    - Cycle-accurate training or packet-level networking.
- *
  *  Time unit: ticks.  Size unit: bytes. 
  */
 
@@ -304,7 +302,6 @@ public class FLAggregator extends ComputingAppliance {
 
     /**
       * Initializes the new round. Called by {@link FLOrchestrator}.
-      *
       * Resets per-round telemetry, (re)initializes secure-agg accumulators or the
       * standard update list, and schedules a {@link RoundTimeoutEvent}.
       *
@@ -465,7 +462,6 @@ public class FLAggregator extends ComputingAppliance {
     /**
       * Receives a model update (or secure share) from a device upload.
       * Overload that receives the client’s E2E ticks; only counted if accepted
-      *
       * Updates from other rounds are considered "stale" and dropped with telemetry.
       * Late arrivals with the correct round after aggregation are ignored (round is closed).
       *
@@ -944,7 +940,7 @@ public class FLAggregator extends ComputingAppliance {
                 double e2eMean = (r < prE2EMean.size()) ? prE2EMean.get(r) : 0.0;
                 long   e2eP50  = (r < prE2EP50.size())  ? prE2EP50.get(r)  : 0L;
                 long   e2eP95  = (r < prE2EP95.size())  ? prE2EP95.get(r)  : 0L;
-                long   rDur    = (r < prRoundDuration.size()) ? prRoundDuration.get(r) : 0L;
+                long   rdur    = (r < prRoundDuration.size()) ? prRoundDuration.get(r) : 0L;
                 
                 pw.println(
                          prRoundId.get(r) + "," 
@@ -968,7 +964,7 @@ public class FLAggregator extends ComputingAppliance {
                          + String.format(Locale.US, "%.6f", e2eMean) + ","
                          + e2eP50 + ","
                          + e2eP95 + ","
-                         + rDur
+                         + rdur
                 );
             }
         }
@@ -1017,7 +1013,8 @@ public class FLAggregator extends ComputingAppliance {
                 Process p2 = new ProcessBuilder(cmd).inheritIO().start();
                 int exit2 = p2.waitFor();
                 if (exit2 != 0) {
-                    System.out.println("Aggregator " + id + ": Python plotting failed (matplotlib missing?). CSV is available at " + csvPath);
+                    System.out.println("Aggregator " + id 
+                        + ": Python plotting failed (matplotlib missing?). CSV is available at " + csvPath);
                 } else {
                     System.out.println("Aggregator " + id + ": Plot saved to " + outPngPath);
                 }

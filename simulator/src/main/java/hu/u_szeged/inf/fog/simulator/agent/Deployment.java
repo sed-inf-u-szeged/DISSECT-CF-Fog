@@ -18,7 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Deployment extends Timed {
     
-    private static int taskNum = 0;
+    // private static int taskNum = 0;
     public static Repository registryService;
     
     Pair<ComputingAppliance, Utilisation> leadResource;
@@ -106,7 +106,8 @@ public class Deployment extends Timed {
                     
                     //System.out.println(this.app.getComponentName(util.getRight().resource.name));
                     if (this.app.getComponentName(util.getRight().resource.name).contains("Noise-Sensor")) {
-                        new NoiseSensor(app, sa, util.getRight(), 10_000, 60, SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
+                        new NoiseSensor(app, sa, util.getRight(), 10_000, 60, 
+                            SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
                         new RemoteServer(sa, util.getRight());
                     } else {

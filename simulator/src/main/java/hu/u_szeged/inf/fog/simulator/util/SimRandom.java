@@ -4,10 +4,8 @@ import java.util.Random;
 
 /**
  * Singleton-like access to a shared {@link Random} instance across the simulation.
- *
  * Using a single RNG ensures that all stochastic decisions (sampling, noise injection,
  * failures, etc.) are reproducible when a seed is set "before" events are created.
- *
  * Thread-safety: Uses double-checked locking and a volatile reference.
  * While DISSECT-CF-Fog typically runs single-threaded event loops, this design guards against
  * accidental concurrent access. 

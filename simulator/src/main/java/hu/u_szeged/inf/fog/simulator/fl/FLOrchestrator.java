@@ -9,7 +9,6 @@ import java.util.Random;
 
 /**
  * Drives the per-round control flow of a Federated Learning experiment.
- *
  *  Responsibilities
  *     - Sampling &amp; dropout: chooses participating clients (Bernoulli or fixed-{@code k})
  *       and optionally simulates per-round dropout.
@@ -18,7 +17,6 @@ import java.util.Random;
  *     - Pacing: in "fixed-cadence" mode schedules the next round immediately
  *       (start-to-start). Otherwise the aggregator schedules after aggregation/timeout.
  * Time unit: ticks (discrete-event time). 
- *
  * Abstraction note: This class does not simulate control-plane protocols; it
  * only schedules high-level events consistent with DISSECT-CF-Fog’s design.
  */
@@ -175,7 +173,8 @@ public class FLOrchestrator extends DeferredEvent {
     /**
      * Schedules one FL round:
      * - Sample devices (and apply dropout).</li>
-     * - Call {@link FLAggregator#startRound(int, int, long, int, List, List, double, double, double, double, double, boolean, long, double, double, double, boolean, boolean, boolean, int)}.
+     * - Call {@link FLAggregator#startRound(int, int, long, int, List, List, 
+     * double, double, double, double, double, boolean, long, double, double, double, boolean, boolean, boolean, int)}.
      * - Trigger {@link FLAggregator#broadcastGlobalModel()} (which schedules {@code GlobalModelBroadcastEvent}s).
      * - If fixed cadence and more rounds remain, schedule the next {@code FLOrchestrator} now.
      */

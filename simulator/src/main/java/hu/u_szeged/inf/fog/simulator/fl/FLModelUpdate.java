@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 /**
  * Immutable value object representing one client's model update.
- *  
  * Contains:
  *   - {@code modelParameters}: the delta vector (defensive copy on construct/get),
  *   - {@code sampleCount}: synthetic number of local samples used,

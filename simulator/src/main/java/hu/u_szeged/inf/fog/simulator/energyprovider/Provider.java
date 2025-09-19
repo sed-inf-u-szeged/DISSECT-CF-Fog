@@ -76,7 +76,8 @@ public class Provider {
             throw new RuntimeException(e);
         }
         System.out.print("Price before change: " + this.renewablePrice);
-        this.renewablePrice = (this.renewableBasePrice * (1 + maxPriceChange * ((this.referenceLevel - this.renewableBattery.getBatteryPercentage()) / this.referenceLevel)));
+        this.renewablePrice = (this.renewableBasePrice * (1 + maxPriceChange
+            * ((this.referenceLevel - this.renewableBattery.getBatteryPercentage()) / this.referenceLevel)));
         System.out.println("  -------  Time: " + Timed.getFireCount() + "  -------  Price after change: " + this.renewablePrice);
     }
 

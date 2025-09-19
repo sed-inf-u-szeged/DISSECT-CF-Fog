@@ -48,7 +48,8 @@ public class NoiseSensor extends Timed {
     public boolean noDirectSun;
     
     
-    public NoiseSensor(AgentApplication app, SwarmAgent sa, Utilisation util, long freq, int threshold, boolean inside, boolean noDirectSun) {
+    public NoiseSensor(AgentApplication app, SwarmAgent sa, 
+            Utilisation util, long freq, int threshold, boolean inside, boolean noDirectSun) {
         this.sa = sa;
         this.util = util;
         this.pm = util.vm.getResourceAllocation().getHost();
@@ -78,8 +79,11 @@ public class NoiseSensor extends Timed {
             this.filesToBeProcessed.add(so);
         } else {
             RemoteServer rs = findRemoteServer();
+            this.pm.localDisk.deregisterObject(so);
+            so.size = 100;
+            this.pm.localDisk.registerObject(so);
+            long actualTime = Timed.getFireCount();
             try {
-                long actualTime = Timed.getFireCount();
                 this.pm.localDisk.requestContentDelivery(filename, rs.util.vm.getResourceAllocation().getHost().localDisk,
                         new ConsumptionEventAdapter() {
                             
@@ -112,7 +116,7 @@ public class NoiseSensor extends Timed {
         final double noise       = 0.12; 
         final double heatingProbability = 0.9;
 
-        double delta;
+        double delta = 0;
 
         if (sun > 0.01) { 
             if (SeedSyncer.centralRnd.nextDouble() < heatingProbability) {
@@ -186,7 +190,6 @@ public class NoiseSensor extends Timed {
             this.cpuTemp += 0.005;
            
             try {
-
                 this.util.vm.newComputeTask(1_700 * util.utilisedCpu, ResourceConsumption.unlimitedProcessing, 
                            new ConsumptionEventAdapter() {
                                             
@@ -195,10 +198,11 @@ public class NoiseSensor extends Timed {
                                 startSoundClassification();
                                 cpuTemp += 0.005;
                                 RemoteServer rs = findRemoteServer();
+                                pm.localDisk.deregisterObject(so);
+                                so.size = 100;
+                                pm.localDisk.registerObject(so);
+                                long actualTime = Timed.getFireCount();
                                 try {
-                                
-                                    long actualTime = Timed.getFireCount();
-                                
                                     pm.localDisk.requestContentDelivery(so.id, rs.util.vm.getResourceAllocation().getHost().localDisk,
                                             new ConsumptionEventAdapter() {
                                                 
@@ -212,6 +216,7 @@ public class NoiseSensor extends Timed {
                                             }
                                             
                                         });
+                                        
                                 } catch (NetworkException e) {
                                     e.printStackTrace();
                                 }   
@@ -224,7 +229,7 @@ public class NoiseSensor extends Timed {
             SimLogger.logRun(this.sa.app.getComponentName(this.util.resource.name) + "'classifier was turned off at: "
                 + Timed.getFireCount() / 1000.0 / 60.0  + " min. due to large temperature");
             this.isClassificationRunning = false;
-            this.sa.noiseSensorsWithClassification.remove(this);
+            this.sa.noiseSensorsWithClassifier.remove(this);
         }
     }
 

@@ -11,12 +11,10 @@ import java.util.Random;
  * FL-enabled edge device that can perform synthetic local training and
  * produce a model update. Extends {@link EdgeDevice} to reuse mobility,
  * scheduling and local compute context.
- *
  *   Modeled behavior 
  *     - Local training time derived from input size and throughput (see {@link GlobalModelBroadcastEvent}). 
  *     - Client-side DP: L2 clipping and Gaussian noise over a synthetic delta vector. 
  *     - Uplink payload size computed from vector length and compression factor. 
- *
  * Abstraction: This class generates synthetic deltas; it does not run ML. 
  */
 public class FLEdgeDevice extends EdgeDevice {

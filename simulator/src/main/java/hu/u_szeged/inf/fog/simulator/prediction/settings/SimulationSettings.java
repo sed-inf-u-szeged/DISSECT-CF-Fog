@@ -55,7 +55,8 @@ public class SimulationSettings {
             table.addRow("Smoothing", predictionSetting.getPredictionSettings().getSmoothing().getWindowSize()
                     + ", " + predictionSetting.getPredictionSettings().getSmoothing().getPolynomialDegree());
             table.addRow("Best prediction", predictionSetting.getBestPredictor());
-            table.addRow("Average sum of error metrics", predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
+            table.addRow("Average sum of error metrics", 
+                predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
             table.addRow("Number of predictions", predictionSetting.getNumberOfPredictions());
             System.out.println(table);
         }

@@ -5,16 +5,11 @@ import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 /**
  * Delivers the current global model to one device after a simulated download delay,
  * then optionally schedules local training for participating devices.
- *
  * Uses uplink compression for scheduling LocalTrainingEvent (UL sizing),
- *
  * Compute delay model:
  * The local training compute delay is estimated as:
- *  
  *   compDelay = ceil(epochMultiplier * instrPerByte * fileSize / throughput)
- *  
  * where {@code epochMultiplier} scales compute time only (e.g., to emulate multiple epochs).
- *
  * Units >
  * Time: ticks; sizes: bytes.
  */

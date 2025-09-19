@@ -100,7 +100,8 @@ public class RenewableScheduler extends WorkflowScheduler {
         } else {
             assignStartingVMs();
             for (Provider provider : providers) {
-                if (provider.renewableBattery.getBatteryLevel() >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilPrice()) {
+                if (provider.renewableBattery.getBatteryLevel()
+                    >= startingCosts.get(provider) && provider.getRenewablePrice() <= provider.getFossilPrice()) {
 
                     provider.renewableBattery.removeBatteryLevel(startingCosts.get(provider));
                     assignStartingVMs();
@@ -208,7 +209,8 @@ public class RenewableScheduler extends WorkflowScheduler {
             }
 
         } else {
-            if ((getProviderOfJob(workflowJob).getRenewablePrice() <= getProviderOfJob(workflowJob).getFossilPrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
+            if ((getProviderOfJob(workflowJob).getRenewablePrice()
+                <= getProviderOfJob(workflowJob).getFossilPrice()) && doesProviderHaveEnoughEnergy(workflowJob)) {
                 scheduleTaskWithRenewable(workflowJob);
 
                 WorkflowExecutor.execute(this);

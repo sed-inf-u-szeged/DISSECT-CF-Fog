@@ -11,7 +11,6 @@ import java.util.Random;
  *   - Simulates a possible <b>pre-upload</b> failure (before any bytes are sent).
  *   - Computes upload delay = latency + payload/bandwidth (adding secure-agg overhead if enabled).
  *   - Schedules the {@link ParameterUploadEvent}.
- *
  * Units:
  * Time: ticks; payload sizes: bytes.
  */

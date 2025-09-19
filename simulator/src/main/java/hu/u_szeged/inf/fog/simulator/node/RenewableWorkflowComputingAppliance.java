@@ -16,7 +16,8 @@ public class RenewableWorkflowComputingAppliance extends WorkflowComputingApplia
      * @param geoLocation the geographical location of the computing appliance
      * @param range       the range of the computing appliance
      */
-    public RenewableWorkflowComputingAppliance(String file, String name, GeoLocation geoLocation, long range, Provider provider) throws Exception {
+    public RenewableWorkflowComputingAppliance(String file, String name, 
+            GeoLocation geoLocation, long range, Provider provider) throws Exception {
         super(file, name, geoLocation, range);
         this.file = file;
         this.provider = provider;

@@ -156,7 +156,8 @@ public class ResourceAgent {
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
 
-        generateCombinations(pairs, app.resources.size(), uniqueCombinations, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
+        generateCombinations(pairs, app.resources.size(), uniqueCombinations, 
+            new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
 
         for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();

@@ -8,7 +8,7 @@ public class FossilSource {
         this.production = production;
     }
 
-    float Production() {
+    float production() {
         return this.production;
     }
 }

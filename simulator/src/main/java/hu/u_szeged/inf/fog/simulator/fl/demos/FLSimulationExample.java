@@ -22,7 +22,6 @@ import java.util.Random;
 /** 
  * Demo that models a minimal FL scenario on top of DISSECT-CF-Fog and runs it to completion.
  * It showcases the end-to-end FL workflow using the module’s high-level abstractions:
- * 
  *   - Set global random seed and FL knobs (timeouts, DP).
  *   - Create a single {@link FLAggregator} with an initial model.
  *   - Instantiate a pool of heterogeneous {@link FLEdgeDevice} nodes with varied
@@ -30,9 +29,7 @@ import java.util.Random;
  *   - Schedule the first {@link FLOrchestrator} round (round 0), which then drives
  *     sampling, broadcast, local training, uploads, aggregation, and evaluation.
  *   - Run the discrete-event simulation until all events complete.
- * 
  * Units: This demo uses ticks for time and bytes for payload sizes.
- *
  * Scope: The FL mechanics are intentionally abstract to enable
  * large-scale trend analysis (no cycle-accurate computation or cryptography).
 */

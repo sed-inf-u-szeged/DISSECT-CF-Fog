@@ -20,7 +20,6 @@ public class DirectMappingAgentStrategy extends AgentStrategy {
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         
         List<Pair<ResourceAgent, Resource>> agentResourcePair = new ArrayList<>();
-        int i = 0;
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
             String resourceName = entry.getKey();
             String ra = entry.getValue();

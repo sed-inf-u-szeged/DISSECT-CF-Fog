@@ -298,16 +298,17 @@ public class ToscaParserFull {
                         VirtualAppliance va = new VirtualAppliance(vaName, startUpProcess, 0, false, 1_073_741_824L);
                         AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, processingPerCore, memSizeInBytes);
                         Instance instance = new Instance(instanceName, va, arc, 0.102 / 60 / 60 / 1000);
-                        ComputingAppliance cAcloud = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
-                        new EnergyDataCollector(nodeName, cAcloud.iaas, true);
+                        ComputingAppliance caCloud = 
+                            new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
+                        new EnergyDataCollector(nodeName, caCloud.iaas, true);
                         Application application = new Application(applicationName, 1 * 60 * 1000, 250, 2500, false,
                                  new RuntimeAwareApplicationStrategy(0.9, 2.0), instance);
-                        cAcloud.addApplication(application);
+                        caCloud.addApplication(application);
                         // Add to cloud lists
                         cloudVaList.add(va);
                         cloudArcList.add(arc);
                         cloudInstList.add(instance);
-                        cloudCAList.add(cAcloud);
+                        cloudCAList.add(caCloud);
                         cloudAppList.add(application);
                          
                         // Increment the cloud node counter
@@ -340,17 +341,17 @@ public class ToscaParserFull {
                         VirtualAppliance va = new VirtualAppliance(vaName, startUpProcess, 0, false, 1_073_741_824L);
                         AlterableResourceConstraints arc = new AlterableResourceConstraints(numCores, processingPerCore, memSizeInBytes);
                         Instance instance = new Instance(instanceName, va, arc, 0.051 / 60 / 60 / 1000);
-                        ComputingAppliance cAfog = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
-                        new EnergyDataCollector(nodeName, cAfog.iaas, true);
+                        ComputingAppliance caFog = new ComputingAppliance(cloudfile, nodeName, new GeoLocation(latitude, longitude), range);
+                        new EnergyDataCollector(nodeName, caFog.iaas, true);
                         Application application = new Application(applicationName, 1 * 60 * 1000, 250, 2500, true,
                                  new RuntimeAwareApplicationStrategy(0.9, 2.0), instance);
-                        cAfog.addApplication(application);
+                        caFog.addApplication(application);
                          
                         // Add to fog lists
                         fogVaList.add(va);
                         fogArcList.add(arc);
                         fogInstList.add(instance);
-                        fogCAList.add(cAfog);
+                        fogCAList.add(caFog);
                         fogAppList.add(application);
                          
                         // Increment the fog node counter
@@ -398,8 +399,10 @@ public class ToscaParserFull {
                         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
                         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-                        Repository repo = new Repository(diskSizeInBytes, "mc-repo" + i, maxInBW, maxOutBW, diskBW, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
-                        PhysicalMachine localMachine = new PhysicalMachine(numCores, perCoreProcessing, memSizeInBytes, repo, 0, 0, cpuTransitions);
+                        Repository repo = new Repository(diskSizeInBytes, "mc-repo" + i, maxInBW, maxOutBW, diskBW, 
+                            latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
+                        PhysicalMachine localMachine = 
+                             new PhysicalMachine(numCores, perCoreProcessing, memSizeInBytes, repo, 0, 0, cpuTransitions);
 
                         Device device;
                         double step = SeedSyncer.centralRnd.nextDouble(); 
@@ -523,12 +526,17 @@ public class ToscaParserFull {
         System.out.println("Cloud VirtualAppliances and ARC:");
         for (int i = 0; i < cloudVaList.size(); i++) {
             //If I just want to get the id is: cloudVaList.get(i).id
-            System.out.println("Cloud VA: " + cloudVaList.get(i).toString() + " with ARC: " + cloudArcList.get(i).toString() + " with INST: " + cloudInstList.get(i).toString() + " with CA: " + cloudCAList.get(i).toString() + " with App: " + cloudAppList.get(i).toString());
+            System.out.println("Cloud VA: " + cloudVaList.get(i).toString() 
+                    + " with ARC: " + cloudArcList.get(i).toString() + " with INST: " 
+                    + cloudInstList.get(i).toString() + " with CA: " + cloudCAList.get(i).toString() 
+                    + " with App: " + cloudAppList.get(i).toString());
         }
         System.out.println("-----------------------------------");
         System.out.println("Fog VirtualAppliances and ARC:");
         for (int i = 0; i < fogVaList.size(); i++) {
-            System.out.println("Fog VA: " + fogVaList.get(i).toString() + " with ARC: " + fogArcList.get(i).toString() + " with INST: " + fogInstList.get(i).toString() + " with CA: " + fogCAList.get(i).toString() + " with App: " + fogAppList.get(i).toString());
+            System.out.println("Fog VA: " + fogVaList.get(i).toString() + " with ARC: " 
+                + fogArcList.get(i).toString() + " with INST: " + fogInstList.get(i).toString() 
+                + " with CA: " + fogCAList.get(i).toString() + " with App: " + fogAppList.get(i).toString());
         }
         
         System.out.println("-----------------------------------");

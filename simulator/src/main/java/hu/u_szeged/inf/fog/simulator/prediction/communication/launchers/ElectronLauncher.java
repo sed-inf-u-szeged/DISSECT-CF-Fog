@@ -39,7 +39,8 @@ public class ElectronLauncher extends Launcher {
 
     private boolean buildExists() {
         return new File(new StringBuilder(
-                getProjectLocation()).append(File.separator).append("dist").append(File.separator).append("dissect-cf-predictor-ui").toString()
+                getProjectLocation())
+                    .append(File.separator).append("dist").append(File.separator).append("dissect-cf-predictor-ui").toString()
         ).exists();
     }
 }

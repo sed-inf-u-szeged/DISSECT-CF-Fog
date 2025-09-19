@@ -261,7 +261,8 @@ public class JsonParser {
      * @param <T> The class of the object to convert to
      * @return The object with the given class from the JSON string.
      */
-    public static <T> T fromJsonString(String json, Class<T> clazz) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static <T> T fromJsonString(String json, Class<T> clazz) 
+            throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return fromJsonObject(new JSONObject(json), clazz, null);
     }
 
@@ -273,7 +274,8 @@ public class JsonParser {
      * @param clazz the class to convert to
      * @param parent the parent of the object to convert.
      */
-    public static <T> T fromJsonObject(JSONObject json, Class<T> clazz, Object parent) throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static <T> T fromJsonObject(JSONObject json, Class<T> clazz, Object parent) 
+            throws JSONException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         T instance = createInstance(clazz, parent);
 
         if (Map.class.isAssignableFrom(clazz)) {
@@ -294,7 +296,8 @@ public class JsonParser {
      * @param parent the parent object which the class needs to be created in.
      * @return The created object.
      */
-    private static <T> T createInstance(Class<T> clazz, Object parent) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private static <T> T createInstance(Class<T> clazz, Object parent) 
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         T instance;
 
         if (Map.class.isAssignableFrom(clazz)) {
@@ -355,7 +358,8 @@ public class JsonParser {
      * @param field the Java field to assign to.
      * @param instance The instance of the object. (Reflection requires)
      */
-    private static void assignValueToField(JSONObject json, Field field, Object instance) throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    private static void assignValueToField(JSONObject json, Field field, Object instance) 
+            throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         field.setAccessible(true);
 
         List<String> jsonFieldNames = new ArrayList<>();
@@ -399,7 +403,8 @@ public class JsonParser {
      * @param clazz the class to convert to.
      * @return the created Object.
      */
-    private static Object convertJsonArray(JSONArray jsonArray, Class<?> clazz) throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    private static Object convertJsonArray(JSONArray jsonArray, Class<?> clazz) 
+            throws JSONException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         Class<?> componentType = clazz.getComponentType();
 
         if (clazz.isArray()) {

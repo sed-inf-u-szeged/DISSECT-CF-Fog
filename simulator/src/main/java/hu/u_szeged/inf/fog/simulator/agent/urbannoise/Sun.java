@@ -3,8 +3,6 @@ package hu.u_szeged.inf.fog.simulator.agent.urbannoise;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.SplittableRandom;
 
 public class Sun {
@@ -18,8 +16,6 @@ public class Sun {
     private final double peakHour;
     
     private final double gamma;
-    
-    private final Map<Long, Double> ampCache = new HashMap<>();
     
     private Sun(double sunrise, double sunset, double peekHour, double gamma) {
         this.sunrise = sunrise;
@@ -51,7 +47,8 @@ public class Sun {
         long dayMs   = ScenarioBase.aDayInMilisec;
         long dayIndex = Math.floorDiv(nowMs, dayMs);
         long msInDay  = Math.floorMod(nowMs, dayMs);
-        double hour   = sunrise + msInDay / 3_600_000.0; 
+        double hour   = msInDay / 3_600_000.0; 
+        //double hour = sunrise + msInDay / 3_600_000.0; 
 
         if (hour <= sunrise || hour >= sunset) {
             return 0.0;
