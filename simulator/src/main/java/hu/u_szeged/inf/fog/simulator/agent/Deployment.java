@@ -106,7 +106,8 @@ public class Deployment extends Timed {
                     
                     //System.out.println(this.app.getComponentName(util.getRight().resource.name));
                     if (this.app.getComponentName(util.getRight().resource.name).contains("Noise-Sensor")) {
-                        new NoiseSensor(app, sa, util.getRight(), 10_000, 60, 
+                        new NoiseSensor(app, sa, util.getRight(), app.configuration.get("samplingFreq").longValue(), 
+                            app.configuration.get("soundTreshold").intValue(), 
                             SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
                         new RemoteServer(sa, util.getRight());

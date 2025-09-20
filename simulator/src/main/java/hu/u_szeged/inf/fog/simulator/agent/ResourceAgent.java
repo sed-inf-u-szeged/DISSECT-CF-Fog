@@ -113,9 +113,10 @@ public class ResourceAgent {
             new DeferredEvent(1000 * 10) {
                 @Override
                 protected void eventAction() {
-                    if (reBroadcastCounter < AgentApplicationReader.appCount) {
+                    if (reBroadcastCounter < AgentApplicationReader.appCount * 2) {
                         broadcast(app, bcastMessageSize);
-                        reBroadcastCounter++;
+                        // TODO: this var is handled at RA level, not at app level (what if RA has more than one app)
+                        reBroadcastCounter++; 
                         SimLogger.logRun("Rebroadcast " + reBroadcastCounter + " for " + app.name);
                     }
                 }
@@ -142,7 +143,13 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-       
+        
+        /*
+        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
+            System.out.println(pair.getLeft().name + " " + pair.getRight().name);
+        }
+        */
+        
         generateUniqueOfferCombinations(agentResourcePairs, app);
         
         /* TODO: only for debugging, needs to be deleted
@@ -381,7 +388,8 @@ public class ResourceAgent {
         long totalMemoryRequested = 0L;
         long totalStorageRequested = 0L;
         ComputingAppliance commonNode = null;
-
+        
+        /* TODO: RA can offer resources from different providers
         for (Capacity cap : capacities) {
             totalCpuRequested += cap.cpu;
             totalMemoryRequested += cap.memory;
@@ -393,6 +401,7 @@ public class ResourceAgent {
                 throw new IllegalArgumentException(
                         "All capacities for a single ResourceAgent must belong to the same ComputingAppliance node");
             }
+           
         }
 
         double maxCpu = commonNode.iaas.getCapacities().getRequiredCPUs();
@@ -402,6 +411,7 @@ public class ResourceAgent {
         if (totalCpuRequested > maxCpu || totalMemoryRequested > maxMemory || totalStorageRequested > maxStorage) {
             throw new IllegalArgumentException("Requested resources exceed available capacities of " + commonNode.name);
         }
+        */
 
         this.capacities.addAll(capacities);
     }

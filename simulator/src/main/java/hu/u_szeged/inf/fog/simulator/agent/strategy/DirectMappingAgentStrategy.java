@@ -20,14 +20,14 @@ public class DirectMappingAgentStrategy extends AgentStrategy {
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         
         List<Pair<ResourceAgent, Resource>> agentResourcePair = new ArrayList<>();
+        
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
             String resourceName = entry.getKey();
             String ra = entry.getValue();
 
             if (agent.name.equals(ra)) {
-        
+
                 for (Resource resource : resources) {
-          
                     if (resource.name.equals(resourceName)) {
                         for (Capacity c : agent.capacities) {
                             if (c.cpu >= resource.cpu) {

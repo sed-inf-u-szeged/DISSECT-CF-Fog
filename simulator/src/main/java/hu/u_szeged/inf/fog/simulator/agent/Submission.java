@@ -8,6 +8,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
+import java.util.HashMap;
 import java.util.List;
 
 public class Submission extends Timed {
@@ -21,7 +22,7 @@ public class Submission extends Timed {
     private int delay;
 
     
-    public Submission(String filepath, int bcastMessageSize, int delay) {
+    public Submission(String filepath, int bcastMessageSize, int delay, HashMap<String, Number> configuration) {
     
         SimLogger.logRun("Application description " + filepath 
             + " was submitted at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
@@ -31,6 +32,7 @@ public class Submission extends Timed {
         }
         
         this.app = AgentApplicationReader.readAgentApplications(filepath);
+        this.app.configuration = configuration;
         this.bcastMessageSize = bcastMessageSize;
         int random = SeedSyncer.centralRnd.nextInt(ResourceAgent.resourceAgents.size());
         this.agent = ResourceAgent.resourceAgents.get(random);

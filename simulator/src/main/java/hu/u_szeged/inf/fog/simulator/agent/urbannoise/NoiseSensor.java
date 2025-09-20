@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.urbannoise;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -27,6 +28,8 @@ public class NoiseSensor extends Timed {
     
     public static long timeOnNetwork;
     
+    public long underMigration;
+    
     SwarmAgent sa;
     
     public Utilisation util;
@@ -45,22 +48,29 @@ public class NoiseSensor extends Timed {
     
     public boolean inside;
     
-    public boolean noDirectSun;
+    public boolean sunExposed;
     
     
     public NoiseSensor(AgentApplication app, SwarmAgent sa, 
-            Utilisation util, long freq, int threshold, boolean inside, boolean noDirectSun) {
+            Utilisation util, long freq, int threshold, boolean inside, boolean sunExposed) {
         this.sa = sa;
         this.util = util;
         this.pm = util.vm.getResourceAllocation().getHost();
         this.threshold = threshold;
         this.app = app;
-        this.cpuTemp = 70.0;
+        this.cpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
         this.filesToBeProcessed = new ArrayList<>();
         this.inside = inside;
-        this.noDirectSun = noDirectSun;
-        subscribe(freq);
-        sa.registerComponent(this);        
+        this.sunExposed = sunExposed;
+        sa.registerComponent(this);    
+       
+        new DeferredEvent(SeedSyncer.centralRnd.nextInt(10) * 1000) {
+
+            @Override
+            protected void eventAction() {
+                subscribe(freq);
+            }
+        };
     }
 
     @Override
@@ -68,9 +78,10 @@ public class NoiseSensor extends Timed {
         this.adjustTemperatureByEnv();
         
         String filename = Timed.getFireCount() + "-" + app.getComponentName(util.resource.name);
-        StorageObject so = new StorageObject(filename, 655360, false);
+        long fileSize = this.app.configuration.get("soundFileSize").longValue();
+        StorageObject so = new StorageObject(filename, fileSize, false);
         this.pm.localDisk.registerObject(so);
-        generatedFileSize += 655_360;
+        generatedFileSize += fileSize;
         generatedFiles++;
         
         int value = randomSoundValue();
@@ -80,7 +91,7 @@ public class NoiseSensor extends Timed {
         } else {
             RemoteServer rs = findRemoteServer();
             this.pm.localDisk.deregisterObject(so);
-            so.size = 100;
+            so.size = this.app.configuration.get("resFileSize").longValue();
             this.pm.localDisk.registerObject(so);
             long actualTime = Timed.getFireCount();
             try {
@@ -107,6 +118,7 @@ public class NoiseSensor extends Timed {
         }  
     }
     
+    // TODO: refactor this considering active cooling
     private void adjustTemperatureByEnv() {
         final double sun = Sun.getInstance().getSunStrength(); 
         final double heatOutside = 0.03;
@@ -120,7 +132,7 @@ public class NoiseSensor extends Timed {
 
         if (sun > 0.01) { 
             if (SeedSyncer.centralRnd.nextDouble() < heatingProbability) {
-                if (this.noDirectSun) {
+                if (this.sunExposed) {
                     delta = heatShade * sun * sun;
                 } else if (this.inside) {
                     delta = heatInside * sun * sun;
@@ -138,11 +150,14 @@ public class NoiseSensor extends Timed {
 
         this.cpuTemp += delta * 0.5;
 
-        if (this.cpuTemp < 70.0) {
-            this.cpuTemp = 70.0;
+        double minCpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
+        double maxCpuTemp = this.app.configuration.get("maxCpuTemp").doubleValue();
+        
+        if (this.cpuTemp < minCpuTemp) {
+            this.cpuTemp = minCpuTemp;
         }
-        if (this.cpuTemp > 100.0) {
-            this.cpuTemp = 100.0;
+        if (this.cpuTemp > maxCpuTemp) {
+            this.cpuTemp = maxCpuTemp;
         }
     }
 
@@ -155,6 +170,7 @@ public class NoiseSensor extends Timed {
                 try {
                     successfullyTransferred.add(so);
                     long actualTime = Timed.getFireCount();
+                    this.underMigration++;
                     this.pm.localDisk.requestContentDelivery(so.id, ns.pm.localDisk, new ConsumptionEventAdapter() {
                         
                         @Override
@@ -162,6 +178,7 @@ public class NoiseSensor extends Timed {
                             offloadedFiles++;
                             NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
                             ns.filesToBeProcessed.add(so);
+                            underMigration--;
                             pm.localDisk.deregisterObject(so);
                         }
                     });
@@ -185,9 +202,9 @@ public class NoiseSensor extends Timed {
 
     private void startSoundClassification() {
        
-        if (this.cpuTemp <= 95.0 && this.filesToBeProcessed.size() > 0) {
+        if (this.cpuTemp <= this.app.configuration.get("cpuTempTreshold").doubleValue() && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
-            this.cpuTemp += 0.005;
+            this.cpuTemp += 0.005; // TODO: refactor
            
             try {
                 this.util.vm.newComputeTask(1_700 * util.utilisedCpu, ResourceConsumption.unlimitedProcessing, 
@@ -196,10 +213,9 @@ public class NoiseSensor extends Timed {
                             @Override
                             public void conComplete() {
                                 startSoundClassification();
-                                cpuTemp += 0.005;
                                 RemoteServer rs = findRemoteServer();
                                 pm.localDisk.deregisterObject(so);
-                                so.size = 100;
+                                so.size = app.configuration.get("resFileSize").longValue();
                                 pm.localDisk.registerObject(so);
                                 long actualTime = Timed.getFireCount();
                                 try {
@@ -211,8 +227,6 @@ public class NoiseSensor extends Timed {
                                                 processedFiles++;
                                                 NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
                                                 pm.localDisk.deregisterObject(so.id);
-                                                
-                                                
                                             }
                                             
                                         });
@@ -225,7 +239,7 @@ public class NoiseSensor extends Timed {
             } catch (NetworkException e) {
                 e.printStackTrace();
             } 
-        } else if (cpuTemp > 95.0 && this.isClassificationRunning) {
+        } else if (cpuTemp > this.app.configuration.get("cpuTempTreshold").doubleValue() && this.isClassificationRunning) {
             SimLogger.logRun(this.sa.app.getComponentName(this.util.resource.name) + "'classifier was turned off at: "
                 + Timed.getFireCount() / 1000.0 / 60.0  + " min. due to large temperature");
             this.isClassificationRunning = false;
@@ -234,7 +248,10 @@ public class NoiseSensor extends Timed {
     }
 
     private int randomSoundValue() {
-        return SeedSyncer.centralRnd.nextInt(130 - 30 + 1) + 30;
+        return SeedSyncer.centralRnd.nextInt(
+            this.app.configuration.get("maxSoundLevel").intValue() 
+            - this.app.configuration.get("minSoundLevel").intValue() + 1) 
+            + this.app.configuration.get("minSoundLevel").intValue();
     }
     
     private int logNormalSoundValue() {
@@ -242,10 +259,8 @@ public class NoiseSensor extends Timed {
         double stdDev = 0.5;
 
         double logNormal = Math.exp(mean + stdDev * SeedSyncer.centralRnd.nextGaussian());
-
         double scaled = Math.min(130, Math.max(30, logNormal));
 
         return (int) scaled;
     }
-    
 }

@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
@@ -53,14 +52,33 @@ public class AgentTestUNC {
     public static void main(String[] args) throws NetworkException, IOException {
         
         SimLogger.setLogging(1, true);
-        
         SeedSyncer.modifySeed(9876543210L);
         
+        /** general config */
         long simLength = 1 * 24 * 60 * 60 * 1000; 
         int numOfApps = 1;
- 
+        
+        /** app config */
+        HashMap<String, Number> configuration = new HashMap<>();
+        	configuration.put("samplingFreq", 10_000);   // 10 sec.
+        	configuration.put("soundFileSize", 655_360); // 640 kB
+        	configuration.put("resFileSize", 1024);      // 1 kB
+        	configuration.put("minSoundLevel", 30);		 // dB
+        	configuration.put("maxSoundLevel", 130);	 // dB
+        	configuration.put("soundTreshold", 70);		 // dB
+        	configuration.put("cpuTimeWindow", 600_000); // 10 min.
+        	configuration.put("minCpuTemp", 55);		 // ℃
+        	configuration.put("cpuTempTreshold", 80);	 // ℃
+        	configuration.put("maxCpuTemp", 85);		 // ℃
+        	configuration.put("minContainerCount", 2);	 // pc.
+        	configuration.put("cpuLoadScaleUp", 70);	 // %
+        	configuration.put("cpuLoadScaleDown", 30);   // %
+        	
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
+        
         /** ranking config */
-        //ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
+        // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
         ResourceAgent.rankingScriptDir = "/home/markus/Documents/projects/swarm-deployment/for_simulator";
                 
         ResourceAgent.rankingMethodName = "rank_no_re";
@@ -71,124 +89,147 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         // ResourceAgent.rankingMethodName = "random";
         
-        /** applications */
-        //Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
-        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
-        
-        /** nodes */
+        /** nodes and RPis */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
-        double capacity = 256 * numOfApps; 
-        
-        for(int i = 0; i < numOfApps; i++) {
-        	//for(int j = 0; j < 5; j++) {
-        	    ComputingAppliance node1 = new ComputingAppliance(
-                    createNode("Node1" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
-                    new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
+        for (int i = 1; i <= numOfApps; i++) {
+        	ComputingAppliance rpi1 = new ComputingAppliance(
+               createNode("RPi1" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 12_500, 5, sharedLatencyMap),
+               new GeoLocation(45.51, 13.79), "EU", "", true); 
 
-                ComputingAppliance node2 = new ComputingAppliance(
-                    createNode("Node2" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
-                    new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
+            ComputingAppliance rpi2 = new ComputingAppliance(
+               createNode("RPi2" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 6_250, 10, sharedLatencyMap),
+               new GeoLocation(45.52, 13.69), "EU", "", true); 
 
-                ComputingAppliance node3 = new ComputingAppliance(
-                    createNode("Node3" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
-                    new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
+            ComputingAppliance rpi3 = new ComputingAppliance(
+               createNode("RPi3" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 10_000, 6, sharedLatencyMap),
+               new GeoLocation(45.58, 13.66), "", "", true); 
                         
-                ComputingAppliance node4 = new ComputingAppliance(
-                    createNode("Node4" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
-                    new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
+            ComputingAppliance rpi4 = new ComputingAppliance(
+               createNode("RPi4" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 15_000, 9, sharedLatencyMap),
+               new GeoLocation(45.46, 13.81), "", "", true); 
                       
-                ComputingAppliance node5 = new ComputingAppliance(
-                    createNode("Node5" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
-                    new GeoLocation(40.71, -74.00), "EU", "AWS", true); // New York
+            ComputingAppliance rpi5 = new ComputingAppliance(
+               createNode("RPi5" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 9_500, 7, sharedLatencyMap),
+               new GeoLocation(45.53, 13.71), "", "", true); 
                 
-                ComputingAppliance node9 = new ComputingAppliance(
-                        createNode("Node9" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 180, 2200, 12_500, 100, sharedLatencyMap),
-                        new GeoLocation(47.50, 19.08), "EU", "AWS", true); // Budapest
+            ComputingAppliance rpi6 = new ComputingAppliance(
+               createNode("RPi6" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 8_750, 8, sharedLatencyMap),
+               new GeoLocation(45.58, 13.74), "", "", true); 
 
-                    ComputingAppliance node10 = new ComputingAppliance(
-                        createNode("Node10" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 225, 3300, 25_000, 50, sharedLatencyMap),
-                        new GeoLocation(48.86, 2.35), "EU", "Azure", true); // Paris
+            ComputingAppliance rpi7 = new ComputingAppliance(
+               createNode("RPi7" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 15_000, 10, sharedLatencyMap),
+               new GeoLocation(45.50, 13.70), "", "", true); 
 
-                    ComputingAppliance node11 = new ComputingAppliance(
-                        createNode("Node11" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 50, 170, 3400, 62_500, 20, sharedLatencyMap),
-                        new GeoLocation(52.52, 13.40), "EU", "AWS", true); // Berlin
+            ComputingAppliance rpi8 = new ComputingAppliance(
+               createNode("RPi8" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 62_500, 9, sharedLatencyMap),
+               new GeoLocation(45.62, 13.76), "", "", true); 
                             
-                    ComputingAppliance node12 = new ComputingAppliance(
-                        createNode("Node12" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 55, 210, 3200, 125_000, 30, sharedLatencyMap),
-                        new GeoLocation(41.90, 12.50), "EU", "Azure", true); // Rome
+            ComputingAppliance rpi9 = new ComputingAppliance(
+               createNode("RPi9" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 125_000, 8, sharedLatencyMap),
+               new GeoLocation(45.59, 13.67), "", "", true); 
                           
-                    ComputingAppliance node13 = new ComputingAppliance(
-                        createNode("Node13" + i, 5, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 45, 190, 500, 6_250, 80, sharedLatencyMap),
-                        new GeoLocation(40.71, -74.00), "EU", "AWS", true);
+            ComputingAppliance rpi10 = new ComputingAppliance(
+               createNode("RPi10" + i, 5, 1, 8 * 1_073_741_824L, 256 * 1_073_741_824L, 2, 4, 15, 12_500, 8, sharedLatencyMap),
+               new GeoLocation(45.52, 13.66), "", "", true); 
                 
-                new EnergyDataCollector("Node1" + i, node1.iaas, true);
-                new EnergyDataCollector("Node2" + i, node2.iaas, true);
-                new EnergyDataCollector("Node3" + i, node3.iaas, true);
-                new EnergyDataCollector("Node4" + i, node4.iaas, true);
-                new EnergyDataCollector("Node5" + i, node5.iaas, true);
-                new EnergyDataCollector("Node9" + i, node1.iaas, true);
-                new EnergyDataCollector("Node10" + i, node2.iaas, true);
-                new EnergyDataCollector("Node11" + i, node3.iaas, true);
-                new EnergyDataCollector("Node12" + i, node4.iaas, true);
-                new EnergyDataCollector("Node13" + i, node5.iaas, true);
-        	//}
-        }
+            new EnergyDataCollector("RPi1" + i, rpi1.iaas, true);
+            new EnergyDataCollector("RPi2" + i, rpi2.iaas, true);
+            new EnergyDataCollector("RPi3" + i, rpi3.iaas, true);
+            new EnergyDataCollector("RPi4" + i, rpi4.iaas, true);
+            new EnergyDataCollector("RPi5" + i, rpi5.iaas, true);
+            new EnergyDataCollector("RPi6" + i, rpi6.iaas, true);
+            new EnergyDataCollector("RPi7" + i, rpi7.iaas, true);
+            new EnergyDataCollector("RPi8" + i, rpi8.iaas, true);
+            new EnergyDataCollector("RPi9" + i, rpi9.iaas, true);
+            new EnergyDataCollector("RPi10" + i, rpi10.iaas, true);
+       }
         
-        ComputingAppliance node6 = new ComputingAppliance(
-            createNode("Node6", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
-            new GeoLocation(34.05, -118.25), "US", "Azure", false); // Los Angeles
+       ComputingAppliance node1 = new ComputingAppliance(
+           createNode("Node1", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           new GeoLocation(59.33, 18.07), "EU", "Azure", false); 
          
-        ComputingAppliance node7 = new ComputingAppliance(
-            createNode("Node7", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
-            new GeoLocation(37.77, -122.42), "US", "AWS", false); // San Francisco
+       ComputingAppliance node2 = new ComputingAppliance(
+           createNode("Node2", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           new GeoLocation(53.33, -6.25), "EU", "AWS", false); // San Francisco
 
-        ComputingAppliance node8 = new ComputingAppliance(
-            createNode("Node8", capacity, 1, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
-            new GeoLocation(41.88, -87.63), "US", "Azure", false); // Chicago
+       ComputingAppliance node3 = new ComputingAppliance(
+           createNode("Node3", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           new GeoLocation(51.51, -0.13), "EU", "Azure", false); // Chicago
+        
+       ComputingAppliance node4 = new ComputingAppliance(
+           createNode("Node4", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           new GeoLocation(48.86, 2.35), "EU", "AWS", false); // Los Angeles
+             
+       ComputingAppliance node5 = new ComputingAppliance(
+           createNode("Node5", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           new GeoLocation(50.11, 8.68), "EU", "Azure", false); // San Francisco
+
+       ComputingAppliance node6 = new ComputingAppliance(
+           createNode("Node6", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           new GeoLocation(45.46, 9.19), "EU", "AWS", false); // Chicago
             
-        new EnergyDataCollector("Node6", node6.iaas, true);
-        new EnergyDataCollector("Node7", node7.iaas, true);
-        new EnergyDataCollector("Node8", node8.iaas, true);
+       ComputingAppliance node7 = new ComputingAppliance(
+           createNode("Node7", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           new GeoLocation(41.39, 2.17), "EU", "Azure", false); // Los Angeles
+                 
+       ComputingAppliance node8 = new ComputingAppliance(
+           createNode("Node8", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           new GeoLocation(52.37, 4.90), "EU", "AWS", false); // San Francisco
 
-        /** agents */
-        VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
-        AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
+       ComputingAppliance node9 = new ComputingAppliance(
+           createNode("Node9", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           new GeoLocation(39.04, -77.49), "US", "Azure", false); // Chicago
+       
+       ComputingAppliance node10 = new ComputingAppliance(
+           createNode("Node10", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           new GeoLocation(37.34, -121.89), "US", "AWS", false); // Los Angeles
+            
+       new EnergyDataCollector("Node1", node1.iaas, true);
+       new EnergyDataCollector("Node2", node2.iaas, true);
+       new EnergyDataCollector("Node3", node3.iaas, true);
+       new EnergyDataCollector("Node4", node4.iaas, true);
+       new EnergyDataCollector("Node5", node5.iaas, true);
+       new EnergyDataCollector("Node6", node6.iaas, true);
+       new EnergyDataCollector("Node7", node7.iaas, true);
+       new EnergyDataCollector("Node8", node8.iaas, true);
+       new EnergyDataCollector("Node9", node9.iaas, true);
+       new EnergyDataCollector("Node10", node10.iaas, true);
+
+       /** agents */
+       VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
+       AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         
-        Map<String, String> mapping = new HashMap<>();
+       Map<String, String> mapping = new HashMap<>();
         
-        ResourceAgent ra1 = new ResourceAgent("Agent-1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-        ResourceAgent ra2 = new ResourceAgent("Agent-2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-        ResourceAgent ra3 = new ResourceAgent("Agent-3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-        ResourceAgent ra4 = new ResourceAgent("Agent-4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-        ResourceAgent ra5 = new ResourceAgent("Agent-5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+       ResourceAgent ra1 = new ResourceAgent("Agent1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+       ResourceAgent ra2 = new ResourceAgent("Agent2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+       ResourceAgent ra3 = new ResourceAgent("Agent3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+       ResourceAgent ra4 = new ResourceAgent("Agent4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+       ResourceAgent ra5 = new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
         		
-        for(int i = 0; i < numOfApps; i++) {
+        for(int i = 1; i <= numOfApps; i++) {
+        	mapping.put("UNC-" + i + "-Res-1", "Agent1");
+        	mapping.put("UNC-" + i + "-Res-2", "Agent2");
+        	mapping.put("UNC-" + i + "-Res-3", "Agent3");
+        	mapping.put("UNC-" + i + "-Res-4", "Agent4");
+        	mapping.put("UNC-" + i + "-Res-5", "Agent5");
+        	mapping.put("UNC-" + i + "-Res-6", "Agent1");
+        	mapping.put("UNC-" + i + "-Res-7", "Agent2");
+        	mapping.put("UNC-" + i + "-Res-8", "Agent3");
+        	mapping.put("UNC-" + i + "-Res-9", "Agent4");
+        	mapping.put("UNC-" + i + "-Res-10", "Agent5");
         	
-        	mapping.put("UNC-" + i + "-Res-1", "Agent-1");
-        	mapping.put("UNC-" + i + "-Res-2", "Agent-2");
-        	mapping.put("UNC-" + i + "-Res-3", "Agent-3");
-        	mapping.put("UNC-" + i + "-Res-4", "Agent-4");
-        	mapping.put("UNC-" + i + "-Res-5", "Agent-5");
-        	
-        	mapping.put("UNC-" + i + "-Res-6", "Agent-1");
-        	mapping.put("UNC-" + i + "-Res-7", "Agent-2");
-        	mapping.put("UNC-" + i + "-Res-8", "Agent-3");
-        	mapping.put("UNC-" + i + "-Res-9", "Agent-4");
-        	mapping.put("UNC-" + i + "-Res-10", "Agent-5");
-        	
-        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node1" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node2" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node3" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node4" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node5" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
-        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node9" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node10" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node11" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node12" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("Node13" + i), 5, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
-        
+        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi1" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi2" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi3" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi4" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi5" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi6" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi7" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi8" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi9" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi10" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
         }
         
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc);
@@ -197,14 +238,25 @@ public class AgentTestUNC {
         ra4.initResourceAgent(resourceAgentVa, resourceAgentArc);
         ra5.initResourceAgent(resourceAgentVa, resourceAgentArc);
             
-        ResourceAgent ra6 = new ResourceAgent("Agent-6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node6, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+                new Capacity(node2, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
-        ResourceAgent ra7 = new ResourceAgent("Agent-7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node7, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node3, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+                new Capacity(node4, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
-        ResourceAgent ra8 = new ResourceAgent("Agent-8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node8, capacity, (long) capacity * 1_073_741_824L, (long) capacity * 1_073_741_824L));
+        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node5, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+                new Capacity(node6, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
+        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node7, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+                new Capacity(node8, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
+        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node9, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+                new Capacity(node10, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
                 
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
@@ -217,11 +269,11 @@ public class AgentTestUNC {
         Deployment.setImageRegistry(Deployment.registryService);
 
         /** submitting applications */
-            Files.list(inputDir)
-                .filter(file -> file.toString().endsWith(".json"))
-                .forEach(file -> {
-                         new Submission(file.toString(), 2048, 0);
-                 });
+        Files.list(inputDir)
+            .filter(file -> file.toString().endsWith(".json"))
+            .forEach(file -> {
+                new Submission(file.toString(), 2048, 0, configuration);
+        });
             
         Sun.init(6, 20, 13, 1.5);
         CsvExporter csvExporter = new CsvExporter(Sun.getInstance());
@@ -330,7 +382,6 @@ public class AgentTestUNC {
         
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
         
-
         long usedStorage = 0;
         int files = 0;
         Repository r = null;
@@ -348,6 +399,8 @@ public class AgentTestUNC {
         		}
         	}
         }
+        
+        /*
         System.out.println(usedStorage + " " + files + " " + usedStorage / files);
         System.out.println("used: " + (r.getMaxStorageCapacity()-r.getFreeStorageCapacity()));
         System.out.println((r.getMaxStorageCapacity()-r.getFreeStorageCapacity())-usedStorage);
@@ -356,7 +409,7 @@ public class AgentTestUNC {
         		System.out.println(so);
         	}
         }
-        /*
+     
         for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes(ca.name + ":");
             SimLogger.logRes("\t Contents:");
@@ -425,6 +478,8 @@ class CsvExporter extends Timed {
     File noiseSensorTemperature;
     
     File noOfFilesToProcess;
+    
+    File noOfFileMigrations;
         
     public CsvExporter(Sun sun) {
     	this.fileSunIntensity = new File(ScenarioBase.resultDirectory + "/sun-intensity.csv");
@@ -432,6 +487,7 @@ class CsvExporter extends Timed {
     	this.noOfNoiseSensorClassifiers = new File(ScenarioBase.resultDirectory + "/no-of-noise-sensor-classifiers.csv");
     	this.noiseSensorTemperature = new File(ScenarioBase.resultDirectory + "/noise-sensor-temperature.csv");
     	this.noOfFilesToProcess = new File(ScenarioBase.resultDirectory + "/no-of-files-to-process.csv");
+    	this.noOfFileMigrations = new File(ScenarioBase.resultDirectory + "/no-of-file-migrations.csv");
     	
         this.sun = sun;
         subscribe(10_000);
@@ -458,6 +514,12 @@ class CsvExporter extends Timed {
 			newContent = header + System.lineSeparator() + content;
 			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
 			
+			csv = Paths.get(this.noOfFileMigrations.getAbsolutePath());
+			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
+			header = "time,no-of-file-migrations";
+			newContent = header + System.lineSeparator() + content;
+			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
+			
 			csv = Paths.get(this.noiseSensorTemperature.getAbsolutePath());
 			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
 
@@ -481,7 +543,7 @@ class CsvExporter extends Timed {
 		}        
         
     	AgentVisualiser.visualise(fileSunIntensity.toPath(), avgCpuLoad.toPath(), noOfNoiseSensorClassifiers.toPath(),
-    			this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath());
+    			this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath());
     }
 
     @Override
@@ -534,6 +596,24 @@ class CsvExporter extends Timed {
                     row.append(String.format(Locale.ROOT, "%.3f", time));
                     row.append(",");
         			row.append(String.format(Locale.ROOT, "%d", sa.noOfFilesToProcess()));
+                    writer.println(row.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        	
+        	// no. of file migrations
+        	try (PrintWriter writer = new PrintWriter(new FileWriter(noOfFileMigrations.getAbsolutePath(), true))) {
+        			StringBuilder row = new StringBuilder();
+                    row.append(String.format(Locale.ROOT, "%.3f", time));
+                    row.append(",");
+                    int i = 0;
+                    for (Object o : sa.components) {
+                        if (o instanceof NoiseSensor) {
+                            NoiseSensor ns = (NoiseSensor) o;
+                            i += ns.underMigration;
+                        }
+                    }
+                    row.append(String.format(Locale.ROOT, "%d", i));
                     writer.println(row.toString());
             } catch (IOException e) {
                 e.printStackTrace();
