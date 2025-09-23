@@ -18,7 +18,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
@@ -43,7 +42,6 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
-import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -60,7 +58,7 @@ public class AgentTestUNC {
         
         /** general config */
         long simLength = 1 * 24 * 60 * 60 * 1000; 
-        int numOfApps = 10;
+        int numOfApps = 1;
         
         /** app config */
         HashMap<String, Number> configuration = new HashMap<>();
@@ -78,8 +76,8 @@ public class AgentTestUNC {
         	configuration.put("cpuLoadScaleUp", 70);	 // %
         	configuration.put("cpuLoadScaleDown", 30);   // %
         	
-        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
-        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");
+         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");
         
         /** ranking config */
         // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
@@ -150,7 +148,7 @@ public class AgentTestUNC {
        }
         
        ComputingAppliance node1 = new ComputingAppliance(
-           createNode("Node1", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           createNode("Node1", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 200, 3550, 100_000, 15, sharedLatencyMap),
            new GeoLocation(59.33, 18.07), "EU", "Azure", false); 
          
        ComputingAppliance node2 = new ComputingAppliance(
@@ -203,63 +201,65 @@ public class AgentTestUNC {
        /** agents */
        VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L); 
        AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
-        
+       
        Map<String, String> mapping = new HashMap<>();
         
-       ResourceAgent ra1 = new ResourceAgent("Agent1", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-       ResourceAgent ra2 = new ResourceAgent("Agent2", 0.00000278, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-       ResourceAgent ra3 = new ResourceAgent("Agent3", 0.00013889, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-       ResourceAgent ra4 = new ResourceAgent("Agent4", 0.00037778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-       ResourceAgent ra5 = new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
-        		
+       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+  		
         for(int i = 1; i <= numOfApps; i++) {
-        	mapping.put("UNC-" + i + "-Res-1", "Agent1");
-        	mapping.put("UNC-" + i + "-Res-2", "Agent2");
-        	mapping.put("UNC-" + i + "-Res-3", "Agent3");
-        	mapping.put("UNC-" + i + "-Res-4", "Agent4");
-        	mapping.put("UNC-" + i + "-Res-5", "Agent5");
-        	mapping.put("UNC-" + i + "-Res-6", "Agent1");
-        	mapping.put("UNC-" + i + "-Res-7", "Agent2");
-        	mapping.put("UNC-" + i + "-Res-8", "Agent3");
-        	mapping.put("UNC-" + i + "-Res-9", "Agent4");
-        	mapping.put("UNC-" + i + "-Res-10", "Agent5");
+        	mapping.put("UNC-" + i + "-Res-1", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-2", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-3", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-4", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-5", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-6", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-7", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-8", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-9", "Agent0");
+        	mapping.put("UNC-" + i + "-Res-10", "Agent0");
         	
-        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi1" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi2" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi3" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi4" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi5" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra1.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi6" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra2.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi7" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra3.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi8" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra4.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi9" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
-        	ra5.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi10" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi1" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi2" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi3" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi4" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi5" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi6" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi7" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi8" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi9" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
+        	ra0.registerCapacity(new Capacity(ComputingAppliance.findApplianceByName("RPi10" + i), 5, 8 * 1_073_741_824L, 256 * 1_073_741_824L));
         }
         
-        ra1.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        ra2.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        ra3.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        ra4.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        ra5.initResourceAgent(resourceAgentVa, resourceAgentArc);
-            
-        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+        ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
+
+        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
+        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node2, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
-        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node3, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node3, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
+        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
                 new Capacity(node4, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
-        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node5, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+                new Capacity(node5, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+       
+        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node6, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
-        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
-                new Capacity(node7, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
+        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node7, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
+        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
                 new Capacity(node8, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         
+        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+                new Capacity(node9, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+        
         new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
-                new Capacity(node9, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L),
                 new Capacity(node10, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
                 
         /** Image service */
@@ -278,8 +278,8 @@ public class AgentTestUNC {
                 .collect(Collectors.toList());
 
         int i = 0;
-        // int[] delay = {0}; // submission delay
-        int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150}; 
+        int[] delay = {0}; // submission delay
+        //int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150}; 
 
         for (Path file : appFiles) {
             new DeferredEvent(delay[i++] * 60 * 1000) {
@@ -370,7 +370,7 @@ public class AgentTestUNC {
         SimLogger.logRes("Number of processed files (pc.): " + NoiseSensor.processedFiles);
         
         long soundFilesNs = 0;
-        long soundFilesRs = 0;
+        // long soundFilesRs = 0;
         for(SwarmAgent sa : SwarmAgent.allSwarmAgents) {
         	for(Object o : sa.components) {
                 if (o.getClass().equals(NoiseSensor.class)) {
@@ -384,14 +384,16 @@ public class AgentTestUNC {
                     }
                     
                 } else {
+                	/*
                     RemoteServer rs = (RemoteServer) o;
-                    //System.out.println("RS:");
-                    //System.out.println(rs.pm.localDisk.contents().size()); 
+                    System.out.println("RS:");
+                    System.out.println(rs.pm.localDisk.contents().size()); 
                     for (StorageObject so : rs.pm.localDisk.contents()) {
                         if(so.id.contains("Noise-Sensor")) {
                             soundFilesRs++;
                         }
                     }
+                    */
                 }
             }
         }
@@ -400,7 +402,7 @@ public class AgentTestUNC {
         //SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
         
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
-        
+        /*
         long usedStorage = 0;
         int files = 0;
         Repository r = null;
@@ -419,7 +421,6 @@ public class AgentTestUNC {
         	}
         }
         
-        /*
         System.out.println(usedStorage + " " + files + " " + usedStorage / files);
         System.out.println("used: " + (r.getMaxStorageCapacity()-r.getFreeStorageCapacity()));
         System.out.println((r.getMaxStorageCapacity()-r.getFreeStorageCapacity())-usedStorage);
