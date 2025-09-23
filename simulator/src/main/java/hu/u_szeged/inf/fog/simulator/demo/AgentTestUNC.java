@@ -12,10 +12,14 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
@@ -56,7 +60,7 @@ public class AgentTestUNC {
         
         /** general config */
         long simLength = 1 * 24 * 60 * 60 * 1000; 
-        int numOfApps = 1;
+        int numOfApps = 10;
         
         /** app config */
         HashMap<String, Number> configuration = new HashMap<>();
@@ -74,8 +78,8 @@ public class AgentTestUNC {
         	configuration.put("cpuLoadScaleUp", 70);	 // %
         	configuration.put("cpuLoadScaleDown", 30);   // %
         	
-        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
-        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples2");
+        // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");
         
         /** ranking config */
         // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
@@ -269,12 +273,24 @@ public class AgentTestUNC {
         Deployment.setImageRegistry(Deployment.registryService);
 
         /** submitting applications */
-        Files.list(inputDir)
-            .filter(file -> file.toString().endsWith(".json"))
-            .forEach(file -> {
-                new Submission(file.toString(), 2048, 0, configuration);
-        });
-            
+        List<Path> appFiles = Files.list(inputDir)
+                .filter(f -> f.toString().endsWith(".json"))
+                .collect(Collectors.toList());
+
+        int i = 0;
+        // int[] delay = {0}; // submission delay
+        int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150}; 
+
+        for (Path file : appFiles) {
+            new DeferredEvent(delay[i++] * 60 * 1000) {
+
+                @Override
+                protected void eventAction() {
+                    new Submission(file.toString(), 2048, 0, configuration);
+                }
+            };
+        }
+        
         Sun.init(6, 20, 13, 1.5);
         CsvExporter csvExporter = new CsvExporter(Sun.getInstance());
         long starttime = System.nanoTime();       
@@ -335,11 +351,14 @@ public class AgentTestUNC {
         SimLogger.logRes("Total energy (kWh): " + totalEnergy);
         
         SimLogger.logRes("Average number of offers (pc.): " + (avgOffers / AgentApplication.agentApplications.size()));
-
+        
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 
         SimLogger.logRes("Size of generated files (MB): " + NoiseSensor.generatedFileSize / 1_048_576);
         
+        SimLogger.logRes("Time above the temperature threshold (%): " 
+                + AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), configuration.get("cpuTempTreshold").doubleValue()));
+
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + (NoiseSensor.timeOnNetwork / 1000.0) / NoiseSensor.generatedFiles);	
         
         SimLogger.logRes("Number of sound events (pc.): " + NoiseSensor.generatedFiles);
@@ -427,6 +446,43 @@ public class AgentTestUNC {
             SimLogger.logRes("\t" + so);
         }
         */
+    }
+    
+    private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {
+    	List<String> lines;
+		try {
+			lines = java.nio.file.Files.readAllLines(path);
+			String[] header = lines.get(0).split(Character.toString(','));
+	    	
+	    	int n = header.length - 1; 
+	    	String[] deviceNames = java.util.Arrays.copyOfRange(header, 1, header.length);
+	    	
+	    	long[] total = new long[n];
+	    	long[] below = new long[n];
+	    	
+	    	for (int li = 1; li < lines.size(); li++) {
+	    	    String[] p = lines.get(li).split(Character.toString(','));
+	    	    for (int i = 0; i < n; i++) {
+	    	        double v = Double.parseDouble(p[i + 1].trim());
+	    	        total[i]++;
+	    	        if (v < cpuThreshold) below[i]++;
+	    	    }
+	    	}
+	    	
+	    	Map<String, Double> percentPerDevice = new LinkedHashMap<>();
+	    	double sum = 0.0;
+
+	    	for (int i = 0; i < n; i++) {
+	    	    double pct = 100.0 * below[i] / total[i];
+	    	    percentPerDevice.put(deviceNames[i], pct); 
+	    	    sum += pct;
+	    	}
+
+	    	return (sum / n);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}	
+		return -1;
     }
     
     static IaaSService createNode(String name, double cpu, double perCoreProcessing, long memory, long storage, double minpower, 
