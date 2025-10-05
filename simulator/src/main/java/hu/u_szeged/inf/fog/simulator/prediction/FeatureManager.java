@@ -1,15 +1,16 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
-import hu.u_szeged.inf.fog.simulator.prediction.communication.ServerSocket;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.SocketMessage;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -19,6 +20,7 @@ import org.json.JSONObject;
 public class FeatureManager {
     
     private static FeatureManager featureManager;
+    @Getter
     private List<Feature> features;
 
     /**
@@ -42,12 +44,14 @@ public class FeatureManager {
 
     /**
      * Adds a feature to the list if it does not already exist.
+     * If database enabled then it also creates the tables for the feature.
      *
      * @param feature the feature to be added
      */
     public FeatureManager addFeature(Feature feature) {
         if (getFeatureByName(feature.getName()) == null) {
             features.add(feature);
+            PredictionConfigurator.sqLiteManager.createTable(feature.getName());
         }
         return this;
     }
@@ -201,44 +205,55 @@ public class FeatureManager {
      * Sends features for prediction.
      *
      * @param features the list of features to predict
-     * @param windowSize the size of the window for prediction
      * @return the list of predictions
      */
-    public List<Prediction> predict(List<Feature> features, int windowSize) throws Exception {
+    public List<Prediction> predict(List<Feature> features, String predictorName) throws Exception {
         PredictionLogger.info("FeatureManager-sendFeatures", "Send features for prediction");
         List<Prediction> predictions = new ArrayList<>();
+
         for (Feature feature : features) {
-            feature.setHasNewValue(false);
-            SocketMessage message = ServerSocket.getInstance().sendAndGet(
-                    SocketMessage.SocketApplication.APPLICATION_PREDICTOR,
-                    new SocketMessage(
-                            "predict-feature",
-                            new JSONObject().put("feature", feature.toJson(windowSize))
+            Prediction result;
+            String payload = new JSONObject().put(
+                    "feature",
+                    new JSONObject().put(
+                            "name",
+                            feature.getName()
+                    ).put(
+                            "values",
+                            new JSONArray(feature.getWindowValues(
+                                    PairPredictionSettings.getPredictionSettingsByName(predictorName)
+                                            .getPredictionSettings().getBatchSize()
+                            ))
                     )
+            ).toString();
+
+            PredictionConfigurator.predictor_writer.get(predictorName).write(payload);
+            PredictionConfigurator.predictor_writer.get(predictorName).newLine();
+            PredictionConfigurator.predictor_writer.get(predictorName).flush();
+
+            PredictionLogger.info(
+                    "Predictor-message",
+                    PredictionConfigurator.predictor_reader.get(predictorName).readLine()
             );
+            String predictionString = PredictionConfigurator.predictor_reader.get(predictorName).readLine();
+            // PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
 
-            if (message.hasError()) {
-                PredictionLogger.error("socket-prediction-result", message.getData().get("error").toString());
-                continue;
-            }
+            result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
 
-            Prediction result = new Prediction(message.getData().getJSONObject("prediction"));
+            SimulationSettings.get().getPredictionSettings().stream().filter(
+                    settings -> settings.getPredictorName().equals(result.getPredictionSettings().getPredictorName())
+            ).findFirst().orElseThrow().increaseSumOfErrorMetrics(
+                    (result.getErrorMetrics().getMae()
+                            + result.getErrorMetrics().getMse()
+                            + result.getErrorMetrics().getRmse()) / 3
+            ).increaseNumberOfPredictions();
+
             feature.addPrediction(result);
             predictions.add(result);
-        }
 
-        if (Launcher.hasApplication(ElectronLauncher.class.getSimpleName())) {
-            PredictionLogger.info("FeatureManager-sendFeatures", "Send features to UI");
-            for (Prediction prediction : predictions) {
-                ServerSocket.getInstance().sendAndGet(
-                        SocketMessage.SocketApplication.APPLICATION_INTERFACE,
-                        new SocketMessage(
-                                "prediction",
-                                new JSONObject().put("prediction", prediction.toJson())
-                        )
-                );
-            }
+            PredictionConfigurator.sqLiteManager.addPredictionDataToTable(feature.getName(), result);
         }
+        
         return predictions;
     }
 
@@ -278,6 +293,10 @@ public class FeatureManager {
         List<Feature> result = new ArrayList<>();
 
         for (Feature feature : features) {
+            if (feature.getValues().isEmpty()) {
+                continue;
+            }
+
             if (feature.getValues().size() >= windowSize && feature.getHasNewValue()) {
                 result.add(feature);
             }
@@ -322,9 +341,5 @@ public class FeatureManager {
             }
         }
         return result;
-    }
-    
-    public List<Feature> getFeatures() {
-        return features;
     }
 }

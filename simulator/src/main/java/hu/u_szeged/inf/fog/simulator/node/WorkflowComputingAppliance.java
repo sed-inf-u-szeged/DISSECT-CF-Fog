@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.node;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
@@ -52,6 +53,12 @@ public class WorkflowComputingAppliance extends ComputingAppliance {
     public WorkflowComputingAppliance(String file, String name, GeoLocation geoLocation, long range) throws Exception {
         super(file, name, geoLocation, range);
         this.cluster = new TreeSet<>();
+    }
+    
+    public WorkflowComputingAppliance(IaaSService iaas, GeoLocation geoLocation) {
+        super(iaas, geoLocation, "", "", false);
+        this.cluster = new TreeSet<>();
+        this.applications = new ArrayList<>();
     }
 
     public static void setDistanceBasedLatency() {

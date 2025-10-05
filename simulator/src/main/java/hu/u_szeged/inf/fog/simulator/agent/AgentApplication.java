@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class AgentApplication {
@@ -25,6 +26,7 @@ public class AgentApplication {
         public String provider;
         public String location;
         public Long size;
+        public Boolean edge;
         
         public double getTotalReqCpu() {
             if (cpu != null) {
@@ -35,7 +37,7 @@ public class AgentApplication {
 
         public String toString() {
             return "Resource [name=" + name + ", cpu=" + cpu + ", memory=" + memory + ", instances=" + instances
-                    + ", provider=" + provider + ", location=" + location + ", size=" + size + "]";
+                    + ", provider=" + provider + ", location=" + location + ", size=" + size + ", edge=" + edge + "]";
         } 
     }
 
@@ -69,6 +71,8 @@ public class AgentApplication {
     public double latencyPriority;
     
     public double bandwidthPriority;
+    
+    public HashMap<String, Number> configuration;
         
     public static List<AgentApplication> agentApplications = new ArrayList<>();
 

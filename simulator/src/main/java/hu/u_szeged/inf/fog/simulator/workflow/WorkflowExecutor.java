@@ -11,6 +11,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.energyprovider.Provider;
 import hu.u_szeged.inf.fog.simulator.iot.Actuator;
 import hu.u_szeged.inf.fog.simulator.iot.Sensor;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -20,6 +21,7 @@ import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob.Uses;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -91,11 +93,18 @@ public class WorkflowExecutor {
                         @Override
                         protected void eventAction() {
                             workflowJob.state = WorkflowJob.State.COMPLETED;
-                            if (isAllJobCompleted(workflowScheduler)) {
+                            if (isAllSchedulerJobCompleted(workflowScheduler)) {
                                 workflowScheduler.stopTime = Timed.getFireCount();
                                 
-                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
-                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                if (isAllJobCompleted()) {
+                                    for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+                                        EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                    }
+                                }
+                                if (workflowScheduler instanceof RenewableScheduler) {
+                                    for (Provider provider : ((RenewableScheduler) workflowScheduler).providers){
+                                        provider.stopProcessing();
+                                    }
                                 }
                             }
                             actuator.isWorking = false;
@@ -137,11 +146,18 @@ public class WorkflowExecutor {
                             workflowJob.ca.timelineList.add(new TimelineEntry(vmStartTime, Timed.getFireCount(),
                                     Integer.toString(vm.hashCode()) + "-" + workflowJob.id));
                             workflowJob.state = WorkflowJob.State.COMPLETED;
-                            if (isAllJobCompleted(workflowScheduler)) {
+                            if (isAllSchedulerJobCompleted(workflowScheduler)) {
                                 workflowScheduler.stopTime = Timed.getFireCount();
                                 
-                                for (ComputingAppliance ca : workflowScheduler.computeArchitecture) {
-                                    EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                if (isAllJobCompleted()) {
+                                    for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+                                        EnergyDataCollector.getEnergyCollector(ca.iaas).stop();
+                                    }
+                                }
+                                if (workflowScheduler instanceof RenewableScheduler) {
+                                    for (Provider provider : ((RenewableScheduler) workflowScheduler).providers){
+                                        provider.stopProcessing();
+                                    }
                                 }
                             }
                             String id = workflowJob.ca.name + "-" + Integer.toString(vm.hashCode());
@@ -216,7 +232,9 @@ public class WorkflowExecutor {
                                                 workflowScheduler.bytesOnNetwork += uses.size;
                                                 
                                                 workflowScheduler.schedule(childWorkflowJob);
-                                                execute(workflowScheduler);
+                                                if (!(workflowScheduler instanceof RenewableScheduler)) {
+                                                    execute(workflowScheduler);
+                                                }
                                             }
                                         });
                             } catch (NetworkException e) {
@@ -230,7 +248,7 @@ public class WorkflowExecutor {
         }
     }
     
-    private static boolean isAllJobCompleted(WorkflowScheduler workflowScheduler) {
+    private static boolean isAllSchedulerJobCompleted(WorkflowScheduler workflowScheduler) {
         for (WorkflowJob job : workflowScheduler.jobs) {
             if (!job.state.equals(WorkflowJob.State.COMPLETED)) {
                 return false;
@@ -238,6 +256,17 @@ public class WorkflowExecutor {
         }
         return true;
     }
+    
+    private static boolean isAllJobCompleted() {
+        for (WorkflowJob job : WorkflowJob.workflowJobs) {
+            if (!job.state.equals(WorkflowJob.State.COMPLETED)) {
+                return false;
+            }       
+        }
+        return true;
+    }
+    
+    
     
     private static void startSensors(WorkflowScheduler workflowScheduler) {
         for (WorkflowJob workflowJob : workflowScheduler.jobs) {

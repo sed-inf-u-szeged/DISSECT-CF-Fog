@@ -1,34 +1,38 @@
-package hu.u_szeged.inf.fog.simulator.agent.agentstrategy;
+package hu.u_szeged.inf.fog.simulator.agent.strategy;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class FirstFitAgentStrategy extends AgentStrategy {
+    
     private final boolean descending;
-
+    
     public FirstFitAgentStrategy(boolean descending) {
         this.descending = descending;
     }
 
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
+
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-
+        
         for (Resource resource : sortedResources) {
-            if (resource.size == null) { // compute type
-
+            if (resource.size == null) { // compute type 
+                
                 int instances = resource.instances == null ? 1 : resource.instances;
 
                 List<Capacity> reservedCapacity = new ArrayList<>();
                 for (int i = 0; i < instances; i++) {
-                    for (Capacity capacity : agent.capacities) {
+                    for (Capacity capacity : agent.capacities) {                   
                         if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
                                 && (resource.location == null || resource.location.equals(capacity.node.location))
-                                && resource.cpu <= capacity.cpu && resource.memory <= capacity.memory) {
+                                && resource.cpu <= capacity.cpu 
+                                && resource.memory <= capacity.memory && resource.edge == capacity.node.edge) {
+
                             capacity.reserveCapacity(resource);
                             reservedCapacity.add(capacity);
                             break;
@@ -37,13 +41,13 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
 
                 if (instances != reservedCapacity.size() && reservedCapacity.size() > 0) {
-                    for (Capacity capacity : reservedCapacity) {
+                    for (Capacity capacity : reservedCapacity) {   
                         capacity.releaseCapacity(resource);
                     }
                 } else if (instances == reservedCapacity.size()) {
                     agentResourcePairs.add(Pair.of(agent, resource));
                 }
-
+                
             } else { // storage type
                 for (Capacity capacity : agent.capacities) {
                     if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
@@ -55,24 +59,28 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
             }
         }
-
+        //System.out.println(agentResourcePairs.get(0).getLeft().name + " " + agentResourcePairs.get(0).getRight().name);
+        //System.out.println(agent.capacities);
         return agentResourcePairs;
-    }
+    } 
 
     public List<Resource> sortingResourcesByCpuThenSize(List<Resource> originalResources) {
         List<Resource> sortedResources = new ArrayList<>(originalResources);
-        sortedResources.sort((r1, r2) -> {
-            double r1EffectiveCpu = (r1.cpu != null) ? r1.cpu * (r1.instances != null ? r1.instances : 1) : -1;
-            double r2EffectiveCpu = (r2.cpu != null) ? r2.cpu * (r2.instances != null ? r2.instances : 1) : -1;
 
+        sortedResources.sort((r1, r2) -> {
             if (r1.cpu != null && r2.cpu != null) {
-                return descending ? Double.compare(r2EffectiveCpu, r1EffectiveCpu) : Double.compare(r1EffectiveCpu, r2EffectiveCpu);
+                if (r1.instances != null) {
+                    r1.cpu *= r1.instances;
+                }
+                if (r2.instances != null) {
+                    r2.cpu *= r2.instances;
+                }
+                return descending ? Double.compare(r2.cpu, r1.cpu) : Double.compare(r1.cpu, r2.cpu);
             } else if (r1.cpu == null && r2.cpu == null) {
                 return descending ? Double.compare(r2.size, r1.size) : Double.compare(r1.size, r2.size);
             }
             return (r1.cpu == null) ? 1 : -1;
         });
-
 
         return sortedResources;
     }

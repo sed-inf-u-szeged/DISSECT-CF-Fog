@@ -96,7 +96,9 @@ public class ComputingAppliance {
     public String provider;
     
     public String location;
-
+    
+    public Boolean edge;
+    
     /**
      * Constructs a new {@code ComputingAppliance} with the specified parameters.
      * It also starts the energy measurement for this instance.
@@ -121,7 +123,7 @@ public class ComputingAppliance {
         ComputingAppliance.allComputingAppliances.add(this);
     }
     
-    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
+    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider, boolean edge) {
         this.iaas = iaas;
         this.name = iaas.repositories.get(0).getName().contains("-") 
                 ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
@@ -129,9 +131,16 @@ public class ComputingAppliance {
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
+        this.edge = edge;
         this.neighbors = new ArrayList<>();
         this.range = Integer.MAX_VALUE;
         ComputingAppliance.allComputingAppliances.add(this);
+    }
+
+    public ComputingAppliance(String id) {
+        this.geoLocation = null;
+        this.range = 0; // TODO: check the FL extension
+        this.name = "";
     }
 
     /**
@@ -275,7 +284,15 @@ public class ComputingAppliance {
      */
     public long getAvailableStorage() {
         return iaas.repositories.stream()
-                .mapToLong(Repository::getFreeStorageCapacity).
-                sum();
+                .mapToLong(Repository::getFreeStorageCapacity).sum();
+    }
+    
+    public static ComputingAppliance findApplianceByName(String name) {
+        for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances) {
+            if (ca.name.equals(name)) {
+                return ca;
+            }
+        }
+        return null;
     }
 }

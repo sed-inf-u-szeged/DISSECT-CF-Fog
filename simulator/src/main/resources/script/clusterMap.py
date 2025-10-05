@@ -30,7 +30,8 @@ for i, nodes in enumerate(nodeInfo):
         index2 = j + 1
         index3 = j + 2
     
-        popup = folium.Popup(node[index1], show=True, sticky=True)
+        popup_html = f'<div style="font-size:15px;">{node[index1]}</div>'
+        popup = folium.Popup(popup_html, show=True, sticky=True)
         folium.Marker(
             location=[float(node[index2]), float(node[index3])],
             popup=popup,

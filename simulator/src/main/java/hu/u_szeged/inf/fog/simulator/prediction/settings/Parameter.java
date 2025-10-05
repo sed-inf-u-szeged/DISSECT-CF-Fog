@@ -1,27 +1,38 @@
 package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
+@Getter
+@NoArgsConstructor
 public class Parameter {
 
+    @AllArgsConstructor
     public enum ParameterType {
 
         TEXT("text"), BOOLEAN("boolean"), SELECT("select"), OPEN_FILE("openFile"), BUTTON("button");
         private final String type;
-        
-        ParameterType(final String type) {
-            this.type = type;
-        }
     }
 
+    @Setter
+    @Accessors(chain = true)
     private String id;
+    @Setter
+    @Accessors(chain = true)
     private String label;
+    @Setter
+    @Accessors(chain = true)
     private ParameterType type;
     private boolean required;
+    @Setter
+    @Accessors(chain = true)
     private List<Option> options;
+    @Setter
+    @Accessors(chain = true)
     private String defaultValue;
 
     public Parameter(String id, String label, ParameterType type, 
@@ -57,75 +68,5 @@ public class Parameter {
     public Parameter required() {
         this.required = true;
         return this;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Parameter setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public Parameter setLabel(String label) {
-        this.label = label;
-        return this;
-    }
-
-    public ParameterType getType() {
-        return type;
-    }
-
-    public Parameter setType(ParameterType type) {
-        this.type = type;
-        return this;
-    }
-
-    public boolean isRequired() {
-        return required;
-    }
-
-    public List<Option> getOptions() {
-        return options;
-    }
-
-    public Parameter setOptions(List<Option> options) {
-        this.options = options;
-        return this;
-    }
-
-    public String getDefaultValue() {
-        return defaultValue;
-    }
-
-    public Parameter setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-        return this;
-    }
-
-    public JSONObject toJson() {
-        try {
-            JSONArray array = new JSONArray();
-            if (options != null) {
-                for (Option o : options) {
-                    array.put(o.toJson());
-                }
-            }
-
-            return new JSONObject()
-                    .put("id", id)
-                    .put("label", label)
-                    .put("type", type.type)
-                    .put("required", required)
-                    .put("defaultValue", defaultValue)
-                    .put("options", options == null ? new JSONArray() : array);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

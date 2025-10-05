@@ -6,21 +6,21 @@ public class TimedExample extends Timed {
 
     String name;
 
-    TimedExample(String id, long freq) {
-        this.name = id;
+    TimedExample(String name, long freq) {
+        this.name = name;
         subscribe(freq);
     }
 
     @Override
     public void tick(long fires) {
-        if(Timed.getFireCount() >= 300) {
-            unsubscribe();
+        if (Timed.getFireCount() >= 300) {
+           unsubscribe();
         }
         System.out.println(this.name + " - time: " + Timed.getFireCount());
     }
 
-    public static void main(String[] args) {    
-        new TimedExample("TimedTest #1", 100);  
+    public static void main(String[] args) {
+        new TimedExample("TimedTest #1", 100);
         new TimedExample("TimedTest #2", 95);
 
         Timed.simulateUntilLastEvent();

@@ -2,65 +2,26 @@ package hu.u_szeged.inf.fog.simulator.prediction.settings;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.TableBuilder;
+import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class SimulationSettings {
     private static SimulationSettings SIMULATION_SETTINGS;
     private ExportSettings export;
-    private PredictionSettings prediction;
-    private PredictorSettings predictor;
-
-    public SimulationSettings(ExportSettings export, PredictionSettings prediction, PredictorSettings predictor) {
-        this.export = export;
-        this.prediction = prediction;
-        this.predictor = predictor;
-    }
-
-    public SimulationSettings(JSONObject jsonObject) throws JSONException {
-        fromJsonObject(jsonObject);
-    }
-
-    private void fromJsonObject(JSONObject jsonObject) throws JSONException {
-        this.export = new ExportSettings(jsonObject.getJSONObject("export"));
-        this.prediction = new PredictionSettings(jsonObject.getJSONObject("prediction"));
-        this.predictor = new PredictorSettings(jsonObject.getJSONObject("predictor"));
-    }
-
-    public ExportSettings getExport() {
-        return export;
-    }
-
-    public void setExport(ExportSettings export) {
-        this.export = export;
-    }
-
-    public PredictionSettings getPrediction() {
-        return prediction;
-    }
-
-    public void setPrediction(PredictionSettings prediction) {
-        this.prediction = prediction;
-    }
-
-    public PredictorSettings getPredictor() {
-        return predictor;
-    }
-
-    public void setPredictor(PredictorSettings predictor) {
-        this.predictor = predictor;
-    }
-
-    public JSONObject toJson() throws JSONException {
-        return new JSONObject()
-                .put("export", export.toJson())
-                .put("prediction", prediction.toJson())
-                .put("predictor", predictor.toJson());
-    }
+    private List<PairPredictionSettings> predictionSettings;
+    private TrainSettings trainSettings;
 
     public static SimulationSettings get() {
         return SimulationSettings.SIMULATION_SETTINGS;
@@ -76,7 +37,7 @@ public class SimulationSettings {
         PredictionLogger.info("SimulationSettings-exportToJSON", 
                String.format("Exporting simulation settings to %s...", fullPath));
         try (FileWriter fileWriter = new FileWriter(fullPath)) {
-            fileWriter.write(toJson().toString());
+            fileWriter.write(JsonParser.toJson(this, SimulationSettings.class).toString());
             PredictionLogger.info("SimulationSettings-exportToJSON", "Export done!");
         } catch (Exception e) {
             e.printStackTrace();
@@ -84,14 +45,20 @@ public class SimulationSettings {
     }
 
     public void printInfo() throws Exception {
-        TableBuilder table = new TableBuilder();
-        table.addHeader("Name", "Value");
-        table.addRow("Predictor model", predictor.getPredictor());
-        table.addRow("Batch size", prediction.getBatchSize());
-        table.addRow("Test size", prediction.getTestSize());
-        table.addRow("Prediction size", prediction.getLength());
-        table.addRow("Smoothing", prediction.getSmoothing().getWindowSize() 
-                + ", " + prediction.getSmoothing().getPolynomialDegree());
-        System.out.println(table);
+        for (var predictionSetting : predictionSettings) {
+            TableBuilder table = new TableBuilder();
+            table.addHeader("Name", "Value");
+            table.addRow("Batch size", predictionSetting.getPredictionSettings().getBatchSize());
+            table.addRow("Predictor model", predictionSetting.getPredictorSettings().getPredictor());
+            table.addRow("Test size", predictionSetting.getPredictionSettings().getTestSize());
+            table.addRow("Prediction size", predictionSetting.getPredictionSettings().getLength());
+            table.addRow("Smoothing", predictionSetting.getPredictionSettings().getSmoothing().getWindowSize()
+                    + ", " + predictionSetting.getPredictionSettings().getSmoothing().getPolynomialDegree());
+            table.addRow("Best prediction", predictionSetting.getBestPredictor());
+            table.addRow("Average sum of error metrics", 
+                predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
+            table.addRow("Number of predictions", predictionSetting.getNumberOfPredictions());
+            System.out.println(table);
+        }
     }
 }

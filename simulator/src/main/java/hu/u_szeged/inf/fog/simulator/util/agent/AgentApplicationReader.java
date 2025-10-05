@@ -22,7 +22,7 @@ public class AgentApplicationReader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         return agentApplication;
     }
 }

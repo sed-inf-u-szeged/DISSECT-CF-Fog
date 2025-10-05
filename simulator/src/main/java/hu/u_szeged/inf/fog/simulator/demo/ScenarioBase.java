@@ -24,6 +24,7 @@ import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
+import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
 import java.math.BigDecimal;
@@ -33,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
+    
+    public static final long aDayInMilisec = 24 * 60 * 60 * 1000;
         
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
             .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
@@ -238,7 +241,7 @@ public class ScenarioBase {
             SimLogger.logRes("Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
             avgPairwiseDistance += CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
             
-            
+
             int completed = 0;
             for (WorkflowJob wj : scheduler.jobs) {
                 if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
@@ -261,7 +264,7 @@ public class ScenarioBase {
         SimLogger.logRes("Avg execution time (min): " + avgExecutionTime / WorkflowScheduler.schedulers.size());
         SimLogger.logRes("Avg pairwise distance (km): " + avgPairwiseDistance / WorkflowScheduler.schedulers.size());
         SimLogger.logRes("Messages required for clustering: " + ClusterMessenger.clusterMessageCount);
-        
+
         /*
         for (Entry<WorkflowJob, Integer> entry : WorkflowExecutor.jobReassigns.entrySet()) {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " re-assigning");
@@ -270,5 +273,25 @@ public class ScenarioBase {
             SimLogger.logRes(entry.getKey().id + ": " + entry.getValue() + " actuator re-assigning");
         }    
         */
+    }
+    public static void logRenewableStreamProcessing() {
+        RenewableScheduler scheduler = (RenewableScheduler) WorkflowScheduler.schedulers.get(0);
+        float totalFossilUsed = 0;
+        float totalRenewableUsed = 0;
+        float totalMoneySpent = 0;
+        float totalRenewableProduced = 0;
+        for (hu.u_szeged.inf.fog.simulator.energyprovider.Provider provider : scheduler.providers) {
+            totalRenewableProduced += provider.totalRenewableProduced;
+            totalFossilUsed += provider.totalFossilUsed;
+            totalRenewableUsed += provider.totalRenewableUsed;
+            totalMoneySpent += provider.moneySpentOnFossil/1000;
+            totalMoneySpent += provider.moneySpentOnRenewable/1000;
+        }
+        SimLogger.logRes("");
+        SimLogger.logRes("Total renewable produced (Wh): " + totalRenewableProduced);
+        SimLogger.logRes("Total fossil consumed (Wh): " + totalFossilUsed);
+        SimLogger.logRes("Total renewable consumed (Wh): " + totalRenewableUsed);
+        SimLogger.logRes("Total money cost (EUR): " + totalMoneySpent);
+        SimLogger.logRes("Total waiting time (min.): " + scheduler.totalWaitingTime/60_000);
     }
 }

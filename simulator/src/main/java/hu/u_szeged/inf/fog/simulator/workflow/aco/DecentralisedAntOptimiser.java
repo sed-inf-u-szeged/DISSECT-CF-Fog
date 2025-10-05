@@ -51,7 +51,8 @@ public class DecentralisedAntOptimiser {
         
         for (int i = 0; i < globalPheromoneMatrix.length; i++) {
             if (globalPheromoneMatrix[i] > 0) {
-                globalPheromoneMatrix[i] *= (1 - evaporationRate);
+                double epsilon = (Math.random() * 0.02) - 0.01;
+                globalPheromoneMatrix[i] = globalPheromoneMatrix[i] * (1 - evaporationRate) + epsilon;
             }
         }
     }

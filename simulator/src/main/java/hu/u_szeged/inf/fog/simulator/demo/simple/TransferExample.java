@@ -12,27 +12,27 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransferExample extends ConsumptionEventAdapter {
+public class TransferExample {
 
     Repository from;
     Repository to;
     StorageObject so;
-    long start;
+    long startTime;
 
     public TransferExample(Repository from, Repository to, StorageObject so) throws NetworkException {
         this.from = from;
         this.to = to;
         this.so = so;
         this.from.registerObject(so);
-        this.from.requestContentDelivery(so.id, to, this);
-        this.start = Timed.getFireCount();
-    }
+        this.startTime = Timed.getFireCount();
 
-    @Override
-    public void conComplete() {
-        this.from.deregisterObject(this.so);
-        System.out.println("Start: " + this.start + " from: " +
-                    this.from.getName() + " to: " + this.to.getName() + " end: " +Timed.getFireCount());
+        this.from.requestContentDelivery(so.id, to, new ConsumptionEventAdapter() {
+            @Override
+            public void conComplete() {
+                from.deregisterObject(so);
+                System.out.println("Start: " + startTime + " from: " + from.getName() + " to: " + to.getName() + " end: " +Timed.getFireCount());
+            }
+        });
     }
 
     public static void main(String[] args) throws NetworkException {
@@ -44,7 +44,7 @@ public class TransferExample extends ConsumptionEventAdapter {
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(20, 200, 300, 10, 20);
 
-        HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+        HashMap<String, Integer> latencyMap = new HashMap<>();
 
         Repository repo1 = new Repository(storageSize, "repo1", bandwidth, bandwidth, bandwidth, latencyMap, 
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
@@ -57,8 +57,8 @@ public class TransferExample extends ConsumptionEventAdapter {
         repo1.setState(NetworkNode.State.RUNNING);
         repo2.setState(NetworkNode.State.RUNNING);
 
-        latencyMap.put("repo1",5);
-        latencyMap.put("repo2",6);
+        latencyMap.put("repo1", 5);
+        latencyMap.put("repo2", 6);
 
         new TransferExample(repo1, repo2, new StorageObject("file1", fileSize, false));
         new TransferExample(repo2, repo1, new StorageObject("file2", fileSize, false));
