@@ -7,9 +7,9 @@ from app_utils.log import Log
 
 
 class PredictorModel(ABC):
-    def __init__(self, name, simulation_settings):
+    def __init__(self, name, predictor_settings):
         self._name = name
-        self._simulation_settings = simulation_settings
+        self._predictior_settings = predictor_settings
 
     def make_prediction(self, feature_name, original_data, preprocessed_data, test_data_beginning, test_data_end):
         Log.info(f"Model '{self._name}' is predicting feature '{feature_name}'...")
@@ -17,12 +17,12 @@ class PredictorModel(ABC):
         prediction_future = self.predict(
             feature_name=feature_name,
             dataframe=preprocessed_data.copy(),
-            prediction_length=self._simulation_settings["prediction"]["length"],
+            prediction_length=self._predictior_settings["prediction"]["length"],
             is_test_data=False
         )
 
         last_future_timestamp = preprocessed_data["timestamp"].values.tolist()[-1]
-        prediction_future_timestamp = [(last_future_timestamp + 1) + i for i in range(0, self._simulation_settings["prediction"]["length"])]
+        prediction_future_timestamp = [(last_future_timestamp + 1) + i for i in range(0, self._predictior_settings["prediction"]["length"])]
         prediction_future_dataframe = pd.DataFrame({"data": prediction_future, "timestamp": prediction_future_timestamp})
 
         prediction_test = self.predict(

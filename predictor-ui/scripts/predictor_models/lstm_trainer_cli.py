@@ -100,14 +100,18 @@ def prepare_dataframes(settings, dataframes):
         for column in df.columns:
             df[column] = df[column].apply(replace_commas).astype(float).tolist()
             df = df[df[column].notna()]
-            df_result, scaler = Preprocessor.process(
-                data=df[column].tolist(),
-                smoothing={
-                    "windowSize": int(settings["smoothing"]["windowSize"]),
-                    "polynomialDegree": int(settings["smoothing"]["polynomialDegree"])
-                },
-                scale=settings["scale"],
-            )
+            try:
+                df_result, scaler = Preprocessor.process(
+                    data=df[column].tolist(),
+                    smoothing={
+                        "windowSize": int(settings["smoothing"]["windowSize"]),
+                        "polynomialDegree": int(settings["smoothing"]["polynomialDegree"])
+                    },
+                    scale=settings["scale"],
+                )
+            except ValueError:
+                sys.stderr.write(f"Skipped {column}, not enough data for window\n")
+                continue
             result.append(df_result)
     return result
 
