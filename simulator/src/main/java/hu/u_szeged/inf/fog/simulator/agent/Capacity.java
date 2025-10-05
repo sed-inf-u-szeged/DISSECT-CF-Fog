@@ -57,6 +57,12 @@ public class Capacity {
         }
     }
 
+    public static class CapacityHandlingException extends RuntimeException {
+        private static final long serialVersionUID = -474479716001109155L;
+
+        CapacityHandlingException(final String s){super(s);}
+    }
+
     public double cpu;
 
     public long memory;
@@ -67,14 +73,25 @@ public class Capacity {
 
     public List<Utilisation> utilisations;
 
-    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) {
+    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) throws CapacityHandlingException {
+        /*
+        if (cpu > node.iaas.getCapacities().getRequiredCPUs()) {
+            throw new CapacityHandlingException("CPU allocation exceeds the available CPUs of the ComputingAppliance");
+        }
+        if (memory > node.iaas.getCapacities().getRequiredMemory()) {
+            throw new CapacityHandlingException("Memory allocation exceeds the available memory of the ComputingAppliance");
+        }
+        if (storage > node.getAvailableStorage()) {
+            throw new CapacityHandlingException("Storage allocation exceeds the available storage of the ComputingAppliance");
+        }
+*/
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;
         this.storage = storage;
         this.utilisations = new ArrayList<>();
     }
-    
+
     public void reserveCapacity(Resource resource) {
         Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
         this.utilisations.add(utilisation);
@@ -96,8 +113,8 @@ public class Capacity {
         utilisations.removeAll(utilisationsToBeRemoved);
     }
 
-    public void assignCapacity(Set<Resource> set, Offer offer) {
-        for (Resource resource : set) {
+    public void assignCapacity(Set<Resource> resources, Offer offer) {
+        for (Resource resource : resources) {
             for (Utilisation util : utilisations) {
                 if (util.resource == resource) {
                     util.state = Utilisation.State.ASSIGNED;
