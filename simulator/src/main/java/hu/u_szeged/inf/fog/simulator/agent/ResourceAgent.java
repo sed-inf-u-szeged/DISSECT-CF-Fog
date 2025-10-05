@@ -66,16 +66,27 @@ public class ResourceAgent {
     int callcounter;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
+                         AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
+        this.capacities = new ArrayList<>();
+        validateAndAddCapacitiesLimit(Arrays.asList(capacities));
+        this.name = name;
+        this.hourlyPrice = hourlyPrice;
+        ResourceAgent.resourceAgents.add(this);
+        this.agentStrategy = agentStrategy;
+        this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        this.messagingStrategy = messagingStrategy;
+    }
+
+    public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy) {
         this.capacities = new ArrayList<>();
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
-        //this.initResourceAgent(resourceAgentVa, resourceAgentArc)
+        //this.initResourceAgent(resourceAgentVa, resourceAgentArc);
         this.messagingStrategy = messagingStrategy;
     }
-
     public void registerCapacity(Capacity capacity) {
         this.capacities.add(capacity);
     }

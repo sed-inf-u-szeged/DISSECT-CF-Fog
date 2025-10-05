@@ -206,7 +206,7 @@ public class AgentTestUNC {
        Map<String, String> mapping = new HashMap<>();
 
        ResourceAgent ra0 =
-               new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping), new GuidedSearchMessagingStrategy(), new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+               new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping), new GuidedSearchMessagingStrategy());
 
         for(int i = 1; i <= numOfApps; i++) {
         	mapping.put("UNC-" + i + "-Res-1", "Agent0");
@@ -234,34 +234,34 @@ public class AgentTestUNC {
 
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
 
-        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
                 new Capacity(node2, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node3, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
                 new Capacity(node4, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node5, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node6, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
                 new Capacity(node7, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node8, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
                 new Capacity(node9, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(), new GuidedSearchMessagingStrategy(),
+        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node10, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         /** Image service */
