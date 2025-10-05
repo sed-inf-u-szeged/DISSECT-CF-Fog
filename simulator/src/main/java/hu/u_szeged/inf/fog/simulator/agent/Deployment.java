@@ -112,7 +112,6 @@ public class Deployment extends Timed {
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
                         new RemoteServer(sa, util.getRight());
                     } else {
-                        System.out.println();
                         SimLogger.logError("This type of component is unfamiliar in the UNC application!");
                     }
                     

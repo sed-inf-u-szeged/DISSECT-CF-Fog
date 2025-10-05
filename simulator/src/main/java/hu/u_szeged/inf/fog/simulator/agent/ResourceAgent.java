@@ -73,8 +73,7 @@ public class ResourceAgent {
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
-        this.capacities.addAll(Arrays.asList(capacities));
-        this.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        //this.initResourceAgent(resourceAgentVa, resourceAgentArc);
         this.messagingStrategy = messagingStrategy;
     }
 
@@ -271,8 +270,8 @@ public class ResourceAgent {
                 int lastNumber = numberList.get(numberList.size() - 1);
 
                 SimLogger.logRun(app.offers.size() + " offers were ranked for "
-                        + app.name + " at: " + Timed.getFireCount()
-                        + " as follows: first = " + firstNumber + ", last = " + lastNumber);
+                        + app.name + " at: " + Timed.getFireCount() / 1000.0 / 60.
+                        + " min., the winning offer index is: " + firstNumber);
 
                 return firstNumber;
                 //return lastNumber;
@@ -344,10 +343,9 @@ public class ResourceAgent {
             ((GuidedSearchMessagingStrategy) messagingStrategy).setWinningOffer(offer);
         }
 
-
         MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "ack", () -> {
-            SimLogger.logRun("All ack. messages receieved for " + app.name
-                    + " at: " + Timed.getFireCount());
+            SimLogger.logRun("All acknowledge messages received for " + app.name
+                    + " at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
 
             if (offer.id == -1) {
                 releaseResourcesAndNotifyNoOffers(app);
