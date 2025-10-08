@@ -1,20 +1,14 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -27,27 +21,27 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
-import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
-import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.util.AgentVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
 
 public class AgentTestUNC {
 
@@ -292,7 +286,7 @@ public class AgentTestUNC {
         }
         
         Sun.init(6, 20, 13, 1.5);
-        CsvExporter csvExporter = new CsvExporter(Sun.getInstance());
+        NoiseAppCsvExporter csvExporter = new NoiseAppCsvExporter(Sun.getInstance());
         long starttime = System.nanoTime();       
         Timed.simulateUntil(simLength);
         long stoptime = System.nanoTime();
@@ -519,178 +513,5 @@ public class AgentTestUNC {
         }
         
         return iaas;
-    }
-}
-
-class CsvExporter extends Timed {
-
-    Sun sun;
-    
-    File fileSunIntensity;
-    
-    File avgCpuLoad;
-    
-    File noOfNoiseSensorClassifiers;
-    
-    File noiseSensorTemperature;
-    
-    File noOfFilesToProcess;
-    
-    File noOfFileMigrations;
-        
-    public CsvExporter(Sun sun) {
-    	this.fileSunIntensity = new File(ScenarioBase.resultDirectory + "/sun-intensity.csv");
-    	this.avgCpuLoad = new File(ScenarioBase.resultDirectory + "/avg-cpu-load.csv");
-    	this.noOfNoiseSensorClassifiers = new File(ScenarioBase.resultDirectory + "/no-of-noise-sensor-classifiers.csv");
-    	this.noiseSensorTemperature = new File(ScenarioBase.resultDirectory + "/noise-sensor-temperature.csv");
-    	this.noOfFilesToProcess = new File(ScenarioBase.resultDirectory + "/no-of-files-to-process.csv");
-    	this.noOfFileMigrations = new File(ScenarioBase.resultDirectory + "/no-of-file-migrations.csv");
-    	
-        this.sun = sun;
-        subscribe(10_000);
-    }
-    
-    public void visualise() {
-		try {
-			Path csv = Paths.get(this.avgCpuLoad.getAbsolutePath());
-	        String content;
-			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
-			String header = "time,avg-cpu-load";
-			String newContent = header + System.lineSeparator() + content;
-			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
-			
-			csv = Paths.get(this.noOfNoiseSensorClassifiers.getAbsolutePath());
-			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
-			header = "time,no-of-classifiers";
-			newContent = header + System.lineSeparator() + content;
-			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
-			
-			csv = Paths.get(this.noOfFilesToProcess.getAbsolutePath());
-			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
-			header = "time,no-of-files-to-process";
-			newContent = header + System.lineSeparator() + content;
-			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
-			
-			csv = Paths.get(this.noOfFileMigrations.getAbsolutePath());
-			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
-			header = "time,no-of-file-migrations";
-			newContent = header + System.lineSeparator() + content;
-			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
-			
-			csv = Paths.get(this.noiseSensorTemperature.getAbsolutePath());
-			content = new String(Files.readAllBytes(csv), StandardCharsets.UTF_8);
-
-			List<String> names = new ArrayList<>();
-			for (Object o : SwarmAgent.allSwarmAgents.get(0).components) {
-			    if (o instanceof NoiseSensor) {
-			        NoiseSensor ns = (NoiseSensor) o;
-			        names.add(SwarmAgent.allSwarmAgents.get(0).app.getComponentName(ns.util.resource.name)); 
-			    }
-			}
-
-			header = "time";
-			if (!names.isEmpty()) {
-			    header += "," + String.join(",", names);
-			}
-
-			newContent = header + System.lineSeparator() + content;
-			Files.write(csv, newContent.getBytes(StandardCharsets.UTF_8));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}        
-        
-    	AgentVisualiser.visualise(fileSunIntensity.toPath(), avgCpuLoad.toPath(), noOfNoiseSensorClassifiers.toPath(),
-    			this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath());
-    }
-
-    @Override
-    public void tick(long fires) {
-    	double time = Timed.getFireCount() / 1000.0 / 60.0 / 60.0;
-    	
-    	// sun intensity
-    	try (PrintWriter writer = new PrintWriter(new FileWriter(fileSunIntensity.getAbsolutePath(), true))) {
-    	    if (fileSunIntensity.length() == 0) {
-    	        writer.println("time,sun_intensity"); 
-    	    }
-    	    
-            StringBuilder row = new StringBuilder();
-            row.append(String.format(Locale.ROOT, "%.3f", time));
-            row.append(",");
-            row.append(String.format(Locale.ROOT, "%.3f", sun.getSunStrength())); 
-            writer.println(row.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    	
-    	if (SwarmAgent.allSwarmAgents.size() > 0) {
-    		SwarmAgent sa = SwarmAgent.allSwarmAgents.get(0);
-    		
-    		// avg cpu load
-        	try (PrintWriter writer = new PrintWriter(new FileWriter(avgCpuLoad.getAbsolutePath(), true))) {
-        			StringBuilder row = new StringBuilder();
-                    row.append(String.format(Locale.ROOT, "%.3f", time));
-                    row.append(",");
-        			row.append(String.format(Locale.ROOT, "%.3f", sa.avgCpu()));
-                    writer.println(row.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        	
-        	// noise sensor classifier count
-        	try (PrintWriter writer = new PrintWriter(new FileWriter(noOfNoiseSensorClassifiers.getAbsolutePath(), true))) {
-        		StringBuilder row = new StringBuilder();
-                row.append(String.format(Locale.ROOT, "%.3f", time));
-        		row.append(",");
-        		row.append(String.format(Locale.ROOT, "%d", sa.noiseSensorsWithClassifier.size()));
-                writer.println(row.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        	
-        	// no. of files to process
-        	try (PrintWriter writer = new PrintWriter(new FileWriter(noOfFilesToProcess.getAbsolutePath(), true))) {
-        			StringBuilder row = new StringBuilder();
-                    row.append(String.format(Locale.ROOT, "%.3f", time));
-                    row.append(",");
-        			row.append(String.format(Locale.ROOT, "%d", sa.noOfFilesToProcess()));
-                    writer.println(row.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        	
-        	// no. of file migrations
-        	try (PrintWriter writer = new PrintWriter(new FileWriter(noOfFileMigrations.getAbsolutePath(), true))) {
-        			StringBuilder row = new StringBuilder();
-                    row.append(String.format(Locale.ROOT, "%.3f", time));
-                    row.append(",");
-                    int i = 0;
-                    for (Object o : sa.components) {
-                        if (o instanceof NoiseSensor) {
-                            NoiseSensor ns = (NoiseSensor) o;
-                            i += ns.underMigration;
-                        }
-                    }
-                    row.append(String.format(Locale.ROOT, "%d", i));
-                    writer.println(row.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        	
-        	// noise sensor temperature
-        	try (PrintWriter writer = new PrintWriter(new FileWriter(noiseSensorTemperature.getAbsolutePath(), true))) {
-        			StringBuilder row = new StringBuilder();
-                    row.append(String.format(Locale.ROOT, "%.3f", time));
-                    	for (Object o : sa.components) {
-                            if (o instanceof NoiseSensor) {
-                                NoiseSensor ns = (NoiseSensor) o;
-                                row.append(",");
-                                row.append(String.format(Locale.ROOT, "%.3f", ns.cpuTemp));
-                            }
-                        }
-                    writer.println(row.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-    	}
     }
 }
