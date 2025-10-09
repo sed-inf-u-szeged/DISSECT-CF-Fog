@@ -50,7 +50,7 @@ public class StorageObject {
 	 * 
 	 * unit: bytes
 	 */
-	public long size;
+	public long size; // TODO: set back to final
 
 	/**
 	 * Allows the creation of the storage object with unknown size (the

@@ -18,33 +18,40 @@ public class NoiseAppCsvExporter extends Timed {
 
     Sun sun;
     
+    public File noiseSensorTemperature;
+    
     File fileSunIntensity;
     
     File avgCpuLoad;
     
+    File separatedCpuLoad;
+    
     File noOfNoiseSensorClassifiers;
-    
-    public File noiseSensorTemperature;
-    
+
     File noOfFilesToProcess;
     
     File noOfFileMigrations;
+    
+    File soundValues;
         
     public NoiseAppCsvExporter(Sun sun) {
         this.fileSunIntensity = new File(ScenarioBase.resultDirectory + "/sun-intensity.csv");
         this.avgCpuLoad = new File(ScenarioBase.resultDirectory + "/avg-cpu-load.csv");
+        this.separatedCpuLoad = new File(ScenarioBase.resultDirectory + "/separated-cpu-load.csv");
         this.noOfNoiseSensorClassifiers = new File(ScenarioBase.resultDirectory + "/no-of-noise-sensor-classifiers.csv");
         this.noiseSensorTemperature = new File(ScenarioBase.resultDirectory + "/noise-sensor-temperature.csv");
         this.noOfFilesToProcess = new File(ScenarioBase.resultDirectory + "/no-of-files-to-process.csv");
         this.noOfFileMigrations = new File(ScenarioBase.resultDirectory + "/no-of-file-migrations.csv");
-    	
+        this.soundValues = new File(ScenarioBase.resultDirectory + "/sound-values.csv");
+        
         this.sun = sun;
         subscribe(10_000);
     }
     
     public void visualise() {
         AgentVisualiser.visualise(fileSunIntensity.toPath(), avgCpuLoad.toPath(), noOfNoiseSensorClassifiers.toPath(),
-            this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath());
+            this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath(),
+            this.soundValues.toPath());
     }
     
     private String generateHeader() {
@@ -88,6 +95,21 @@ public class NoiseAppCsvExporter extends Timed {
             // avg cpu load
             try (PrintWriter writer = new PrintWriter(new FileWriter(avgCpuLoad.getAbsolutePath(), true))) {
                 if (avgCpuLoad.length() == 0) {
+                    writer.println("time,avg-cpu-load"); 
+                }
+                
+                StringBuilder row = new StringBuilder();
+                row.append(String.format(Locale.ROOT, "%.3f", time));
+                row.append(",");
+                row.append(String.format(Locale.ROOT, "%.3f", sa.avgCpu()));
+                writer.println(row.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            
+            // separated cpu load
+            try (PrintWriter writer = new PrintWriter(new FileWriter(separatedCpuLoad.getAbsolutePath(), true))) {
+                if (separatedCpuLoad.length() == 0) {
                     writer.println(this.generateHeader()); 
                 }
                 
@@ -107,8 +129,6 @@ public class NoiseAppCsvExporter extends Timed {
                         }
                     }
                 }
-                //row.append(",");
-                //row.append(String.format(Locale.ROOT, "%.3f", sa.avgCpu()));
                 writer.println(row.toString());
             } catch (IOException e) {
                 e.printStackTrace();
@@ -129,9 +149,10 @@ public class NoiseAppCsvExporter extends Timed {
             }
 
             // no. of files to process
+            int filesToProcessCount = 0;
             try (PrintWriter writer = new PrintWriter(new FileWriter(noOfFilesToProcess.getAbsolutePath(), true))) {
                 if (noOfFilesToProcess.length() == 0) {
-                    writer.println(this.generateHeader()); 
+                    writer.println(this.generateHeader() + ",sum-of-files-to-process"); 
                 }
                 StringBuilder row = new StringBuilder();
                 row.append(String.format(Locale.ROOT, "%.3f", time));
@@ -140,17 +161,21 @@ public class NoiseAppCsvExporter extends Timed {
                         NoiseSensor ns = (NoiseSensor) o;
                         row.append(",");
                         row.append(String.format(Locale.ROOT, "%d", ns.filesToBeProcessed.size()));
+                        filesToProcessCount += ns.filesToBeProcessed.size();
                     }
                 }
+                row.append(",");
+                row.append(String.format(Locale.ROOT, "%d", filesToProcessCount));
                 writer.println(row.toString());
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
             // no. of file migrations
+            int migrationCount = 0;
             try (PrintWriter writer = new PrintWriter(new FileWriter(noOfFileMigrations.getAbsolutePath(), true))) {
                 if (noOfFileMigrations.length() == 0) {
-                    writer.println(this.generateHeader()); 
+                    writer.println(this.generateHeader() + ",sum-of-file-migrations"); 
                 }
                 StringBuilder row = new StringBuilder();
                 row.append(String.format(Locale.ROOT, "%.3f", time));
@@ -158,14 +183,18 @@ public class NoiseAppCsvExporter extends Timed {
                     if (o instanceof NoiseSensor) {
                         NoiseSensor ns = (NoiseSensor) o;
                         row.append(",");
-                        row.append(String.format(Locale.ROOT, "%d", ns.underMigration));
+                        row.append(String.format(Locale.ROOT, "%d", ns.migratedFiles));
+                        migrationCount += ns.migratedFiles;
+                        ns.migratedFiles = 0;
                     }
                 }
+                row.append(",");
+                row.append(String.format(Locale.ROOT, "%d", migrationCount));
                 writer.println(row.toString());
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
+            
             // noise sensor temperature
             try (PrintWriter writer = new PrintWriter(new FileWriter(noiseSensorTemperature.getAbsolutePath(), true))) {
                 if (noiseSensorTemperature.length() == 0) {
@@ -173,12 +202,30 @@ public class NoiseAppCsvExporter extends Timed {
                 }
                 StringBuilder row = new StringBuilder();
                 row.append(String.format(Locale.ROOT, "%.3f", time));
-                System.out.println("lol");
                 for (Object o : sa.components) {
                     if (o instanceof NoiseSensor) {
                         NoiseSensor ns = (NoiseSensor) o;
                         row.append(",");
                         row.append(String.format(Locale.ROOT, "%.3f", ns.cpuTemp));
+                    }
+                }
+                writer.println(row.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            
+            // sound values
+            try (PrintWriter writer = new PrintWriter(new FileWriter(soundValues.getAbsolutePath(), true))) {
+                if (soundValues.length() == 0) {
+                    writer.println(this.generateHeader()); 
+                }
+                StringBuilder row = new StringBuilder();
+                row.append(String.format(Locale.ROOT, "%.3f", time));
+                for (Object o : sa.components) {
+                    if (o instanceof NoiseSensor) {
+                        NoiseSensor ns = (NoiseSensor) o;
+                        row.append(",");
+                        row.append(String.format(Locale.ROOT, "%d", ns.prevSoundValue));
                     }
                 }
                 writer.println(row.toString());

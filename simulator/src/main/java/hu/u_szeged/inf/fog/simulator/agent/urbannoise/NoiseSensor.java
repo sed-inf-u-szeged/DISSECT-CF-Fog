@@ -6,6 +6,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
+import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
@@ -16,19 +17,19 @@ import java.util.ArrayList;
 
 public class NoiseSensor extends Timed {
     
-    public static long generatedFileSize;
+    public static long totalGeneratedFileSize;
     
-    public static long generatedFiles;
+    public static long totalGeneratedFiles;
 
-    public static long offloadedFiles;
+    public static long totalOffloadedFiles;
     
-    public static long soundEventsReqProcessing;
+    public static long totalSoundEventsToProcess;
     
-    public static long processedFiles;
+    public static long totalProcessedFiles;
     
-    public static long timeOnNetwork;
+    public static long totalTimeOnNetwork;
     
-    public long underMigration;
+    public int migratedFiles;
     
     SwarmAgent sa;
     
@@ -45,11 +46,14 @@ public class NoiseSensor extends Timed {
     public double cpuTemp;
     
     public ArrayList<StorageObject> filesToBeProcessed;
-    
+            
     public boolean inside;
     
     public boolean sunExposed;
     
+    private RemoteServer remoteServer;
+    
+    public int prevSoundValue; 
     
     public NoiseSensor(AgentApplication app, SwarmAgent sa, 
             Utilisation util, long freq, int threshold, boolean inside, boolean sunExposed) {
@@ -62,12 +66,14 @@ public class NoiseSensor extends Timed {
         this.filesToBeProcessed = new ArrayList<>();
         this.inside = inside;
         this.sunExposed = sunExposed;
-        sa.registerComponent(this);    
+        sa.registerComponent(this);  
+        prevSoundValue = -1;
        
-        new DeferredEvent(SeedSyncer.centralRnd.nextInt(10) * 1000) {
+        new DeferredEvent((SeedSyncer.centralRnd.nextInt(10) + 1) * 1000L) {
 
             @Override
             protected void eventAction() {
+                remoteServer = findRemoteServer();
                 subscribe(freq);
             }
         };
@@ -81,38 +87,20 @@ public class NoiseSensor extends Timed {
         long fileSize = this.app.configuration.get("soundFileSize").longValue();
         StorageObject so = new StorageObject(filename, fileSize, false);
         this.pm.localDisk.registerObject(so);
-        generatedFileSize += fileSize;
-        generatedFiles++;
+        totalGeneratedFileSize += fileSize;
+        totalGeneratedFiles++;
         
-        int value = randomSoundValue();
+        int value = lazySoundValue();
         if (value > threshold) {
-            soundEventsReqProcessing++;
+            totalSoundEventsToProcess++;
             this.filesToBeProcessed.add(so);
         } else {
-            RemoteServer rs = findRemoteServer();
-            this.pm.localDisk.deregisterObject(so);
-            so.size = this.app.configuration.get("resFileSize").longValue();
-            this.pm.localDisk.registerObject(so);
-            long actualTime = Timed.getFireCount();
-            try {
-                this.pm.localDisk.requestContentDelivery(filename, rs.util.vm.getResourceAllocation().getHost().localDisk,
-                        new ConsumptionEventAdapter() {
-                            
-                        @Override
-                        public void conComplete() {
-                            NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
-                            pm.localDisk.deregisterObject(filename);
-                        }
-                        
-                    });
-            } catch (NetworkException e) {
-                e.printStackTrace();
-            }     
+            sendResultToDatabase(pm.localDisk, remoteServer.util.vm.getResourceAllocation().getHost().localDisk, so); 
         }
         
         // manage the queue
         if (this.isClassificationRunning) {
-            startSoundClassification();
+            runSoundClassification();
         } else {
             offload();
         }  
@@ -170,15 +158,14 @@ public class NoiseSensor extends Timed {
                 try {
                     successfullyTransferred.add(so);
                     long actualTime = Timed.getFireCount();
-                    this.underMigration++;
+                    this.migratedFiles++;
                     this.pm.localDisk.requestContentDelivery(so.id, ns.pm.localDisk, new ConsumptionEventAdapter() {
                         
                         @Override
                         public void conComplete() {
-                            offloadedFiles++;
-                            NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
+                            totalOffloadedFiles++;
+                            NoiseSensor.totalTimeOnNetwork += Timed.getFireCount() - actualTime;
                             ns.filesToBeProcessed.add(so);
-                            underMigration--;
                             pm.localDisk.deregisterObject(so);
                         }
                     });
@@ -200,40 +187,49 @@ public class NoiseSensor extends Timed {
         return null;
     }
 
-    private void startSoundClassification() {
+    private void sendResultToDatabase(Repository from, Repository to, StorageObject so) {
+        this.pm.localDisk.deregisterObject(so);
+        so.size = this.app.configuration.get("resFileSize").longValue();
+        this.pm.localDisk.registerObject(so);
+        long actualTime = Timed.getFireCount();
+        try {
+            from.requestContentDelivery(so.id, to,
+                    new ConsumptionEventAdapter() {
+                        
+                    @Override
+                    public void conComplete() {
+                        NoiseSensor.totalTimeOnNetwork += Timed.getFireCount() - actualTime;
+                        from.deregisterObject(so);
+                        to.deregisterObject(so);
+                        StorageObject resFile = to.lookup(app.name);
+                        to.deregisterObject(resFile);
+                        resFile.size += app.configuration.get("resFileSize").longValue();
+                        to.registerObject(resFile);                            
+                    }
+                    
+                });
+        } catch (NetworkException e) {
+            e.printStackTrace();
+        }    
+        
+    }
+    
+    private void runSoundClassification() {
        
         if (this.cpuTemp <= this.app.configuration.get("cpuTempTreshold").doubleValue() && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
             this.cpuTemp += 0.005; // TODO: refactor
            
             try {
-                this.util.vm.newComputeTask(1_700 * util.utilisedCpu, ResourceConsumption.unlimitedProcessing, 
+                this.util.vm.newComputeTask((double) this.app.configuration.get("lengthOfProcessing") * util.utilisedCpu, 
+                        ResourceConsumption.unlimitedProcessing, 
                            new ConsumptionEventAdapter() {
                                             
                             @Override
                             public void conComplete() {
-                                startSoundClassification();
-                                RemoteServer rs = findRemoteServer();
-                                pm.localDisk.deregisterObject(so);
-                                so.size = app.configuration.get("resFileSize").longValue();
-                                pm.localDisk.registerObject(so);
-                                long actualTime = Timed.getFireCount();
-                                try {
-                                    pm.localDisk.requestContentDelivery(so.id, rs.util.vm.getResourceAllocation().getHost().localDisk,
-                                            new ConsumptionEventAdapter() {
-                                                
-                                            @Override
-                                            public void conComplete() {
-                                                processedFiles++;
-                                                NoiseSensor.timeOnNetwork += Timed.getFireCount() - actualTime;
-                                                pm.localDisk.deregisterObject(so.id);
-                                            }
-                                            
-                                        });
-                                        
-                                } catch (NetworkException e) {
-                                    e.printStackTrace();
-                                }   
+                                totalProcessedFiles++;
+                                runSoundClassification();
+                                sendResultToDatabase(pm.localDisk, remoteServer.util.vm.getResourceAllocation().getHost().localDisk, so); 
                             }
                         });
             } catch (NetworkException e) {
@@ -248,19 +244,30 @@ public class NoiseSensor extends Timed {
     }
 
     private int randomSoundValue() {
-        return SeedSyncer.centralRnd.nextInt(
+        this.prevSoundValue = SeedSyncer.centralRnd.nextInt(
             this.app.configuration.get("maxSoundLevel").intValue() 
             - this.app.configuration.get("minSoundLevel").intValue() + 1) 
             + this.app.configuration.get("minSoundLevel").intValue();
+        return prevSoundValue;
     }
     
-    private int logNormalSoundValue() {
-        double mean = 2.0;
-        double stdDev = 0.5;
+    private int lazySoundValue() {
+        int min = this.app.configuration.get("minSoundLevel").intValue();
+        int max = this.app.configuration.get("maxSoundLevel").intValue();
 
-        double logNormal = Math.exp(mean + stdDev * SeedSyncer.centralRnd.nextGaussian());
-        double scaled = Math.min(130, Math.max(30, logNormal));
+        if (prevSoundValue == -1) {
+            prevSoundValue = min + SeedSyncer.centralRnd.nextInt(max - min + 1);
+        }
+        
+        int delta = SeedSyncer.centralRnd.nextInt(7) - 3;
+        prevSoundValue += delta;
 
-        return (int) scaled;
+        if (SeedSyncer.centralRnd.nextDouble() < 0.1) {
+            prevSoundValue += SeedSyncer.centralRnd.nextInt(21) - 10;
+        }
+
+        prevSoundValue = Math.max(min, Math.min(max, prevSoundValue));
+
+        return prevSoundValue;
     }
 }

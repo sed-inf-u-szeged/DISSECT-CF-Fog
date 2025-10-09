@@ -20,7 +20,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
-import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
@@ -36,6 +35,7 @@ import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
+import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -45,13 +45,13 @@ import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
 
 public class AgentTestUNC {
 
-    public static void main(String[] args) throws NetworkException, IOException {
+    public static void main(String[] args) throws IOException {
         
         SimLogger.setLogging(1, true);
         SeedSyncer.modifySeed(9876543210L);
         
         /** general config */
-        long simLength = 1 * 24 * 60 * 60 * 1000; 
+        long simLength = 1 * 24 * 60 * 60 * 1000L; 
         int numOfApps = 1;
         
         /** app config */
@@ -69,8 +69,9 @@ public class AgentTestUNC {
         	configuration.put("minContainerCount", 2);	 // pc.
         	configuration.put("cpuLoadScaleUp", 70);	 // %
         	configuration.put("cpuLoadScaleDown", 30);   // %
+        	configuration.put("lengthOfProcessing", 1_700.0); // ms
         	
-         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
+        Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
         // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");
         
         /** ranking config */
@@ -311,136 +312,78 @@ public class AgentTestUNC {
             totalCost += cores * agent.hourlyPrice * (runtime / 1000 / 60 / 60);
         }
 
-        double avgDeploymentTime = 0.0;
-        double avgOffers = 0.0;
-        for (AgentApplication app : AgentApplication.agentApplications) {
-            SimLogger.logRes(app.name + " deployment: ");
-            if(app.deploymentTime != -1) {
-                avgDeploymentTime += app.deploymentTime;
-                SimLogger.logRes("\tTime (min.): " + app.deploymentTime / 1000 / 60);
-            } else {
-                SimLogger.logRes("\tTime (min.): -1");
-            }
-            SimLogger.logRes("\tAvailable offers: " + app.offers.size());
-            avgOffers += app.offers.size();
-            if(app.offers.size() > 0) {
-                StringBuilder str = new StringBuilder();
-                for(ResourceAgent ra : app.offers.get((app.winningOffer)).agentResourcesMap.keySet()) {
-                    str.append(ra.name + " ");
-                }
-                SimLogger.logRes("\tWinning offer: " + app.offers.get((app.winningOffer)).id + " ( " + str.toString() + ")");
-            }
-        }
-        
-        SimLogger.logRes("\nSimulation time (min.): " + Timed.getFireCount() / 1000.0 / 60.0);
-        
         DecimalFormat df = new DecimalFormat("#.####");
-        SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
-        SimLogger.logRes("Average deployment time (min.): " + (avgDeploymentTime / AgentApplication.agentApplications.size() / 1000 / 60));
-        
+
         double totalEnergy = 0;
         for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
             totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
         }
-        SimLogger.logRes("Total energy (kWh): " + totalEnergy);
-        
-        SimLogger.logRes("Average number of offers (pc.): " + (avgOffers / AgentApplication.agentApplications.size()));
-        
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
-
-        SimLogger.logRes("Size of generated files (MB): " + NoiseSensor.generatedFileSize / 1_048_576);
-        
-        SimLogger.logRes("Time above the temperature threshold (%): " 
-                + AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), configuration.get("cpuTempTreshold").doubleValue()));
-
-        SimLogger.logRes("Average time to transfer a file over the network (sec.): " + (NoiseSensor.timeOnNetwork / 1000.0) / NoiseSensor.generatedFiles);	
-        
-        SimLogger.logRes("Number of sound events (pc.): " + NoiseSensor.generatedFiles);
-        
-        SimLogger.logRes("Number of offloaded sound events (pc.): " + NoiseSensor.offloadedFiles);
-        
-        SimLogger.logRes("Number of sound events requiring processing (pc.): " + NoiseSensor.soundEventsReqProcessing);
-        
-        SimLogger.logRes("Number of processed files (pc.): " + NoiseSensor.processedFiles);
-        
+              
         long soundFilesNs = 0;
-        // long soundFilesRs = 0;
+        long soundFilesRs = 0;
+        double avgDeploymentTime = 0.0;
+        double avgOffers = 0.0;
+        
         for(SwarmAgent sa : SwarmAgent.allSwarmAgents) {
+            SimLogger.logRes(sa.app.name + " deployment: ");
+            if (sa.app.deploymentTime != -1) {
+                avgDeploymentTime += sa.app.deploymentTime;
+                SimLogger.logRes("\tTime (min.): " + df.format(sa.app.deploymentTime / 1000 / 60));
+            } else {
+                SimLogger.logRes("\tTime (min.): -1");
+            }
+            SimLogger.logRes("\tAvailable offers: " + sa.app.offers.size());
+            avgOffers += sa.app.offers.size();
+            if(sa.app.offers.size() > 0) {
+                StringBuilder str = new StringBuilder();
+                for(ResourceAgent ra : sa.app.offers.get((sa.app.winningOffer)).agentResourcesMap.keySet()) {
+                    str.append(ra.name + " ");
+                }
+                SimLogger.logRes("\tWinning offer: " + sa.app.offers.get((sa.app.winningOffer)).id + " ( " + str.toString() + ")");
+            }
+            
+            StorageObject resFile = null;      
         	for(Object o : sa.components) {
                 if (o.getClass().equals(NoiseSensor.class)) {
                     NoiseSensor ns = (NoiseSensor) o;
-                    //System.out.println("NS: " + ns.util.resource.name);
-                    //System.out.println(ns.pm.localDisk.contents().size()); 
+                    SimLogger.logRes("\t" + sa.app.getComponentName(ns.util.resource.name) + " is inside: " 
+                            + ns.inside + ", exposed to sunlight: " + ns.sunExposed);
                     for (StorageObject so : ns.pm.localDisk.contents()) {
                         if(so.id.contains("Noise-Sensor")) {
                             soundFilesNs++;
                         }
                     }
-                    
                 } else {
-                	/*
                     RemoteServer rs = (RemoteServer) o;
-                    System.out.println("RS:");
-                    System.out.println(rs.pm.localDisk.contents().size()); 
                     for (StorageObject so : rs.pm.localDisk.contents()) {
-                        if(so.id.contains("Noise-Sensor")) {
-                            soundFilesRs++;
-                        }
+                      if (so.id.equals(sa.app.name)) {
+                          resFile = so;
+                      }
                     }
-                    */
                 }
             }
+        	soundFilesRs += resFile.size / sa.app.configuration.get("resFileSize").longValue();
         }
         
+        SimLogger.logRes("\nSimulation time (min.): " + df.format(Timed.getFireCount() / 1000.0 / 60.0));
+        SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
+        SimLogger.logRes("Total energy (kWh): " + df.format(totalEnergy));
+        SimLogger.logRes("Size of generated files (MB): " + NoiseSensor.totalGeneratedFileSize / 1_048_576);
+        SimLogger.logRes("Number of sound events (pc.): " + NoiseSensor.totalGeneratedFiles);
+        SimLogger.logRes("Number of offloaded sound events (pc.): " + NoiseSensor.totalOffloadedFiles);
+        SimLogger.logRes("Number of sound events requiring processing (pc.): " + NoiseSensor.totalSoundEventsToProcess);
+        SimLogger.logRes("Number of processed files (pc.): " + NoiseSensor.totalProcessedFiles);
+        SimLogger.logRes("Average deployment time (min.): " + df.format(avgDeploymentTime / AgentApplication.agentApplications.size() / 1000 / 60));
+        SimLogger.logRes("Average number of offers (pc.): " + df.format(avgOffers / AgentApplication.agentApplications.size()));
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
-        //SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
-        
+        SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
+        SimLogger.logRes("Time above the temperature threshold (%): " 
+                + df.format(AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), 
+                        configuration.get("cpuTempTreshold").doubleValue())));
+
+        SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / NoiseSensor.totalGeneratedFiles));  
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
-        /*
-        long usedStorage = 0;
-        int files = 0;
-        Repository r = null;
-        for (SwarmAgent sa : SwarmAgent.allSwarmAgents) {
-        	for (Object o : sa.components) {
-        		if (o instanceof RemoteServer) {
-        			RemoteServer rs = (RemoteServer) o;
-        			r = rs.pm.localDisk;
-        			for (StorageObject so : rs.pm.localDisk.contents()) {
-        				if (so.id.contains("Noise-Sensor")) {
-        					usedStorage += so.size;
-        					files++;
-        				}
-        			}
-        		}
-        	}
-        }
-        
-        System.out.println(usedStorage + " " + files + " " + usedStorage / files);
-        System.out.println("used: " + (r.getMaxStorageCapacity()-r.getFreeStorageCapacity()));
-        System.out.println((r.getMaxStorageCapacity()-r.getFreeStorageCapacity())-usedStorage);
-        for(StorageObject so : r.contents()) {
-        	if(!so.id.contains("Noise-Sensor")) {
-        		System.out.println(so);
-        	}
-        }
-     
-        for(ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
-            SimLogger.logRes(ca.name + ":");
-            SimLogger.logRes("\t Contents:");
-            for(StorageObject so : ca.iaas.repositories.get(0).contents()) {
-                SimLogger.logRes("\t\t" + so);
-            }
-            SimLogger.logRes("\t VMs:");
-            for(VirtualMachine vm : ca.iaas.listVMs()) {
-                SimLogger.logRes("\t\t" + vm.toString());
-            }
-        }
-        
-        SimLogger.logRes("Image Registry's contents");
-        for(StorageObject so : Submission.imageRegistry.contents()) {
-            SimLogger.logRes("\t" + so);
-        }
-        */
     }
     
     private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {
@@ -507,11 +450,9 @@ public class AgentTestUNC {
              iaas.registerRepository(nodeRepo);
              latencyMap.put(name + "-localRepo", latency);
              latencyMap.put(name + "-nodeRepo", latency);
-             
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
         return iaas;
     }
 }

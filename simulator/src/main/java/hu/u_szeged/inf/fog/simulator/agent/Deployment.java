@@ -110,7 +110,7 @@ public class Deployment extends Timed {
                             app.configuration.get("soundTreshold").intValue(), 
                             SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
-                        new RemoteServer(sa, util.getRight());
+                        new RemoteServer(sa, util.getRight(), app.name);
                     } else {
                         SimLogger.logError("This type of component is unfamiliar in the UNC application!");
                     }
