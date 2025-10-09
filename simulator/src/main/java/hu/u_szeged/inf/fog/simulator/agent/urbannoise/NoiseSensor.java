@@ -117,21 +117,22 @@ public class NoiseSensor extends Timed {
 
         if (this.inside && this.sunExposed) {
             // weak heating
-            delta += 0.20 * sun;
+            delta += 0.35 * sun;
 
         } else if (!this.inside && !this.sunExposed) {
             // medium heating
-            delta += 0.50 * sun;
+            delta += 0.75 * sun;
 
         } else if (!this.inside && this.sunExposed) {
             // strong heating
-            delta += 1.00 * sun;
+            delta += 1.5 * sun;
+            
         }
         
         // noise
         delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
-        
         cpuTemp += delta;
+        
         if (cpuTemp < minCpuTemp) {
             cpuTemp = minCpuTemp;
         }
@@ -209,9 +210,8 @@ public class NoiseSensor extends Timed {
        
         if (this.cpuTemp <= this.app.configuration.get("cpuTempTreshold").doubleValue() && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
-            
-            double delta = (this.app.configuration.get("maxCpuTemp").doubleValue() - cpuTemp) * 0.00959;
-            delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
+
+            double delta = (this.app.configuration.get("maxCpuTemp").doubleValue() - cpuTemp) * 0.015;
             cpuTemp += delta;
            
             try {
@@ -222,6 +222,7 @@ public class NoiseSensor extends Timed {
                             @Override
                             public void conComplete() {
                                 totalProcessedFiles++;
+                                NoiseSensor.totalTimeOnNetwork += app.configuration.get("lengthOfProcessing").longValue();
                                 runSoundClassification();
                                 sendResultToDatabase(pm.localDisk, remoteServer.util.vm.getResourceAllocation().getHost().localDisk, so); 
                             }

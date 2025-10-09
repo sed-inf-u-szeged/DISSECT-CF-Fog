@@ -45,13 +45,14 @@ public class NoiseAppCsvExporter extends Timed {
         this.soundValues = new File(ScenarioBase.resultDirectory + "/sound-values.csv");
         
         this.sun = sun;
-        subscribe(10_000);
+        subscribe(5000);
     }
     
     public void visualise() {
-        AgentVisualiser.visualise(fileSunIntensity.toPath(), avgCpuLoad.toPath(), noOfNoiseSensorClassifiers.toPath(),
-            this.noiseSensorTemperature.toPath(), this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath(),
-            this.soundValues.toPath());
+        AgentVisualiser.visualise("res-sun-sound", fileSunIntensity.toPath(), this.soundValues.toPath());
+        AgentVisualiser.visualise("res-no-of", avgCpuLoad.toPath(), noOfNoiseSensorClassifiers.toPath(),
+            this.noOfFilesToProcess.toPath(), this.noOfFileMigrations.toPath());
+        AgentVisualiser.visualise("res-cpu-temp", this.noiseSensorTemperature.toPath());
     }
     
     private String generateHeader() {

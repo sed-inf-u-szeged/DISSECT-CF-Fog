@@ -61,7 +61,7 @@ public class AgentTestUNC {
         	configuration.put("resFileSize", 1024);      // 1 kB
         	configuration.put("minSoundLevel", 30);		 // dB
         	configuration.put("maxSoundLevel", 130);	 // dB
-        	configuration.put("soundTreshold", 0);		 // dB
+        	configuration.put("soundTreshold", 70);		 // dB
         	configuration.put("cpuTimeWindow", 600_000); // 10 min.
         	configuration.put("minCpuTemp", 55);		 // ℃
         	configuration.put("cpuTempTreshold", 80);	 // ℃
@@ -378,11 +378,11 @@ public class AgentTestUNC {
         SimLogger.logRes("Average number of offers (pc.): " + df.format(avgOffers / AgentApplication.agentApplications.size()));
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
         SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
-        SimLogger.logRes("Time above the temperature threshold (%): " 
+        SimLogger.logRes("Time below the temperature threshold (%): " 
                 + df.format(AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), 
                         configuration.get("cpuTempTreshold").doubleValue())));
 
-        SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / NoiseSensor.totalGeneratedFiles));  
+        SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / soundFilesRs));  
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }
     

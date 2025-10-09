@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class AgentVisualiser {
 
-    public static void visualise(Path... csvPaths) {
+    public static void visualise(String fileName, Path... csvPaths) {
         List<Path> csvFiles = Arrays.asList(csvPaths);
         List<String> chartDivs = new ArrayList<>();
         List<String> chartDatas = new ArrayList<>();
@@ -80,7 +80,6 @@ public class AgentVisualiser {
                   + "    var ctrlEl  = document.getElementById('ctrl" + idx + "');\n"
                   + "    var chart   = new google.visualization.LineChart(chartEl);\n"
                   + "\n"
-                  + "    // Láthatóság: kezdetben MIND rejtve\n"
                   + "    var visible = {};\n"
                   + "    for (var c = 1; c < " + varName + ".getNumberOfColumns(); c++) visible[c] = false;\n"
                   + "\n"
@@ -105,12 +104,11 @@ public class AgentVisualiser {
                   + "    }\n"
                   + "\n"
                   + "    function buildView(){\n"
-                  + "      var cols = [0]; // X tengely\n"
+                  + "      var cols = [0]; \n"
                   + "      for (var c = 1; c < " + varName + ".getNumberOfColumns(); c++){\n"
                   + "        if (visible[c]){\n"
-                  + "          cols.push(c); // eredeti oszlop\n"
+                  + "          cols.push(c); \n"
                   + "        } else {\n"
-                  + "          // rejtett sorozat: null értékek, hogy a tengely/tooltip stabil maradjon\n"
                   + "          (function(ci){\n"
                   + "            cols.push({\n"
                   + "              type: 'number', label: " + varName + ".getColumnLabel(ci),\n"
@@ -169,7 +167,7 @@ public class AgentVisualiser {
               + "</body>\n"
               + "</html>\n";
 
-        Path htmlPath = Paths.get(ScenarioBase.resultDirectory, "simulation-results.html");
+        Path htmlPath = Paths.get(ScenarioBase.resultDirectory, fileName + ".html");
 
         try {
             Files.write(htmlPath, html.getBytes(StandardCharsets.UTF_8));
