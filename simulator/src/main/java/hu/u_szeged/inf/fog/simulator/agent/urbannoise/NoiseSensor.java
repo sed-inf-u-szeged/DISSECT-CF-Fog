@@ -106,49 +106,40 @@ public class NoiseSensor extends Timed {
         }  
     }
     
-    // TODO: refactor this considering active cooling
     private void adjustTemperatureByEnv() {
-        final double sun = Sun.getInstance().getSunStrength(); 
-        final double heatOutside = 0.03;
-        final double heatInside  = 0.02;
-        final double heatShade   = 0.01;
-        final double nightCool   = 0.07;  
-        final double noise       = 0.12; 
-        final double heatingProbability = 0.9;
+        final double sun = Sun.getInstance().getSunStrength();
 
-        double delta = 0;
+        final double minCpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
+        final double maxCpuTemp = this.app.configuration.get("maxCpuTemp").doubleValue(); 
 
-        if (sun > 0.01) { 
-            if (SeedSyncer.centralRnd.nextDouble() < heatingProbability) {
-                if (this.sunExposed) {
-                    delta = heatShade * sun * sun;
-                } else if (this.inside) {
-                    delta = heatInside * sun * sun;
-                } else {
-                    delta = heatOutside * sun * sun;
-                }
-            } else {
-                delta = 0.0; 
-            }
-        } else {
-            delta = -nightCool; 
+        // base active cooling 
+        double delta = (minCpuTemp - cpuTemp) * 0.02887;
+
+        if (this.inside && this.sunExposed) {
+            // weak heating
+            delta += 0.20 * sun;
+
+        } else if (!this.inside && !this.sunExposed) {
+            // medium heating
+            delta += 0.50 * sun;
+
+        } else if (!this.inside && this.sunExposed) {
+            // strong heating
+            delta += 1.00 * sun;
         }
-
-        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * noise;
-
-        this.cpuTemp += delta * 0.5;
-
-        double minCpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
-        double maxCpuTemp = this.app.configuration.get("maxCpuTemp").doubleValue();
         
-        if (this.cpuTemp < minCpuTemp) {
-            this.cpuTemp = minCpuTemp;
+        // noise
+        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
+        
+        cpuTemp += delta;
+        if (cpuTemp < minCpuTemp) {
+            cpuTemp = minCpuTemp;
         }
-        if (this.cpuTemp > maxCpuTemp) {
-            this.cpuTemp = maxCpuTemp;
+        if (cpuTemp > maxCpuTemp) {
+            cpuTemp = maxCpuTemp;
         }
     }
-
+    
     private void offload() {
         ArrayList<StorageObject> successfullyTransferred = new ArrayList<>();
         for (StorageObject so : this.filesToBeProcessed) {
@@ -218,10 +209,13 @@ public class NoiseSensor extends Timed {
        
         if (this.cpuTemp <= this.app.configuration.get("cpuTempTreshold").doubleValue() && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
-            this.cpuTemp += 0.005; // TODO: refactor
+            
+            double delta = (this.app.configuration.get("maxCpuTemp").doubleValue() - cpuTemp) * 0.00959;
+            delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
+            cpuTemp += delta;
            
             try {
-                this.util.vm.newComputeTask((double) this.app.configuration.get("lengthOfProcessing") * util.utilisedCpu, 
+                this.util.vm.newComputeTask(this.app.configuration.get("lengthOfProcessing").doubleValue() * util.utilisedCpu, 
                         ResourceConsumption.unlimitedProcessing, 
                            new ConsumptionEventAdapter() {
                                             

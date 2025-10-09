@@ -61,7 +61,7 @@ public class AgentTestUNC {
         	configuration.put("resFileSize", 1024);      // 1 kB
         	configuration.put("minSoundLevel", 30);		 // dB
         	configuration.put("maxSoundLevel", 130);	 // dB
-        	configuration.put("soundTreshold", 70);		 // dB
+        	configuration.put("soundTreshold", 0);		 // dB
         	configuration.put("cpuTimeWindow", 600_000); // 10 min.
         	configuration.put("minCpuTemp", 55);		 // ℃
         	configuration.put("cpuTempTreshold", 80);	 // ℃
@@ -69,7 +69,7 @@ public class AgentTestUNC {
         	configuration.put("minContainerCount", 2);	 // pc.
         	configuration.put("cpuLoadScaleUp", 70);	 // %
         	configuration.put("cpuLoadScaleDown", 30);   // %
-        	configuration.put("lengthOfProcessing", 1_700.0); // ms
+        	configuration.put("lengthOfProcessing", 1_700); // ms
         	
         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
         // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");

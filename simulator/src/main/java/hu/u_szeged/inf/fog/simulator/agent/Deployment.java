@@ -143,7 +143,7 @@ public class Deployment extends Timed {
                     */
                 }
             } 
-            sa.startNecesseryServices(2);
+            sa.startNecesseryServices(app.configuration.get("minContainerCount").intValue());
         }
     }
 }
