@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
