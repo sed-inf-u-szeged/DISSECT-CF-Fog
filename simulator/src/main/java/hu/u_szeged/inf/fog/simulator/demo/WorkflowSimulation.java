@@ -19,7 +19,7 @@ import hu.u_szeged.inf.fog.simulator.util.WorkflowGraphVisualiser;
 import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.aco.CentralisedAntOptimiserWorkflow;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.MaxMinScheduler;
 
 public class WorkflowSimulation {
@@ -111,7 +111,7 @@ public class WorkflowSimulation {
         nodesToBeClustered.add(node18);
         nodesToBeClustered.add(node19);
         
-        clusterAssignments = CentralisedAntOptimiser.runOptimiser(4, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.15, 0.3);
+        clusterAssignments = CentralisedAntOptimiserWorkflow.runOptimiser(4, nodesToBeClustered, 50, 200, 0.5, 0.2, 0.15, 0.3);
         //clusterAssignments = Medoids.runOptimiser(new ArrayList<>(List.of(4, 18, 15, 13)), nodesToBeClustered);
         //System.exit(0);;
         
@@ -145,9 +145,9 @@ public class WorkflowSimulation {
         new EnergyDataCollector("node-19", node19.iaas, true);
         
         // The result of the clustering
-        CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
+        CentralisedAntOptimiserWorkflow.printClusterAssignments(clusterAssignments);
         
-        List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiser.sortClustersByAveragePairwiseDistance(clusterAssignments);
+        List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiserWorkflow.sortClustersByAveragePairwiseDistance(clusterAssignments);
        
         // Creating the executor engine
         WorkflowExecutor executor = WorkflowExecutor.getIstance();

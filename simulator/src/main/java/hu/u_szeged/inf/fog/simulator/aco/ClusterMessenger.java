@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
