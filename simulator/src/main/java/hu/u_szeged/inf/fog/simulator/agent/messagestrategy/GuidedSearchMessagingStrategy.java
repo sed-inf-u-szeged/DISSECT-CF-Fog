@@ -38,9 +38,8 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private static final double RESOURCE_WEIGHT = 0.4;
     private static final double REPUTATION_WEIGHT = 0.3;  // Historical performance
 
-    // Decay and learning parameters
     private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
-    private static final double LEARNING_RATE = 0.20;      // How fast to adapt
+    private static final double LEARNING_RATE = 0.15;      // How fast to adapt
     private static final double SUCCESS_BONUS = 1.0;      // Reward for being in winning offer
     private static final double SELECTION_BONUS = 0.5;    // Reward for being selected
 
@@ -57,12 +56,12 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     /**
      * Minimum chance for an agent to get selected for networking.
      */
-    private static final double MIN_SELECTION_PROBABILITY = 0.10;
+    private static final double MIN_SELECTION_PROBABILITY = 0.15;
 
     /**
      * Minimum reputation score needs to be reached before the guided search actually selects the agents.
      */
-    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 2;
+    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 0;
 
     private Offer winningOffer;
 
@@ -71,13 +70,12 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         List<ResourceAgent> potentialAgents = getPotentialAgents(gateway);
         System.out.println("Working gateway: " + gateway.name);
 
-        if (isFirstRound(gateway) || winningOffer == null) {
+        if (isFirstRound(gateway)) {
             initializeStaticScores(gateway, potentialAgents);
-            gateway.servedAsGatewayCount++;
             return potentialAgents;
         }
-        System.out.println(gateway.servedAsGatewayCount +" mi "+ MIN_ROUNDS_TO_USE_ACTIVATE);
-        if (gateway.servedAsGatewayCount >= MIN_ROUNDS_TO_USE_ACTIVATE) {
+
+        if (gateway.servedAsGatewayCount < MIN_ROUNDS_TO_USE_ACTIVATE) {
             return potentialAgents;
         }
 
@@ -87,8 +85,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         List<ResourceAgent> selectedAgents = selectAgentsByProbability(compositeScores);
 
         updateReputationScores(gateway, selectedAgents, potentialAgents);
-        setWinningOffer(null);
-        gateway.servedAsGatewayCount++;
 
         return selectedAgents;
     }
@@ -202,6 +198,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      * Update reputation scores based on selection and winning offer participation
      */
     private void updateReputationScores(ResourceAgent gateway, List<ResourceAgent> selectedAgents, List<ResourceAgent> allAgents) {
+        System.out.println(gateway.servedAsGatewayCount + " galo " + winningOffer);
         for (ResourceAgent agent : allAgents) {
             double reputationIncrement = 0.0;
 
@@ -214,10 +211,15 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
                 agent.winningOfferSelectionCount++;
             }
 
-            double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
-            double newReputation = Math.min(1.0, currentReputation + reputationIncrement); // Cap reputation at 1.0 to keep it from outweighing static and resource scores
+            // NEW: Add diversity bonus - agents that haven't won recently get a small boost
+            if (agent.winningOfferSelectionCount == 0 && gateway.servedAsGatewayCount > 2) {
+                reputationIncrement += 0.05;  // Small boost for unexplored agents
+            }
 
-            gateway.reputationScores.put(agent, Math.max(0.0, newReputation)); // Keep non-negative
+            double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
+            double newReputation = Math.min(1.0, currentReputation + reputationIncrement);
+
+            gateway.reputationScores.put(agent, Math.max(0.0, newReputation));
         }
     }
 

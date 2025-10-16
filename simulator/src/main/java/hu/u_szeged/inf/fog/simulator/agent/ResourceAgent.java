@@ -25,13 +25,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 public class ResourceAgent {
 
@@ -52,18 +46,14 @@ public class ResourceAgent {
     AgentStrategy agentStrategy;
 
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
-
-    public int reBroadcastCounter;
-
     public int servedAsGatewayCount = 0;
     public int winningOfferSelectionCount = 0;
     public Map<ResourceAgent, Double> staticScores = new HashMap<>();
     public Map<ResourceAgent, Double> reputationScores = new HashMap<>();
-    private Set<ResourceAgent> networkingAgents;
+    public Map<String, Set<ResourceAgent>> networkingAgentsByApp = new HashMap<>();
 
     private final MessagingStrategy messagingStrategy;
-
-    int callcounter;
+    public static int maxRebroadcastCount = 2;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
@@ -95,6 +85,7 @@ public class ResourceAgent {
         double totalFreeCpu = capacities.stream().mapToDouble(cap -> cap.cpu).sum();
         long totalFreeMemory = capacities.stream().mapToLong(cap -> cap.memory).sum();
         long totalFreeStorage = capacities.stream().mapToLong(cap -> cap.storage).sum();
+        System.out.println("TOTAL RESOURCES FOR "+ this.name +" cpu: "+totalFreeCpu +" memory: "+totalFreeMemory +" storage: "+totalFreeStorage);
 
         return Triple.of(totalFreeCpu, totalFreeMemory, totalFreeStorage);
     }
@@ -117,27 +108,32 @@ public class ResourceAgent {
     }
 
     public void broadcast(AgentApplication app, int bcastMessageSize) {
+        app.broadcastCount++;
         MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            for (Capacity capacity : agent.capacities) {
+                freeReservedResources(app.name, capacity);
+            }
+        };
     }
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
 
+        System.out.println(app.offers.size() + "ember " + app.name);
         if (!app.offers.isEmpty()) {
             this.writeFile(app); // TODO: this takes time..
-            app.winningOffer = 0;
+            app.winningOffer = callRankingScript(app);
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
                 @Override
                 protected void eventAction() {
-                    if (reBroadcastCounter < AgentApplicationReader.appCount * 2) {
+                    if (app.broadcastCount - 1 <= maxRebroadcastCount) {
                         broadcast(app, bcastMessageSize);
-                        // TODO: this var is handled at RA level, not at app level (what if RA has more than one app)
-                        reBroadcastCounter++;
-                        SimLogger.logRun("Rebroadcast " + reBroadcastCounter + " for " + app.name);
+                        SimLogger.logRun("Rebroadcast " + (app.broadcastCount-1) + " for " + app.name);
                     }
                 }
             };
@@ -160,7 +156,7 @@ public class ResourceAgent {
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
-        for (ResourceAgent agent : networkingAgents) {
+        for (ResourceAgent agent : app.networkingAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
 
@@ -173,9 +169,9 @@ public class ResourceAgent {
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
         // TODO: only for debugging, needs to be deleted
-        System.out.println(app.name);
+        System.out.println("Offers for: " + app.name);
         for (Offer o : app.offers) {
-            // System.out.println(o);
+            //System.out.println(o);
         }
     }
 
@@ -241,14 +237,14 @@ public class ResourceAgent {
 
             // TODO: revise these commands
             if (SystemUtils.IS_OS_WINDOWS) {
-                command = "cd /d " + rankingScriptDir
+                command = "cd /d \"" + rankingScriptDir + "\""
                         + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " + rankingMethodName
-                        + " --offers_loc " + inputfile;
+                        + " --offers_loc \"" + inputfile + "\"";
                 processBuilder = new ProcessBuilder("cmd.exe", "/c", command);
             } else if (SystemUtils.IS_OS_LINUX) {
                 command = "cd " + rankingScriptDir
                         + " && python3 call_ranking_func.py --method_name " + rankingMethodName
-                        + " --offers_loc " + inputfile;
+                        + " --offers_loc \"" + inputfile + "\"";
 
                 processBuilder = new ProcessBuilder("bash", "-c", command);
             } else {
@@ -437,10 +433,5 @@ public class ResourceAgent {
         */
 
         this.capacities.addAll(capacities);
-    }
-
-    public void setNetWorkingAgents(Set<ResourceAgent> networkingAgents) {
-        this.networkingAgents = networkingAgents;
-        this.networkingAgents.add(this);
     }
 }

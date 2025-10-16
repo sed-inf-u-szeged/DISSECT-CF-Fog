@@ -4,14 +4,26 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAda
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 public class MessageHandler {
     public static void executeMessaging(MessagingStrategy messagingStrategy,
                                         ResourceAgent gateway, AgentApplication app, int bcastMessageSize, String msg, Runnable customAction) {
-        List<ResourceAgent> filteredAgents = messagingStrategy.filterAgents(gateway);
-        gateway.setNetWorkingAgents(new HashSet<>(filteredAgents));
+        List<ResourceAgent> filteredAgents;
+        System.out.println(msg + " for " + app.name);
+
+        if(msg.equals("bcast")) {
+            filteredAgents = messagingStrategy.filterAgents(gateway);
+            gateway.networkingAgentsByApp.put(app.name, new HashSet<>(filteredAgents));
+            app.networkingAgents = new HashSet<>(filteredAgents);
+            gateway.servedAsGatewayCount++;
+            System.out.println("networking agents for:" + gateway.name);
+            filteredAgents.forEach(a -> System.out.println(a.name));
+        } else {
+            filteredAgents = new ArrayList<>(gateway.networkingAgentsByApp.get(app.name));
+        }
 
         for (ResourceAgent agent : filteredAgents) {
             String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";

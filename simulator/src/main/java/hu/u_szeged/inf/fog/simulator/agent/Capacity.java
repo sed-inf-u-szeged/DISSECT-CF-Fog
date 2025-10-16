@@ -62,6 +62,9 @@ public class Capacity {
 
         CapacityHandlingException(final String s){super(s);}
     }
+    public final int totalCpu;
+    public final long totalMemory;
+    public final long totalStorage;
 
     public double cpu;
 
@@ -85,6 +88,9 @@ public class Capacity {
             throw new CapacityHandlingException("Storage allocation exceeds the available storage of the ComputingAppliance");
         }
 */
+        this.totalCpu = (int) cpu;
+        this.totalMemory = memory;
+        this.totalStorage = storage;
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;

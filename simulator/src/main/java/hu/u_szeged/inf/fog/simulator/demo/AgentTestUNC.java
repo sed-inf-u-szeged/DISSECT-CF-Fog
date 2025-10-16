@@ -82,7 +82,7 @@ public class AgentTestUNC {
 
         /** ranking config */
         // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        ResourceAgent.rankingScriptDir = "/home/markus/Documents/projects/swarm-deployment/for_simulator";
+        ResourceAgent.rankingScriptDir = "C:\\Users\\Kovacs Mate\\Desktop\\SZAKDOGA\\rankingScript\\swarm-deployment-development\\for_simulator"; // TEMPORARY
 
         ResourceAgent.rankingMethodName = "rank_no_re";
         // ResourceAgent.rankingMethodName = "rank_re_add";
@@ -298,7 +298,7 @@ public class AgentTestUNC {
         long starttime = System.nanoTime();       
         Timed.simulateUntil(simLength);
         long stoptime = System.nanoTime();
-        csvExporter.visualise();
+        //csvExporter.visualise();
         
         /** results */
         SimLogger.logRes("\nSimulation completed.");
@@ -358,8 +358,8 @@ public class AgentTestUNC {
 
         SimLogger.logRes("Size of generated files (MB): " + NoiseSensor.generatedFileSize / 1_048_576);
         
-        SimLogger.logRes("Time above the temperature threshold (%): " 
-                + AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), configuration.get("cpuTempTreshold").doubleValue()));
+        //SimLogger.logRes("Time above the temperature threshold (%): "
+        //        + AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), configuration.get("cpuTempTreshold").doubleValue()));
 
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + (NoiseSensor.timeOnNetwork / 1000.0) / NoiseSensor.generatedFiles);	
         
