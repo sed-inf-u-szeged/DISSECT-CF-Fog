@@ -15,14 +15,14 @@ import java.util.stream.Collectors;
 
 /**
  * Messaging strategy that guides resource agent selection
- * based on previous offer success, resources, and geographical distance.
+ * based on previous selection/offer success, resources, and geographical distance.
  *
  * <p>
  * This strategy assigns scores to neighboring resource agents
  * to bias future selections:
  * <ul>
  *   <li>Initially, scores are assigned based on latency and geographical distance from/to the gateway.</li>
- *   <li>In each iteration, additional points are added based on the winning offer participation and available resources.</li>
+ *   <li>In each iteration, additional points are added based on the previous selections and available resources.</li>
  *   <li>These scores are normalized to form selection probabilities.</li>
  *   <li>Agents are then selected probabilistically, where higher scores translate into a higher chance of being selected.</li>
  * </ul>
@@ -61,14 +61,14 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     /**
      * Minimum reputation score needs to be reached before the guided search actually selects the agents.
      */
-    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 0;
+    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 2;
+    final double EPSILON = 1e-9;
 
-    private Offer winningOffer;
+    private Offer winningOffer; // will only be used after ack rounds (potential rebroadcasts)
 
     @Override
     public List<ResourceAgent> filterAgents(final ResourceAgent gateway) {
         List<ResourceAgent> potentialAgents = getPotentialAgents(gateway);
-        System.out.println("Working gateway: " + gateway.name);
 
         if (isFirstRound(gateway)) {
             initializeStaticScores(gateway, potentialAgents);
@@ -84,7 +84,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         Map<ResourceAgent, Double> compositeScores = calculateCompositeScores(gateway, potentialAgents);
         List<ResourceAgent> selectedAgents = selectAgentsByProbability(compositeScores);
 
-        if (!selectedAgents.isEmpty()) {
+        if (selectedAgents.isEmpty()) {
             List<ResourceAgent> topScorers = compositeScores.entrySet().stream()
                     .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
                     .limit(Math.max(1, potentialAgents.size() / 2))
@@ -128,8 +128,8 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double distanceKm = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000.0;
             int latencyMs = getLatencyToNode(agent, gatewayNode);
 
-            double distanceScore = 1.0 / (Math.log(distanceKm + 1) + 1);
-            double latencyScore = 1.0 / (latencyMs + 1);
+            double distanceScore = 1.0 / (Math.log(distanceKm + EPSILON) + EPSILON);
+            double latencyScore = 1.0 / (latencyMs + EPSILON);
             double combinedScore = (DISTANCE_WEIGHT * distanceScore + LATENCY_WEIGHT * latencyScore);
 
             rawStaticScores.put(agent, combinedScore);
@@ -240,9 +240,9 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
                 agent.winningOfferSelectionCount++;
             }
 
-            // Add diversity bonus - agents that haven't won recently get a small boost
+            // Add diversity bonus - agents that haven't won yet get a small boost
             if (agent.winningOfferSelectionCount == 0 && gateway.servedAsGatewayCount > 2) {
-                reputationIncrement += 0.05;  // Small boost for unexplored agents
+                reputationIncrement += 0.05;
             }
 
             double currentReputation = gateway.reputationScores.getOrDefault(agent, 0.0);
@@ -270,12 +270,10 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private List<ResourceAgent> selectAgentsByProbability(Map<ResourceAgent, Double> compositeScores) {
         Map<ResourceAgent, Double> probabilities = normalizeToProbabilities(compositeScores);
 
-        System.out.println("-".repeat(40));
         List<ResourceAgent> selected = new ArrayList<>();
         for (Map.Entry<ResourceAgent, Double> entry : probabilities.entrySet()) {
             double randomValue = SeedSyncer.centralRnd.nextDouble();
             double probability = entry.getValue();
-
             /*
             System.out.println(entry.getKey().name + " - Prob: " + String.format("%.3f", probability)
                     + ", Rand: " + String.format("%.3f", randomValue)
@@ -300,7 +298,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
         Map<ResourceAgent, Double> probabilities = new HashMap<>();
         for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
-            double normalized = (range > 1e-9) ? (entry.getValue() - min) / range : 0.5;
+            double normalized = (range > EPSILON) ? (entry.getValue() - min) / range : 0.5;
             double probability = MIN_SELECTION_PROBABILITY + normalized * (1.0 - MIN_SELECTION_PROBABILITY);
 
             probabilities.put(entry.getKey(), probability);
@@ -319,7 +317,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
         Map<ResourceAgent, Double> normalized = new HashMap<>();
         for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
-            double norm = (range > 1e-9) ? (entry.getValue() - min) / range : 0.5;
+            double norm = (range > EPSILON) ? (entry.getValue() - min) / range : 0.5;
             double scaled = minVal + norm * (maxVal - minVal);
             normalized.put(entry.getKey(), scaled);
         }

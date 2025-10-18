@@ -48,7 +48,6 @@ public class Capacity {
             this.state = Utilisation.State.ALLOCATED;
         }
 
-
         @Override
         public String toString() {
             return "Utilisation [state=" + state + ", resource=" + resource.name + ", utilisedCpu=" + utilisedCpu
@@ -56,15 +55,6 @@ public class Capacity {
                     + ", type=" + type + ", initTime=" + initTime + ", vm=" + vm + "]";
         }
     }
-
-    public static class CapacityHandlingException extends RuntimeException {
-        private static final long serialVersionUID = -474479716001109155L;
-
-        CapacityHandlingException(final String s){super(s);}
-    }
-    public final int totalCpu;
-    public final long totalMemory;
-    public final long totalStorage;
 
     public double cpu;
 
@@ -76,21 +66,7 @@ public class Capacity {
 
     public List<Utilisation> utilisations;
 
-    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) throws CapacityHandlingException {
-        /*
-        if (cpu > node.iaas.getCapacities().getRequiredCPUs()) {
-            throw new CapacityHandlingException("CPU allocation exceeds the available CPUs of the ComputingAppliance");
-        }
-        if (memory > node.iaas.getCapacities().getRequiredMemory()) {
-            throw new CapacityHandlingException("Memory allocation exceeds the available memory of the ComputingAppliance");
-        }
-        if (storage > node.getAvailableStorage()) {
-            throw new CapacityHandlingException("Storage allocation exceeds the available storage of the ComputingAppliance");
-        }
-*/
-        this.totalCpu = (int) cpu;
-        this.totalMemory = memory;
-        this.totalStorage = storage;
+    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) {
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;

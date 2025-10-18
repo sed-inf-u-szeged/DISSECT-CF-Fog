@@ -53,7 +53,7 @@ public class ResourceAgent {
     public Map<String, Set<ResourceAgent>> networkingAgentsByApp = new HashMap<>();
 
     private final MessagingStrategy messagingStrategy;
-    public static int maxRebroadcastCount = 2;
+    public static int MAX_REBROADCAST_COUNT = 2;
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
@@ -132,7 +132,7 @@ public class ResourceAgent {
             new DeferredEvent(1000 * 10) {
                 @Override
                 protected void eventAction() {
-                    if (app.broadcastCount - 1 <= maxRebroadcastCount) {
+                    if (app.broadcastCount - 1 <= MAX_REBROADCAST_COUNT) {
                         broadcast(app, bcastMessageSize);
                         SimLogger.logRun("Rebroadcast " + (app.broadcastCount - 1) + " for " + app.name);
                     }
