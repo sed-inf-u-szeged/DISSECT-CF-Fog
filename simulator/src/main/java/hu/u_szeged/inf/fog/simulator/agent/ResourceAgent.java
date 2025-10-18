@@ -193,7 +193,7 @@ public class ResourceAgent {
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
         // TODO: only for debugging, needs to be deleted
-        System.out.println("Offers for: " + app.name);
+        // System.out.println("Offers for: " + app.name);
         for (Offer o : app.offers) {
             // System.out.println(o);
         }
