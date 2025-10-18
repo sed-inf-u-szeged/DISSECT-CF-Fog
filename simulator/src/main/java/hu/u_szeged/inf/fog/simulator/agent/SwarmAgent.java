@@ -111,7 +111,6 @@ public class SwarmAgent extends Timed {
                         max = ns.cpuTemp;
                     }
                 }
-                      
             }
         }
         return best;
@@ -156,17 +155,6 @@ public class SwarmAgent extends Timed {
         NoiseSensor item = noiseSensorsWithClassifier.get(currentIndex);
         currentIndex = (currentIndex + 1) % noiseSensorsWithClassifier.size();
         return item;
-    }
-    
-    public int noOfFilesToProcess() {
-        int i = 0;
-        for (Object o : this.components) {
-            if (o instanceof NoiseSensor) {
-                NoiseSensor ns = (NoiseSensor) o;
-                i += ns.filesToBeProcessed.size();
-            }
-        }
-        return i;
     }
     
     public void startNecesseryServices(int num) {

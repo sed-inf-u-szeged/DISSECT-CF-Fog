@@ -109,8 +109,9 @@ public class Deployment extends Timed {
                         new NoiseSensor(app, sa, util.getRight(), app.configuration.get("samplingFreq").longValue(), 
                             app.configuration.get("soundTreshold").intValue(), 
                             SeedSyncer.centralRnd.nextBoolean(), SeedSyncer.centralRnd.nextBoolean());
+                            //false, true);
                     } else if (this.app.getComponentName(util.getRight().resource.name).contains("Remote-Server")) {
-                        new RemoteServer(sa, util.getRight());
+                        new RemoteServer(sa, util.getRight(), app.name);
                     } else {
                         SimLogger.logError("This type of component is unfamiliar in the UNC application!");
                     }
@@ -143,7 +144,7 @@ public class Deployment extends Timed {
                     */
                 }
             } 
-            sa.startNecesseryServices(2);
+            sa.startNecesseryServices(app.configuration.get("minContainerCount").intValue());
         }
     }
 }
