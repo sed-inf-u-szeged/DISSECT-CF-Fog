@@ -73,7 +73,6 @@ public class FirstFitAgentStrategy extends AgentStrategy {
             return (r1.cpu == null) ? 1 : -1;
         });
 
-
         return sortedResources;
     }
 }

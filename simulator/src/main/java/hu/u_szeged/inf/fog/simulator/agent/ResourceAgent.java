@@ -283,7 +283,7 @@ public class ResourceAgent {
                 StringBuilder arrayContent = new StringBuilder();
 
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
+                    // System.out.println(line);
                     arrayContent.append(line).append(" ");
                 }
 
@@ -382,7 +382,6 @@ public class ResourceAgent {
                 return;
             }
 
-
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
                     if (offer.agentResourcesMap.containsKey(agent)) {
@@ -415,7 +414,6 @@ public class ResourceAgent {
         double maxCpu = Integer.MIN_VALUE;
 
         for (Pair<ComputingAppliance, Utilisation> pair : utilisations) {
-
             if (pair.getRight().utilisedCpu > maxCpu) {
                 maxCpu = pair.getRight().utilisedCpu;
                 leadResource = pair;
