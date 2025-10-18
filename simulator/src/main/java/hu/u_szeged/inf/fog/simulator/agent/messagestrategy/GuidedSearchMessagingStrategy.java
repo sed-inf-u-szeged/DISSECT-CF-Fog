@@ -35,11 +35,11 @@ import java.util.stream.Collectors;
 public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     // Base component weights (must sum to 1.0)
     private static final double STATIC_WEIGHT = 0.3;
-    private static final double RESOURCE_WEIGHT = 0.4;
-    private static final double REPUTATION_WEIGHT = 0.3;  // Historical performance
+    private static final double RESOURCE_WEIGHT = 0.5;
+    private static final double REPUTATION_WEIGHT = 0.2;  // Historical performance
 
     private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
-    private static final double LEARNING_RATE = 0.15;      // How fast to adapt
+    private static final double LEARNING_RATE = 0.2;      // How fast to adapt with reputation [1,0]
     private static final double SUCCESS_BONUS = 1.0;      // Reward for being in winning offer
     private static final double SELECTION_BONUS = 0.5;    // Reward for being selected
 
@@ -83,6 +83,18 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
         Map<ResourceAgent, Double> compositeScores = calculateCompositeScores(gateway, potentialAgents);
         List<ResourceAgent> selectedAgents = selectAgentsByProbability(compositeScores);
+
+        if (!selectedAgents.isEmpty()) {
+            List<ResourceAgent> topScorers = compositeScores.entrySet().stream()
+                    .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                    .limit(Math.max(1, potentialAgents.size() / 2))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());
+
+            SimLogger.logRun("WARNING: Empty selection for gateway " + gateway.name +
+                    ". Returning top " + topScorers.size() + " agents by composite score.");
+            return topScorers;
+        }
 
         updateReputationScores(gateway, selectedAgents, potentialAgents);
 
@@ -155,17 +167,17 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double resourceScore = resourceScores.getOrDefault(agent, 0.0);
             double reputationScore = gateway.reputationScores.getOrDefault(agent, 0.0);
 
-            // Weighted combination for FINAL point
             double composite = STATIC_WEIGHT * staticScore +
                     RESOURCE_WEIGHT * resourceScore +
                     REPUTATION_WEIGHT * reputationScore;
 
             compositeScores.put(agent, composite);
-
+            /*
             System.out.println(agent.name + " - Static: " + String.format("%.3f", staticScore) +
                     ", Resource: " + String.format("%.3f", resourceScore) +
                     ", Reputation: " + String.format("%.3f", reputationScore) +
                     ", Composite: " + String.format("%.3f", composite));
+             */
         }
 
         return compositeScores;
@@ -175,7 +187,11 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      * Calculate current resource availability scores (normalized to 0-1)
      */
     private Map<ResourceAgent, Double> calculateResourceScores(List<ResourceAgent> agents) {
-        Map<ResourceAgent, Double> resourceScores = new HashMap<>();
+        Map<ResourceAgent, Double> rawScores = new HashMap<>();
+
+        double minCpu = Double.MAX_VALUE, maxCpu = 0;
+        double minMemory = Double.MAX_VALUE, maxMemory = 0;
+        double minStorage = Double.MAX_VALUE, maxStorage = 0;
 
         for (ResourceAgent agent : agents) {
             Triple<Double, Long, Long> free = agent.getAllFreeResources();
@@ -183,22 +199,35 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             double memoryGB = free.getMiddle() / (1024.0 * 1024 * 1024);
             double storageGB = free.getRight() / (1024.0 * 1024 * 1024);
 
-            double cpuScore = Math.log(cpu + 1);
-            double memoryScore = Math.log(memoryGB + 1);
-            double storageScore = Math.log(storageGB + 1);
-
-            double combinedScore = (cpuScore + memoryScore + storageScore) / 3.0;
-            resourceScores.put(agent, combinedScore);
+            minCpu = Math.min(minCpu, cpu);
+            maxCpu = Math.max(maxCpu, cpu);
+            minMemory = Math.min(minMemory, memoryGB);
+            maxMemory = Math.max(maxMemory, memoryGB);
+            minStorage = Math.min(minStorage, storageGB);
+            maxStorage = Math.max(maxStorage, storageGB);
         }
 
-        return normalizeToRange(resourceScores, 0.0, 1.0);
+        for (ResourceAgent agent : agents) {
+            Triple<Double, Long, Long> free = agent.getAllFreeResources();
+            double cpu = free.getLeft();
+            double memoryGB = free.getMiddle() / (1024.0 * 1024 * 1024);
+            double storageGB = free.getRight() / (1024.0 * 1024 * 1024);
+
+            double cpuScore = (maxCpu > minCpu) ? (cpu - minCpu) / (maxCpu - minCpu) : 1.0;
+            double memoryScore = (maxMemory > minMemory) ? (memoryGB - minMemory) / (maxMemory - minMemory) : 1.0;
+            double storageScore = (maxStorage > minStorage) ? (storageGB - minStorage) / (maxStorage - minStorage) : 1.0;
+
+            double combinedScore = (cpuScore + memoryScore + storageScore) / 3.0;
+            rawScores.put(agent, combinedScore);
+        }
+
+        return normalizeToRange(rawScores, 0.0, 1.0);
     }
 
     /**
      * Update reputation scores based on selection and winning offer participation
      */
     private void updateReputationScores(ResourceAgent gateway, List<ResourceAgent> selectedAgents, List<ResourceAgent> allAgents) {
-        System.out.println(gateway.servedAsGatewayCount + " galo " + winningOffer);
         for (ResourceAgent agent : allAgents) {
             double reputationIncrement = 0.0;
 
@@ -211,7 +240,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
                 agent.winningOfferSelectionCount++;
             }
 
-            // NEW: Add diversity bonus - agents that haven't won recently get a small boost
+            // Add diversity bonus - agents that haven't won recently get a small boost
             if (agent.winningOfferSelectionCount == 0 && gateway.servedAsGatewayCount > 2) {
                 reputationIncrement += 0.05;  // Small boost for unexplored agents
             }
@@ -241,11 +270,19 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private List<ResourceAgent> selectAgentsByProbability(Map<ResourceAgent, Double> compositeScores) {
         Map<ResourceAgent, Double> probabilities = normalizeToProbabilities(compositeScores);
 
+        System.out.println("-".repeat(40));
         List<ResourceAgent> selected = new ArrayList<>();
         for (Map.Entry<ResourceAgent, Double> entry : probabilities.entrySet()) {
             double randomValue = SeedSyncer.centralRnd.nextDouble();
+            double probability = entry.getValue();
 
-            if (randomValue <= entry.getValue()) {
+            /*
+            System.out.println(entry.getKey().name + " - Prob: " + String.format("%.3f", probability)
+                    + ", Rand: " + String.format("%.3f", randomValue)
+                    + " → " + (randomValue <= probability ? "Selected" : "Not selected"));
+
+             */
+            if (randomValue <= probability) {
                 selected.add(entry.getKey());
             }
         }

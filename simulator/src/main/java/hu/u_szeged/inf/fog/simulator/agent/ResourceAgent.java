@@ -14,7 +14,6 @@ import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
@@ -27,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
+
 public class ResourceAgent {
 
     public static String rankingMethodName;
@@ -58,7 +58,7 @@ public class ResourceAgent {
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
         this.capacities = new ArrayList<>();
-        validateAndAddCapacitiesLimit(Arrays.asList(capacities));
+        validateAndAddCapacitiesLimit(capacities);
         this.name = name;
         this.hourlyPrice = hourlyPrice;
         ResourceAgent.resourceAgents.add(this);
@@ -77,15 +77,15 @@ public class ResourceAgent {
         //this.initResourceAgent(resourceAgentVa, resourceAgentArc);
         this.messagingStrategy = messagingStrategy;
     }
+
     public void registerCapacity(Capacity capacity) {
-        this.capacities.add(capacity);
+        validateAndAddCapacitiesLimit(capacity);
     }
 
     public Triple<Double, Long, Long> getAllFreeResources() {
         double totalFreeCpu = capacities.stream().mapToDouble(cap -> cap.cpu).sum();
         long totalFreeMemory = capacities.stream().mapToLong(cap -> cap.memory).sum();
         long totalFreeStorage = capacities.stream().mapToLong(cap -> cap.storage).sum();
-        System.out.println("TOTAL RESOURCES FOR "+ this.name +" cpu: "+totalFreeCpu +" memory: "+totalFreeMemory +" storage: "+totalFreeStorage);
 
         return Triple.of(totalFreeCpu, totalFreeMemory, totalFreeStorage);
     }
@@ -101,7 +101,7 @@ public class ResourceAgent {
             this.service = vm;
 
             SimLogger.logRun(name + " (RA) was assigned to: " + this.hostNode.name + " at: "
-                + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
+                    + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -112,20 +112,21 @@ public class ResourceAgent {
         MessageHandler.executeMessaging(messagingStrategy, this, app, bcastMessageSize, "bcast", () -> {
             deploy(app, bcastMessageSize);
         });
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-            for (Capacity capacity : agent.capacities) {
-                freeReservedResources(app.name, capacity);
-            }
-        };
     }
 
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
-
-        System.out.println(app.offers.size() + "ember " + app.name);
         if (!app.offers.isEmpty()) {
             this.writeFile(app); // TODO: this takes time..
+
             app.winningOffer = callRankingScript(app);
+            Offer winningOffer = app.offers.get(app.winningOffer);
+            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                for (Capacity capacity : agent.capacities) {
+                    freeReservedResourcesExceptWinningOffer(app.name, capacity, winningOffer);
+                }
+            }
+
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
@@ -133,7 +134,7 @@ public class ResourceAgent {
                 protected void eventAction() {
                     if (app.broadcastCount - 1 <= maxRebroadcastCount) {
                         broadcast(app, bcastMessageSize);
-                        SimLogger.logRun("Rebroadcast " + (app.broadcastCount-1) + " for " + app.name);
+                        SimLogger.logRun("Rebroadcast " + (app.broadcastCount - 1) + " for " + app.name);
                     }
                 }
             };
@@ -150,6 +151,29 @@ public class ResourceAgent {
             for (Capacity capacity : agent.capacities) {
                 freeReservedResources(app.name, capacity);
             }
+        }
+    }
+
+    private void freeReservedResourcesExceptWinningOffer(final String appName, final Capacity capacity, final Offer winningOffer) {
+        List<Resource> resourcesToBeRemoved = new ArrayList<>();
+
+        Set<Resource> winningResources = new HashSet<>();
+        for (Map.Entry<ResourceAgent, Set<Resource>> entry : winningOffer.agentResourcesMap.entrySet()) {
+            if (entry.getKey().capacities.contains(capacity)) {
+                winningResources.addAll(entry.getValue());
+            }
+        }
+
+        for (Utilisation util : capacity.utilisations) {
+            if (util.resource.name.contains(appName)
+                    && util.state.equals(Utilisation.State.RESERVED)
+                    && !winningResources.contains(util.resource)) {
+                resourcesToBeRemoved.add(util.resource);
+            }
+        }
+
+        for (Resource resource : resourcesToBeRemoved) {
+            capacity.releaseCapacity(resource);
         }
     }
 
@@ -171,7 +195,7 @@ public class ResourceAgent {
         // TODO: only for debugging, needs to be deleted
         System.out.println("Offers for: " + app.name);
         for (Offer o : app.offers) {
-            //System.out.println(o);
+            // System.out.println(o);
         }
     }
 
@@ -179,7 +203,7 @@ public class ResourceAgent {
         Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
 
         generateCombinations(pairs, app.resources.size(), uniqueCombinations,
-            new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
+                new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
 
         for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
@@ -402,36 +426,46 @@ public class ResourceAgent {
         return leadResource;
     }
 
-    private void validateAndAddCapacitiesLimit(List<Capacity> capacities) {
-        double totalCpuRequested = 0.0;
-        long totalMemoryRequested = 0L;
-        long totalStorageRequested = 0L;
-        ComputingAppliance commonNode = null;
+    private void validateAndAddCapacitiesLimit(Capacity... capacities) {
+        Map<ComputingAppliance, List<Capacity>> capacitiesByNode = new HashMap<>();
 
-        /* TODO: RA can offer resources from different providers
+        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+            for (Capacity existingCap : agent.capacities) {
+                capacitiesByNode.computeIfAbsent(existingCap.node, k -> new ArrayList<>()).add(existingCap);
+            }
+        }
+
         for (Capacity cap : capacities) {
-            totalCpuRequested += cap.cpu;
-            totalMemoryRequested += cap.memory;
-            totalStorageRequested += cap.storage;
+            capacitiesByNode.computeIfAbsent(cap.node, k -> new ArrayList<>()).add(cap);
+        }
 
-            if (commonNode == null) {
-                commonNode = cap.node;
-            } else if (!commonNode.equals(cap.node)) {
-                throw new IllegalArgumentException(
-                        "All capacities for a single ResourceAgent must belong to the same ComputingAppliance node");
+        for (Map.Entry<ComputingAppliance, List<Capacity>> entry : capacitiesByNode.entrySet()) {
+            ComputingAppliance node = entry.getKey();
+            List<Capacity> nodeCaps = entry.getValue();
+
+            double totalCpuRequested = 0.0;
+            long totalMemoryRequested = 0L;
+            long totalStorageRequested = 0L;
+
+            for (Capacity cap : nodeCaps) {
+                totalCpuRequested += cap.cpu;
+                totalMemoryRequested += cap.memory;
+                totalStorageRequested += cap.storage;
             }
 
+            double maxCpu = node.iaas.getCapacities().getRequiredCPUs();
+            long maxMemory = node.iaas.getCapacities().getRequiredMemory();
+            long maxStorage = node.iaas.repositories.stream()
+                    .mapToLong(repo -> repo.getMaxStorageCapacity())
+                    .sum();
+
+            if (totalCpuRequested > maxCpu || totalMemoryRequested > maxMemory || totalStorageRequested > maxStorage) {
+                throw new IllegalArgumentException(
+                        String.format("Requested resources exceed available capacities of %s ", node.name)
+                );
+            }
         }
 
-        double maxCpu = commonNode.iaas.getCapacities().getRequiredCPUs();
-        long maxMemory = commonNode.iaas.getCapacities().getRequiredMemory();
-        long maxStorage = commonNode.getAvailableStorage();
-
-        if (totalCpuRequested > maxCpu || totalMemoryRequested > maxMemory || totalStorageRequested > maxStorage) {
-            throw new IllegalArgumentException("Requested resources exceed available capacities of " + commonNode.name);
-        }
-        */
-
-        this.capacities.addAll(capacities);
+        this.capacities.addAll(Arrays.asList(capacities));
     }
 }

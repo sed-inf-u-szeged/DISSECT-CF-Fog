@@ -35,7 +35,7 @@ public class Submission extends Timed {
         this.app.configuration = configuration;
         this.bcastMessageSize = bcastMessageSize;
         int random = SeedSyncer.centralRnd.nextInt(ResourceAgent.resourceAgents.size());
-        this.agent = ResourceAgent.resourceAgents.get(5);
+        this.agent = ResourceAgent.resourceAgents.get(random);
         this.registerImages(app.components);
         this.delay = delay;
         subscribe(10);
