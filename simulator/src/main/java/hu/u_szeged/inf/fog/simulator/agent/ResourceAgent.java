@@ -20,13 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,7 +33,7 @@ public class ResourceAgent {
 
     public String name;
 
-    ComputingAppliance hostNode;
+    public ComputingAppliance hostNode;
 
     VirtualMachine service;
 
@@ -107,7 +101,13 @@ public class ResourceAgent {
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app); // TODO: this takes time..
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
+            Offer winningOffer = app.offers.get(app.winningOffer);
+            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                for (Capacity capacity : agent.capacities) {
+                    freeReservedResourcesExceptWinningOffer(app.name, capacity, winningOffer);
+                }
+            }
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
             new DeferredEvent(1000 * 10) {
@@ -137,12 +137,36 @@ public class ResourceAgent {
         }
     }
 
+    private void freeReservedResourcesExceptWinningOffer(final String appName, final Capacity capacity, final Offer winningOffer) {
+        List<Resource> resourcesToBeRemoved = new ArrayList<>();
+
+        Set<Resource> winningResources = new HashSet<>();
+        for (Map.Entry<ResourceAgent, Set<Resource>> entry : winningOffer.agentResourcesMap.entrySet()) {
+            if (entry.getKey().capacities.contains(capacity)) {
+                winningResources.addAll(entry.getValue());
+            }
+        }
+
+        for (Utilisation util : capacity.utilisations) {
+            if (util.resource.name.contains(appName)
+                    && util.state.equals(Utilisation.State.RESERVED)
+                    && !winningResources.contains(util.resource)) {
+                resourcesToBeRemoved.add(util.resource);
+            }
+        }
+
+        for (Resource resource : resourcesToBeRemoved) {
+            capacity.releaseCapacity(resource);
+        }
+    }
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
 
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
+        System.out.println("eredmeny " + app.name +"-nak");
+        agentResourcePairs.forEach((x)-> System.out.println(x.getLeft().name+ "-- " + x.getRight()));
         
         /*
         for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {

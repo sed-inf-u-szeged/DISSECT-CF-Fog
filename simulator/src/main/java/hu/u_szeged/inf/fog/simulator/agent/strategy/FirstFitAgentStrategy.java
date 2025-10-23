@@ -59,7 +59,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
                 }
             }
         }
-        //System.out.println(agentResourcePairs.get(0).getLeft().name + " " + agentResourcePairs.get(0).getRight().name);
+        // System.out.println(agentResourcePairs.get(0).getLeft().name + " " + agentResourcePairs.get(0).getRight().name);
         //System.out.println(agent.capacities);
         return agentResourcePairs;
     } 

@@ -28,7 +28,7 @@ public class Capacity {
 
         public long utilisedMemory;
 
-        long utilisedStorage;
+        public long utilisedStorage;
 
         String type;
 
@@ -38,7 +38,7 @@ public class Capacity {
 
         private Utilisation(Resource resource, State state) {
             this.resource = resource;
-            this.utilisedCpu = safe(resource.cpu, 0);
+            this.utilisedCpu = safe(resource.cpu, 0.0);
             this.utilisedMemory = safe(resource.memory, 0L);
             this.utilisedStorage = safe(resource.size, 0L);
             this.state = state;
@@ -78,7 +78,7 @@ public class Capacity {
     public void reserveCapacity(Resource resource) {
         Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
         this.utilisations.add(utilisation);
-        this.cpu -= safe(resource.cpu, 0);
+        this.cpu -= safe(resource.cpu, 0.0);
         this.memory -= safe(resource.memory, 0L);
         this.storage -= safe(resource.size, 0L);
     }

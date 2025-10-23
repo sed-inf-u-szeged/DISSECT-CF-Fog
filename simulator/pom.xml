@@ -90,7 +90,12 @@
             <artifactId>snakeyaml</artifactId>
             <version>1.32</version>            
         </dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.2</version>
+        </dependency>
+    </dependencies>
 	
 	<build>
 		<plugins>
