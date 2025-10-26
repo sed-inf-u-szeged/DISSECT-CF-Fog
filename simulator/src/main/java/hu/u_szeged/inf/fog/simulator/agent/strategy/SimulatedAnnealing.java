@@ -7,13 +7,30 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.*;
 
 public class SimulatedAnnealing extends AgentStrategy {
+    public enum CoolingSchedule {
+        EXPONENTIAL, // fastest cooling (for more complex fits not good)
+        LINEAR, // always lowered by a constant number
+        LOGARITHMIC // first cools down relative normal then slows down drastically
+    }
 
-    private Random random = new Random();
 
-    // SA parameters - keep it simple
-    private static final double INITIAL_TEMP = 100.0;
-    private static final double COOLING_RATE = 0.98;
-    private static final int MAX_ITERATIONS = 50;
+    // TODO: change random to deterministic random (SeedSyncer.centralRnd)
+    private final Random random = new Random();
+    private static final double EPSILON = 1e-9;
+    private static final double INITIAL_TEMP = 1000.0;
+    private static final int MAX_ITERATIONS = 250;
+    private static final double INITIAL_EXPONENTIAL_DECREASE = 1.1;
+    private final CoolingSchedule coolingSchedule;
+
+    private double exponential_decrease;
+
+    public SimulatedAnnealing(CoolingSchedule coolingSchedule) {
+        this.coolingSchedule = coolingSchedule;
+    }
+
+    public SimulatedAnnealing() {
+        this.coolingSchedule = CoolingSchedule.LOGARITHMIC;
+    }
 
     @Override
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
@@ -52,63 +69,83 @@ public class SimulatedAnnealing extends AgentStrategy {
 
         // Step 2: SA loop
         double temp = INITIAL_TEMP;
+        exponential_decrease = INITIAL_EXPONENTIAL_DECREASE;
 
         for (int iter = 1; iter <= MAX_ITERATIONS && temp > 1; iter++) {
             List<Resource> neighborOrder = new ArrayList<>(currentOrder);
-            int i = random.nextInt(neighborOrder.size());
-            int j = random.nextInt(neighborOrder.size());
-            Collections.swap(neighborOrder, i, j);
+            int moveType = random.nextInt(3);
+            //System.out.println("iter " + iter);
+            if (moveType == 0) {                // Swap two elements
+                int i = random.nextInt(neighborOrder.size());
+                int j = random.nextInt(neighborOrder.size());
+                Collections.swap(neighborOrder, i, j);
+            } else if (moveType == 1) {                // Reverse a random subsequence
+                int i = random.nextInt(neighborOrder.size());
+                int j = random.nextInt(neighborOrder.size());
+                if (i > j) {
+                    int tempI = i;
+                    i = j;
+                    j = tempI;
+                }
+                Collections.reverse(neighborOrder.subList(i, j + 1));
+            } else {                // Rotate: move one element to a random position
+                int from = random.nextInt(neighborOrder.size());
+                int to = random.nextInt(neighborOrder.size());
+                Resource elem = neighborOrder.remove(from);
+                neighborOrder.add(to, elem);
+            }
             Solution neighborSolution = tryAllocate(agent, neighborOrder);
 
             double neighborScore = neighborSolution.getScore(resources.size(), totalRequestedCpu, totalRequestedMemory, totalRequestedStorage);
             double currentScore = currentSolution.getScore(resources.size(), totalRequestedCpu, totalRequestedMemory, totalRequestedStorage);
 
-            System.out.println(neighborSolution.resourcesAllocated + " vs " + currentSolution.resourcesAllocated + " of " + resources.size());
-            if (neighborScore > currentScore) {
-                // Better solution - always accept
+            //System.out.println(neighborScore + " vs " + currentScore + " of " + resources.size());
+            if (neighborScore >= currentScore || neighborSolution.isBetter(currentSolution)) { // Better solution - always accept
                 bestSolution = neighborSolution.copy();
-                //System.out.println("Iter " + iter + ": BETTER (score: " +
-                //      String.format("%.4f", neighborScore) + " > " +
-                //    String.format("%.4f", currentScore) + ")");
-            } else {
-                // Worse solution - accept with probability based on temperature
-                double delta = neighborScore - currentScore; // This will be negative
-                double acceptanceProbability = Math.exp(delta / temp);
-                //System.out.println("accptProb: " + acceptanceProbability);
-                //System.out.println("delta: " + delta);
+                currentSolution = neighborSolution.copy();
+                bestSolution = neighborSolution.copy();
+               // System.out.println("BETTER");
+            } else {                // Worse solution - accept with probability based on temperature
+                double delta = neighborScore - currentScore;
+                double acceptanceProbability = Math.pow(EPSILON, -(delta / temp));
+               // System.out.println("acceptProb: " + acceptanceProbability);
+               // System.out.println("delta: " + delta);
+               // System.out.println("temp: " + temp);
 
                 if (random.nextDouble() < acceptanceProbability) {
                     bestSolution = neighborSolution.copy();
-                    System.out.println("Iter " + iter + ": WORSE but accepted (score: " +
+                    currentSolution = neighborSolution.copy();
+                    currentOrder = new ArrayList<>(neighborOrder);
+                  /*  System.out.println("Iter " + iter + ": WORSE but accepted (score: " +
                             String.format("%.4f", neighborScore) + " < " +
                             String.format("%.4f", currentScore) +
                             ", prob=" + String.format("%.4f", acceptanceProbability) +
                             ", temp=" + String.format("%.1f", temp) + ")");
+
+                   */
                 }
             }
 
-            temp *= COOLING_RATE;
+            temp = updateTemperature(temp, iter);
+            // System.out.println("updatedTemp: " + temp);
         }
 
-        System.out.println("\n=== SA COMPLETE ===");
+        System.out.println("\n=== SA COMPLETE FOR " + agent.name + "===");
         System.out.println("Best: " + bestSolution);
 
         // Step 3: Actually allocate and reserve the best solution
-        // Use the allocation map from the best solution
-        return allocateAndReserve(agent, bestSolution);
+        return reserveResources(agent, bestSolution);
     }
 
-    // Try to allocate resources in given order WITHOUT reserving
+    // Try to fit resources in given order WITHOUT reserving
     private Solution tryAllocate(ResourceAgent agent, List<Resource> resourceOrder) {
         int allocated = 0;
         double totalCpu = 0;
         long totalMemory = 0;
         long totalStorage = 0;
 
-        // Track which capacity node each resource gets allocated to
         Map<Resource, Integer> allocationMap = new HashMap<>();
 
-        // Create temporary copy of capacities to simulate allocation
         List<Capacity> tempCapacities = new ArrayList<>();
         for (Capacity cap : agent.capacities) {
             Capacity temp = new Capacity(cap.node, cap.cpu, cap.memory, cap.storage);
@@ -117,54 +154,35 @@ public class SimulatedAnnealing extends AgentStrategy {
 
         for (Resource resource : resourceOrder) {
             boolean isComputeOnly = (resource.size == null);
-            boolean isStorageOnly = (resource.size != null && (resource.cpu == null || resource.cpu == 0));
-            boolean isHybrid = (resource.size != null && resource.cpu != null && resource.cpu > 0);
+            boolean isStorageOnly = resource.size != null && ((resource.cpu == null || resource.cpu == 0) && (resource.memory == null || resource.memory == 0));
+            boolean isHybrid = (resource.size != null && resource.size > 0 && (resource.cpu != null && resource.cpu > 0) || (resource.memory != null && resource.memory > 0));
 
             if (isComputeOnly) {
-                // Pure compute resource
                 int instances = resource.instances == null ? 1 : resource.instances;
-                int found = 0;
-                List<Integer> usedCapIndices = new ArrayList<>();
 
-                for (int i = 0; i < instances; i++) {
-                    for (int capIdx = 0; capIdx < tempCapacities.size(); capIdx++) {
-                        Capacity cap = tempCapacities.get(capIdx);
-                        if ((resource.provider == null || resource.provider.equals(cap.node.provider))
-                                && (resource.location == null || resource.location.equals(cap.node.location))
-                                && (resource.edge == null || resource.edge == cap.node.edge)
-                                && resource.cpu <= cap.cpu
-                                && resource.memory <= cap.memory) {
-
-                            // Temporarily reduce capacity
-                            cap.cpu -= resource.cpu;
-                            cap.memory -= resource.memory;
-                            usedCapIndices.add(capIdx);
-                            found++;
-                            break;
-                        }
-                    }
-                }
-
-                if (found == instances) {
-                    allocated++;
-                    totalCpu += resource.cpu * instances;
-                    totalMemory += resource.memory * instances;
-                    // Store the first capacity index used for this resource
-                    if (!usedCapIndices.isEmpty()) {
-                        allocationMap.put(resource, usedCapIndices.get(0));
-                    }
-                }
-
-            } else if (isStorageOnly) {
-                // Pure storage resource
+                // 1 component with more instances can't be deployed to 2 different resources if im correct
                 for (int capIdx = 0; capIdx < tempCapacities.size(); capIdx++) {
                     Capacity cap = tempCapacities.get(capIdx);
-                    if ((resource.provider == null || resource.provider.equals(cap.node.provider))
-                            && (resource.location == null || resource.location.equals(cap.node.location))
-                            && (resource.edge == null || resource.edge == cap.node.edge)
+                    if (isMatchingPreferences(resource, cap)
+                            && resource.cpu * instances <= cap.cpu
+                            && resource.memory * instances <= cap.memory) {
+                        cap.cpu -= resource.cpu * instances;
+                        cap.memory -= resource.memory * instances;
+
+                        totalCpu += resource.cpu * instances;
+                        totalMemory += resource.memory * instances;
+
+                        allocationMap.put(resource, capIdx);
+                        allocated++;
+                        break;
+                    }
+                }
+            } else if (isStorageOnly) {
+                for (int capIdx = 0; capIdx < tempCapacities.size(); capIdx++) {
+                    Capacity cap = tempCapacities.get(capIdx);
+                    if (isMatchingPreferences(resource, cap)
                             && resource.size <= cap.storage
                     ) {
-
                         cap.storage -= resource.size;
                         allocated++;
                         totalStorage += resource.size;
@@ -177,15 +195,11 @@ public class SimulatedAnnealing extends AgentStrategy {
                 // Hybrid resource: needs BOTH compute AND storage
                 for (int capIdx = 0; capIdx < tempCapacities.size(); capIdx++) {
                     Capacity cap = tempCapacities.get(capIdx);
-                    System.out.println(resource.edge + " " + cap.node.edge);
-                    if ((resource.provider == null || resource.provider.equals(cap.node.provider))
-                            && (resource.location == null || resource.location.equals(cap.node.location))
-                            && (resource.edge == null || resource.edge == cap.node.edge)
+                    if (isMatchingPreferences(resource, cap)
                             && resource.cpu <= cap.cpu
                             && resource.memory <= cap.memory
                             && resource.size <= cap.storage) {
 
-                        // Reduce ALL required capacities
                         cap.cpu -= resource.cpu;
                         cap.memory -= resource.memory;
                         cap.storage -= resource.size;
@@ -204,8 +218,8 @@ public class SimulatedAnnealing extends AgentStrategy {
         return new Solution(resourceOrder, allocated, totalCpu, totalMemory, totalStorage, allocationMap);
     }
 
-    // Actually allocate and reserve for real using the allocation map
-    private List<Pair<ResourceAgent, Resource>> allocateAndReserve(ResourceAgent agent, Solution solution) {
+    // Actually reserve
+    private List<Pair<ResourceAgent, Resource>> reserveResources(ResourceAgent agent, Solution solution) {
         List<Pair<ResourceAgent, Resource>> result = new ArrayList<>();
 
         for (Resource resource : solution.resourceOrder) {
@@ -215,67 +229,48 @@ public class SimulatedAnnealing extends AgentStrategy {
 
             int targetCapIdx = solution.allocationMap.get(resource);
 
-            if (targetCapIdx >= agent.capacities.size()) {
-                continue;
-            }
-
             Capacity targetCap = agent.capacities.get(targetCapIdx);
             boolean isComputeOnly = (resource.size == null);
-            boolean isHybrid = (resource.size != null && resource.cpu != null && resource.cpu > 0);
 
             if (isComputeOnly) {
-                // Pure compute resource
                 int instances = resource.instances == null ? 1 : resource.instances;
-                List<Capacity> reserved = new ArrayList<>();
 
                 for (int i = 0; i < instances; i++) {
-                    for (Capacity cap : agent.capacities) {
-                        if ((resource.provider == null || resource.provider.equals(cap.node.provider))
-                                && (resource.location == null || resource.location.equals(cap.node.location))
-                                && resource.cpu <= cap.cpu
-                                && resource.memory <= cap.memory
-                                && resource.edge == cap.node.edge) {
-
-                            cap.reserveCapacity(resource);
-                            reserved.add(cap);
-                            break;
-                        }
-                    }
-                }
-
-                if (reserved.size() == instances) {
-                    result.add(Pair.of(agent, resource));
-                } else if (reserved.size() > 0) {
-                    for (Capacity cap : reserved) {
-                        cap.releaseCapacity(resource);
-                    }
-                }
-
-            } else {
-                // Storage or hybrid resource
-                // Verify the target capacity can still handle this resource
-                boolean matchesProviderLocation =
-                        (resource.provider == null || resource.provider.equals(targetCap.node.provider))
-                                && (resource.location == null || resource.location.equals(targetCap.node.location));
-
-                boolean hasStorage = resource.size <= targetCap.storage;
-
-                boolean hasCompute = true;
-                if (isHybrid) {
-                    hasCompute = resource.cpu <= targetCap.cpu && resource.memory <= targetCap.memory;
-                }
-
-                if (matchesProviderLocation && hasStorage && hasCompute) {
                     targetCap.reserveCapacity(resource);
                     result.add(Pair.of(agent, resource));
                 }
+            } else {
+                targetCap.reserveCapacity(resource);
+                result.add(Pair.of(agent, resource));
             }
         }
 
         return result;
     }
 
-    private class Solution {
+    private double updateTemperature(double currentTemp, int iteration) {
+        switch (coolingSchedule) {
+            case EXPONENTIAL:
+                exponential_decrease = Math.pow(exponential_decrease, 1.075);
+                return currentTemp - exponential_decrease;
+
+            case LOGARITHMIC:
+                return currentTemp - Math.log(iteration);
+
+            default: // LINEAR
+                return currentTemp - Math.max(1, (INITIAL_TEMP / MAX_ITERATIONS));
+        }
+    }
+
+    boolean isMatchingPreferences(Resource resource, Capacity capacity) {
+        boolean providerMatch = (resource.provider == null || resource.provider.equals(capacity.node.provider));
+        boolean locationMatch = (resource.location == null || resource.location.equals(capacity.node.location));
+        boolean edgeMatch = (resource.edge == null || resource.edge == capacity.node.edge);
+
+        return providerMatch && locationMatch && edgeMatch;
+    }
+
+    private static class Solution {
         List<Resource> resourceOrder;
         int resourcesAllocated;
         double totalCpu;
@@ -304,7 +299,11 @@ public class SimulatedAnnealing extends AgentStrategy {
             double storageFulfillment = totalRequestedStorage > 0 ? ((double) totalStorage / totalRequestedStorage) : 0;
 
             //  System.out.println(allocationScore + " " + cpuFulfillment + " " + memoryFulfillment + " " + storageFulfillment);
-            return allocationScore + cpuFulfillment + memoryFulfillment + storageFulfillment;
+            return allocationScore * 10 + cpuFulfillment + memoryFulfillment + storageFulfillment;
+        }
+
+        boolean isBetter(Solution solution) {
+            return this.resourcesAllocated > solution.resourcesAllocated;
         }
 
         @Override

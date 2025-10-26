@@ -60,6 +60,7 @@ public class Deployment extends Timed {
     
     private boolean checkRemainingDeployment() {
         for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
+            //System.out.println(util.getLeft().name + " " + util.getRight().resource.name + " " + (!util.getRight().vm.getState().equals(VirtualMachine.State.RUNNING))+ " " + (util.getRight().vm));
             if (util.getRight().utilisedCpu > 0 && !util.getRight().vm.getState().equals(VirtualMachine.State.RUNNING)) {
                 return false;
             } else {

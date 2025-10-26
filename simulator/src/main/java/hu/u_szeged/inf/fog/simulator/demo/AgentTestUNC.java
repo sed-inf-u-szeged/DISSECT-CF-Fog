@@ -154,11 +154,11 @@ public class AgentTestUNC {
        ComputingAppliance node3 = new ComputingAppliance(
            createNode("Node3", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
            new GeoLocation(51.51, -0.13), "EU", "Azure", false); // Chicago
-        
+
        ComputingAppliance node4 = new ComputingAppliance(
            createNode("Node4", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
            new GeoLocation(48.86, 2.35), "EU", "AWS", false); // Los Angeles
-             
+
        ComputingAppliance node5 = new ComputingAppliance(
            createNode("Node5", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
            new GeoLocation(50.11, 8.68), "EU", "Azure", false); // San Francisco
@@ -166,11 +166,11 @@ public class AgentTestUNC {
        ComputingAppliance node6 = new ComputingAppliance(
            createNode("Node6", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
            new GeoLocation(45.46, 9.19), "EU", "AWS", false); // Chicago
-            
+
        ComputingAppliance node7 = new ComputingAppliance(
            createNode("Node7", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
            new GeoLocation(41.39, 2.17), "EU", "Azure", false); // Los Angeles
-                 
+
        ComputingAppliance node8 = new ComputingAppliance(
            createNode("Node8", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
            new GeoLocation(52.37, 4.90), "EU", "AWS", false); // San Francisco
@@ -200,7 +200,7 @@ public class AgentTestUNC {
        
        Map<String, String> mapping = new HashMap<>();
         
-       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing());
+       /*ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing());
   		
         for(int i = 1; i <= numOfApps; i++) {
         	mapping.put("UNC-" + i + "-Res-1", "Agent0");
@@ -227,6 +227,8 @@ public class AgentTestUNC {
         }
         
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
+
+        */
 
         new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc,  new SimulatedAnnealing(),
                 new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));

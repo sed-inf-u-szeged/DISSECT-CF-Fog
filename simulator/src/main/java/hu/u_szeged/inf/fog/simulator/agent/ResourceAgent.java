@@ -165,8 +165,8 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-        System.out.println("eredmeny " + app.name +"-nak");
-        agentResourcePairs.forEach((x)-> System.out.println(x.getLeft().name+ "-- " + x.getRight()));
+        System.out.println("eredmeny " + app.name);
+        agentResourcePairs.forEach((x)-> System.out.println(x.getLeft().name + "-- " + x.getRight()));
         
         /*
         for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
@@ -362,7 +362,7 @@ public class ResourceAgent {
                 releaseResourcesAndNotifyNoOffers(app);
                 return;
             }
-            
+
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
                     if (offer.agentResourcesMap.containsKey(agent)) {
