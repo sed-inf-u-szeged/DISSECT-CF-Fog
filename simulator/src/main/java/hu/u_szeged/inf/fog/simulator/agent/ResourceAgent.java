@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -118,6 +119,9 @@ public class ResourceAgent {
                         // TODO: this var is handled at RA level, not at app level (what if RA has more than one app)
                         reBroadcastCounter++; 
                         SimLogger.logRun("Rebroadcast " + reBroadcastCounter + " for " + app.name);
+                        if(reBroadcastCounter > 1 &&agentStrategy instanceof SimulatedAnnealing){
+                            ((SimulatedAnnealing) agentStrategy).switchToRandomCoolingSchedule();
+                        }
                     }
                 }
             };
@@ -165,14 +169,6 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-        System.out.println("eredmeny " + app.name);
-        agentResourcePairs.forEach((x)-> System.out.println(x.getLeft().name + "-- " + x.getRight()));
-        
-        /*
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            System.out.println(pair.getLeft().name + " " + pair.getRight().name);
-        }
-        */
         
         generateUniqueOfferCombinations(agentResourcePairs, app);
         

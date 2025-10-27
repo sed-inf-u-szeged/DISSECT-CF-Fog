@@ -8,74 +8,66 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class FirstFitAgentStrategy extends AgentStrategy {
-    
+
     private final boolean descending;
-    
+
     public FirstFitAgentStrategy(boolean descending) {
         this.descending = descending;
     }
 
     public List<Pair<ResourceAgent, Resource>> canFulfill(ResourceAgent agent, List<Resource> resources) {
         List<Resource> sortedResources = sortingResourcesByCpuThenSize(resources);
-
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-        
+
         for (Resource resource : sortedResources) {
-            if (resource.size == null) { // compute type 
-                
-                int instances = resource.instances == null ? 1 : resource.instances;
+            int instances = resource.instances == null ? 1 : resource.instances;
+            double requiredCpu = (resource.cpu != null && resource.cpu > 0) ? resource.cpu : 0;
+            long requiredMemory = (resource.memory != null && resource.memory > 0) ? resource.memory : 0;
+            long requiredStorage = (resource.size != null && resource.size > 0) ? resource.size : 0;
 
-                List<Capacity> reservedCapacity = new ArrayList<>();
-                for (int i = 0; i < instances; i++) {
-                    for (Capacity capacity : agent.capacities) {                   
-                        if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
-                                && (resource.location == null || resource.location.equals(capacity.node.location))
-                                && resource.cpu <= capacity.cpu 
-                                && resource.memory <= capacity.memory && resource.edge == capacity.node.edge) {
+            List<Capacity> reservedCapacities = new ArrayList<>();
 
-                            capacity.reserveCapacity(resource);
-                            reservedCapacity.add(capacity);
-                            break;
-                        }
-                    }
-                }
+            for (int i = 0; i < instances; i++) {
+                boolean reserved = false;
 
-                if (instances != reservedCapacity.size() && reservedCapacity.size() > 0) {
-                    for (Capacity capacity : reservedCapacity) {   
-                        capacity.releaseCapacity(resource);
-                    }
-                } else if (instances == reservedCapacity.size()) {
-                    agentResourcePairs.add(Pair.of(agent, resource));
-                }
-                
-            } else { // storage type
                 for (Capacity capacity : agent.capacities) {
-                    if ((resource.provider == null || resource.provider.equals(capacity.node.provider))
-                            && (resource.location == null || resource.location.equals(capacity.node.location))
-                            && resource.size <= capacity.storage) {
+                    if (isMatchingPreferences(resource, capacity)
+                            && requiredCpu <= capacity.cpu
+                            && requiredMemory <= capacity.memory
+                            && requiredStorage <= capacity.storage) {
+
                         capacity.reserveCapacity(resource);
-                        agentResourcePairs.add(Pair.of(agent, resource));
+                        reservedCapacities.add(capacity);
+                        reserved = true;
+                        break;
                     }
+                }
+
+                if (!reserved) {
+                    break;
+                }
+            }
+
+            if (reservedCapacities.size() == instances) {
+                agentResourcePairs.add(Pair.of(agent, resource));
+            } else if (!reservedCapacities.isEmpty()) {
+                for (Capacity capacity : reservedCapacities) {
+                    capacity.releaseCapacity(resource);
                 }
             }
         }
-        // System.out.println(agentResourcePairs.get(0).getLeft().name + " " + agentResourcePairs.get(0).getRight().name);
-        //System.out.println(agent.capacities);
+
         return agentResourcePairs;
-    } 
+    }
 
     public List<Resource> sortingResourcesByCpuThenSize(List<Resource> originalResources) {
         List<Resource> sortedResources = new ArrayList<>(originalResources);
 
         sortedResources.sort((r1, r2) -> {
             if (r1.cpu != null && r2.cpu != null) {
-                if (r1.instances != null) {
-                    r1.cpu *= r1.instances;
-                }
-                if (r2.instances != null) {
-                    r2.cpu *= r2.instances;
-                }
-                return descending ? Double.compare(r2.cpu, r1.cpu) : Double.compare(r1.cpu, r2.cpu);
+                double cpu1 = r1.cpu * (r1.instances != null ? r1.instances : 1);
+                double cpu2 = r2.cpu * (r2.instances != null ? r2.instances : 1);
+                return descending ? Double.compare(cpu2, cpu1) : Double.compare(cpu1, cpu2);
             } else if (r1.cpu == null && r2.cpu == null) {
                 return descending ? Double.compare(r2.size, r1.size) : Double.compare(r1.size, r2.size);
             }
