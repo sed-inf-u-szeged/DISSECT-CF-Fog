@@ -114,6 +114,6 @@ public class Battery extends Timed {
     }
 
     public float getPercentage(){
-        return currLevel / maxCapacity;
+        return currLevel / maxCapacity * 100;
     }
 }
