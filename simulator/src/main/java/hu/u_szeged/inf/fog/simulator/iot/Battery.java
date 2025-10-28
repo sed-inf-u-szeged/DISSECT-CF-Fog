@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,7 +44,7 @@ public class Battery extends Timed {
     private float voltage;
 
     /**
-     * Constant value used to drain the battery when the battery device is idle (mAh/h), for an average phone it's around 5 mAh/h.
+     * Constant value used to drain the battery when the battery device is idle. (currently in mAh/h, can be Wh/h or sth)
      */
     @Getter
     private float drainRate; //lehet discharge rate
@@ -89,7 +90,7 @@ public class Battery extends Timed {
     public void tick(long fires) {
         if(currLevel - drainRate / 60 < 0){
             unsubscribe();
-            charge(Timed.getFireCount());
+            new Charge(Timed.getFireCount(), chargeTime);
             return;
         }
 
@@ -97,17 +98,22 @@ public class Battery extends Timed {
         currLevel -= drainRate / 60;
     }
 
-    /**
-     * This function starts simulating the charging of the battery,
-     * then resubscribes the idle drain event.
-     *
-     * @param chargeStartTime the time at which the battery starts charging.
-     */
-    public void charge(long chargeStartTime){
-        isCharging = true;
-        currLevel = maxCapacity;
-        Timed.jumpTime(chargeTime);
-        isCharging = false;
-        subscribe(60000);
+    public class Charge extends DeferredEvent{
+
+        Charge(long startTime, long chargeTime){
+            super(startTime + chargeTime);
+            isCharging = true;
+        }
+
+        @Override
+        protected void eventAction() {
+            currLevel = maxCapacity;
+            isCharging = false;
+            subscribe(60000);
+        }
+    }
+
+    public float getPercentage(){
+        return currLevel / maxCapacity;
     }
 }
