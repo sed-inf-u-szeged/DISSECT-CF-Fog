@@ -18,6 +18,8 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
+import lombok.Setter;
+
 import java.util.ArrayList;
 
 /**
@@ -32,6 +34,12 @@ public class EdgeDevice extends Device {
      */
     public static VirtualAppliance edgeDeviceVa = 
             new VirtualAppliance("edgeDeviceVa", 1, 0, false, 1073741824L); // 1 GB
+
+
+    //not needed base battery is null
+    @Setter
+    public Battery battery;
+
 
     /**
      * The resource requirement associated to the local virtual machine.
@@ -70,6 +78,8 @@ public class EdgeDevice extends Device {
     public EdgeDevice(long startTime, long stopTime, long fileSize, long freq, MobilityStrategy mobilityStrategy, 
             DeviceStrategy deviceStrategy, PhysicalMachine localMachine, double instructionPerByte, int latency, 
             boolean pathLogging) {
+        this.battery = null;  //default erre inicializálódik but for good measure
+
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000; 
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
@@ -183,6 +193,8 @@ public class EdgeDevice extends Device {
                                     }
                                 });
                         if (rc != null) {
+                            //ide kéne a Battery csökkentés a feldolgozott adat alapján? vagy a conCompleteba is jó? ha az egyik lefut a másik is
+
                             for (StorageObject so : dataToBeRemoved) {
                                 this.localMachine.localDisk.deregisterObject(so);
                             }
