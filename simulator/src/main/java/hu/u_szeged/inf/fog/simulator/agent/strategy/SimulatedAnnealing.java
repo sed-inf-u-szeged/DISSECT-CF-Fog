@@ -100,12 +100,12 @@ public class SimulatedAnnealing extends AgentStrategy {
                 neighborOrder.add(to, elem);
             }
             Solution neighborSolution = tryAllocate(agent, neighborOrder);
-            System.out.println("neighbor:");
+            //System.out.println("neighbor:");
             double neighborScore = neighborSolution.getScore(resources.size(), totalRequestedCpu, totalRequestedMemory, totalRequestedStorage);
-            System.out.println("current:");
+            //System.out.println("current:");
             double currentScore = currentSolution.getScore(resources.size(), totalRequestedCpu, totalRequestedMemory, totalRequestedStorage);
 
-            System.out.println(neighborScore + " "+ neighborSolution.totalCpu+" -- "+ currentSolution.totalCpu+" " + currentScore);
+            //System.out.println(neighborScore + " "+ neighborSolution.totalCpu+" -- "+ currentSolution.totalCpu+" " + currentScore);
             if (neighborScore >= currentScore) { // Better solution - always accept
                 currentOrder = new ArrayList<>(neighborOrder);
                 currentSolution = neighborSolution.copy();
@@ -125,7 +125,7 @@ public class SimulatedAnnealing extends AgentStrategy {
             // System.out.println("updatedTemp: " + temp);
         }
 
-        // System.out.println("\n=== SA COMPLETE FOR " + agent.name + "===");
+         System.out.println("\n=== SA COMPLETE FOR " + agent.name + "===");
 
         // Step 3: Actually allocate and reserve the best solution
         return reserveResources(agent, bestSolution);
@@ -278,8 +278,8 @@ public class SimulatedAnnealing extends AgentStrategy {
                 penalty *= 0.5;
             }
 
-            System.out.println(String.format("alloc=%.3f cpu=%.3f mem=%.3f storage=%.3f penalty=%.3f",
-                    allocationRatio, cpuFulfillment, memoryFulfillment, storageFulfillment, penalty));
+          //  System.out.println(String.format("alloc=%.3f cpu=%.3f mem=%.3f storage=%.3f penalty=%.3f",
+            //        allocationRatio, cpuFulfillment, memoryFulfillment, storageFulfillment, penalty));
 
             return (allocationRatio * 2 + cpuFulfillment + memoryFulfillment + storageFulfillment) * penalty;
         }
