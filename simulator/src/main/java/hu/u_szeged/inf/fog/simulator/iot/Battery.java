@@ -2,9 +2,14 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
 
 @NoArgsConstructor
 public class Battery extends Timed {
@@ -23,6 +28,8 @@ public class Battery extends Timed {
 
     }
     */
+    //logoláshoz minden batterynek külön csv és ehhez kell vmi identifier, sima id meg kevés imo
+    private String name;
 
     /**
      * Maximum capacity of the battery (mAh)
@@ -61,6 +68,9 @@ public class Battery extends Timed {
     @Getter
     private boolean isCharging;
 
+    //hashmap vszeg gyorsabb, de igy olvashatóbb a csv
+    private final Map<Long, Float> readings = new TreeMap<>();
+
 
     /**
      * Constructor for battery objects
@@ -70,7 +80,8 @@ public class Battery extends Timed {
      * @param drainRate   the value the battery is drained by when the device is idle (mAh/h)
      * @param chargeTime  the time it takes to charge the battery to full (in ticks).
      */
-    public Battery(float maxCapacity, float voltage, float drainRate, long chargeTime) {
+    public Battery(String name, float maxCapacity, float voltage, float drainRate, long chargeTime) {
+        this.name = name;
         this.maxCapacity = maxCapacity;
         this.voltage = voltage;
         this.drainRate = drainRate;
@@ -79,6 +90,7 @@ public class Battery extends Timed {
         this.currLevel = maxCapacity;
         this.isCharging = false;
 
+        readings.put(Timed.getFireCount(), currLevel);
         subscribe(60000);
     }
 
@@ -90,18 +102,20 @@ public class Battery extends Timed {
     public void tick(long fires) {
         if(currLevel - drainRate / 60 < 0){
             unsubscribe();
-            new Charge(Timed.getFireCount(), chargeTime);
+            new Charge(chargeTime);
             return;
         }
 
         // mAh/h a drainRate, de az event percenkénti
         currLevel -= drainRate / 60;
+
+        readings.put(fires, currLevel);
     }
 
     public class Charge extends DeferredEvent{
 
-        Charge(long startTime, long chargeTime){
-            super(startTime + chargeTime);
+        Charge(long chargeTime){
+            super(chargeTime);
             isCharging = true;
         }
 
@@ -115,5 +129,20 @@ public class Battery extends Timed {
 
     public float getPercentage(){
         return currLevel / maxCapacity * 100;
+    }
+
+    public void writeToFileConsumption(String resultDirectory){
+        try {
+            FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
+
+            fw.write("Timestamp (min)," + name + "\n");
+            for (var entry : readings.entrySet()) {
+                fw.write(entry.getKey()/1000 + "," + entry.getValue() + "\n");
+            }
+
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
