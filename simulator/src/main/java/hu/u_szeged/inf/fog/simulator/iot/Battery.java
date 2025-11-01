@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -29,32 +30,33 @@ public class Battery extends Timed {
     }
     */
     //logoláshoz minden batterynek külön csv és ehhez kell vmi identifier, sima id meg kevés imo
+    @Getter
     private String name;
 
     /**
      * Maximum capacity of the battery (mAh)
      */
     @Getter
-    private float maxCapacity;
+    private double maxCapacity;
 
     /**
      * Current level of the battery (mAh). The battery starts fully charged at maximum capacity,
      * the value gets constantly lowered until 0, when the battery has to be charged.
      */
-    @Getter
-    private float currLevel;
+    @Getter @Setter
+    private double currLevel;
 
     /**
      * The battery's voltage (V)
      */
     @Getter
-    private float voltage;
+    private double voltage;
 
     /**
      * Constant value used to drain the battery when the battery device is idle. (currently in mAh/h, can be Wh/h or sth)
      */
     @Getter
-    private float drainRate; //lehet discharge rate
+    private double drainRate; //lehet discharge rate
 
     /**
      * The time it takes to charge the battery from 0% to 100% (in ticks).
@@ -69,8 +71,10 @@ public class Battery extends Timed {
     private boolean isCharging;
 
     //hashmap vszeg gyorsabb, de igy olvashatóbb a csv
-    private final Map<Long, Float> readings = new TreeMap<>();
+    public final Map<Long, Double> readings = new TreeMap<>();
 
+
+    //STOPTIME adattag hogy lehessen simulate until last eventezni
 
     /**
      * Constructor for battery objects
@@ -80,7 +84,7 @@ public class Battery extends Timed {
      * @param drainRate   the value the battery is drained by when the device is idle (mAh/h)
      * @param chargeTime  the time it takes to charge the battery to full (in ticks).
      */
-    public Battery(String name, float maxCapacity, float voltage, float drainRate, long chargeTime) {
+    public Battery(String name, double maxCapacity, double voltage, double drainRate, long chargeTime) {
         this.name = name;
         this.maxCapacity = maxCapacity;
         this.voltage = voltage;
@@ -93,6 +97,11 @@ public class Battery extends Timed {
         readings.put(Timed.getFireCount(), currLevel);
         subscribe(60000);
     }
+
+//    public Battery(String name, BatteryType batteryType ) {
+//        //TODO enum konstruktor
+//    }
+
 
     /**
      * The tick method is called to simulate a time step for the battery.
@@ -122,20 +131,24 @@ public class Battery extends Timed {
         @Override
         protected void eventAction() {
             currLevel = maxCapacity;
+            readings.put(Timed.getFireCount(),currLevel);
+
             isCharging = false;
             subscribe(60000);
         }
     }
 
-    public float getPercentage(){
+    public double getPercentage(){
         return currLevel / maxCapacity * 100;
     }
 
+
+    //nevezés lehet más, illetve lehet csinálni esetleg egy %-os verziót
     public void writeToFileConsumption(String resultDirectory){
         try {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
 
-            fw.write("Timestamp (min)," + name + "\n");
+            fw.write("Timestamp (sec)," + name + "\n");
             for (var entry : readings.entrySet()) {
                 fw.write(entry.getKey()/1000 + "," + entry.getValue() + "\n");
             }

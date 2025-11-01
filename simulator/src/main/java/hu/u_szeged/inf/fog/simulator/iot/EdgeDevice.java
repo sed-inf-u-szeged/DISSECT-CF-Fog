@@ -36,7 +36,7 @@ public class EdgeDevice extends Device {
             new VirtualAppliance("edgeDeviceVa", 1, 0, false, 1073741824L); // 1 GB
 
 
-    //not needed base battery is null
+    //not required attribute, base battery is null - to add battery use setter with constructor
     @Setter
     public Battery battery;
 
@@ -80,7 +80,7 @@ public class EdgeDevice extends Device {
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
 
-        long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000; 
+        long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
         this.fileSize = fileSize;
@@ -154,6 +154,10 @@ public class EdgeDevice extends Device {
         }
         MobilityEvent.changePositionEvent(this, newLocation);
 
+        if(battery != null && battery.isCharging()){
+            return;
+        }
+
         this.deviceStrategy.findApplication(); 
 
         try {
@@ -183,6 +187,8 @@ public class EdgeDevice extends Device {
 
                                     @Override
                                     public void conComplete() {
+                                        System.out.println("Start task "+ this.hashCode() + ": " + taskStartTime);
+
                                         locallyProcessedData += currentlyProcessedData;
                                         timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),
                                                 Integer.toString(edgeDevice.hashCode())));
@@ -190,11 +196,47 @@ public class EdgeDevice extends Device {
                                                 + taskStartTime + " finished at: " + Timed.getFireCount() + " bytes: "
                                                 + currentlyProcessedData + " took: "
                                                 + (Timed.getFireCount() - taskStartTime) + " instructions: " + noi);
+
+                                        System.out.println("End task "+ this.hashCode() + ": " + Timed.getFireCount());
+
+
+                                        /*
+                                        //battery számítások
+                                        cpuUtilization = numberOfInstructions / (numberOfCpuCores * instructionsPerTick * taskTime) (taskTime tickben)
+                                        0-1 közötti érték kihasználtságra
+
+                                        avgPowerConsumption = idlePower + cpuUtilization * (maxPower − idlePower),
+                                        de ez lekérhető a PM cpuTransitionjéből getCurrentPowerrel ahol a paraméter a cpuUtilization
+                                        ez a CPU fogyasztása W-ban
+
+                                        totalEnergyConsumedDuringTask = avgPowerConsumption * (t/3600000) (ha t msbe van, és igy lesz akkor végeredmény Wh)
+                                        a tényleges energiaigénye a tasknak Wh-ban
+
+                                        battery csökkentéshez mértékegység váltás kell Wh -> mAh
+                                        energyConsumed_Ah = energyConsumed_Wh / voltage
+                                        energyConsumed_mAh = energyConsumed_Ah * 1000
+                                        newBatteryLvl = max(0, currentLvl-energyConsumed_mAh)
+                                        */
+
+                                        //consumption
+                                        double taskTime = Timed.getFireCount() - taskStartTime;
+                                        System.out.println("noi: " + noi);
+                                        double cpuUtilization = noi / (localMachine.getCapacities().getTotalProcessingPower() * taskTime);
+                                        double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(cpuUtilization);
+                                        /*
+                                        double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getMinConsumption() +
+                                                cpuUtilization * localMachine.getCurrentPowerBehavior().getConsumptionRange();*/
+                                        double taskEnergyConsumption = avgPowerConsumption * (taskTime / 3600000);
+
+                                        //conversion to mAh
+                                        taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
+
+                                        //drain
+                                        battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
+                                        battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
                                     }
                                 });
                         if (rc != null) {
-                            //ide kéne a Battery csökkentés a feldolgozott adat alapján? vagy a conCompleteba is jó? ha az egyik lefut a másik is
-
                             for (StorageObject so : dataToBeRemoved) {
                                 this.localMachine.localDisk.deregisterObject(so);
                             }
