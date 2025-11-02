@@ -18,7 +18,9 @@ public class IdleBatteryDrainExample {
         Battery battery2 = new Battery("battery2", 4500, 4.4f, 200, 3 * 60 * 60 * 1000);
 
         //48 hour
-        Timed.simulateUntil(48 * 60 * 60 * 1000);
+        battery1.setStopTime(48 * 60 * 60 * 1000);
+        battery2.setStopTime(48 * 60 * 60 * 1000);
+        Timed.simulateUntilLastEvent();
 
         battery1.writeToFileConsumption(ScenarioBase.resultDirectory);
         battery2.writeToFileConsumption(ScenarioBase.resultDirectory);
