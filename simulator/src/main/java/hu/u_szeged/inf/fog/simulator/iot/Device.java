@@ -139,6 +139,9 @@ public abstract class Device extends Timed {
      */
     public long generatedData;
 
+    //not required attribute, base battery is null - to add battery use setter with constructor
+    public Battery battery;
+
     /**
      * The device starts its operation defined in its tick() method
      * at the time specified with the startTime parameter.
@@ -263,6 +266,8 @@ public abstract class Device extends Timed {
      */
     class DeviceDataEvent implements ConsumptionEvent {
 
+        private final long transferStartTime = Timed.getFireCount();
+
         /**
          * The file that is under transfer.
          */
@@ -292,6 +297,22 @@ public abstract class Device extends Timed {
             localMachine.localDisk.deregisterObject(this.so);
             application.receivedData += this.so.size;
             this.device.sentData += this.so.size;
+
+            if(battery != null){
+                double transferTime = Timed.getFireCount() - transferStartTime;
+
+                /*placeholders
+                //consumption
+                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(1);
+                double taskEnergyConsumption = avgPowerConsumption * (transferTime / 3600000);
+
+                //conversion to mAh
+                taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
+
+                //drain
+                battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
+                battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());*/
+            }
         }
 
         /**
@@ -309,5 +330,11 @@ public abstract class Device extends Timed {
             }
         }
     }
+
+    public void setBattery(Battery battery){
+        this.battery = battery;
+        battery.setStopTime(stopTime);
+    }
+
 
 }

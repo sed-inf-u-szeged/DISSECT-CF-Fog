@@ -65,6 +65,7 @@ public class SmartDevice extends Device {
         this.deviceStrategy.device = this;
         this.latency = latency;
         this.iterationCounter = 0;
+        this.battery = null;
         this.startMeter();
         /*
         if (Device.longestRunningDevice < this.stopTime) {
@@ -92,6 +93,10 @@ public class SmartDevice extends Device {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);
+
+        if(battery != null && battery.isCharging()){
+            return;
+        }
 
         this.deviceStrategy.findApplication();
 

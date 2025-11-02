@@ -70,6 +70,10 @@ public class Battery extends Timed {
     @Getter
     private boolean isCharging;
 
+    @Setter
+    @Getter
+    private long stopTime;
+
     //hashmap vszeg gyorsabb, de igy olvashatóbb a csv
     public final Map<Long, Double> readings = new TreeMap<>();
 
@@ -90,6 +94,7 @@ public class Battery extends Timed {
         this.voltage = voltage;
         this.drainRate = drainRate;
         this.chargeTime = chargeTime;
+        this.stopTime = 60 * 60 * 1000; // 1hour base value
 
         this.currLevel = maxCapacity;
         this.isCharging = false;
@@ -109,6 +114,10 @@ public class Battery extends Timed {
      */
     @Override
     public void tick(long fires) {
+        if(stopTime < Timed.getFireCount()){
+            unsubscribe();
+        }
+
         if(currLevel - drainRate / 60 < 0){
             unsubscribe();
             new Charge(chargeTime);
@@ -138,19 +147,33 @@ public class Battery extends Timed {
         }
     }
 
-    public double getPercentage(){
+    public double getCurrentPercentage(){
         return currLevel / maxCapacity * 100;
     }
 
 
-    //nevezés lehet más, illetve lehet csinálni esetleg egy %-os verziót
     public void writeToFileConsumption(String resultDirectory){
         try {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
 
-            fw.write("Timestamp (sec)," + name + "\n");
+            fw.write("Timestamp (sec)," + name + " (mAh)\n");
             for (var entry : readings.entrySet()) {
                 fw.write(entry.getKey()/1000 + "," + entry.getValue() + "\n");
+            }
+
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeToFilePercentage(String resultDirectory){
+        try {
+            FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
+
+            fw.write("Timestamp (sec)," + name + " (%)\n");
+            for (var entry : readings.entrySet()) {
+                fw.write(entry.getKey()/1000 + "," + Math.round(entry.getValue() / maxCapacity * 100) + "\n");
             }
 
             fw.close();
