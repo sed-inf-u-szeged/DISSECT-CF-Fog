@@ -301,17 +301,21 @@ public abstract class Device extends Timed {
             if(battery != null){
                 double transferTime = Timed.getFireCount() - transferStartTime;
 
-                /*placeholders
+                //TODO újragondolni az összes képletet meg hogy honnan nyerjük ki az adatokat, egyelőre placeholder
                 //consumption
-                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(1);
+                //double networkConsumption = localMachine.localDisk.outbws.getCurrentPowerBehavior().getCurrentPower(1);
+                //double diskConsumption = localMachine.localDisk.diskoutbws.getCurrentPowerBehavior().getCurrentPower(1);
+                //double avgPowerConsumption = networkConsumption + diskConsumption;
+                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(0.5);
                 double taskEnergyConsumption = avgPowerConsumption * (transferTime / 3600000);
+                //System.out.println(avgPowerConsumption);
 
                 //conversion to mAh
                 taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
 
                 //drain
                 battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
-                battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());*/
+                battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
             }
         }
 

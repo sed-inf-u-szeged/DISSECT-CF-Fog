@@ -14,7 +14,6 @@ import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Battery;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
-import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
@@ -74,17 +73,12 @@ public class EdgeDevicesWithBatteryExample {
             final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
             final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-            if(i == 0){
-                System.out.println(nwTransitions);
-            }
-
             Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
 
             Device device;
             Battery battery;
             double step = SeedSyncer.centralRnd.nextDouble();
-            System.out.println(step);
             battery = new Battery("battery"+i, 3500, 4.4f, 10, 2 * 60 * 60 * 1000);
             device = new EdgeDevice(0, 100 * 60 * 60 * 1000, 100, 60 * 1000,
                     new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
