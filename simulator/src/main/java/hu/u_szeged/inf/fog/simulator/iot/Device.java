@@ -301,20 +301,27 @@ public abstract class Device extends Timed {
             if(battery != null){
                 double transferTime = Timed.getFireCount() - transferStartTime;
 
-                //TODO újragondolni az összes képletet meg hogy honnan nyerjük ki az adatokat, egyelőre placeholder
+                //TODO
+                //probléma párhuzamos fájlküldés/fogadással, szóval lehet full kuka, de ötlet,
                 //consumption
-                //double networkConsumption = localMachine.localDisk.outbws.getCurrentPowerBehavior().getCurrentPower(1);
-                //double diskConsumption = localMachine.localDisk.diskoutbws.getCurrentPowerBehavior().getCurrentPower(1);
-                //double avgPowerConsumption = networkConsumption + diskConsumption;
-                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(0.5);
-                double taskEnergyConsumption = avgPowerConsumption * (transferTime / 3600000);
-                //System.out.println(avgPowerConsumption);
+
+                //ha nem kell bandwith mert implicit használva van már time miatt akkor nem tom hogy lesz belőle fogyasztás
+                //a cpus verzió mintájára csak ez az ötletem van
+                double networkUtilization = this.so.size / (localMachine.localDisk.outbws.getPerTickProcessingPower() * transferTime); //transferSize (byte) / bandwith (byte/ms) * transferTime (ms)?
+                //System.out.println("size: " + this.so.size + ", bw: " + localMachine.localDisk.outbws.getPerTickProcessingPower() + ", transfertime: " + transferTime + ", networkUtil: " + networkUtilization);
+
+                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(networkUtilization);
+                //a felső reálisabb, de lehet ez is ? idk
+                //double avgPowerConsumption = localMachine.localDisk.outbws.getCurrentPowerBehavior().getCurrentPower(networkUtilization);
+
+                double transferEnergyConsumption = avgPowerConsumption * (transferTime / 3600000);
 
                 //conversion to mAh
-                taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
+                transferEnergyConsumption = transferEnergyConsumption / battery.getVoltage() * 1000;
+                //System.out.println("avgPowerCons: " + avgPowerConsumption + ", taskEnergyC: " + transferEnergyConsumption);
 
                 //drain
-                battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
+                battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - transferEnergyConsumption));
                 battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
             }
         }
