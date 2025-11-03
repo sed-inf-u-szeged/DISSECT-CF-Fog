@@ -140,16 +140,16 @@ public class EdgeDevice extends Device {
             new Sensor(this, 1);
         }
 
+        //üres battery esetén nem történik semmi, kell e kikapcsolni valamit? maybe
+        if(battery != null && battery.isCharging()){
+            return;
+        }
+
         GeoLocation newLocation = this.mobilityStrategy.move(this);
         if (this.isPathLogged) {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);
-
-        //üres battery esetén nem képes működni az eszköz de mozogni tud(hat)? telefon igen, drón nem nagyon
-        if(battery != null && battery.isCharging()){
-            return;
-        }
 
         this.deviceStrategy.findApplication(); 
 
@@ -211,9 +211,9 @@ public class EdgeDevice extends Device {
                                             energyConsumed_mAh = energyConsumed_Ah * 1000
                                             newBatteryLvl = max(0, currentLvl-energyConsumed_mAh)
                                             */
+                                            double taskTime = Timed.getFireCount() - taskStartTime;
 
                                             //consumption
-                                            double taskTime = Timed.getFireCount() - taskStartTime;
                                             double cpuUtilization = noi / (localMachine.getCapacities().getTotalProcessingPower() * taskTime);
                                             double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(cpuUtilization);
                                             /* //alternative calculation, same result
