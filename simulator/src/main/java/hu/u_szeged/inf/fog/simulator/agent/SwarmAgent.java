@@ -2,12 +2,22 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.SystemUtils;
 
 public class SwarmAgent extends Timed {
 
@@ -17,11 +27,15 @@ public class SwarmAgent extends Timed {
     
     private int currentIndex;
     
-    public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>(); 
+    public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>();
+
+    public static String predictorScriptDir; 
     
     private final Deque<CpuTempSample> cpuTempSamples;
     
     public AgentApplication app;
+    
+    private int triggerPrediction;
 
     public SwarmAgent(AgentApplication app) {
         this.app = app;
@@ -39,6 +53,7 @@ public class SwarmAgent extends Timed {
 
     @Override
     public void tick(long fires) {
+    	
         double avgCpuLoad = avgCpu();
         cpuTempSamples.addLast(new CpuTempSample(Timed.getFireCount(), avgCpuLoad));
         if (!cpuTempSamples.isEmpty()) {
@@ -46,6 +61,49 @@ public class SwarmAgent extends Timed {
         }
         this.scale(avgCpuLoad);
         NoiseAppCsvExporter.log();
+        if (triggerPrediction % (64 * 6) == 0) {
+        	callPredictorScript();
+        }
+        triggerPrediction++;
+    }
+    
+    private void callPredictorScript() {
+        try {
+            String command;
+            ProcessBuilder processBuilder;
+
+            if (SystemUtils.IS_OS_LINUX) {
+            	String modelPath = predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-3_1min_pl128";
+            	String inputPath = predictorScriptDir + "/data/simulator1/UNC-1-Noise-Sensor-3_1min_test.csv";
+            	String outputPath = predictorScriptDir + "/predictions/simulator1/UNC-1-Noise-Sensor-3_1min_predictions-" + Timed.getFireCount() + ".csv";
+
+            	command = String.join(" ",
+            	    "cd", predictorScriptDir+"/Time-Series-Library",
+            	    "&&",
+            	    "python3", "predict.py",
+            	    "--model_path", modelPath,
+            	    "--input_path", inputPath,
+            	    "--output_path", outputPath
+            	);
+            } else {
+                throw new UnsupportedOperationException("Unsupported operating system");
+            }
+
+            processBuilder = new ProcessBuilder("bash", "-c", command);
+        	processBuilder.redirectErrorStream(true);
+
+        	Process process = processBuilder.start();
+
+        	try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        	    String line;
+        	    while ((line = reader.readLine()) != null) {
+        	        System.out.println(line);
+        	    }
+        	}
+        	process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            e.getStackTrace();
+        }
     }
 
     private double getCpuLoadAvgLastMin() {
