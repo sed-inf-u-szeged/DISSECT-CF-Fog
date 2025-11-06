@@ -280,7 +280,7 @@ public class AgentTestUNC {
         //int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150}; 
 
         for (Path file : appFiles) {
-            new DeferredEvent(delay[i] * 60 * 1000) {
+            new DeferredEvent(delay[i++] * 60 * 1000) {
 
                 @Override
                 protected void eventAction() {
