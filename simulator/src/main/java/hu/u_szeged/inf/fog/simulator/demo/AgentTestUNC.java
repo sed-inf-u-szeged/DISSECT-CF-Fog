@@ -232,35 +232,34 @@ public class AgentTestUNC {
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
 
         new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node1, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node1, 52, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
-                new Capacity(node2, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node2, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node3, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
-                new Capacity(node4, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node4, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node5, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node5, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node6, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node6, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
-                new Capacity(node7, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node7, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node8, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node8, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false), new GuidedSearchMessagingStrategy(),
-                new Capacity(node9, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node9, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
-                new Capacity(node10, 256, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-
+                new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);

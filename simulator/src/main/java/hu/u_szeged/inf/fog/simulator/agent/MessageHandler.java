@@ -12,15 +12,12 @@ public class MessageHandler {
     public static void executeMessaging(MessagingStrategy messagingStrategy,
                                         ResourceAgent gateway, AgentApplication app, int bcastMessageSize, String msg, Runnable customAction) {
         List<ResourceAgent> filteredAgents;
-        System.out.println(msg + " for " + app.name);
 
         if(msg.equals("bcast")) {
             filteredAgents = messagingStrategy.filterAgents(gateway);
             gateway.networkingAgentsByApp.put(app.name, new HashSet<>(filteredAgents));
             app.networkingAgents = new HashSet<>(filteredAgents);
             gateway.servedAsGatewayCount++;
-            System.out.println("networking agents for:" + gateway.name);
-            filteredAgents.forEach(a -> System.out.println(a.name));
         } else {
             filteredAgents = new ArrayList<>(gateway.networkingAgentsByApp.get(app.name));
         }
