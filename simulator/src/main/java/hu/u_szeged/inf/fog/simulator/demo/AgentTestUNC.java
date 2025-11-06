@@ -53,7 +53,7 @@ public class AgentTestUNC {
         SeedSyncer.modifySeed(9876543210L);
         
         /** general config */
-        long simLength = 1 * 24 * 60 * 60 * 1000L; 
+        long simLength = 1 * 24 * 60 * 60 * 1000L;
         int numOfApps = 1;
         
         /** app config */
@@ -63,7 +63,7 @@ public class AgentTestUNC {
         	configuration.put("resFileSize", 1024);      // 1 kB
         	configuration.put("minSoundLevel", 30);		 // dB
         	configuration.put("maxSoundLevel", 130);	 // dB
-        	configuration.put("soundTreshold", 70);		 // dB
+        	configuration.put("soundTreshold", 0);		 // dB
         	configuration.put("cpuTimeWindow", 600_000); // 10 min.
         	configuration.put("minCpuTemp", 55);		 // ℃
         	configuration.put("cpuTempTreshold", 80);	 // ℃
@@ -78,7 +78,7 @@ public class AgentTestUNC {
         
         /** ranking config */
         // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        ResourceAgent.rankingScriptDir = "/home/markus/Documents/projects/swarm-deployment/for_simulator";
+        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
         ResourceAgent.rankingMethodName = "rank_no_re";
         // ResourceAgent.rankingMethodName = "rank_re_add";
@@ -88,6 +88,8 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         // ResourceAgent.rankingMethodName = "random";
         
+        SwarmAgent.predictorScriptDir = "/home/markus/Documents/projects/Swarmchestrate-TSforecasting";
+
         /** nodes and RPis */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
@@ -145,43 +147,43 @@ public class AgentTestUNC {
        }
         
        ComputingAppliance node1 = new ComputingAppliance(
-           createNode("Node1", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 200, 3550, 100_000, 15, sharedLatencyMap),
-           new GeoLocation(59.33, 18.07), "EU", "Azure", false); 
+           createNode("Node1", 52, 1, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 200, 535, 100_000, 70, sharedLatencyMap),
+           new GeoLocation(59.33, 18.07), "EU", "Azure", false); // Stockholm
          
        ComputingAppliance node2 = new ComputingAppliance(
-           createNode("Node2", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           createNode("Node2", 64, 1, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 296, 493, 37_500, 30, sharedLatencyMap),
            new GeoLocation(53.33, -6.25), "EU", "AWS", false); // San Francisco
 
        ComputingAppliance node3 = new ComputingAppliance(
-           createNode("Node3", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           createNode("Node3", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 398, 533, 150_000, 60, sharedLatencyMap),
            new GeoLocation(51.51, -0.13), "EU", "Azure", false); // Chicago
 
        ComputingAppliance node4 = new ComputingAppliance(
-           createNode("Node4", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           createNode("Node4", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 503, 100_000, 15, sharedLatencyMap),
            new GeoLocation(48.86, 2.35), "EU", "AWS", false); // Los Angeles
 
        ComputingAppliance node5 = new ComputingAppliance(
-           createNode("Node5", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           createNode("Node5", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 480, 37_500, 70, sharedLatencyMap),
            new GeoLocation(50.11, 8.68), "EU", "Azure", false); // San Francisco
 
        ComputingAppliance node6 = new ComputingAppliance(
-           createNode("Node6", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           createNode("Node6", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 521, 150_000, 60, sharedLatencyMap),
            new GeoLocation(45.46, 9.19), "EU", "AWS", false); // Chicago
 
        ComputingAppliance node7 = new ComputingAppliance(
-           createNode("Node7", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           createNode("Node7", 64, 1, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 533, 100_000, 15, sharedLatencyMap),
            new GeoLocation(41.39, 2.17), "EU", "Azure", false); // Los Angeles
 
        ComputingAppliance node8 = new ComputingAppliance(
-           createNode("Node8", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 2200, 37_500, 70, sharedLatencyMap),
+           createNode("Node8", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 535, 37_500, 70, sharedLatencyMap),
            new GeoLocation(52.37, 4.90), "EU", "AWS", false); // San Francisco
 
        ComputingAppliance node9 = new ComputingAppliance(
-           createNode("Node9", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 3500, 150_000, 60, sharedLatencyMap),
+           createNode("Node9", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 506, 150_000, 60, sharedLatencyMap),
            new GeoLocation(39.04, -77.49), "US", "Azure", false); // Chicago
        
        ComputingAppliance node10 = new ComputingAppliance(
-           createNode("Node10", 256, 1, 256 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 3550, 100_000, 15, sharedLatencyMap),
+           createNode("Node10", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 478, 100_000, 15, sharedLatencyMap),
            new GeoLocation(37.34, -121.89), "US", "AWS", false); // Los Angeles
             
        new EnergyDataCollector("Node1", node1.iaas, true);
@@ -289,11 +291,11 @@ public class AgentTestUNC {
         }
         
         Sun.init(6, 20, 13, 1.5);
-        NoiseAppCsvExporter csvExporter = new NoiseAppCsvExporter(Sun.getInstance());
         long starttime = System.nanoTime();       
         Timed.simulateUntil(simLength);
         long stoptime = System.nanoTime();
-        //csvExporter.visualise();
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
+        NoiseAppCsvExporter.visualise();
         
         /** results */
         SimLogger.logRes("\nSimulation completed.");
@@ -320,8 +322,7 @@ public class AgentTestUNC {
         for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
             totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
         }
-        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
-              
+
         long soundFilesNs = 0;
         long soundFilesRs = 0;
         double avgDeploymentTime = 0.0;
@@ -380,8 +381,8 @@ public class AgentTestUNC {
         SimLogger.logRes("Average number of offers (pc.): " + df.format(avgOffers / AgentApplication.agentApplications.size()));
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
         SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
-        /*SimLogger.logRes("Time below the temperature threshold (%): "
-                + df.format(AgentTestUNC.calculateTimeBelowThrottling(csvExporter.noiseSensorTemperature.toPath(), 
+        SimLogger.logRes("Time below the temperature threshold (%): " 
+                + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
                         configuration.get("cpuTempTreshold").doubleValue())));
 */
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / soundFilesRs));  

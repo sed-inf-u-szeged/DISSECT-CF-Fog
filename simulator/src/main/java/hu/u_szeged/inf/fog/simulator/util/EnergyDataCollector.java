@@ -15,7 +15,7 @@ import java.util.TreeSet;
 
 public class EnergyDataCollector extends Timed {
     
-    public static long freq = 60 * 1000;
+    public long defaultFreq = 60 * 1000L;
     
     public static List<EnergyDataCollector> energyCollectors = new ArrayList<>();
     
@@ -37,22 +37,22 @@ public class EnergyDataCollector extends Timed {
     
     public EnergyDataCollector(String name, IaaSService iaas, boolean logging) {
         this.name = name;
-        subscribe(freq);
+        subscribe(defaultFreq);
         energyCollectors.add(this);
         this.iaas = iaas;
         this.logging = logging;
         this.iaasEnergyMeter = new IaaSEnergyMeter(iaas);
-        this.iaasEnergyMeter.startMeter(freq, true);
+        this.iaasEnergyMeter.startMeter(defaultFreq, false);
     }
     
     public EnergyDataCollector(String name, PhysicalMachine pm, boolean logging) {
         this.name = name;
-        subscribe(freq);
+        subscribe(defaultFreq);
         energyCollectors.add(this);
         this.pm = pm;
         this.logging = logging;
         this.pmEnergyMeter = new PhysicalMachineEnergyMeter(pm);
-        this.pmEnergyMeter.startMeter(freq, true);
+        this.pmEnergyMeter.startMeter(defaultFreq, false);
     }
 
     public void stop() {
@@ -102,7 +102,7 @@ public class EnergyDataCollector extends Timed {
             
             fw.write("Timestamp");
             for (String key : readings.keySet()) {
-                fw.write("; " + key);
+                fw.write(", " + key);
             }
             fw.write("\n");
 
@@ -112,10 +112,11 @@ public class EnergyDataCollector extends Timed {
             }
 
             for (Long timestamp : allTimestamps) {
-                fw.write(timestamp.toString()); 
+                Double time = timestamp / 1000.0 / 60.0 / 60.0;
+                fw.write(time.toString()); 
                 for (String key : readings.keySet()) {
                     Double value = readings.get(key).get(timestamp);
-                    fw.write(";" + (value != null ? String.format("%.3f", value / 1000 / 3_600_000) : "")); 
+                    fw.write("," + (value != null ? String.format("%.3f", value / 1000 / 3_600_000) : "")); 
                 }
                 fw.write("\n");
             }
