@@ -48,7 +48,6 @@ public class Capacity {
             this.state = Utilisation.State.ALLOCATED;
         }
 
-
         @Override
         public String toString() {
             return "Utilisation [state=" + state + ", resource=" + resource.name + ", utilisedCpu=" + utilisedCpu
@@ -74,7 +73,7 @@ public class Capacity {
         this.storage = storage;
         this.utilisations = new ArrayList<>();
     }
-    
+
     public void reserveCapacity(Resource resource) {
         Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
         this.utilisations.add(utilisation);
@@ -96,8 +95,8 @@ public class Capacity {
         utilisations.removeAll(utilisationsToBeRemoved);
     }
 
-    public void assignCapacity(Set<Resource> set, Offer offer) {
-        for (Resource resource : set) {
+    public void assignCapacity(Set<Resource> resources, Offer offer) {
+        for (Resource resource : resources) {
             for (Utilisation util : utilisations) {
                 if (util.resource == resource) {
                     util.state = Utilisation.State.ASSIGNED;
