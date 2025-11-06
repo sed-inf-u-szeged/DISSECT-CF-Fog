@@ -59,8 +59,6 @@ public class ResourceAgent {
         ResourceAgent.resourceAgents.add(this);
         this.agentStrategy = agentStrategy;
         this.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        System.out.println("hourlyPrice of " + name);
-        System.out.println(hourlyPrice);
     }
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
@@ -348,9 +346,6 @@ public class ResourceAgent {
                     averagePrice += getPrice() * resource.getTotalReqCpu();
                 }
             }
-
-            System.out.println("ujprice for " + name);
-            System.out.println(getPrice());
 
             /*
             averageLatency /= offer.agentResourcesMap.keySet().size();
