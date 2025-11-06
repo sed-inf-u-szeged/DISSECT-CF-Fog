@@ -2,10 +2,22 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.SystemUtils;
 
 public class SwarmAgent extends Timed {
 
@@ -15,11 +27,15 @@ public class SwarmAgent extends Timed {
     
     private int currentIndex;
     
-    public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>(); 
+    public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>();
+
+    public static String predictorScriptDir; 
     
     private final Deque<CpuTempSample> cpuTempSamples;
     
     public AgentApplication app;
+    
+    private int triggerPrediction;
 
     public SwarmAgent(AgentApplication app) {
         this.app = app;
@@ -28,6 +44,7 @@ public class SwarmAgent extends Timed {
         this.noiseSensorsWithClassifier = new ArrayList<>();
         allSwarmAgents.add(this);
         subscribe(this.app.configuration.get("samplingFreq").longValue());
+        NoiseAppCsvExporter.getInstance();
     }
     
     public void registerComponent(Object component) {
@@ -36,58 +53,93 @@ public class SwarmAgent extends Timed {
 
     @Override
     public void tick(long fires) {
-        double currentCpuLoad = avgCpu();
-        recordCpuLoad(currentCpuLoad);
-        this.scale(currentCpuLoad);
+    	
+        double avgCpuLoad = avgCpu();
+        cpuTempSamples.addLast(new CpuTempSample(Timed.getFireCount(), avgCpuLoad));
+        if (!cpuTempSamples.isEmpty()) {
+            cpuTempSamples.removeFirst();
+        }
+        this.scale(avgCpuLoad);
+        NoiseAppCsvExporter.log();
+        if (triggerPrediction % (64 * 6) == 0) {
+        	callPredictorScript();
+        }
+        triggerPrediction++;
     }
     
-    public void recordCpuLoad(double currentCpuLoad) {
-        long now = Timed.getFireCount();
-        cpuTempSamples.addLast(new CpuTempSample(now, currentCpuLoad));
-        while (!cpuTempSamples.isEmpty() 
-                && now - cpuTempSamples.peekFirst().timestamp > this.app.configuration.get("cpuTimeWindow").longValue()) {
-            cpuTempSamples.removeFirst();
+    private void callPredictorScript() {
+        try {
+            String command;
+            ProcessBuilder processBuilder;
+
+            if (SystemUtils.IS_OS_LINUX) {
+            	String modelPath = predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-3_1min_pl128";
+            	String inputPath = predictorScriptDir + "/data/simulator1/UNC-1-Noise-Sensor-3_1min_test.csv";
+            	String outputPath = predictorScriptDir + "/predictions/simulator1/UNC-1-Noise-Sensor-3_1min_predictions-" + Timed.getFireCount() + ".csv";
+
+            	command = String.join(" ",
+            	    "cd", predictorScriptDir+"/Time-Series-Library",
+            	    "&&",
+            	    "python3", "predict.py",
+            	    "--model_path", modelPath,
+            	    "--input_path", inputPath,
+            	    "--output_path", outputPath
+            	);
+            } else {
+                throw new UnsupportedOperationException("Unsupported operating system");
+            }
+
+            processBuilder = new ProcessBuilder("bash", "-c", command);
+        	processBuilder.redirectErrorStream(true);
+
+        	Process process = processBuilder.start();
+
+        	try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        	    String line;
+        	    while ((line = reader.readLine()) != null) {
+        	        System.out.println(line);
+        	    }
+        	}
+        	process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            e.getStackTrace();
         }
     }
 
-    public double getCpuLoadAvgLastMin() {        
+    private double getCpuLoadAvgLastMin() {
         if (cpuTempSamples.isEmpty()) {
             return Double.MAX_VALUE;
         }
-        
-        long now = Timed.getFireCount();
-        long elapsed = now - cpuTempSamples.peekFirst().timestamp;
 
-        if (elapsed < this.app.configuration.get("cpuTimeWindow").longValue()) { 
+        long elapsed = Timed.getFireCount() - cpuTempSamples.peekFirst().timestamp;
+        if (elapsed < this.app.configuration.get("cpuTimeWindow").longValue()) {
             return Double.MAX_VALUE;
         }
 
         double sum = 0.0;
-        int count = 0;
         for (CpuTempSample s : cpuTempSamples) {
             sum += s.cpuLoad;
-            count++;
         }
         
-        return (count > 0) ? (sum / count) : 0.0;
+        return (cpuTempSamples.isEmpty()) ? 0.0 : (sum / cpuTempSamples.size());
     }
     
-    public double avgCpu() {
-        double noiseSensors = 0.0;
-        double load = 0.0;
+    private double avgCpu() {
+        int classifierCount = 0;
+        double avgLoad = 0.0;
         for (Object o : this.components) {
             if (o.getClass().equals(NoiseSensor.class)) {
                 NoiseSensor ns = (NoiseSensor) o;
-                if (ns.util.vm.isProcessing()) {
-                    load += 100;
-                    noiseSensors++;
-                } else if (ns.isClassificationRunning) {
-                    load++;
-                    noiseSensors++;
+                if (ns.noOfprocessedFiles > 0) {
+                    double load = 1.0 + 99.0
+                            * (ns.noOfprocessedFiles * this.app.configuration.get("lengthOfProcessing").doubleValue() / 10_000);
+                    load = Math.min(load, 100.0);
+                    avgLoad += load;
+                    classifierCount++;
                 }
             }
         }
-        return noiseSensors == 0 ? 0 : load / noiseSensors;
+        return classifierCount == 0 ? 0 : avgLoad / classifierCount;
     }
     
     private NoiseSensor findSensorByCpuTemp(boolean minSearch) {
@@ -116,7 +168,8 @@ public class SwarmAgent extends Timed {
         return best;
     }
     
-    private void scale(double currentCpuLoad) {      
+    private void scale(double avgCpuLoad) {      
+        //System.out.println(getCpuLoadAvgLastMin());
         if (noiseSensorsWithClassifier.size() < this.app.configuration.get("minContainerCount").intValue()) {
             NoiseSensor ns = findSensorByCpuTemp(true);
             if (ns != null) {
@@ -125,7 +178,7 @@ public class SwarmAgent extends Timed {
                 noiseSensorsWithClassifier.add(ns);
                 ns.isClassificationRunning = true;
             } 
-        } else if (currentCpuLoad > this.app.configuration.get("cpuLoadScaleUp").doubleValue()) {
+        } else if (avgCpuLoad > this.app.configuration.get("cpuLoadScaleUp").doubleValue()) {
             NoiseSensor ns = findSensorByCpuTemp(true);
             if (ns != null) {
                 SimLogger.logRun(this.app.getComponentName(ns.util.resource.name) + "'classifier was started at: " 
