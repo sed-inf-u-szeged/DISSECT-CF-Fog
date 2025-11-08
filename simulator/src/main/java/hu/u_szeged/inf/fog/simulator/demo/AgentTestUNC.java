@@ -34,6 +34,8 @@ import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;
@@ -87,7 +89,7 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "random";
         
         SwarmAgent.predictorScriptDir = "/home/markus/Documents/projects/Swarmchestrate-TSforecasting";
-        
+
         /** nodes and RPis */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
         
@@ -155,11 +157,11 @@ public class AgentTestUNC {
        ComputingAppliance node3 = new ComputingAppliance(
            createNode("Node3", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 398, 533, 150_000, 60, sharedLatencyMap),
            new GeoLocation(51.51, -0.13), "EU", "Azure", false); // Chicago
-        
+
        ComputingAppliance node4 = new ComputingAppliance(
            createNode("Node4", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 503, 100_000, 15, sharedLatencyMap),
            new GeoLocation(48.86, 2.35), "EU", "AWS", false); // Los Angeles
-             
+
        ComputingAppliance node5 = new ComputingAppliance(
            createNode("Node5", 32, 1, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 480, 37_500, 70, sharedLatencyMap),
            new GeoLocation(50.11, 8.68), "EU", "Azure", false); // San Francisco
@@ -167,11 +169,11 @@ public class AgentTestUNC {
        ComputingAppliance node6 = new ComputingAppliance(
            createNode("Node6", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 40, 200, 521, 150_000, 60, sharedLatencyMap),
            new GeoLocation(45.46, 9.19), "EU", "AWS", false); // Chicago
-            
+
        ComputingAppliance node7 = new ComputingAppliance(
            createNode("Node7", 64, 1, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 35, 175, 533, 100_000, 15, sharedLatencyMap),
            new GeoLocation(41.39, 2.17), "EU", "Azure", false); // Los Angeles
-                 
+
        ComputingAppliance node8 = new ComputingAppliance(
            createNode("Node8", 48, 1, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L, 30, 150, 535, 37_500, 70, sharedLatencyMap),
            new GeoLocation(52.37, 4.90), "EU", "AWS", false); // San Francisco
@@ -200,8 +202,8 @@ public class AgentTestUNC {
        AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
        
        Map<String, String> mapping = new HashMap<>();
-        
-       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping));
+
+       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing());
   		
         for(int i = 1; i <= numOfApps; i++) {
         	mapping.put("UNC-" + i + "-Res-1", "Agent0");
@@ -228,37 +230,36 @@ public class AgentTestUNC {
         }
         
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
-
-        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node1, 52, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+
+        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node2, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+
+        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+
+        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node4, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+
+        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node5, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-       
-        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+
+        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node6, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+
+        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node7, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+
+        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node8, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(false),
+
+        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node9, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-        
-        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true),
+
+        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
                 new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-                
+
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
@@ -311,7 +312,7 @@ public class AgentTestUNC {
                    cores += util.utilisedCpu;
                 }
             }
-            totalCost += cores * agent.hourlyPrice * (runtime / 1000 / 60 / 60);
+            totalCost += cores * agent.getPrice() * (runtime / 1000 / 60 / 60);
         }
 
         DecimalFormat df = new DecimalFormat("#.####");
@@ -320,7 +321,7 @@ public class AgentTestUNC {
         for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
             totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
         }
-             
+
         long soundFilesNs = 0;
         long soundFilesRs = 0;
         double avgDeploymentTime = 0.0;
@@ -380,9 +381,8 @@ public class AgentTestUNC {
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
         SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
         SimLogger.logRes("Time below the temperature threshold (%): " 
-                + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(), 
+                + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
                         configuration.get("cpuTempTreshold").doubleValue())));
-
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / soundFilesRs));  
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }

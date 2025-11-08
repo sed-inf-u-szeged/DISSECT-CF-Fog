@@ -20,7 +20,7 @@ public class AgentApplication {
     public static class Resource {
         
         public String name;
-        public Integer cpu;
+        public Double cpu;
         public Long memory;
         public Integer instances;
         public String provider;
