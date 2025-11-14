@@ -78,9 +78,9 @@ public class SwarmAgent extends Timed {
             	String outputPath = predictorScriptDir + "/predictions/simulator1/UNC-1-Noise-Sensor-3_1min_predictions-" + Timed.getFireCount() + ".csv";
 
             	command = String.join(" ",
-            	    "cd", predictorScriptDir+"/Time-Series-Library",
+            	    "cd", predictorScriptDir,
             	    "&&",
-            	    "python3", "predict.py",
+            	    "uv run", "Time-Series-Library/predict.py",
             	    "--model_path", modelPath,
             	    "--input_path", inputPath,
             	    "--output_path", outputPath
@@ -90,6 +90,8 @@ public class SwarmAgent extends Timed {
             }
 
             processBuilder = new ProcessBuilder("bash", "-c", command);
+            //System.out.println(processBuilder.command());
+            //System.exit(0);
         	processBuilder.redirectErrorStream(true);
 
         	Process process = processBuilder.start();
