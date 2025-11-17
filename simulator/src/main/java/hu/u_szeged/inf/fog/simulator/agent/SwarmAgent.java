@@ -7,14 +7,20 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
@@ -36,6 +42,9 @@ public class SwarmAgent extends Timed {
     public AgentApplication app;
     
     private int triggerPrediction;
+    
+    public final Map<String, Deque<Double>> windows = new HashMap<>();
+    
 
     public SwarmAgent(AgentApplication app) {
         this.app = app;
@@ -49,23 +58,47 @@ public class SwarmAgent extends Timed {
     
     public void registerComponent(Object component) {
         this.components.add(component);
+        if (component instanceof NoiseSensor) {
+            NoiseSensor ns = (NoiseSensor) component;
+            windows.putIfAbsent(app.getComponentName(ns.util.resource.name), new ArrayDeque<>());
+        }
     }
 
     @Override
     public void tick(long fires) {
-    	
         double avgCpuLoad = avgCpu();
         cpuTempSamples.addLast(new CpuTempSample(Timed.getFireCount(), avgCpuLoad));
         if (!cpuTempSamples.isEmpty()) {
             cpuTempSamples.removeFirst();
         }
         this.scale(avgCpuLoad);
-        NoiseAppCsvExporter.log();
-        if (triggerPrediction % (64 * 6) == 0) {
-        	callPredictorScript();
+        if (triggerPrediction % 6 == 0 ) {
+            NoiseAppCsvExporter.log();
+        }
+       
+        if (triggerPrediction % (64 * 6) == 0 &&  windows.values().stream().anyMatch(w -> w.size() == 128)) {
+            // TODO: call it only if there was enough data
+        	//callPredictorScript();
+            try {
+                writeWindowToCsv(ScenarioBase.resultDirectory);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.exit(0);
         }
         triggerPrediction++;
     }
+    
+    public void addValue(String deviceId, double value) {
+        Deque<Double> window = windows.get(deviceId);
+
+        if (window.size() == 128) { // TODO: remove this hardcoded value
+            window.removeFirst(); 
+        }
+        
+        window.addLast(value); 
+    }
+
     
     private void callPredictorScript() {
         try {
@@ -229,6 +262,22 @@ public class SwarmAgent extends Timed {
             }
         }
     }
+    
+    String printWindow() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SlidingWindowManager {\n");
+
+        for (Map.Entry<String, Deque<Double>> entry : windows.entrySet()) {
+            sb.append("  ")
+              .append(entry.getKey())
+              .append(": ")
+              .append(entry.getValue())
+              .append("\n");
+        }
+
+        sb.append("}");
+        return sb.toString();
+    }
 
     private static class CpuTempSample {
         long timestamp;
@@ -237,6 +286,43 @@ public class SwarmAgent extends Timed {
         CpuTempSample(long ts, double load) {
             this.timestamp = ts;
             this.cpuLoad = load;
+        }
+    }
+    
+    public void writeWindowToCsv(String outputDir) throws IOException {
+        LocalDateTime startTime = LocalDateTime.of(2023, 10, 1, 0, 0);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00");
+
+        for (Map.Entry<String, Deque<Double>> entry : windows.entrySet()) {
+            String deviceId = entry.getKey();
+            Deque<Double> window = entry.getValue();
+
+            if (window.size() != 128) {
+                System.out.println("Skipping " + deviceId + " (not full)");
+                continue;
+            }
+
+            String filePath = outputDir + "/" + deviceId + "-for-prediction.csv";
+
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+
+                bw.write("date,noise-sensor-temperature,separated-cpu-load,sound-values,no-of-file-migrations,no-of-files-to-process");
+                bw.newLine();
+
+                int index = 0;
+                for (double value : window) {
+                    LocalDateTime timestamp = startTime.plusMinutes(index);
+                    bw.write(
+                            fmt.format(timestamp) + "," +
+                            value + "," +
+                            "0,0,0,0"
+                        );
+                    bw.newLine();
+
+                    index++;
+                }
+            }
+
         }
     }
 }

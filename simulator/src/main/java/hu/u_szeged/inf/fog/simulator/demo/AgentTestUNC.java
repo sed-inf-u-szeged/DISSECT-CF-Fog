@@ -86,7 +86,7 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         // ResourceAgent.rankingMethodName = "random";
         
-        SwarmAgent.predictorScriptDir = "/home/markus/Documents/projects/Swarmchestrate-TSforecasting";
+        SwarmAgent.predictorScriptDir = "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting";
         
         /** nodes and RPis */
         Map<String, Integer> sharedLatencyMap = new HashMap<>();        
