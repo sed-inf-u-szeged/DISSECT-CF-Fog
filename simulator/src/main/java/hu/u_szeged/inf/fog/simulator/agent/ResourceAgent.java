@@ -8,6 +8,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
@@ -17,6 +19,8 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -39,7 +43,7 @@ public class ResourceAgent {
 
     public VirtualMachine service;
 
-    public double hourlyPrice;
+    private final double hourlyPrice;
 
     public List<Capacity> capacities;
 
@@ -114,6 +118,29 @@ public class ResourceAgent {
         });
     }
 
+    public double getPrice() {
+        double total = 0, used = 0;
+
+        for (final Capacity cap : capacities) {
+            total += cap.cpu;
+            for (final Utilisation u : cap.utilisations) {
+                if (u.state != null) {
+                    total += u.utilisedCpu;
+                    used += u.utilisedCpu;
+                }
+            }
+        }
+
+        double utilization = used / total;
+        double multiplier = 1;
+
+        if (utilization > 0.5) {
+            multiplier = 1.1 + (utilization - 0.5);
+        }
+
+        return hourlyPrice * multiplier;
+    }
+
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
         if (!app.offers.isEmpty()) {
@@ -183,12 +210,6 @@ public class ResourceAgent {
         for (ResourceAgent agent : app.networkingAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }
-
-        /*
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            System.out.println(pair.getLeft().name + " " + pair.getRight().name);
-        }
-        */
 
         generateUniqueOfferCombinations(agentResourcePairs, app);
 
@@ -338,7 +359,7 @@ public class ResourceAgent {
                 for (Resource resource : offer.agentResourcesMap.get(agent)) {
                     averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange()
                             * (resource.getTotalReqCpu() / 100);
-                    averagePrice += agent.hourlyPrice * resource.getTotalReqCpu();
+                    averagePrice += getPrice() * resource.getTotalReqCpu();
                 }
             }
 
