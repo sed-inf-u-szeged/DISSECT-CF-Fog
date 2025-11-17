@@ -62,7 +62,7 @@ public class SwarmAgent extends Timed {
         this.scale(avgCpuLoad);
         NoiseAppCsvExporter.log();
         if (triggerPrediction % (64 * 6) == 0) {
-        	callPredictorScript();
+        	//callPredictorScript();
         }
         triggerPrediction++;
     }

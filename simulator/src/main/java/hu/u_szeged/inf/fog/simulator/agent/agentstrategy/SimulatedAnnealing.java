@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.agent.strategy;
+package hu.u_szeged.inf.fog.simulator.agent.agentstrategy;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;

@@ -32,12 +32,7 @@ import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.DirectMappingAgentStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.SimulatedAnnealing;
-import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.DirectMappingAgentStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
@@ -206,11 +201,7 @@ public class AgentTestUNC {
 
        Map<String, String> mapping = new HashMap<>();
 
-       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing());
-  		
-
-       ResourceAgent ra0 =
-               new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new DirectMappingAgentStrategy(mapping), new GuidedSearchMessagingStrategy());
+       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy());
 
         for(int i = 1; i <= numOfApps; i++) {
         	mapping.put("UNC-" + i + "-Res-1", "Agent0");
@@ -237,34 +228,34 @@ public class AgentTestUNC {
         }
 
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
-        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node1, 52, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node2, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node4, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node5, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node6, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node7, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node8, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node9, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(),
+        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         /** Image service */
@@ -287,7 +278,7 @@ public class AgentTestUNC {
         //int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150};
 
         for (Path file : appFiles) {
-            new DeferredEvent(delay[i++] * 60 * 1000) {
+            new DeferredEvent(delay[i] * 60 * 1000) {
 
                 @Override
                 protected void eventAction() {

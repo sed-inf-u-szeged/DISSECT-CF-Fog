@@ -8,19 +8,17 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentOfferWriter.QosPriority;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -57,7 +55,7 @@ public class ResourceAgent {
     public Map<String, Set<ResourceAgent>> networkingAgentsByApp = new HashMap<>();
 
     private final MessagingStrategy messagingStrategy;
-    public static int MAX_REBROADCAST_COUNT = 2;
+    public static int MAX_REBROADCAST_COUNT = Math.min(5 ,AgentApplication.agentApplications.size() / 2);
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
@@ -145,8 +143,7 @@ public class ResourceAgent {
         this.generateOffers(app);
         if (!app.offers.isEmpty()) {
             this.writeFile(app); // TODO: this takes time..
-
-            app.winningOffer = callRankingScript(app);
+            app.winningOffer = 0;
             Offer winningOffer = app.offers.get(app.winningOffer);
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
@@ -162,6 +159,9 @@ public class ResourceAgent {
                     if (app.broadcastCount - 1 <= MAX_REBROADCAST_COUNT) {
                         broadcast(app, bcastMessageSize);
                         SimLogger.logRun("Rebroadcast " + (app.broadcastCount - 1) + " for " + app.name);
+                        if (agentStrategy instanceof SimulatedAnnealing) {
+                            ((SimulatedAnnealing) agentStrategy).switchToRandomCoolingSchedule();
+                        }
                     }
                 }
             };
