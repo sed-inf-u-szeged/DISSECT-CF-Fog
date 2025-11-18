@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,20 +16,24 @@ import java.util.TreeMap;
 @NoArgsConstructor
 public class Battery extends Timed {
 
-    //TODO enum könnyebb battery inicializáláshoz
-    /*
-    - előre definiált batteryk lesznek majd itt statikus adattagokkal, amikhez lesz egy konstruktor ahol az enum alapján hozza létre a batteryt
-    - Lithium-ion , Lithium Polymer (pl.: telefonok, drónok, esetleg szenzorok - a legtöbb modern dolog kisebb akkui)
-    - Lead-acid autóhoz? ha akarunk autót modellezni és releváns oda idk?
-
-    - esetlegesen BatteryType helyett BatteryForDevice / DeviceBattery lehetne ahol pl telefonokhoz és drónokhoz általános batteryket
-      rakunk, mert azoknál lehet azonos típus, de különböző kapacitás, mert különböző modellek is vannak egyértelműen
-
+    // jelenleg ott van adattagnak a drainRate is, ez ha számoljuk akkor vszeg nem lesz majd ott (minCpu fogyasztásból? kocsi esetén kínos bár nem tom),
+    // de akkor meg kell oldani hogy eszközhöz adás esetén inicializálva legyen (Device setterébe mint a stopTime) addig meg vmi default érték? de akkor
+    // meg ne működjön addig amíg nincs eszközhöz kötve a battery? de akkor meg nincs értelme az idlebattery drainnek? a chargeTime is benne van konstruktorba
+    // de lesz hozzá setter mert az sztem 2 telefonnál se egyezik meg, vagy ha találok vmi számítási módszert rá akkor le lesz cserélve
     @AllArgsConstructor
     public enum BatteryType{
+        //ide még kell research elég sloppy, főleg a drain és charge értékek
+        PHONE_BATTERY(4000, 3.7, 10, 2 * 60 * 60 * 1000), //chargeTime ~2h
+        DRONE_BATTERY(3500, 12, 10, 90 * 60 * 1000), //chargeTime ~90min
+        CAR_BATTERY(55000, 12, 40, 6 * 60 * 60 * 1000); //chargeTime 5-7h = ~6? elég változó
 
+        public final double maxCapacity;
+        public final double voltage;
+        public final double drainRate;
+        public final long chargeTime;
     }
-    */
+
+
     //logoláshoz minden batterynek külön csv és ehhez kell vmi identifier, sima id meg kevés imo
     @Getter
     private String name;
@@ -62,6 +67,7 @@ public class Battery extends Timed {
      * The time it takes to charge the battery from 0% to 100% (in ticks).
      */
     @Getter
+    @Setter
     private long chargeTime;
 
     /**
@@ -70,6 +76,7 @@ public class Battery extends Timed {
     @Getter
     private boolean isCharging;
 
+    //STOPTIME adattag hogy lehessen simulate until last eventezni, az eszköz stopTimeja alapján van beállítva
     @Setter
     @Getter
     private long stopTime;
@@ -77,8 +84,6 @@ public class Battery extends Timed {
     //hashmap vszeg gyorsabb, de igy olvashatóbb a csv
     public final Map<Long, Double> readings = new TreeMap<>();
 
-
-    //STOPTIME adattag hogy lehessen simulate until last eventezni
 
     /**
      * Constructor for battery objects
@@ -103,9 +108,20 @@ public class Battery extends Timed {
         subscribe(60000);
     }
 
-//    public Battery(String name, BatteryType batteryType ) {
-//        //TODO enum konstruktor
-//    }
+    public Battery(String name, BatteryType batteryType) {
+        this.name = name;
+        this.maxCapacity = batteryType.maxCapacity;
+        this.voltage = batteryType.voltage;
+        this.drainRate = batteryType.drainRate;
+        this.chargeTime = batteryType.chargeTime;
+        this.stopTime = 60 * 60 * 1000; // 1hour base value
+
+        this.currLevel = batteryType.maxCapacity;
+        this.isCharging = false;
+
+        readings.put(Timed.getFireCount(), currLevel);
+        subscribe(60000);
+    }
 
 
     /**
