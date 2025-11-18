@@ -9,9 +9,12 @@ import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
@@ -21,6 +24,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
@@ -72,21 +80,45 @@ public class SwarmAgent extends Timed {
             cpuTempSamples.removeFirst();
         }
         this.scale(avgCpuLoad);
-        if (triggerPrediction % 6 == 0 ) {
+        if (triggerPrediction % 6 == 0) {
+            // TODO: calculate avg values, not just the last one
             NoiseAppCsvExporter.log();
         }
        
-        if (triggerPrediction % (64 * 6) == 0 &&  windows.values().stream().anyMatch(w -> w.size() == 128)) {
-            // TODO: call it only if there was enough data
-        	//callPredictorScript();
+        if (triggerPrediction % (64 * 6) == 0 && windows.values().stream().anyMatch(w -> w.size() == 128)) {
+            Map<String, String> files = null;
             try {
-                writeWindowToCsv(ScenarioBase.resultDirectory);
+                files = writeWindowToCsv(ScenarioBase.resultDirectory);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            Map<String, String> filesWithPredictions = callPredictorScript(files);
+            Map<String, List<Double>> predictionValues = loadPredictions(filesWithPredictions);
+            
+            deleteFiles(files);
+            deleteFiles(filesWithPredictions);
+            
+            for (Map.Entry<String, List<Double>> entry : predictionValues.entrySet()) {
+                String deviceId = entry.getKey();
+                List<Double> values = entry.getValue();
+                // TODO: scaling logic
+            }
+            
             System.exit(0);
         }
         triggerPrediction++;
+    }
+    
+    private void deleteFiles(Map<String, String> files) {
+        for (String path : files.values()) {
+            File f = new File(path);
+            if (f.exists()) {
+                boolean deleted = f.delete();
+                if (!deleted) {
+                    System.err.println("Warning: could not delete file " + path);
+                }
+            }
+        }
     }
     
     public void addValue(String deviceId, double value) {
@@ -99,46 +131,109 @@ public class SwarmAgent extends Timed {
         window.addLast(value); 
     }
 
-    
-    private void callPredictorScript() {
-        try {
-            String command;
-            ProcessBuilder processBuilder;
+    public Map<String, List<Double>> loadPredictions(Map<String, String> filesWithPredictions) {
+        Map<String, List<Double>> predictions = new HashMap<>();
 
-            if (SystemUtils.IS_OS_LINUX) {
-            	String modelPath = predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-3_1min_pl128";
-            	String inputPath = predictorScriptDir + "/data/simulator1/UNC-1-Noise-Sensor-3_1min_test.csv";
-            	String outputPath = predictorScriptDir + "/predictions/simulator1/UNC-1-Noise-Sensor-3_1min_predictions-" + Timed.getFireCount() + ".csv";
+        for (Map.Entry<String, String> entry : filesWithPredictions.entrySet()) {
+            String deviceId = entry.getKey();
+            String filePath = entry.getValue();
 
-            	command = String.join(" ",
-            	    "cd", predictorScriptDir,
-            	    "&&",
-            	    "uv run", "Time-Series-Library/predict.py",
-            	    "--model_path", modelPath,
-            	    "--input_path", inputPath,
-            	    "--output_path", outputPath
-            	);
-            } else {
-                throw new UnsupportedOperationException("Unsupported operating system");
+            List<Double> values = new ArrayList<>();
+
+            try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+                String line;
+                br.readLine();
+
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+
+                    String[] parts = line.split(",");
+                    if (parts.length < 2) continue;
+
+                    double val = Double.parseDouble(parts[1]);
+                    values.add(val);
+                }
+
+                predictions.put(deviceId, values);
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-            processBuilder = new ProcessBuilder("bash", "-c", command);
-            //System.out.println(processBuilder.command());
-            //System.exit(0);
-        	processBuilder.redirectErrorStream(true);
-
-        	Process process = processBuilder.start();
-
-        	try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-        	    String line;
-        	    while ((line = reader.readLine()) != null) {
-        	        System.out.println(line);
-        	    }
-        	}
-        	process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            e.getStackTrace();
         }
+
+        return predictions;
+    }
+
+    
+    private Map<String, String> callPredictorScript(Map<String, String> files) {
+        if (!SystemUtils.IS_OS_LINUX) {
+            throw new UnsupportedOperationException("Unsupported operating system");
+        }
+
+        Map<String, String> result = new ConcurrentHashMap<>();
+
+        int threads = Math.min(files.size(), Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        List<Future<?>> futures = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : files.entrySet()) {
+            String deviceId = entry.getKey();
+            String inputPath = entry.getValue();
+
+            futures.add(executor.submit(() -> {
+                try {
+                    //String modelPath = predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-3_1min_pl128";
+                    String modelPath = predictorScriptDir + "/checkpoints/simulator1__" + deviceId + "_1min_pl128";
+
+
+                    Path inputFile = Paths.get(inputPath);
+                    String predictionName = inputFile.getFileName().toString().replace("predicting.csv", "predicted.csv");
+                    String outputPath = inputFile.resolveSibling(predictionName).toString();
+
+                    ProcessBuilder processBuilder = new ProcessBuilder(
+                            "uv", "run", "Time-Series-Library/predict.py",
+                            "--model_path", modelPath,
+                            "--input_path", inputPath,
+                            "--output_path", outputPath
+                    );
+
+                    processBuilder.directory(new File(predictorScriptDir));
+                    processBuilder.redirectErrorStream(true);
+
+                    Process process = processBuilder.start();
+
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            System.out.println("[" + deviceId + "] " + line);
+                        }
+                    }
+
+                    int exitCode = process.waitFor();
+                    if (exitCode != 0) {
+                        System.err.println("Predictor failed for " + deviceId + " with exit code " + exitCode);
+                    } else {
+                        result.put(deviceId, outputPath);
+                    }
+
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }));
+        }
+
+        for (Future<?> f : futures) {
+            try {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        executor.shutdown();
+
+        return result;
     }
 
     private double getCpuLoadAvgLastMin() {
@@ -289,9 +384,11 @@ public class SwarmAgent extends Timed {
         }
     }
     
-    public void writeWindowToCsv(String outputDir) throws IOException {
+    public Map<String, String> writeWindowToCsv(String outputDir) throws IOException {
         LocalDateTime startTime = LocalDateTime.of(2023, 10, 1, 0, 0);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00");
+
+        Map<String, String> result = new HashMap<>();
 
         for (Map.Entry<String, Deque<Double>> entry : windows.entrySet()) {
             String deviceId = entry.getKey();
@@ -302,7 +399,7 @@ public class SwarmAgent extends Timed {
                 continue;
             }
 
-            String filePath = outputDir + "/" + deviceId + "-for-prediction.csv";
+            String filePath = outputDir + "/" + deviceId + "-predicting.csv";
 
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
 
@@ -322,7 +419,9 @@ public class SwarmAgent extends Timed {
                     index++;
                 }
             }
+            result.put(deviceId, filePath);
 
         }
+        return result;
     }
 }
