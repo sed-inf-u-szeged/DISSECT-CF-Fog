@@ -136,14 +136,14 @@ public class EdgeDevice extends Device {
      */
     @Override
     public void tick(long fires) {
+        if(battery != null && battery.isCharging()){
+            return;
+        }
+
         if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
             new Sensor(this, 1);
         }
 
-        //üres battery esetén nem történik semmi, kell e kikapcsolni valamit? maybe
-        if(battery != null && battery.isCharging()){
-            return;
-        }
 
         GeoLocation newLocation = this.mobilityStrategy.move(this);
         if (this.isPathLogged) {
