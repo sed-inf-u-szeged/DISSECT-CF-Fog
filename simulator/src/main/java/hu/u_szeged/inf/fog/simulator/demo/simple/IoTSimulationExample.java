@@ -14,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.strategy.PliantDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
@@ -85,7 +86,7 @@ public class IoTSimulationExample {
             int latency = 50;
             
             Device device = new SmartDevice(startTime, stopTime, fileSize, deviceFreq, 
-                    new StaticMobilityStrategy(GeoLocation.generateRandomGeoLocation()), new RandomDeviceStrategy(), localMachine, latency, false);
+                    new StaticMobilityStrategy(GeoLocation.generateRandomGeoLocation()), new PliantDeviceStrategy(), localMachine, latency, false);
             deviceList.add(device);
         }
         

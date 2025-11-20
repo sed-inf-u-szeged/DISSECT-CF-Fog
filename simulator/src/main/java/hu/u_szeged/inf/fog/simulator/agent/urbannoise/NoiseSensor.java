@@ -29,7 +29,9 @@ public class NoiseSensor extends Timed {
     
     public static long totalTimeOnNetwork;
     
-    public int migratedFiles;
+    public int noOfmigratedFiles;
+    
+    public int noOfprocessedFiles;
     
     SwarmAgent sa;
     
@@ -105,42 +107,7 @@ public class NoiseSensor extends Timed {
             offload();
         }  
     }
-    
-    private void adjustTemperatureByEnv() {
-        final double sun = Sun.getInstance().getSunStrength();
-
-        final double minCpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
-        final double maxCpuTemp = this.app.configuration.get("maxCpuTemp").doubleValue(); 
-
-        // base active cooling 
-        double delta = (minCpuTemp - cpuTemp) * 0.02887;
-
-        if (this.inside && this.sunExposed) {
-            // weak heating
-            delta += 0.35 * sun;
-
-        } else if (!this.inside && !this.sunExposed) {
-            // medium heating
-            delta += 0.75 * sun;
-
-        } else if (!this.inside && this.sunExposed) {
-            // strong heating
-            delta += 1.5 * sun;
-            
-        }
         
-        // noise
-        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
-        cpuTemp += delta;
-        
-        if (cpuTemp < minCpuTemp) {
-            cpuTemp = minCpuTemp;
-        }
-        if (cpuTemp > maxCpuTemp) {
-            cpuTemp = maxCpuTemp;
-        }
-    }
-    
     private void offload() {
         ArrayList<StorageObject> successfullyTransferred = new ArrayList<>();
         for (StorageObject so : this.filesToBeProcessed) {
@@ -150,7 +117,7 @@ public class NoiseSensor extends Timed {
                 try {
                     successfullyTransferred.add(so);
                     long actualTime = Timed.getFireCount();
-                    this.migratedFiles++;
+                    this.noOfmigratedFiles++;
                     this.pm.localDisk.requestContentDelivery(so.id, ns.pm.localDisk, new ConsumptionEventAdapter() {
                         
                         @Override
@@ -206,12 +173,47 @@ public class NoiseSensor extends Timed {
         
     }
     
+    private void adjustTemperatureByEnv() {
+        final double sun = Sun.getInstance().getSunStrength();
+
+        final double minCpuTemp = this.app.configuration.get("minCpuTemp").doubleValue();
+        final double maxCpuTemp = this.app.configuration.get("maxCpuTemp").doubleValue(); 
+
+        // base active cooling 
+        double delta = (minCpuTemp - cpuTemp) * 0.02;
+
+        if (this.inside && this.sunExposed) {
+            // weak heating
+            delta += 0.35 * sun;
+
+        } else if (!this.inside && !this.sunExposed) {
+            // medium heating
+            delta += 0.75 * sun;
+
+        } else if (!this.inside && this.sunExposed) {
+            // strong heating
+            delta += 1.5 * sun;
+            
+        }
+        
+        // noise
+        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
+        cpuTemp += delta;
+        
+        if (cpuTemp < minCpuTemp) {
+            cpuTemp = minCpuTemp;
+        }
+        if (cpuTemp > maxCpuTemp) {
+            cpuTemp = maxCpuTemp;
+        }
+    }
+    
     private void runSoundClassification() {
        
         if (this.cpuTemp <= this.app.configuration.get("cpuTempTreshold").doubleValue() && this.filesToBeProcessed.size() > 0) {
             StorageObject so = this.filesToBeProcessed.remove(0);
 
-            double delta = (this.app.configuration.get("maxCpuTemp").doubleValue() - cpuTemp) * 0.015;
+            double delta = (this.app.configuration.get("maxCpuTemp").doubleValue() - cpuTemp) * 0.016;
             cpuTemp += delta;
            
             try {
@@ -222,6 +224,7 @@ public class NoiseSensor extends Timed {
                             @Override
                             public void conComplete() {
                                 totalProcessedFiles++;
+                                noOfprocessedFiles++;
                                 NoiseSensor.totalTimeOnNetwork += app.configuration.get("lengthOfProcessing").longValue();
                                 runSoundClassification();
                                 sendResultToDatabase(pm.localDisk, remoteServer.util.vm.getResourceAllocation().getHost().localDisk, so); 
