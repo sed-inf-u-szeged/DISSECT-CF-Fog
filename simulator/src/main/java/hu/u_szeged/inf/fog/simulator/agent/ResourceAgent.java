@@ -8,6 +8,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.agent.decision.DecisionMaker;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import hu.u_szeged.inf.fog.simulator.aco.CentralisedAntOptimiserApplication;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -36,6 +39,8 @@ public class ResourceAgent {
     public static String rankingMethodName;
 
     public static String rankingScriptDir;
+
+    public static ArrayList<Map.Entry<ComputingAppliance, ResourceAgent>> nodesToBeClustered;
 
     public String name;
 
@@ -47,7 +52,7 @@ public class ResourceAgent {
 
     public List<Capacity> capacities;
 
-    AgentStrategy agentStrategy;
+    public AgentStrategy agentStrategy;
 
     public static ArrayList<ResourceAgent> resourceAgents = new ArrayList<>();
 
@@ -96,14 +101,14 @@ public class ResourceAgent {
         }
     }
 
-    public void broadcast(AgentApplication app, int bcastMessageSize) {
+    public void broadcast(AgentApplication app, int bcastMessageSize, DecisionMaker decisionMaker) {
         MessageHandler.executeMessaging(this, app, bcastMessageSize, "bcast", () -> {
-            deploy(app, bcastMessageSize);
+            deploy(app, bcastMessageSize, decisionMaker);
         });
     }
 
-    private void deploy(AgentApplication app, int bcastMessageSize) {
-        this.generateOffers(app);
+    private void deploy(AgentApplication app, int bcastMessageSize, DecisionMaker decisionMaker) {
+        decisionMaker.deploy(app);
 
         if (!app.offers.isEmpty()) {
             this.writeFile(app); // TODO: this takes time..
@@ -114,7 +119,7 @@ public class ResourceAgent {
                 @Override
                 protected void eventAction() {
                     if (reBroadcastCounter < AgentApplicationReader.appCount * 2) {
-                        broadcast(app, bcastMessageSize);
+                        broadcast(app, bcastMessageSize, decisionMaker);
                         // TODO: this var is handled at RA level, not at app level (what if RA has more than one app)
                         reBroadcastCounter++; 
                         SimLogger.logRun("Rebroadcast " + reBroadcastCounter + " for " + app.name);
@@ -133,83 +138,6 @@ public class ResourceAgent {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             for (Capacity capacity : agent.capacities) {
                 freeReservedResources(app.name, capacity);
-            }
-        }
-    }
-
-    private void generateOffers(AgentApplication app) {
-        List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
-
-        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-            agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
-        }
-        
-        /*
-        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
-            System.out.println(pair.getLeft().name + " " + pair.getRight().name);
-        }
-        */
-        
-        generateUniqueOfferCombinations(agentResourcePairs, app);
-        
-        /* TODO: only for debugging, needs to be deleted
-        System.out.println(app.name);
-        for (Offer o : app.offers) {
-            System.out.println(o);
-        }
-        */
-    }
-
-    private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
-        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
-
-        generateCombinations(pairs, app.resources.size(), uniqueCombinations, 
-            new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
-
-        for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
-            Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
-
-            for (Pair<ResourceAgent, Resource> pair : combination) {
-                ResourceAgent agent = pair.getLeft();
-                Resource resource = pair.getRight();
-
-                agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
-                agentResourcesMap.get(agent).add(resource);
-            }
-            
-            app.offers.add(new Offer(agentResourcesMap, app.offers.size()));
-        }
-    }
-
-    private void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
-                                      Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
-                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
-                                      Set<Resource> includedResources,
-                                      Set<String> seenStates) {
-    
-        if (includedResources.size() == resourceCount) {
-        
-            uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
-            return;
-        }
-        
-        String stateKey = includedResources.stream()
-                .map(r -> r.name)        
-                .sorted()
-                .collect(Collectors.joining(","));
-        if (!seenStates.add(stateKey)) {
-            return; 
-        }
-
-        for (Pair<ResourceAgent, Resource> pair : pairs) {
-            if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
-                currentCombination.add(pair);
-                includedResources.add(pair.getRight());
-
-                generateCombinations(pairs, resourceCount, uniqueCombinations, currentCombination, includedResources, seenStates);
-
-                currentCombination.remove(pair);
-                includedResources.remove(pair.getRight());
             }
         }
     }

@@ -13,7 +13,7 @@ import hu.u_szeged.inf.fog.simulator.util.*;
 import hu.u_szeged.inf.fog.simulator.util.xml.WorkflowJobModel;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowExecutor;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
+import hu.u_szeged.inf.fog.simulator.aco.CentralisedAntOptimiserWorkflow;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -145,9 +145,9 @@ public class RenewableWorkflowSimulation {
 
 
         // The result of the clustering
-        CentralisedAntOptimiser.printClusterAssignments(clusterAssignments);
+        CentralisedAntOptimiserWorkflow.printClusterAssignments(clusterAssignments);
 
-        List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiser.sortClustersByAveragePairwiseDistance(clusterAssignments);
+        List<ArrayList<WorkflowComputingAppliance>> clusterList = CentralisedAntOptimiserWorkflow.sortClustersByAveragePairwiseDistance(clusterAssignments);
 
 
         // Creating the executor engine

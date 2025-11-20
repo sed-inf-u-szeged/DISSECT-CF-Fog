@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class CentralisedAntOptimiser {
+public class CentralisedAntOptimiserWorkflow {
 
     /**
      * The global pheromone matrix is to be updated depending on the quality of solutions

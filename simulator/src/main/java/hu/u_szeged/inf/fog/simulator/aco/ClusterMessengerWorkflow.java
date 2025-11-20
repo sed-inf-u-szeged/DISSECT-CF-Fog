@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class ClusterMessenger extends Timed {
+public class ClusterMessengerWorkflow extends Timed {
     
     private HashMap<WorkflowComputingAppliance, Long> messageLogger;
     
@@ -21,9 +21,9 @@ public class ClusterMessenger extends Timed {
     
     public HashMap<Integer, ArrayList<WorkflowComputingAppliance>> clusterAssignments;
 
-    public ClusterMessenger(double[][] globalPheromoneMatrix, ArrayList<ComputingAppliance> nodes, long freq) {
+    public ClusterMessengerWorkflow(double[][] globalPheromoneMatrix, ArrayList<ComputingAppliance> nodes, long freq) {
         this.messageLogger = new HashMap<>();
-        int[] assignments = DecentralisedAntOptimiser.assignClusters(globalPheromoneMatrix);
+        int[] assignments = DecentralisedAntOptimiserWorkflow.assignClusters(globalPheromoneMatrix);
         for (int i = 0; i < nodes.size(); i++) {
             WorkflowComputingAppliance from = (WorkflowComputingAppliance) nodes.get(i);
             WorkflowComputingAppliance to = (WorkflowComputingAppliance) nodes.get(nodes.indexOf(nodes.get(assignments[i])));
