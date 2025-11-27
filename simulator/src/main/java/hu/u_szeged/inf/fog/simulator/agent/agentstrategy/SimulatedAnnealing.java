@@ -22,25 +22,24 @@ import java.util.*;
  */
 public class SimulatedAnnealing extends AgentStrategy {
     public enum CoolingSchedule {
-        EXPONENTIAL, // Rapid cooling — temperature drops quickly at first; may skip good solutions
-        LINEAR,      // Steady cooling — temperature decreases by a constant amount each step
-        LOGARITHMIC  // Gradual cooling — fast at the beginning, then slows down significantly
+        EXPONENTIAL,
+        LINEAR,
+        LOGARITHMIC
     }
 
     private final Random random = SeedSyncer.centralRnd;
-    private static final double EPSILON = 1e-9;
-    private static final double INITIAL_TEMPERATURE = 1000.0;
-    private static final int MAX_ITERATIONS = 250;
-    private static final double INITIAL_EXPONENTIAL_DECREASE = 1.1;
+    private static final double INITIAL_TEMPERATURE = 100.0;
+    private double startingTemperature = INITIAL_TEMPERATURE;
+    private static final int MAX_ITERATIONS = 1000;
     private CoolingSchedule coolingSchedule;
-    private double exponential_decrease;
+
 
     public SimulatedAnnealing(final CoolingSchedule coolingSchedule) {
         this.coolingSchedule = coolingSchedule;
     }
 
     public SimulatedAnnealing() {
-        this.coolingSchedule = CoolingSchedule.LOGARITHMIC;
+        this.coolingSchedule = CoolingSchedule.LINEAR;
     }
 
     @Override
@@ -71,13 +70,13 @@ public class SimulatedAnnealing extends AgentStrategy {
         Solution bestSolution = currentSolution.copy();
 
         // Step 2: SA loop
-        double temperature = INITIAL_TEMPERATURE;
-        exponential_decrease = INITIAL_EXPONENTIAL_DECREASE;
+        double temperature = startingTemperature;
 
-        for (int iter = 1; iter <= MAX_ITERATIONS && temperature > 1; iter++) {
+        for (int iter = 1; iter <= MAX_ITERATIONS && temperature > 0.0001; iter++) {
             List<Resource> neighborOrder = new ArrayList<>(currentOrder);
+
             int moveType = random.nextInt(3);
-            if (moveType == 0) {                // Swap two elements
+            if (moveType == 0) {
                 int i = random.nextInt(neighborOrder.size());
                 int j = random.nextInt(neighborOrder.size());
                 Collections.swap(neighborOrder, i, j);
@@ -90,7 +89,7 @@ public class SimulatedAnnealing extends AgentStrategy {
                     j = tempI;
                 }
                 Collections.reverse(neighborOrder.subList(i, j + 1));
-            } else {                // Rotate: move one element to a random position
+            } else {                // Move one element to a random position
                 int from = random.nextInt(neighborOrder.size());
                 int to = random.nextInt(neighborOrder.size());
                 Resource elem = neighborOrder.remove(from);
@@ -105,8 +104,8 @@ public class SimulatedAnnealing extends AgentStrategy {
                 currentSolution = neighborSolution.copy();
                 bestSolution = neighborSolution.copy();
             } else {                // Worse solution - accept with probability based on temperature
-                double delta = neighborScore - currentScore;
-                double acceptanceProbability = Math.pow(EPSILON, -(delta / temperature));
+                double delta = currentScore - neighborScore;
+                double acceptanceProbability = Math.exp(-delta / temperature);
 
                 if (random.nextDouble() < acceptanceProbability) {
                     bestSolution = neighborSolution.copy();
@@ -114,7 +113,6 @@ public class SimulatedAnnealing extends AgentStrategy {
                     currentOrder = new ArrayList<>(neighborOrder);
                 }
             }
-
             temperature = updateTemperature(temperature, iter);
         }
 
@@ -122,8 +120,14 @@ public class SimulatedAnnealing extends AgentStrategy {
         return reserveResources(agent, bestSolution);
     }
 
-    public void switchToRandomCoolingSchedule() {
-        final int choice = random.nextInt(2);
+    public void switchCoolingTactic() {
+        final int choice = random.nextInt(3);
+        if (startingTemperature < INITIAL_TEMPERATURE / 5.0) {
+            startingTemperature = INITIAL_TEMPERATURE;
+        } else {
+            startingTemperature /= 2.0;
+        }
+
         switch (choice) {
             case 0:
                 this.coolingSchedule = CoolingSchedule.LINEAR;
@@ -209,14 +213,13 @@ public class SimulatedAnnealing extends AgentStrategy {
     private double updateTemperature(double currentTemp, int iteration) {
         switch (coolingSchedule) {
             case EXPONENTIAL:
-                exponential_decrease = Math.pow(exponential_decrease, 1.075);
-                return currentTemp - exponential_decrease;
+                return INITIAL_TEMPERATURE * Math.pow(0.98, iteration);
 
             case LOGARITHMIC:
-                return currentTemp - Math.log(iteration);
+                return INITIAL_TEMPERATURE / Math.pow(Math.log(iteration + Math.E), 3);
 
             default: // LINEAR
-                return currentTemp - Math.max(1, (INITIAL_TEMPERATURE / MAX_ITERATIONS));
+                return currentTemp - INITIAL_TEMPERATURE / MAX_ITERATIONS;
         }
     }
 
@@ -252,15 +255,14 @@ public class SimulatedAnnealing extends AgentStrategy {
             double memoryFulfillment = totalRequestedMemory > 0 ? ((double) totalMemory / totalRequestedMemory) : 1.0;
             double storageFulfillment = totalRequestedStorage > 0 ? ((double) totalStorage / totalRequestedStorage) : 1.0;
 
-            // Define minimum acceptable thresholds
-            final double MIN_ACCEPTABLE_CPU = 0.5;  // At least 40% of requested CPU
+            final double MIN_ACCEPTABLE_CPU = 0.5;
             final double MIN_ACCEPTABLE_MEMORY = 0.5;
             final double MIN_ACCEPTABLE_STORAGE = 0.5;
 
             // Penalize solutions that don't meet minimum thresholds
             double penalty = 1.0;
             if (totalRequestedCpu > 0 && cpuFulfillment < MIN_ACCEPTABLE_CPU) {
-                penalty *= 0.5;  // Severe penalty
+                penalty *= 0.5;
             }
             if (totalRequestedMemory > 0 && memoryFulfillment < MIN_ACCEPTABLE_MEMORY) {
                 penalty *= 0.5;
