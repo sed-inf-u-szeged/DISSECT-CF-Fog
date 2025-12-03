@@ -3,7 +3,9 @@ package hu.u_szeged.inf.fog.simulator.agent;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +20,9 @@ public class MessageHandler {
             gateway.networkingAgentsByApp.put(app.name, new HashSet<>(filteredAgents));
             app.networkingAgents = new HashSet<>(filteredAgents);
             gateway.servedAsGatewayCount++;
+            if(gateway.agentStrategy instanceof SimulatedAnnealing && app.broadcastCount % 2 == 0){
+                ((SimulatedAnnealing) gateway.agentStrategy).resetValues();
+            }
         } else {
             filteredAgents = new ArrayList<>(gateway.networkingAgentsByApp.get(app.name));
         }
@@ -26,7 +31,7 @@ public class MessageHandler {
             String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";
             StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
             gateway.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
-            app.bcastCounter++;
+            app.agentsNotifiedCounter++;
 
             try {
                 gateway.hostNode.iaas.repositories.get(0).requestContentDelivery(
@@ -48,9 +53,9 @@ public class MessageHandler {
                                                     agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
                                                     agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
                                                     gateway.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                    app.bcastCounter--;
+                                                    app.agentsNotifiedCounter--;
 
-                                                    if (app.bcastCounter == 0) {
+                                                    if (app.agentsNotifiedCounter == 0) {
                                                         customAction.run();
                                                     }
                                                 }

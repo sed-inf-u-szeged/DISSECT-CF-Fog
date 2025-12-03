@@ -29,7 +29,9 @@ public class SimulatedAnnealing extends AgentStrategy {
 
     private final Random random = SeedSyncer.centralRnd;
     private static final double INITIAL_TEMPERATURE = 100.0;
-    private double startingTemperature = INITIAL_TEMPERATURE;
+    private static final double INITIAL_TEMPERATURE_THRESHOLD =  0.0001;
+    private double temperatureThreshold = INITIAL_TEMPERATURE_THRESHOLD;
+
     private static final int MAX_ITERATIONS = 1000;
     private CoolingSchedule coolingSchedule;
 
@@ -70,9 +72,9 @@ public class SimulatedAnnealing extends AgentStrategy {
         Solution bestSolution = currentSolution.copy();
 
         // Step 2: SA loop
-        double temperature = startingTemperature;
+        double temperature = INITIAL_TEMPERATURE;
 
-        for (int iter = 1; iter <= MAX_ITERATIONS && temperature > 0.0001; iter++) {
+        for (int iter = 1; iter <= MAX_ITERATIONS && temperature > temperatureThreshold; iter++) {
             List<Resource> neighborOrder = new ArrayList<>(currentOrder);
 
             int moveType = random.nextInt(3);
@@ -122,10 +124,8 @@ public class SimulatedAnnealing extends AgentStrategy {
 
     public void switchCoolingTactic() {
         final int choice = random.nextInt(3);
-        if (startingTemperature < INITIAL_TEMPERATURE / 5.0) {
-            startingTemperature = INITIAL_TEMPERATURE;
-        } else {
-            startingTemperature /= 2.0;
+        if(temperatureThreshold < 5){
+            temperatureThreshold += 0.5;
         }
 
         switch (choice) {
@@ -139,6 +139,10 @@ public class SimulatedAnnealing extends AgentStrategy {
                 this.coolingSchedule = CoolingSchedule.LOGARITHMIC;
                 break;
         }
+    }
+
+    public void resetValues(){
+        temperatureThreshold = INITIAL_TEMPERATURE_THRESHOLD;
     }
 
     // Try to fit resources in given order WITHOUT actually reserving

@@ -58,7 +58,7 @@ public class AgentApplication {
     public List<Offer> offers;
     public int winningOffer;
     
-    protected int bcastCounter;
+    protected int agentsNotifiedCounter;
     
     public double deploymentTime;
     

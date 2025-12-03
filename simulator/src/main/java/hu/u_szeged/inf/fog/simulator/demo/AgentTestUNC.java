@@ -32,6 +32,7 @@ import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
@@ -201,7 +202,7 @@ public class AgentTestUNC {
 
        Map<String, String> mapping = new HashMap<>();
 
-       ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy());
+       /*ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy());
 
         for(int i = 1; i <= numOfApps; i++) {
         	mapping.put("UNC-" + i + "-Res-1", "Agent0");
@@ -228,13 +229,15 @@ public class AgentTestUNC {
         }
 
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
+        */
+
         new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
-                new Capacity(node1, 52, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+                new Capacity(node1, 10, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
-                new Capacity(node2, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-
-        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+                new Capacity(node2, 10, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
+/*
+        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
@@ -257,7 +260,7 @@ public class AgentTestUNC {
 
         new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-
+*/
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
@@ -292,7 +295,7 @@ public class AgentTestUNC {
         Timed.simulateUntil(simLength);
         long stoptime = System.nanoTime();
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
-        NoiseAppCsvExporter.visualise();
+        //NoiseAppCsvExporter.visualise();
         
         /** results */
         SimLogger.logRes("\nSimulation completed.");
@@ -378,9 +381,9 @@ public class AgentTestUNC {
         SimLogger.logRes("Average number of offers (pc.): " + df.format(avgOffers / AgentApplication.agentApplications.size()));
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
         SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
-        SimLogger.logRes("Time below the temperature threshold (%): " 
-                + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
-                        configuration.get("cpuTempTreshold").doubleValue())));
+        //SimLogger.logRes("Time below the temperature threshold (%): "
+          //      + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
+            //            configuration.get("cpuTempTreshold").doubleValue())));
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / soundFilesRs));
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }

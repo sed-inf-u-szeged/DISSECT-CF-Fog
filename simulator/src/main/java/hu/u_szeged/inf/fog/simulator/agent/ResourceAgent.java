@@ -206,6 +206,7 @@ public class ResourceAgent {
 
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
+        app.networkingAgents.add(this);
 
         for (ResourceAgent agent : app.networkingAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
