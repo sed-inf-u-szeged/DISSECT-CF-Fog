@@ -1,8 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.*;
 
 public class AgentApplication {
     
@@ -20,7 +19,7 @@ public class AgentApplication {
     public static class Resource {
         
         public String name;
-        public Integer cpu;
+        public Double cpu;
         public Long memory;
         public Integer instances;
         public String provider;
@@ -57,10 +56,9 @@ public class AgentApplication {
     public List<Mapping> mapping;
 
     public List<Offer> offers;
-    
     public int winningOffer;
     
-    protected int bcastCounter;
+    protected int agentsNotifiedCounter;
     
     public double deploymentTime;
     
@@ -75,10 +73,15 @@ public class AgentApplication {
     public HashMap<String, Number> configuration;
         
     public static List<AgentApplication> agentApplications = new ArrayList<>();
+    @JsonIgnore
+    public Set<ResourceAgent> networkingAgents;
+    @JsonIgnore
+    public int broadcastCount = 0;
 
     public AgentApplication() {
         this.offers = new ArrayList<>();
         agentApplications.add(this);
+        networkingAgents = new HashSet<>(ResourceAgent.resourceAgents);
     }
         
     public String toString() {
