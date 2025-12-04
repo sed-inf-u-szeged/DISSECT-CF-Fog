@@ -236,7 +236,7 @@ public class AgentTestUNC {
 
         new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node2, 10, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-/*
+
         new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
@@ -260,7 +260,7 @@ public class AgentTestUNC {
 
         new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
-*/
+
         /** Image service */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
