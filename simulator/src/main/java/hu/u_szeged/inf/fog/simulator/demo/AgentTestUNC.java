@@ -281,7 +281,7 @@ public class AgentTestUNC {
         //int[] delay = {0, 0, 0, 60, 60, 120, 150, 150, 150, 150};
 
         for (Path file : appFiles) {
-            new DeferredEvent(delay[i] * 60 * 1000) {
+            new DeferredEvent(delay[i++] * 60 * 1000) {
 
                 @Override
                 protected void eventAction() {
@@ -295,7 +295,7 @@ public class AgentTestUNC {
         Timed.simulateUntil(simLength);
         long stoptime = System.nanoTime();
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
-        //NoiseAppCsvExporter.visualise();
+        NoiseAppCsvExporter.visualise();
         
         /** results */
         SimLogger.logRes("\nSimulation completed.");
@@ -381,9 +381,9 @@ public class AgentTestUNC {
         SimLogger.logRes("Average number of offers (pc.): " + df.format(avgOffers / AgentApplication.agentApplications.size()));
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesNs);
         SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesRs);
-        //SimLogger.logRes("Time below the temperature threshold (%): "
-          //      + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
-            //            configuration.get("cpuTempTreshold").doubleValue())));
+        SimLogger.logRes("Time below the temperature threshold (%): "
+                + df.format(AgentTestUNC.calculateTimeBelowThrottling(NoiseAppCsvExporter.getInstance().noiseSensorTemperature.toPath(),
+                        configuration.get("cpuTempTreshold").doubleValue())));
         SimLogger.logRes("Average time to transfer a file over the network (sec.): " + df.format(NoiseSensor.totalTimeOnNetwork / 1000.0 / soundFilesRs));
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }
