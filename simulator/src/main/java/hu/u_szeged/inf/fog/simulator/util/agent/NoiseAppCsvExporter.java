@@ -166,6 +166,7 @@ public class NoiseAppCsvExporter {
                         NoiseSensor ns = (NoiseSensor) o;
                         row.append(",");
                         row.append(String.format(Locale.ROOT, "%.3f", ns.cpuTemp));
+                        sa.addValue(sa.app.getComponentName(ns.util.resource.name), ns.cpuTemp);
                     }
                 }
                 writer.println(row.toString());
