@@ -41,7 +41,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
     private static final double LEARNING_RATE = 0.2;      // How fast to adapt with reputation [1,0]
     private static final double SUCCESS_BONUS = 1.0;      // Reward for being in winning offer
-    private static final double SELECTION_BONUS = 0.5;    // Reward for being selected
+    private static final double SELECTION_BONUS = 0.25;    // Reward for being selected
 
     /**
      * The importance of the distance in the distance-latency score between 0-1.
@@ -58,10 +58,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      */
     private static final double MIN_SELECTION_PROBABILITY = 0.15;
 
-    /**
-     * Minimum reputation score needs to be reached before the guided search actually selects the agents.
-     */
-    private static final double MIN_ROUNDS_TO_USE_ACTIVATE = 2;
     final double EPSILON = 1e-9;
 
     private Offer winningOffer; // will only be used after ack rounds (potential rebroadcasts)
@@ -72,10 +68,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
 
         if (isFirstRound(gateway)) {
             initializeStaticScores(gateway, potentialAgents);
-            return potentialAgents;
-        }
-
-        if (gateway.servedAsGatewayCount < MIN_ROUNDS_TO_USE_ACTIVATE) {
             return potentialAgents;
         }
 
@@ -135,7 +127,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             rawStaticScores.put(agent, combinedScore);
         }
 
-        Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.0, 1.0);
+        Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.2, 1.0);
 
         for (ResourceAgent agent : potentialAgents) {
             double staticScore = normalizedStatic.get(agent);
@@ -221,7 +213,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             rawScores.put(agent, combinedScore);
         }
 
-        return normalizeToRange(rawScores, 0.0, 1.0);
+        return normalizeToRange(rawScores, 0.2, 1.0);
     }
 
     /**
