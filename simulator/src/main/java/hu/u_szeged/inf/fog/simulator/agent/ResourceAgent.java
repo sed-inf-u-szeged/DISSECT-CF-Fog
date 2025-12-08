@@ -12,7 +12,6 @@ import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
-import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -55,7 +54,7 @@ public class ResourceAgent {
     public Map<String, Set<ResourceAgent>> networkingAgentsByApp = new HashMap<>();
 
     private final MessagingStrategy messagingStrategy;
-    public static int MAX_REBROADCAST_COUNT = Math.min(5 ,AgentApplication.agentApplications.size() / 2);
+    public static int MAX_REBROADCAST_COUNT = Math.max(5, Math.min(AgentApplication.agentApplications.size() / 2, 10));
 
     public ResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa,
                          AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {

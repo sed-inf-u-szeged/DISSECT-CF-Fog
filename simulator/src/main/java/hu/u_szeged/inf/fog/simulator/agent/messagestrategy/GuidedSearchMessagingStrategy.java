@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
  */
 public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     // Base component weights (must sum to 1.0)
-    private static final double STATIC_WEIGHT = 0.3;
-    private static final double RESOURCE_WEIGHT = 0.5;
+    private static final double STATIC_WEIGHT = 0.2;
+    private static final double RESOURCE_WEIGHT = 0.6;
     private static final double REPUTATION_WEIGHT = 0.2;  // Historical performance
 
     private static final double REPUTATION_DECAY = 0.9;  // Prevents unbounded growth
@@ -180,7 +180,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      */
     private Map<ResourceAgent, Double> calculateResourceScores(List<ResourceAgent> agents) {
         Map<ResourceAgent, Double> rawScores = new HashMap<>();
-
         double minCpu = Double.MAX_VALUE, maxCpu = 0;
         double minMemory = Double.MAX_VALUE, maxMemory = 0;
         double minStorage = Double.MAX_VALUE, maxStorage = 0;
@@ -213,7 +212,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
             rawScores.put(agent, combinedScore);
         }
 
-        return normalizeToRange(rawScores, 0.2, 1.0);
+        return normalizeToRange(rawScores, 0.0, 1.0);
     }
 
     /**
@@ -280,40 +279,84 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         return selected;
     }
 
+    private double calculateMean(Map<ResourceAgent, Double> scores) {
+        if (scores.isEmpty()) {
+            return 0.0;
+        }
+        return scores.values().stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+    }
+
+    private double calculateStdDev(Map<ResourceAgent, Double> scores, double mean) {
+        if (scores.isEmpty()) {
+            return 0.0;
+        }
+
+        double variance = scores.values().stream()
+                .mapToDouble(v -> Math.pow(v - mean, 2))
+                .average()
+                .orElse(0.0);
+
+        return Math.sqrt(variance);
+    }
+
+    private double scoreToExp(double score, double mean, double stdDev, double temperature) {
+        if (stdDev < EPSILON) {
+            return 1.0; // All values are the same
+        }
+
+        double zScore = (score - mean) / stdDev;
+
+        return Math.exp(zScore / temperature);
+    }
+
     /**
-     * Normalize scores to probability range [MIN_SELECTION_PROBABILITY, 1.0]
+     * Normalize scores using Z-score standardization
+     */
+    private Map<ResourceAgent, Double> normalizeToRange(Map<ResourceAgent, Double> scores, double minVal, double maxVal) {
+        if (scores.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        double mean = calculateMean(scores);
+        double stdDev = calculateStdDev(scores, mean);
+
+        Map<ResourceAgent, Double> normalized = new HashMap<>();
+        double temperature = 0.5;
+
+        for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
+            double expVal = scoreToExp(entry.getValue(), mean, stdDev, temperature);
+            double sigmoid = 1.0 / (1.0 + Math.exp(-Math.log(expVal)));
+            double scaled = minVal + sigmoid * (maxVal - minVal);
+            normalized.put(entry.getKey(), scaled);
+        }
+
+        return normalized;
+    }
+
+    /**
+     * Normalize scores to selection probabilities based on distance from best
+     * Agents close to the best score get high probabilities, not just relative ranking
      */
     private Map<ResourceAgent, Double> normalizeToProbabilities(Map<ResourceAgent, Double> scores) {
-        double min = scores.values().stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
-        double max = scores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
-        double range = max - min;
+        if (scores.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        double maxScore = scores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
 
         Map<ResourceAgent, Double> probabilities = new HashMap<>();
+
         for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
-            double normalized = (range > EPSILON) ? (entry.getValue() - min) / range : 0.5;
-            double probability = MIN_SELECTION_PROBABILITY + normalized * (1.0 - MIN_SELECTION_PROBABILITY);
+            double ratio = entry.getValue() / maxScore;
+            double powered = Math.pow(ratio, 2.0);
+            double probability = MIN_SELECTION_PROBABILITY + powered * (1.0 - MIN_SELECTION_PROBABILITY);
 
             probabilities.put(entry.getKey(), probability);
         }
 
         return probabilities;
-    }
-
-    /**
-     * Generic normalization to specified range
-     */
-    private Map<ResourceAgent, Double> normalizeToRange(Map<ResourceAgent, Double> scores, double minVal, double maxVal) {
-        double min = scores.values().stream().mapToDouble(Double::doubleValue).min().orElse(0.0);
-        double max = scores.values().stream().mapToDouble(Double::doubleValue).max().orElse(1.0);
-        double range = max - min;
-
-        Map<ResourceAgent, Double> normalized = new HashMap<>();
-        for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
-            double norm = (range > EPSILON) ? (entry.getValue() - min) / range : 0.5;
-            double scaled = minVal + norm * (maxVal - minVal);
-            normalized.put(entry.getKey(), scaled);
-        }
-
-        return normalized;
     }
 }

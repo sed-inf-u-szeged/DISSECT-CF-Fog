@@ -263,7 +263,6 @@ public class SimulatedAnnealing extends AgentStrategy {
             final double MIN_ACCEPTABLE_MEMORY = 0.5;
             final double MIN_ACCEPTABLE_STORAGE = 0.5;
 
-            // Penalize solutions that don't meet minimum thresholds
             double penalty = 1.0;
             if (totalRequestedCpu > 0 && cpuFulfillment < MIN_ACCEPTABLE_CPU) {
                 penalty *= 0.5;
