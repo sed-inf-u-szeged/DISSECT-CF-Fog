@@ -51,8 +51,6 @@ public class ResourceAgent {
     public int winningOfferSelectionCount = 0;
     public Map<ResourceAgent, Double> staticScores = new HashMap<>();
     public Map<ResourceAgent, Double> reputationScores = new HashMap<>();
-    public Map<String, Set<ResourceAgent>> networkingAgentsByApp = new HashMap<>();
-
     private final MessagingStrategy messagingStrategy;
     public static int MAX_REBROADCAST_COUNT = Math.max(5, Math.min(AgentApplication.agentApplications.size() / 2, 10));
 
@@ -206,7 +204,6 @@ public class ResourceAgent {
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
         app.networkingAgents.add(this);
-
         for (ResourceAgent agent : app.networkingAgents) {
             agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
         }

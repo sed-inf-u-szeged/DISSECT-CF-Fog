@@ -17,14 +17,14 @@ public class MessageHandler {
 
         if(msg.equals("bcast")) {
             filteredAgents = messagingStrategy.filterAgents(gateway);
-            gateway.networkingAgentsByApp.put(app.name, new HashSet<>(filteredAgents));
             app.networkingAgents = new HashSet<>(filteredAgents);
             gateway.servedAsGatewayCount++;
             if(gateway.agentStrategy instanceof SimulatedAnnealing && app.broadcastCount % 2 == 0){
                 ((SimulatedAnnealing) gateway.agentStrategy).resetValues();
             }
         } else {
-            filteredAgents = new ArrayList<>(gateway.networkingAgentsByApp.get(app.name));
+            app.networkingAgents.remove(gateway);
+            filteredAgents = new ArrayList<>(app.networkingAgents);
         }
 
         for (ResourceAgent agent : filteredAgents) {
