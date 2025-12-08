@@ -11,6 +11,7 @@ import java.util.Random;
  *   - Simulates a possible <b>pre-upload</b> failure (before any bytes are sent).
  *   - Computes upload delay = latency + payload/bandwidth (adding secure-agg overhead if enabled).
  *   - Schedules the {@link ParameterUploadEvent}.
+ *
  * Units:
  * Time: ticks; payload sizes: bytes.
  */
@@ -20,7 +21,7 @@ public class LocalTrainingEvent extends DeferredEvent {
     private final FLAggregator aggregator;
     private final double       preUploadFailureProb;
     private final double       inTransitFailureProb;
-    private final double       ulcompressionFactor; // applies to uplink payload
+    private final double       ulCompressionFactor; // applies to uplink payload
 
     private final int baseModelVersion;
     
@@ -52,7 +53,7 @@ public class LocalTrainingEvent extends DeferredEvent {
         this.aggregator = aggregator;
         this.preUploadFailureProb  = preUploadFailureProb;
         this.inTransitFailureProb  = inTransitFailureProb;
-        this.ulcompressionFactor     = compressionFactor;
+        this.ulCompressionFactor     = compressionFactor;
         this.baseModelVersion      = baseModelVersion;
         this.e2eSoFarTicks         = e2eSoFarTicks;
     }
@@ -61,7 +62,7 @@ public class LocalTrainingEvent extends DeferredEvent {
     @Override
     protected void eventAction() {
         // 1) Perform the local training and produce an FLModelUpdate, including baseModelVersion
-        FLModelUpdate update = device.performLocalTraining(round, ulcompressionFactor, baseModelVersion);
+        FLModelUpdate update = device.performLocalTraining(round, ulCompressionFactor, baseModelVersion);
 
         // 2) Decide pre-upload failure (before any network delay is scheduled)
         Random rng = SimRandom.get();
@@ -79,19 +80,19 @@ public class LocalTrainingEvent extends DeferredEvent {
         long modelPayloadBytes = update.getUpdateSize();                     // compressed payload bytes
         long ulBytesForDelay   = modelPayloadBytes;
         if (aggregator.isSecureAggregationEnabled()) {
-            ulBytesForDelay += aggregator.getSecureExtraBytesPerClient();    // [CHANGED]
+        	ulBytesForDelay += aggregator.getSecureExtraBytesPerClient();
         }
         long latency    = device.getLatency();
         long bandwidth  = device.getBandwidth();
         long commDelay  = latency + (long) Math.ceil(ulBytesForDelay / (double) bandwidth);
 
         System.out.println("LocalTrainingEvent: scheduling upload for device "
-                + device.hashCode() + " with commDelay=" + commDelay
-                + " (payload=" + modelPayloadBytes + " B, includedSecOverhead=" 
-                + (aggregator.isSecureAggregationEnabled() ? String.valueOf(aggregator.getSecureExtraBytesPerClient()) : "0") + " B)");
+                + device.hashCode() + " with commDelay=" + commDelay + 
+                " (payload=" + modelPayloadBytes + " B, includedSecOverhead=" 
+                + (aggregator.isSecureAggregationEnabled()? String.valueOf(aggregator.getSecureExtraBytesPerClient()) : "0") + " B)" );
 
         new ParameterUploadEvent(
-                commDelay,
+        		commDelay,
                 update,
                 aggregator,
                 inTransitFailureProb,                        // pass in-transit loss probability
@@ -100,6 +101,7 @@ public class LocalTrainingEvent extends DeferredEvent {
                 commDelay,                                    // pass delay for telemetry
                 round,               // roundId
                 baseModelVersion,
-                e2eSoFarTicks + commDelay);   // baseModelVersion
+                e2eSoFarTicks + commDelay,				// total E2E up to UL completion
+                device.getLocalMachine().localDisk );   // Source repo for native UL metering
     }
 }

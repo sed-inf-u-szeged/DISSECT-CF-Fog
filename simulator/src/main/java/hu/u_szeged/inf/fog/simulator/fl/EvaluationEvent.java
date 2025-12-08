@@ -7,9 +7,11 @@ import java.util.Random;
 /**
  * Post-aggregation evaluation event that records a synthetic test accuracy
  * into the aggregator. Intended for trend visualization only.
- * Model: accuracy increases roughly linearly with round progress
+ *
+ *  Model: accuracy increases roughly linearly with round progress
  * (from ~0.50 towards ~0.90) plus small Gaussian jitter.
- * Time unit: ticks. The default delay is typically 1 tick. 
+ *
+ *  Time unit: ticks. The default delay is typically 1 tick. 
  */
 public class EvaluationEvent extends DeferredEvent {
 
