@@ -119,15 +119,10 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         for (ResourceAgent agent : potentialAgents) {
             double distanceKm = gateway.hostNode.geoLocation.calculateDistance(agent.hostNode.geoLocation) / 1000.0;
             int latencyMs = getLatencyToNode(agent, gatewayNode);
-
-            double distanceScore = 1.0 / (Math.log(distanceKm + EPSILON) + EPSILON);
-            double latencyScore = 1.0 / (latencyMs + EPSILON);
-            double combinedScore = (DISTANCE_WEIGHT * distanceScore + LATENCY_WEIGHT * latencyScore);
-
-            rawStaticScores.put(agent, combinedScore);
+            double score = -(DISTANCE_WEIGHT * distanceKm + LATENCY_WEIGHT * latencyMs);
+            rawStaticScores.put(agent, score);
         }
-
-        Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.2, 1.0);
+        Map<ResourceAgent, Double> normalizedStatic = normalizeToRange(rawStaticScores, 0.0, 1.0);
 
         for (ResourceAgent agent : potentialAgents) {
             double staticScore = normalizedStatic.get(agent);
@@ -260,7 +255,6 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
      */
     private List<ResourceAgent> selectAgentsByProbability(Map<ResourceAgent, Double> compositeScores) {
         Map<ResourceAgent, Double> probabilities = normalizeToProbabilities(compositeScores);
-
         List<ResourceAgent> selected = new ArrayList<>();
         for (Map.Entry<ResourceAgent, Double> entry : probabilities.entrySet()) {
             double randomValue = SeedSyncer.centralRnd.nextDouble();
