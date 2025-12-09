@@ -28,6 +28,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
@@ -70,7 +71,7 @@ public class AgentTestUNC {
         	configuration.put("cpuLoadScaleUp", 70);	 // %
         	configuration.put("cpuLoadScaleDown", 30);   // %
         	configuration.put("lengthOfProcessing", 1_700); // ms
-        	
+
         Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples");
         // Path inputDir = Paths.get(ScenarioBase.resourcePath + "AGENT_examples3");
         
@@ -86,10 +87,13 @@ public class AgentTestUNC {
         // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
         // ResourceAgent.rankingMethodName = "random";
         
-        SwarmAgent.predictorScriptDir = "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting";
+        // TS forecaster processes
+        ForecasterManager.predictorScriptDir = "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting";
+        ForecasterManager.getInstance(ForecasterManager.predictorScriptDir, 4, 1337, 
+                ForecasterManager.predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-6_1min_pl128");
         
         /** nodes and RPis */
-        Map<String, Integer> sharedLatencyMap = new HashMap<>();        
+        Map<String, Integer> sharedLatencyMap = new HashMap<>();
         
         for (int i = 1; i <= numOfApps; i++) {
         	ComputingAppliance rpi1 = new ComputingAppliance(

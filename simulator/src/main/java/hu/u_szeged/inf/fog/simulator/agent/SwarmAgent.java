@@ -6,21 +6,18 @@ import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -30,8 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.SystemUtils;
 
 public class SwarmAgent extends Timed {
@@ -43,8 +38,6 @@ public class SwarmAgent extends Timed {
     private int currentIndex;
     
     public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>();
-
-    public static String predictorScriptDir; 
     
     private final Deque<CpuTempSample> cpuTempSamples;
     
@@ -53,8 +46,6 @@ public class SwarmAgent extends Timed {
     private int triggerPrediction;
     
     public final Map<String, Deque<Double>> windows = new HashMap<>();
-    
-    private final ForecasterManager forecasterManager;
     
 
     public SwarmAgent(AgentApplication app) {
@@ -65,11 +56,6 @@ public class SwarmAgent extends Timed {
         allSwarmAgents.add(this);
         subscribe(this.app.configuration.get("samplingFreq").longValue());
         NoiseAppCsvExporter.getInstance();
-        //createSubProcessesForPrediction();
-        this.forecasterManager = new ForecasterManager(predictorScriptDir, 
-                Runtime.getRuntime().availableProcessors() - 1, 1337, 
-                predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-6_1min_pl128" 
-        );
     }
     
     public void registerComponent(Object component) {
@@ -102,7 +88,7 @@ public class SwarmAgent extends Timed {
             }
             Map<String, String> filesWithPredictions = callPredictorScript(files);
             Map<String, List<Double>> predictionValues = loadPredictions(filesWithPredictions);
-            
+           
             deleteFiles(files);
             deleteFiles(filesWithPredictions);
             
@@ -112,7 +98,6 @@ public class SwarmAgent extends Timed {
                 // TODO: scaling logic
             }
             
-            System.exit(0);
         }
         triggerPrediction++;
     }
@@ -197,7 +182,7 @@ public class SwarmAgent extends Timed {
                     Path outputFile = inputFile.resolveSibling(predictionName);
                     String outputPath = outputFile.toString();
 
-                    forecasterManager.predict(inputPath, outputPath);
+                    ForecasterManager.getInstance().predict(inputPath, outputPath);
 
                     result.put(deviceId, outputPath);
                 } catch (IOException | InterruptedException e) {
@@ -207,7 +192,6 @@ public class SwarmAgent extends Timed {
             }));
         }
 
-        // megvárjuk az összes taskot
         for (Future<?> f : futures) {
             try {
                 f.get();

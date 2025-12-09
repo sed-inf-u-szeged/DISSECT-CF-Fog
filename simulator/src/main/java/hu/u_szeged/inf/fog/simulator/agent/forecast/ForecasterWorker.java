@@ -9,9 +9,13 @@ import java.net.http.HttpResponse;
 public class ForecasterWorker {
 
     private final int port;
-    private final Process process;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    private final Process process;
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
+    
     public ForecasterWorker(int port, Process process) {
         this.port = port;
         this.process = process;
