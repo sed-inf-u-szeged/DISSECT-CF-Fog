@@ -1,20 +1,26 @@
 package hu.u_szeged.inf.fog.simulator.fl;
 
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;                       // [FL-VM] NEW
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;      // [FL-VM] NEW
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;          // [FL-VM] NEW
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
+
 import java.util.Random;
 
 /**
  * FL-enabled edge device that can perform synthetic local training and
  * produce a model update. Extends {@link EdgeDevice} to reuse mobility,
  * scheduling and local compute context.
+ *
  *   Modeled behavior 
  *     - Local training time derived from input size and throughput (see {@link GlobalModelBroadcastEvent}). 
  *     - Client-side DP: L2 clipping and Gaussian noise over a synthetic delta vector. 
  *     - Uplink payload size computed from vector length and compression factor. 
+ *
  * Abstraction: This class generates synthetic deltas; it does not run ML. 
  */
 public class FLEdgeDevice extends EdgeDevice {
@@ -82,38 +88,32 @@ public class FLEdgeDevice extends EdgeDevice {
         this.dpSigma            = dpSigma;
     }
 
-    /**
-     * @return instructions per byte used for compute-delay estimation. */
+    /** @return instructions per byte used for compute-delay estimation. */
     public double getInstructionPerByte() {
         return instructionPerByte;
     }
 
-    /**
-     * @return synthetic local data size (bytes). */
+    /** @return synthetic local data size (bytes). */
     public long getFileSize() {
         return fileSize;
     }
 
-    /**
-     * @return physical machine backing this device. */
+    /** @return physical machine backing this device. */
     public PhysicalMachine getLocalMachine() {
         return localMachine;
     }
 
-    /**
-     * @return network latency (ticks). */
+    /** @return network latency (ticks). */
     public int getLatency() {
         return latency;
     }
 
-    /**
-     * @return bandwidth (bytes/tick). */
+    /** @return bandwidth (bytes/tick). */
     public long getBandwidth() {
         return bandwidth;
     }
 
-    /**
-     * @return compute throughput (instructions/tick). */
+    /** @return compute throughput (instructions/tick). */
     public double getThroughput() {
         return throughput;
     }
@@ -129,7 +129,9 @@ public class FLEdgeDevice extends EdgeDevice {
 
     /**
      * Performs synthetic local training and returns a {@link FLModelUpdate}.
+     *
      * Steps:
+     * 
      *   - Create a synthetic delta vector (dimension = model length if available, else 1).
      *   - Apply L2 clipping (if {@code clipNorm > 0}).
      *   - Apply client-side Gaussian noise (if {@code dpSigma > 0}).
@@ -140,7 +142,9 @@ public class FLEdgeDevice extends EdgeDevice {
      * @param baseModelVersion model version the device used to train.
      * @return immutable update object (defensive copies inside).
      */
-    public FLModelUpdate performLocalTraining(int round, double ulCompressionFactor, int baseModelVersion) {
+    public FLModelUpdate performLocalTraining(int round, 
+    										  double ulCompressionFactor, 
+    										  int baseModelVersion) {
         ulCompressionFactor = Math.max(0.0, Math.min(1.0, ulCompressionFactor));
         
         Random rng = SimRandom.get();
@@ -160,15 +164,11 @@ public class FLEdgeDevice extends EdgeDevice {
         // L2 Clipping
         if (clipNorm > 0.0) {
             double l2 = 0.0;
-            for (double v : delta) {
-                l2 += v * v;
-            }
+            for (double v : delta) l2 += v * v;
             l2 = Math.sqrt(l2);
             if (l2 > clipNorm) {
                 double scale = clipNorm / l2;
-                for (int i = 0; i < delta.length; i++) {
-                    delta[i] *= scale;
-                }
+                for (int i = 0; i < delta.length; i++) delta[i] *= scale;
             }
         }
 
@@ -195,5 +195,47 @@ public class FLEdgeDevice extends EdgeDevice {
                 + " | rawBytes=" + rawBytes
                 + ", sentBytes=" + finalBytes);
         return update;
+    }
+
+    // =====================================================================
+    // [FL-VM] VM helpers for native CPU modelling of FL training
+    // =====================================================================
+
+    /**
+     * Ensures that the underlying edge VM exists and is RUNNING so that
+     * native CPU modelling can execute FL training tasks.
+     *
+     * This mirrors {@link EdgeDevice}'s private startVm() logic.
+     */
+    public void ensureLocalVmRunning() {    // [FL-VM] NEW
+        try {
+            if (this.localVm == null) {
+                // Register the appliance and request a new VM on the local machine
+                this.localMachine.localDisk.registerObject(EdgeDevice.edgeDeviceVa);
+                this.localVm = this.localMachine.requestVM(
+                        EdgeDevice.edgeDeviceVa,
+                        this.edgeDeviceArc,
+                        this.localMachine.localDisk,
+                        1
+                )[0];
+            } else if (this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
+                this.localVm.switchOn(
+                        this.localMachine.allocateResources(this.edgeDeviceArc, false, PhysicalMachine.defaultAllocLen),
+                        this.localMachine.localDisk
+                );
+            }
+        } catch (VMManagementException | NetworkException e) {
+            System.out.println("FLEdgeDevice " + this.hashCode()
+                    + " [FL-VM] failed to ensure local VM is running: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Exposes the VM used for native FL training CPU tasks.
+     *
+     * @return the {@link VirtualMachine} backing this device, or {@code null} if unavailable.
+     */
+    public VirtualMachine getLocalVm() {    // [FL-VM] NEW
+        return this.localVm;
     }
 }
