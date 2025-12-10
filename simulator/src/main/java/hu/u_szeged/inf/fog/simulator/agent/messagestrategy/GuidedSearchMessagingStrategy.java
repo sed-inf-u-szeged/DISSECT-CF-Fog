@@ -296,14 +296,14 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         return Math.sqrt(variance);
     }
 
-    private double scoreToExp(double score, double mean, double stdDev, double temperature) {
+    private double scoreToExp(double score, double mean, double stdDev) {
         if (stdDev < EPSILON) {
             return 1.0; // All values are the same
         }
 
         double zScore = (score - mean) / stdDev;
 
-        return Math.exp(zScore / temperature);
+        return Math.exp(zScore);
     }
 
     /**
@@ -318,10 +318,9 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
         double stdDev = calculateStdDev(scores, mean);
 
         Map<ResourceAgent, Double> normalized = new HashMap<>();
-        double temperature = 0.5;
 
         for (Map.Entry<ResourceAgent, Double> entry : scores.entrySet()) {
-            double expVal = scoreToExp(entry.getValue(), mean, stdDev, temperature);
+            double expVal = scoreToExp(entry.getValue(), mean, stdDev);
             double sigmoid = 1.0 / (1.0 + Math.exp(-Math.log(expVal)));
             double scaled = minVal + sigmoid * (maxVal - minVal);
             normalized.put(entry.getKey(), scaled);
