@@ -156,8 +156,10 @@ public class ResourceAgent {
                     if (app.broadcastCount - 1 <= MAX_REBROADCAST_COUNT) {
                         broadcast(app, bcastMessageSize);
                         SimLogger.logRun("Rebroadcast " + (app.broadcastCount - 1) + " for " + app.name);
-                        if (agentStrategy instanceof SimulatedAnnealing) {
-                            ((SimulatedAnnealing) agentStrategy).switchCoolingTactic();
+                        for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                            if (agentStrategy instanceof SimulatedAnnealing) {
+                                ((SimulatedAnnealing) agent.agentStrategy).switchCoolingTactic();
+                            }
                         }
                     }
                 }

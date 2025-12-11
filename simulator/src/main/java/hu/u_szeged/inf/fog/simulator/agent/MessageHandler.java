@@ -5,7 +5,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.MessagingStrategy;
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +18,7 @@ public class MessageHandler {
             filteredAgents = messagingStrategy.filterAgents(gateway);
             app.networkingAgents = new HashSet<>(filteredAgents);
             gateway.servedAsGatewayCount++;
-            if(gateway.agentStrategy instanceof SimulatedAnnealing && app.broadcastCount % 2 == 0){
+            if(gateway.agentStrategy instanceof SimulatedAnnealing && app.broadcastCount % 5 == 0){
                 ((SimulatedAnnealing) gateway.agentStrategy).resetValues();
             }
         } else {
