@@ -157,7 +157,7 @@ public class ResourceAgent {
                         broadcast(app, bcastMessageSize);
                         SimLogger.logRun("Rebroadcast " + (app.broadcastCount - 1) + " for " + app.name);
                         ResourceAgent.resourceAgents
-                                .forEach(agent -> ((SimulatedAnnealing)agent.agentStrategy).resetValues());
+                                .forEach(agent -> ((SimulatedAnnealing)agent.agentStrategy).switchCoolingTactic());
                     }
                 }
             };
