@@ -220,7 +220,7 @@ public class SimulatedAnnealing extends AgentStrategy {
                 return INITIAL_TEMPERATURE * Math.pow(0.98, iteration);
 
             case LOGARITHMIC:
-                return INITIAL_TEMPERATURE / Math.pow(Math.log(iteration + Math.E), 3);
+                return INITIAL_TEMPERATURE / Math.pow(Math.log(iteration + 1), 3);
 
             default: // LINEAR
                 return currentTemp - INITIAL_TEMPERATURE / MAX_ITERATIONS;
