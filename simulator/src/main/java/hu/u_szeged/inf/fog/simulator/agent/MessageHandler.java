@@ -18,8 +18,9 @@ public class MessageHandler {
             filteredAgents = messagingStrategy.filterAgents(gateway);
             app.networkingAgents = new HashSet<>(filteredAgents);
             gateway.servedAsGatewayCount++;
-            if(gateway.agentStrategy instanceof SimulatedAnnealing && app.broadcastCount % 5 == 0){
-                ((SimulatedAnnealing) gateway.agentStrategy).resetValues();
+            if(gateway.agentStrategy instanceof SimulatedAnnealing && (app.broadcastCount == 1 || app.broadcastCount % 5 == 0)){
+                ResourceAgent.resourceAgents
+                        .forEach(agent -> ((SimulatedAnnealing)agent.agentStrategy).resetValues());
             }
         } else {
             app.networkingAgents.remove(gateway);
