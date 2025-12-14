@@ -6,10 +6,15 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.decision.DecisionMaker;
+import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Submission extends Timed {
 
@@ -21,16 +26,16 @@ public class Submission extends Timed {
 
     private int delay;
 
-    
-    public Submission(String filepath, int bcastMessageSize, int delay, HashMap<String, Number> configuration) {
-    
-        SimLogger.logRun("Application description " + filepath 
-            + " was submitted at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
-        
+    public DecisionMaker decisionMaker;
+
+    public Submission(String filepath, int bcastMessageSize, int delay, HashMap<String, Number> configuration, DecisionMaker decisionMaker) {
+        SimLogger.logRun("Application description " + filepath
+                + " was submitted at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
+
         if (ResourceAgent.resourceAgents.size() < 2) {
             SimLogger.logError("Only one RA is available in the system!");
         }
-        
+
         this.app = AgentApplicationReader.readAgentApplications(filepath);
         this.app.configuration = configuration;
         this.bcastMessageSize = bcastMessageSize;
@@ -38,8 +43,12 @@ public class Submission extends Timed {
         this.agent = ResourceAgent.resourceAgents.get(random);
         this.registerImages(app.components);
         this.delay = delay;
+
+        this.decisionMaker = decisionMaker;
+
         subscribe(10);
     }
+
    
     private void registerImages(List<Component> components) {
         for (Component component : components) {
@@ -69,7 +78,7 @@ public class Submission extends Timed {
                 protected void eventAction() {
                     SimLogger.logRun(agent.name + " picked up application " + app.name + " at: " 
                         + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
-                    agent.broadcast(app, 100);
+                    agent.broadcast(app, 100, decisionMaker);
                     app.deploymentTime = Timed.getFireCount();
                 }
             };

@@ -1,13 +1,13 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 
-public class DecentralisedAnt {
+public class DecentralisedAntWorkflow {
     
     int id;
     
-    public DecentralisedAnt(int id) {
+    public DecentralisedAntWorkflow(int id) {
         this.id = id;
     }
     

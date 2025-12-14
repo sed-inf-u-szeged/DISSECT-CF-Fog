@@ -22,8 +22,8 @@ import hu.u_szeged.inf.fog.simulator.util.result.Cost;
 import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
 import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
-import hu.u_szeged.inf.fog.simulator.workflow.aco.ClusterMessenger;
+import hu.u_szeged.inf.fog.simulator.aco.CentralisedAntOptimiserWorkflow;
+import hu.u_szeged.inf.fog.simulator.aco.ClusterMessenger;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.RenewableScheduler;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
 import java.io.File;
@@ -238,8 +238,8 @@ public class ScenarioBase {
             avgTimeOnNetwork += scheduler.timeOnNetwork;
             SimLogger.logRes("Bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
             avgBytesOnNetwork += scheduler.bytesOnNetwork;
-            SimLogger.logRes("Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
-            avgPairwiseDistance += CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
+            SimLogger.logRes("Pairwise Distance (km): " + CentralisedAntOptimiserWorkflow.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
+            avgPairwiseDistance += CentralisedAntOptimiserWorkflow.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
             
 
             int completed = 0;

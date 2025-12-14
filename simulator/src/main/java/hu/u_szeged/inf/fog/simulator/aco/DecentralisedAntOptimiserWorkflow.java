@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -6,7 +6,7 @@ import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class DecentralisedAntOptimiser {
+public class DecentralisedAntOptimiserWorkflow {
     
     private static double[][] globalPheromoneMatrix;
     
@@ -29,12 +29,12 @@ public class DecentralisedAntOptimiser {
             for (int i = 0; i < numberOfIteration; i++) {
                 // System.out.println(allComputingAppliances.get(caNum).name + "-iteration: " + i);
                 
-                DecentralisedAnt[] ants = new DecentralisedAnt[numberOfAnts];
+                DecentralisedAntWorkflow[] ants = new DecentralisedAntWorkflow[numberOfAnts];
                 for (int j = 0; j < numberOfAnts; j++) {
-                    ants[j] = new DecentralisedAnt(j);
+                    ants[j] = new DecentralisedAntWorkflow(j);
                 }
                 
-                for (DecentralisedAnt ant : ants) {
+                for (DecentralisedAntWorkflow ant : ants) {
                     ant.generateSolution(globalPheromoneMatrix[caNum], caNum, propability, evaporationRate);
                     
                 }
