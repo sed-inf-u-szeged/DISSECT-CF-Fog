@@ -44,9 +44,9 @@ public class SwarmAgent extends Timed {
     public AgentApplication app;
     
     private int triggerPrediction;
-    
+
     public final Map<String, Deque<Double>> windows = new HashMap<>();
-    
+
 
     public SwarmAgent(AgentApplication app) {
         this.app = app;
@@ -78,7 +78,7 @@ public class SwarmAgent extends Timed {
             // TODO: calculate avg values, not just the last one
             NoiseAppCsvExporter.log();
         }
-       
+
         if (triggerPrediction % (64 * 6) == 0 && windows.values().stream().anyMatch(w -> w.size() == 128)) {
             Map<String, String> files = null;
             try {
@@ -88,16 +88,17 @@ public class SwarmAgent extends Timed {
             }
             Map<String, String> filesWithPredictions = callPredictorScript(files);
             Map<String, List<Double>> predictionValues = loadPredictions(filesWithPredictions);
-           
+
             deleteFiles(files);
             deleteFiles(filesWithPredictions);
-            
+
             for (Map.Entry<String, List<Double>> entry : predictionValues.entrySet()) {
                 String deviceId = entry.getKey();
                 List<Double> values = entry.getValue();
                 // TODO: scaling logic
             }
-            
+            //System.exit(0);
+
         }
         triggerPrediction++;
     }
@@ -113,15 +114,15 @@ public class SwarmAgent extends Timed {
             }
         }
     }
-    
+
     public void addValue(String deviceId, double value) {
         Deque<Double> window = windows.get(deviceId);
 
         if (window.size() == 128) { // TODO: remove this hardcoded value
-            window.removeFirst(); 
+            window.removeFirst();
         }
-        
-        window.addLast(value); 
+
+        window.addLast(value);
     }
 
     public Map<String, List<Double>> loadPredictions(Map<String, String> filesWithPredictions) {
@@ -157,7 +158,7 @@ public class SwarmAgent extends Timed {
         return predictions;
     }
 
-    
+
     private Map<String, String> callPredictorScript(Map<String, String> files) {
         if (!SystemUtils.IS_OS_LINUX) {
             throw new UnsupportedOperationException("Unsupported operating system");
@@ -327,7 +328,7 @@ public class SwarmAgent extends Timed {
             }
         }
     }
-    
+
     String printWindow() {
         StringBuilder sb = new StringBuilder();
         sb.append("SlidingWindowManager {\n");
@@ -353,7 +354,7 @@ public class SwarmAgent extends Timed {
             this.cpuLoad = load;
         }
     }
-    
+
     public Map<String, String> writeWindowToCsv(String outputDir) throws IOException {
         LocalDateTime startTime = LocalDateTime.of(2023, 10, 1, 0, 0);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:00");
