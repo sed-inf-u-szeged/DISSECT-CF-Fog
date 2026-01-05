@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 /**
  * Immutable value object representing one client's model update.
+ *  
  * Contains:
  *   - {@code modelParameters}: the delta vector (defensive copy on construct/get),
  *   - {@code sampleCount}: synthetic number of local samples used,
@@ -45,32 +46,27 @@ public final class FLModelUpdate {
         this(modelParameters, sampleCount, updateSize, -1, -1);
     }
 
-    /**
-     * @return defensive copy of the delta parameters */
+    /** @return defensive copy of the delta parameters */
     public double[] getModelParameters() {
         return modelParameters.clone();
     }
 
-    /**
-     * @return local sample count */
+    /** @return local sample count */
     public int getSampleCount() {
         return sampleCount;
     }
 
-    /**
-     * @return payload size in bytes (compressed) */
+    /** @return payload size in bytes (compressed) */
     public long getUpdateSize() {
         return updateSize;
     }
 
-    /**
-     * @return round index this update belongs to (or -1 if unknown) */
+    /** @return round index this update belongs to (or -1 if unknown) */
     public int getRoundId() {
         return roundId;
     }
 
-    /**
-     * @return server model version used for training (or -1 if unknown) */
+    /** @return server model version used for training (or -1 if unknown) */
     public int getBaseModelVersion() {
         return baseModelVersion;
     }

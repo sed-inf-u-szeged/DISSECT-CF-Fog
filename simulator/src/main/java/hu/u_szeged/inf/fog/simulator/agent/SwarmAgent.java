@@ -1,25 +1,23 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.NoiseAppCsvExporter;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.SystemUtils;
 
 public class SwarmAgent extends Timed {
@@ -42,8 +38,6 @@ public class SwarmAgent extends Timed {
     private int currentIndex;
     
     public static ArrayList<SwarmAgent> allSwarmAgents = new ArrayList<>();
-
-    public static String predictorScriptDir; 
     
     private final Deque<CpuTempSample> cpuTempSamples;
     
@@ -103,8 +97,8 @@ public class SwarmAgent extends Timed {
                 List<Double> values = entry.getValue();
                 // TODO: scaling logic
             }
+            //System.exit(0);
 
-            System.exit(0);
         }
         triggerPrediction++;
     }
@@ -178,46 +172,22 @@ public class SwarmAgent extends Timed {
         List<Future<?>> futures = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : files.entrySet()) {
-            String deviceId = entry.getKey();
+            String deviceId = entry.getKey();   
             String inputPath = entry.getValue();
 
             futures.add(executor.submit(() -> {
                 try {
-                    //String modelPath = predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-3_1min_pl128";
-                    String modelPath = predictorScriptDir + "/checkpoints/simulator1__" + deviceId + "_1min_pl128";
-
-
                     Path inputFile = Paths.get(inputPath);
-                    String predictionName = inputFile.getFileName().toString().replace("predicting.csv", "predicted.csv");
-                    String outputPath = inputFile.resolveSibling(predictionName).toString();
+                    String fileName = inputFile.getFileName().toString();
+                    String predictionName = fileName.replace("predicting.csv", "predicted.csv");
+                    Path outputFile = inputFile.resolveSibling(predictionName);
+                    String outputPath = outputFile.toString();
 
-                    ProcessBuilder processBuilder = new ProcessBuilder(
-                            "uv", "run", "Time-Series-Library/predict.py",
-                            "--model_path", modelPath,
-                            "--input_path", inputPath,
-                            "--output_path", outputPath
-                    );
+                    ForecasterManager.getInstance().predict(inputPath, outputPath);
 
-                    processBuilder.directory(new File(predictorScriptDir));
-                    processBuilder.redirectErrorStream(true);
-
-                    Process process = processBuilder.start();
-
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            System.out.println("[" + deviceId + "] " + line);
-                        }
-                    }
-
-                    int exitCode = process.waitFor();
-                    if (exitCode != 0) {
-                        System.err.println("Predictor failed for " + deviceId + " with exit code " + exitCode);
-                    } else {
-                        result.put(deviceId, outputPath);
-                    }
-
+                    result.put(deviceId, outputPath);
                 } catch (IOException | InterruptedException e) {
+                    System.err.println("Prediction failed for " + deviceId + " (" + inputPath + ")");
                     e.printStackTrace();
                 }
             }));
@@ -235,6 +205,7 @@ public class SwarmAgent extends Timed {
 
         return result;
     }
+
 
     private double getCpuLoadAvgLastMin() {
         if (cpuTempSamples.isEmpty()) {
