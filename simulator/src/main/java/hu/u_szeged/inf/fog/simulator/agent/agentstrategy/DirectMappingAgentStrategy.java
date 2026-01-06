@@ -6,7 +6,6 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang3.tuple.Pair;
 
 public class DirectMappingAgentStrategy extends AgentStrategy {

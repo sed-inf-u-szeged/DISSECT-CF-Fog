@@ -31,7 +31,7 @@ public class FirstFitAgentStrategy extends AgentStrategy {
 
                 for (Capacity capacity : agent.capacities) {
                     if (isMatchingPreferences(resource, capacity)
-                            && requiredCpu <= capacity.cpu  //TODO: check if < is needed
+                            && requiredCpu <= capacity.cpu
                             && requiredMemory <= capacity.memory
                             && requiredStorage <= capacity.storage) {
 
