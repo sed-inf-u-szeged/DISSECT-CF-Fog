@@ -1,8 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.*;
 
 public class AgentApplication {
     
@@ -20,7 +20,7 @@ public class AgentApplication {
     public static class Resource {
         
         public String name;
-        public Integer cpu;
+        public Double cpu;
         public Long memory;
         public Integer instances;
         public String provider;
@@ -59,8 +59,8 @@ public class AgentApplication {
     public List<Offer> offers;
     
     public int winningOffer;
-    
-    protected int bcastCounter;
+
+    protected int agentsNotifiedCounter;
     
     public double deploymentTime;
     
@@ -76,9 +76,18 @@ public class AgentApplication {
         
     public static List<AgentApplication> agentApplications = new ArrayList<>();
 
+    @JsonIgnore
+    public Set<GuidedResourceAgent> networkingAgents;
+    @JsonIgnore
+    public int broadcastCount = 0;
+
     public AgentApplication() {
         this.offers = new ArrayList<>();
         agentApplications.add(this);
+
+        if (GuidedResourceAgent.GuidedResourceAgents != null) {
+            networkingAgents = new HashSet<>(GuidedResourceAgent.GuidedResourceAgents);
+        }
     }
         
     public String toString() {
@@ -115,5 +124,23 @@ public class AgentApplication {
             }
         }
         return null;
+    }
+
+    public void normalizePriorities() {
+        double sum = bandwidthPriority + energyPriority + pricePriority + latencyPriority;
+
+        if (sum != 1.0 && sum != 0.0) {
+            bandwidthPriority /= sum;
+            energyPriority /= sum;
+            pricePriority /= sum;
+            latencyPriority /= sum;
+        }
+
+        if (sum == 0.0) {
+            bandwidthPriority = 0.25;
+            energyPriority = 0.25;
+            pricePriority = 0.25;
+            latencyPriority = 0.25;
+        }
     }
 }

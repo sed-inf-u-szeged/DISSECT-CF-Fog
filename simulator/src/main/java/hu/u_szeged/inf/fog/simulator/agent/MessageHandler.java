@@ -22,7 +22,7 @@ public class MessageHandler {
             String reqName = gateway.name + "-" + agent.name + "-" + app.name + "-" + msg + "-request";
             StorageObject reqMessage = new StorageObject(reqName, bcastMessageSize, false);
             gateway.hostNode.iaas.repositories.get(0).registerObject(reqMessage);
-            app.bcastCounter++;
+            app.agentsNotifiedCounter++;
                 
             try {
                 gateway.hostNode.iaas.repositories.get(0).requestContentDelivery(
@@ -44,8 +44,8 @@ public class MessageHandler {
                                                         agent.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
                                                         agent.hostNode.iaas.repositories.get(0).deregisterObject(reqMessage);
                                                         gateway.hostNode.iaas.repositories.get(0).deregisterObject(resMessage);
-                                                        app.bcastCounter--;
-                                                        if (app.bcastCounter == 0) {
+                                                        app.agentsNotifiedCounter--;
+                                                        if (app.agentsNotifiedCounter == 0) {
                                                             customAction.run();
                                                         }
                                                     }

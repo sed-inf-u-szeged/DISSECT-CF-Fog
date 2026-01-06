@@ -24,7 +24,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.decision.*;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;

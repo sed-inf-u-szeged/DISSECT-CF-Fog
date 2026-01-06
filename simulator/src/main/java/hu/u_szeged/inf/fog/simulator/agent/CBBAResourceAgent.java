@@ -7,7 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.decision.DecisionMaker;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.agent.AgentApplicationReader;

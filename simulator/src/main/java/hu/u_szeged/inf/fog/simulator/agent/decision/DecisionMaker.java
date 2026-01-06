@@ -1,30 +1,32 @@
 package hu.u_szeged.inf.fog.simulator.agent.decision;
 
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
-import hu.u_szeged.inf.fog.simulator.agent.Offer;
-import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.*;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class DecisionMaker {
-    public abstract void deploy(AgentApplication app);
+    public CBBAResourceAgent CBBASender;
+    public StandardResourceAgent standardSender;
 
-    abstract void generateOffers(AgentApplication app);
+    public abstract void start(AgentApplication app);
 
-    protected void generateUniqueOfferCombinations(List<Pair<ResourceAgent, AgentApplication.Resource>> pairs, AgentApplication app) {
-        Set<Set<Pair<ResourceAgent, AgentApplication.Resource>>> uniqueCombinations = new LinkedHashSet<>();
+    protected abstract void generateOffers(AgentApplication app);
+
+    protected void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Resource>> pairs, AgentApplication app) {
+        Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations = new LinkedHashSet<>();
 
         generateCombinations(pairs, app.resources.size(), uniqueCombinations,
                 new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
 
-        for (Set<Pair<ResourceAgent, AgentApplication.Resource>> combination : uniqueCombinations) {
-            Map<ResourceAgent, Set<AgentApplication.Resource>> agentResourcesMap = new HashMap<>();
+        for (Set<Pair<ResourceAgent, Resource>> combination : uniqueCombinations) {
+            Map<ResourceAgent, Set<Resource>> agentResourcesMap = new HashMap<>();
 
-            for (Pair<ResourceAgent, AgentApplication.Resource> pair : combination) {
+            for (Pair<ResourceAgent, Resource> pair : combination) {
                 ResourceAgent agent = pair.getLeft();
-                AgentApplication.Resource resource = pair.getRight();
+                Resource resource = pair.getRight();
 
                 agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
                 agentResourcesMap.get(agent).add(resource);
@@ -34,10 +36,10 @@ public abstract class DecisionMaker {
         }
     }
 
-    protected void generateCombinations(List<Pair<ResourceAgent, AgentApplication.Resource>> pairs, int resourceCount,
-                                      Set<Set<Pair<ResourceAgent, AgentApplication.Resource>>> uniqueCombinations,
-                                      Set<Pair<ResourceAgent, AgentApplication.Resource>> currentCombination,
-                                      Set<AgentApplication.Resource> includedResources,
+    protected void generateCombinations(List<Pair<ResourceAgent, Resource>> pairs, int resourceCount,
+                                      Set<Set<Pair<ResourceAgent, Resource>>> uniqueCombinations,
+                                      Set<Pair<ResourceAgent, Resource>> currentCombination,
+                                      Set<Resource> includedResources,
                                       Set<String> seenStates) {
 
         if (includedResources.size() == resourceCount) {
@@ -54,7 +56,7 @@ public abstract class DecisionMaker {
             return;
         }
 
-        for (Pair<ResourceAgent, AgentApplication.Resource> pair : pairs) {
+        for (Pair<ResourceAgent, Resource> pair : pairs) {
             if (!currentCombination.contains(pair) && !includedResources.contains(pair.getRight())) {
                 currentCombination.add(pair);
                 includedResources.add(pair.getRight());

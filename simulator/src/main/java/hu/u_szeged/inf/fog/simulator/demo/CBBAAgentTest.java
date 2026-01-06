@@ -17,7 +17,7 @@ import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.decision.AsyncCBBABasedDecisionMaker;
 import hu.u_szeged.inf.fog.simulator.agent.decision.CBBABasedDecisionMaker;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.FirstFitAgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.urbannoise.Sun;
@@ -260,15 +260,34 @@ public class CBBAAgentTest {
         for (ResourceAgent agent : ResourceAgent.resourceAgents) {
             double runtime = 0;
             double cores = 0;
+
+            int tasks = 0;
+            double currCost = 0;
+
             for (Capacity cap : agent.capacities) {
                 SimLogger.logRes("\t" + cap);
                 for (Utilisation util : cap.utilisations) {
                    SimLogger.logRes("\t\t" + util);
                    runtime += (Timed.getFireCount() - util.initTime);
                    cores += util.utilisedCpu;
+                   tasks++;
                 }
             }
             totalCost += cores * agent.hourlyPrice * (runtime / 1000 / 60 / 60);
+
+            currCost = cores * agent.hourlyPrice * (runtime / 1000 / 60 / 60);
+
+            System.out.println(agent.name);
+
+            if (tasks > 0) {
+                System.out.println("\tAmount of tasks: " + tasks);
+                System.out.println("\tTotal cost: " + currCost);
+
+                System.out.println("\tRuntime (hour): " + (runtime / 1000 / 60 / 60));
+                System.out.println("\tAverage time per task: " + ((runtime / 1000 / 60 / 60) / tasks));
+            } else {
+                System.out.println("\tNot utilized");
+            }
         }
 
         DecimalFormat df = new DecimalFormat("#.####");

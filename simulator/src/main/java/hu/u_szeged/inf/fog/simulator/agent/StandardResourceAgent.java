@@ -6,7 +6,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.decision.DecisionMaker;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.AgentStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.AgentStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
