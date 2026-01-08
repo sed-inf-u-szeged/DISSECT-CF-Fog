@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
@@ -9,8 +10,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
+import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -19,7 +22,7 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * The EdgeDevice class represents a device at the edge of a network, inheriting from the Device class.
@@ -55,6 +58,16 @@ public class EdgeDevice extends Device {
     public ArrayList<TimelineEntry> timelineEntries = new ArrayList<TimelineEntry>();
 
     /**
+     * The communication protocols the edge device can use.
+     */
+    public Map<String, Repository> communicationProtocols = new HashMap<String, Repository>();
+
+    /**
+     * The communication protocols the edge device can use.
+     */
+    public String currentCommProt;
+
+    /**
      * Constructs a new EdgeDevice instance.
      *
      * @param startTime          the start time of the edge device
@@ -72,6 +85,9 @@ public class EdgeDevice extends Device {
             DeviceStrategy deviceStrategy, PhysicalMachine localMachine, double instructionPerByte, int latency, 
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
+        setCommunicationProtocols(true, true, true);
+        //selectBestCommunicationProtocol();
+        //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
@@ -129,6 +145,66 @@ public class EdgeDevice extends Device {
             }
         }
     }
+
+    /**
+     * Sets what communication protocols the edge device can use.
+     */
+    public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora){
+        communicationProtocols.clear();
+        if(wifi){
+            communicationProtocols.put("WIFI", CommunicationProtocol.getInstance().newWifiRepository());
+        }
+        if(_5g){
+            communicationProtocols.put("5G", CommunicationProtocol.getInstance().new5GRepository());
+        }
+        if(lora){
+            communicationProtocols.put("LORA", CommunicationProtocol.getInstance().newLoRaRepository());
+        }
+    }
+
+    /**
+     * Select what communication protocol the edge device should use given its battery state and the server(s)in its vicinity.
+     */
+    public void selectBestCommunicationProtocol(){
+        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk
+        List<String> options = new ArrayList<>();
+
+
+        // alapból mec szerver alapján options feltöltés, esetleg súlyozás a device és szerver közti táv alapján
+        // itt nem vagyok teljesen még 100%ig biztos hogy hogy nézem meg még hogy éppen melyik szervert választjuk, ez lehet applicationbe kerül át dunno
+
+
+        // (pl ha csak 1-et választhatunk akkor fölös bármit tesztelni és csak azt adjuk vissza egyből)
+        //példa váltásra, alapeset
+        if(options.size() == 1){
+            // 1. ehhez a variációhoz módosítani kéne a sztakis pm-et, hogy a localdisk ne legyen final amit nem akarunk
+            //localMachine.localDisk = communicationProtocols.get(options.get(0));
+
+            // 2. ennél a variációnál meg nem tudom, hogy mennyire őrülne meg az energiamérő és ha megőrül hogy őrül meg, még nem lett tesztelve
+            /*EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
+                    PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
+                    //az itteni értékeknek is nem tudom minek kéne lenni, a legjobb az lenne ha lelehetne copyzni :p
+
+            PhysicalMachine newPM = new PhysicalMachine(localMachine.getPerTickProcessingPower(), 1, localMachine.getCapacities().getRequiredMemory(),
+                                                        communicationProtocols.get(currentCommProt), 0, 0, transitions.get(PowerTransitionGenerator.PowerStateKind.host));
+            */
+
+            // 3. adattagot nem módosítunk a sztakiba, de csinálunk valami "copy konstruktort" (vagy hát majdnem az, csak repot tudnánk cserélni és minden más adattagot megtartani)
+            //PhysicalMachine changedRepoPM = new PhysicalMachine(localMachine, communicationProtocols.get(currentCommProt));
+        }
+
+        //battery alapján választás
+        // >75% a leggyorsabb (jelenleg wifi, az eszik a legtöbbet is)
+        // >35% a közepes ami az 5g ami szintén elég sokat fogyaszt, de gyors, lehet a 35% sok de lényegtelen
+        // <=35% lassú de keveset fogyasztó lora
+
+
+        //egyéb opciók
+        //pl task priority / deadline sürget -> gyorsabb kapcsolat, de ehhez előbb kell a task absztrakció
+
+        // TODO mindig meghívódik majd a tickben meg egyszer inicializáláskor
+    }
+
 
     /**
      * The tick method is called to simulate a time step for the edge device.

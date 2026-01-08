@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.CommunicationProtocol;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -16,6 +17,8 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
@@ -98,6 +101,8 @@ public class ComputingAppliance {
     public String location;
     
     public Boolean edge;
+
+    public List<String> communicationProtocols = new ArrayList<>();
     
     /**
      * Constructs a new {@code ComputingAppliance} with the specified parameters.
@@ -114,6 +119,7 @@ public class ComputingAppliance {
         } catch (IOException | SAXException | ParserConfigurationException e) {
             e.printStackTrace();
         }
+        setCommunicationProtocols(true,true,true);
         this.name = name;
         this.geoLocation = geoLocation;
         this.neighbors = new ArrayList<>();
@@ -124,6 +130,7 @@ public class ComputingAppliance {
     }
     
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider, boolean edge) {
+        setCommunicationProtocols(true,true,true);
         this.iaas = iaas;
         this.name = iaas.repositories.get(0).getName().contains("-") 
                 ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
@@ -138,6 +145,7 @@ public class ComputingAppliance {
     }
 
     public ComputingAppliance(String id) {
+        setCommunicationProtocols(true,true,true);
         this.geoLocation = null;
         this.range = 0; // TODO: check the FL extension
         this.name = "";
@@ -294,5 +302,21 @@ public class ComputingAppliance {
             }
         }
         return null;
+    }
+
+    /**
+     * Sets what communication protocols the appliance can use.
+     */
+    public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora){
+        communicationProtocols.clear();
+        if(wifi){
+            communicationProtocols.add("WIFI");
+        }
+        if(_5g){
+            communicationProtocols.add("5G");
+        }
+        if(lora){
+            communicationProtocols.add("LORA");
+        }
     }
 }
