@@ -73,13 +73,15 @@ public class EdgeDevicesWithBatteryExample {
             final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
             final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
+            //System.out.println(cpuTransitions.get("OFF").getMinConsumption()/4.4*1000);
+
             Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
 
             Device device;
             Battery battery;
             double step = SeedSyncer.centralRnd.nextDouble();
-            battery = new Battery("battery"+i, 3500, 4.4f, 10, 2 * 60 * 60 * 1000);
+            battery = new Battery("battery"+i, 3500, 4.4f, cpuTransitions.get("OFF").getMinConsumption(), 2 * 60 * 60 * 1000);
             device = new EdgeDevice(0, 100 * 60 * 60 * 1000, 100, 60 * 1000,
                     new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
                     new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
