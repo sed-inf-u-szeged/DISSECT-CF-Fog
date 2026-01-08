@@ -14,8 +14,8 @@ import java.nio.file.Path;
 public class IdleBatteryDrainExample {
     public static void main(String[] args) {
         //drainRate jelenleg változásig mAh/h érték tehát kivonás előtt van egy 60-as osztó tehát a szimulációhoz nem túl reális "idle drain" értéket adtam meg mert amúgy órákat kell szimulálni
-        Battery battery1 = new Battery("battery1", 3500, 4.4f, 200, 2 * 60 * 60 * 1000);
-        Battery battery2 = new Battery("battery2", 4500, 4.4f, 200, 3 * 60 * 60 * 1000);
+        Battery battery1 = new Battery("battery1", 3500, 4.4f, 0.065*20, 2 * 60 * 60 * 1000);
+        Battery battery2 = new Battery("battery2", 4500, 4.4f, 0.065*20, 3 * 60 * 60 * 1000);
 
         //48 hour
         battery1.setStopTime(48 * 60 * 60 * 1000);

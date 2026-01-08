@@ -29,7 +29,6 @@ public class CommunicationProtocol {
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
-        //ilyenkor cpu transitiont is visszakéne adni vagy mi az ötlet? előre megadjuk a fogyasztást a repokhoz / commprothoz, de akkor a localmachinenak hogy lesz cpu transition? -> konzultáció
 
         return new Repository(4_294_967_296L, "WIFI-Repo" + WiFiRepoCounter++, 1,1,1, new HashMap<>(), stTransitions, nwTransitions);
     }

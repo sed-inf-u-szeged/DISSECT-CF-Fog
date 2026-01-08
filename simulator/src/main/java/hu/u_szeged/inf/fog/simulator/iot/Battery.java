@@ -58,10 +58,10 @@ public class Battery extends Timed {
     private double voltage;
 
     /**
-     * Constant value used to drain the battery when the battery device is idle. (currently in mAh/h, can be Wh/h or sth)
+     * Constant value used to drain the battery when the battery device is idle. (currently in mAh/h - mAh drained in an hour)
      */
     @Getter
-    private double drainRate; //lehet discharge rate
+    private double drainRate;
 
     /**
      * The time it takes to charge the battery from 0% to 100% (in ticks).
@@ -90,14 +90,14 @@ public class Battery extends Timed {
      *
      * @param maxCapacity the maximum capacity of the battery (mAh)
      * @param voltage     the voltage of the battery (V)
-     * @param drainRate   the value the battery is drained by when the device is idle (mAh/h)
+     * @param hostMinConsumption the value the battery physical machine's CPU's (and memory) minimal consumption (W)
      * @param chargeTime  the time it takes to charge the battery to full (in ticks).
      */
-    public Battery(String name, double maxCapacity, double voltage, double drainRate, long chargeTime) {
+    public Battery(String name, double maxCapacity, double voltage, double hostMinConsumption, long chargeTime) {
         this.name = name;
         this.maxCapacity = maxCapacity;
         this.voltage = voltage;
-        this.drainRate = drainRate;
+        this.drainRate = hostMinConsumption/voltage*1000;
         this.chargeTime = chargeTime;
         this.stopTime = 60 * 60 * 1000; // 1hour base value
 
@@ -140,7 +140,7 @@ public class Battery extends Timed {
             return;
         }
 
-        // mAh/h a drainRate, de az event percenkénti
+        // mAh/h a drainRate, de az event percenkénti, ezért lesz a mAh/hból mAh/min
         currLevel -= drainRate / 60;
 
         readings.put(fires, currLevel);
@@ -183,6 +183,7 @@ public class Battery extends Timed {
         }
     }
 
+    //jelenleg az eltérő diagram felosztások miatt használhatatlan
     public void writeToFilePercentage(String resultDirectory){
         try {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
