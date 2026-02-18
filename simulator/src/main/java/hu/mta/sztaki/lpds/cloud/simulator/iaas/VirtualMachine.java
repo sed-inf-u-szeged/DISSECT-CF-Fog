@@ -27,6 +27,7 @@
 
 package hu.mta.sztaki.lpds.cloud.simulator.iaas;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -104,6 +105,7 @@ public class VirtualMachine extends MaxMinConsumer {
 	 * 
 	 */
 	public static class StateChangeException extends VMManagementException {
+		@Serial
 		private static final long serialVersionUID = 2950595344006507672L;
 
 		/**
@@ -586,22 +588,21 @@ public class VirtualMachine extends MaxMinConsumer {
 	public void switchOn(final PhysicalMachine.ResourceAllocation allocation, final Repository vasource)
 			throws VMManagementException, NetworkNode.NetworkException {
 		switch (currState) {
-		case DESTROYED:
-			setResourceAllocation(allocation);
-			initialTransfer(vasource, allocation.getHost().localDisk, switchonEvent);
-			break;
-		case SHUTDOWN:
-			// Shutdown has already done the transfer, we just need to make sure
-			// the VM will get through its boot procedure
-			if (allocation.getHost().localDisk != vatarget) {
-				// TODO: maybe we can switch back to destroyed
-				throw new VMManagementException("VM was not prepared for this PM");
+			case DESTROYED -> {
+				setResourceAllocation(allocation);
+				initialTransfer(vasource, allocation.getHost().localDisk, switchonEvent);
 			}
-			setResourceAllocation(allocation);
-			switchonEvent.changeEvents(this);
-			break;
-		default:
-			throw new StateChangeException("The VM is not shut down or destroyed");
+			case SHUTDOWN -> {
+				// Shutdown has already done the transfer, we just need to make sure
+				// the VM will get through its boot procedure
+				if (allocation.getHost().localDisk != vatarget) {
+					// TODO: maybe we can switch back to destroyed
+					throw new VMManagementException("VM was not prepared for this PM");
+				}
+				setResourceAllocation(allocation);
+				switchonEvent.changeEvents(this);
+			}
+			default -> throw new StateChangeException("The VM is not shut down or destroyed");
 		}
 	}
 
@@ -880,17 +881,14 @@ public class VirtualMachine extends MaxMinConsumer {
 			}
 			if (wasRegistered) {
 				// Wait until the cancel takes effect - registration cleanup
-				new DeferredEvent(1) {
-					@Override
-					protected void eventAction() {
-						try {
-							destroy(killTasks);
-						} catch (VMManagementException e) {
-							// TODO: allow more graceful exception handling
-							throw new RuntimeException(e);
-						}
+				DeferredEvent.deferAction(1, () -> {
+					try {
+						destroy(killTasks);
+					} catch (VMManagementException e) {
+						// TODO: allow more graceful exception handling
+						throw new RuntimeException(e);
 					}
-				};
+				});
 				return;
 			}
 		}
@@ -1171,16 +1169,12 @@ public class VirtualMachine extends MaxMinConsumer {
 	 */
 	public void setResourceAllocation(PhysicalMachine.ResourceAllocation newRA) throws VMManagementException {
 		switch (currState) {
-		case DESTROYED:
-		case SUSPENDED:
-		case SHUTDOWN:
-		case SUSPENDED_MIG:
-			ra = newRA;
-			ra.use(this);
-			setPerTickProcessingPower(ra.allocated.getTotalProcessingPower());
-			break;
-		default:
-			throw new StateChangeException(
+			case DESTROYED, SUSPENDED, SHUTDOWN, SUSPENDED_MIG -> {
+				ra = newRA;
+				ra.use(this);
+				setPerTickProcessingPower(ra.allocated.getTotalProcessingPower());
+			}
+			default -> throw new StateChangeException(
 					"The VM is already bound to a host please first resolve the VM-Host association!");
 		}
 	}

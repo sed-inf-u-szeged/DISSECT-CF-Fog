@@ -164,13 +164,8 @@ public class StateDependentTest extends TestFoundation {
 				sdeh.unsubscribeFromEvents(this);
 				sdeh.subscribeToEvents(this);
 				if (handleCount[0] == 1) {
-					new DeferredEvent(1) {
-						@Override
-						protected void eventAction() {
-							// Second notification
-							sdeh.notifyListeners(null);
-						}
-					};
+					// Second notification
+					DeferredEvent.deferAction(1, () -> sdeh.notifyListeners(null));
 				}
 			}
 		};

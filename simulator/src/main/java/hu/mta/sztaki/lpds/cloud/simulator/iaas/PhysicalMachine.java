@@ -27,14 +27,7 @@
 
 package hu.mta.sztaki.lpds.cloud.simulator.iaas;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.*;
 import org.apache.commons.lang3.tuple.Pair;
@@ -852,14 +845,8 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 				@Override
 				public void stateChanged(VirtualMachine vm, VirtualMachine.State oldState,
 						VirtualMachine.State newState) {
-					switch (newState) {
-					case RUNNING:
+					if (Objects.requireNonNull(newState) == VirtualMachine.State.RUNNING) {
 						counter++;
-						break;
-					case SUSPENDED_MIG:
-						// There is a problem but we cannot do here anything
-						// right now...
-					default:
 					}
 					if (counter == vmarr.length) {
 						for (VirtualMachine virtualMachine : vmarr) {
@@ -890,42 +877,40 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	private void actualSwitchOff() {
 		try {
 			switch (currentState) {
-			case SWITCHINGON:
-				setState(State.SWITCHINGOFF);
-				onOffEvent.addFurtherTasks(offTransition);
-				onOffEvent.setNewState(State.OFF);
-				break;
-			case RUNNING:
-				setState(State.SWITCHINGOFF);
-				new Timed() {
-					@Override
-					public void tick(final long fires) {
-						if (State.SWITCHINGOFF.equals(currentState)) {
-							FreqSyncer syncer = getSyncer();
-							// Ensures that the switching off activities are only
-							// started once all runtime activities complete for the
-							// directConsumer
-							if (syncer != null && syncer.isSubscribed()
-									&& (underProcessing.size() + toBeAdded.size() - toBeRemoved.size() > 0)) {
-								updateFrequency(syncer.getNextEvent() - fires + 1);
-							} else {
-								unsubscribe();
-								new PowerStateDelayer(offTransition, State.OFF);
+				case SWITCHINGON -> {
+					setState(State.SWITCHINGOFF);
+					onOffEvent.addFurtherTasks(offTransition);
+					onOffEvent.setNewState(State.OFF);
+				}
+				case RUNNING -> {
+					setState(State.SWITCHINGOFF);
+					new Timed() {
+						@Override
+						public void tick(final long fires) {
+							if (State.SWITCHINGOFF.equals(currentState)) {
+								FreqSyncer syncer = getSyncer();
+								// Ensures that the switching off activities are only
+								// started once all runtime activities complete for the
+								// directConsumer
+								if (syncer != null && syncer.isSubscribed()
+										&& (underProcessing.size() + toBeAdded.size() - toBeRemoved.size() > 0)) {
+									updateFrequency(syncer.getNextEvent() - fires + 1);
+								} else {
+									unsubscribe();
+									new PowerStateDelayer(offTransition, State.OFF);
+								}
 							}
+							// else: Another transition dropped the switchoff task. do
+							// nothing
 						}
-						// else: Another transition dropped the switchoff task. do
-						// nothing
-					}
-				}.tick(Timed.getFireCount());
-				break;
-			case OFF:
-				// Nothing to do
-				System.err.println("WARNING: an already off PM was tasked to switch off!");
-				break;
-			case SWITCHINGOFF:
-				// Nothing to do
-				System.err.println("WARNING: an already switching-off PM was tasked to switch off!");
-				break;
+					}.tick(Timed.getFireCount());
+				}
+				case OFF ->
+					// Nothing to do
+						System.err.println("WARNING: an already off PM was tasked to switch off!");
+				case SWITCHINGOFF ->
+					// Nothing to do
+						System.err.println("WARNING: an already switching-off PM was tasked to switch off!");
 			}
 		} catch (NetworkException nex) {
 			// Should not happen as long as the network node don't have a SWITCHINGOFF state
@@ -962,27 +947,23 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	 */
 	public void turnon() {
 		switch (currentState) {
-		case SWITCHINGOFF:
-		case OFF:
-			try {
-				setState(State.SWITCHINGON);
-			} catch (NetworkException nex) {
-				// Should not happen as long as the networknode don't have a switchingon state
-				throw new RuntimeException(nex);
+			case SWITCHINGOFF, OFF -> {
+				try {
+					setState(State.SWITCHINGON);
+				} catch (NetworkException nex) {
+					// Should not happen as long as the networknode don't have a switchingon state
+					throw new RuntimeException(nex);
+				}
+				if (onOffEvent == null) {
+					new PowerStateDelayer(onTransition, State.RUNNING);
+				} else {
+					onOffEvent.addFurtherTasks(onTransition);
+					onOffEvent.setNewState(State.RUNNING);
+				}
 			}
-
-			if (onOffEvent == null) {
-				new PowerStateDelayer(onTransition, State.RUNNING);
-			} else {
-				onOffEvent.addFurtherTasks(onTransition);
-				onOffEvent.setNewState(State.RUNNING);
-			}
-
-			break;
-		case RUNNING:
-		case SWITCHINGON:
-			// Nothing to do
-			System.err.println("WARNING: an already running PM was tasked to switch on!");
+			case RUNNING, SWITCHINGON ->
+				// Nothing to do
+					System.err.println("WARNING: an already running PM was tasked to switch on!");
 		}
 	}
 
@@ -1158,23 +1139,6 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	public boolean isHostableRequest(final ResourceConstraints requested) {
 		return requested.compareTo(totalCapacities) <= 0;
 	}
-	
-	/**
-     * checks if the requested resources could actually be hosted on the
-     * PM.
-     * 
-     * @param requested
-     *            the resource set to be checked for hostability
-     * @return
-     *         <ul>
-     *         <li><i>true</i> if the such resource request has a chance of
-     *         acceptance
-     *         <li><i>false</i> otherwise
-     *         </ul>
-     */
-    public boolean isCurrentlyHostableRequest(final ResourceConstraints requested) {
-        return requested.compareTo(freeCapacities) <= 0;
-    }
 
 	/**
 	 * Bounds a VM to a particular PM on a previously agreed allocation

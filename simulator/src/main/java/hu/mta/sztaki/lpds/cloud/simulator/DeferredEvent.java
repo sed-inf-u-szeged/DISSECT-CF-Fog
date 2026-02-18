@@ -201,4 +201,19 @@ public abstract class DeferredEvent {
 	static void reset() {
 		dispatchers.clear();
 	}
+
+	/**
+	 * A shortcut to create deferred events in the simulation
+	 * @param distance The number of ticks before the deferred operation below needs to be called
+	 * @param deferredAction The operation to be called once the time is up
+	 * @return a wrapper around the deferred operation allowing its event to be cancelled
+	 */
+	public static DeferredEvent deferAction(long distance, Runnable deferredAction) {
+		return new DeferredEvent(distance) {
+			@Override
+			protected void eventAction() {
+				deferredAction.run();
+			}
+		};
+	}
 }

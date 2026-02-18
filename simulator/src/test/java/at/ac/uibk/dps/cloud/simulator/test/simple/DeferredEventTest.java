@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DeferredEventTest extends TestFoundation {
 	final static int limit = 5000;
@@ -137,4 +138,27 @@ public class DeferredEventTest extends TestFoundation {
 		Timed.simulateUntilLastEvent();
 		assertTrue( arr[0],"The second event should arrive");
 	}
+
+	@Test
+	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
+	void deferActionArrives() {
+		var arrival = new AtomicBoolean(false);
+		DeferredEvent.deferAction(1,() -> arrival.set(true));
+		assertFalse(arrival.get());
+		Timed.simulateUntilLastEvent();
+		assertTrue(arrival.get());
+	}
+
+	@Test
+	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
+	void deferActionCancellable() {
+		var arrival = new AtomicBoolean(false);
+		var eventHandler = DeferredEvent.deferAction(1,() -> arrival.set(true));
+		eventHandler.cancel();
+		assertFalse(arrival.get());
+		Timed.simulateUntilLastEvent();
+		assertFalse(arrival.get());
+	}
+
+
 }

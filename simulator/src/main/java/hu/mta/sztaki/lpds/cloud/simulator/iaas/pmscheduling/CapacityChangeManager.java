@@ -85,23 +85,6 @@ class CapacityChangeManager
     }
 
     /**
-     * Keeps a just started PM on for a short while to allow some new VMs to arrive, otherwise it seems like
-     * we just started the PM for no reason
-     */
-    class MachineSwitchoffDelayer extends DeferredEvent {
-        public MachineSwitchoffDelayer() {
-            super(observed.getCurrentOnOffDelay());
-        }
-
-        @Override
-        protected void eventAction() {
-            if (!observed.isHostingVMs() && observed.isRunning()) {
-                switchoffmachine();
-            }
-        }
-    }
-
-    /**
      * This function is called when the PM's power state changes. This event handler
      * manages situations when the PM is turned on but there are no longer tasks for
      * it. Also, it initiates a new PM's switchon if the newly switched on machine
@@ -113,7 +96,15 @@ class CapacityChangeManager
         if (PhysicalMachine.State.RUNNING.equals(newState)) {
             controller.currentlyStartingPM = null;
             if (controller.parent.sched.getQueueLength() == 0) {
-                new MachineSwitchoffDelayer();
+                /*
+                 * Keeps a just started PM on for a short while to allow some new VMs to arrive, otherwise it seems like
+                 * we just started the PM for no reason
+                 */
+                DeferredEvent.deferAction(observed.getCurrentOnOffDelay(), () -> {
+                    if (!observed.isHostingVMs() && observed.isRunning()) {
+                        switchoffmachine();
+                    }
+                });
             } else {
                 var runningCapacities = controller.parent.getRunningCapacities();
                 if (!controller.parent.runningMachines.contains(observed)) {

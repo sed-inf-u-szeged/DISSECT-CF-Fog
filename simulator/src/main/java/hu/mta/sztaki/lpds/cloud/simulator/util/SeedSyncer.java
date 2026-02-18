@@ -66,9 +66,10 @@ public class SeedSyncer {
 	}
 	
 	/**
-     * To modify the simulator's random generator based on the given seed
+     * Modify the simulator's random number generator based on the specified seed value
      */
-	public static void modifySeed(long seed) {
-	    centralRnd.setSeed(seed);
-	}
+    public static void modifySeed(int seed) {
+        SeedSyncer.seed = seed;
+        centralRnd.setSeed(seed);
+    }
 }

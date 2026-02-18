@@ -32,6 +32,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ResourceConstraints;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Allows to energy meter all resource spreaders (e.g. CPU, Network) associated
@@ -55,9 +57,8 @@ public class PhysicalMachineEnergyMeter extends AggregatedEnergyMeter
 	 *            the physical machine to be metered
 	 */
 	public PhysicalMachineEnergyMeter(final PhysicalMachine pm) {
-		super(List.of(new DirectEnergyMeter(pm),
-				new DirectEnergyMeter(pm.localDisk.diskinbws), new DirectEnergyMeter(pm.localDisk.diskoutbws),
-				new DirectEnergyMeter(pm.localDisk.inbws), new DirectEnergyMeter(pm.localDisk.outbws)));
+		super(Stream.of(pm, pm.localDisk.diskinbws, pm.localDisk.diskoutbws, pm.localDisk.inbws,pm.localDisk.outbws)
+				.map(DirectEnergyMeter::new).collect(Collectors.toList()));
 		observed = pm;
 	}
 
@@ -67,7 +68,7 @@ public class PhysicalMachineEnergyMeter extends AggregatedEnergyMeter
 	 */
 	@Override
 	public boolean startMeter(long interval, boolean dropPriorReading) {
-		boolean returner = super.startMeter(interval, dropPriorReading);
+		var returner = super.startMeter(interval, dropPriorReading);
 		observed.subscribeToCapacityChanges(this);
 		return returner;
 	}

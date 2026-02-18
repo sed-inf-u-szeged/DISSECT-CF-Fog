@@ -27,11 +27,12 @@
 package at.ac.uibk.dps.cloud.simulator.test;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
@@ -42,20 +43,20 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.UnalterableConstraintsPropagator;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.MultiPMController;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.PhysicalMachineController;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.SchedulingDependentMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.NonQueueingScheduler;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.RandomScheduler;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.Scheduler;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.SmallestFirstScheduler;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.*;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import org.apache.commons.lang3.function.Failable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IaaSRelatedFoundation extends VMRelatedFoundation {
 	public final static int dummyPMCoreCount = 1;
@@ -130,13 +131,12 @@ public class IaaSRelatedFoundation extends VMRelatedFoundation {
 		basic.bulkHostRegistration(
 				Arrays.asList(dummyPMsCreator(hostCount, coreCount, dummyPMPerCorePP, dummyPMMemory)));
 		basic.registerRepository(dummyRepoCreator(true));
+		assertTrue(basic.runningMachines.isEmpty(), "No machines should be running now");
 		return basic;
 	}
 
 	public void fireVMat(final IaaSService iaas, long distance, final double processing, final int corecount) {
-		new DeferredEvent(distance) {
-			@Override
-			protected void eventAction() {
+		DeferredEvent.deferAction(distance, () -> {
 				final ResourceConstraints pmsize = iaas.machines.get(0).getCapacities();
 				int instancecount = pmsize.getRequiredCPUs() >= corecount ? 1
 						: (corecount / ((int) pmsize.getRequiredCPUs()))
@@ -180,20 +180,28 @@ public class IaaSRelatedFoundation extends VMRelatedFoundation {
 				} catch (Exception e) {
 					throw new IllegalStateException(e);
 				}
-			}
-		};
+
+		});
 	}
 
-	public ArrayList<IaaSService> getNewServiceArray() throws Exception {
-		ArrayList<IaaSService> serviceArray = new ArrayList<IaaSService>();
-		serviceArray.add(new IaaSService(FirstFitScheduler.class, AlwaysOnMachines.class));
-		serviceArray.add(new IaaSService(FirstFitScheduler.class, SchedulingDependentMachines.class));
-		serviceArray.add(new IaaSService(NonQueueingScheduler.class, AlwaysOnMachines.class));
-		serviceArray.add(new IaaSService(NonQueueingScheduler.class, SchedulingDependentMachines.class));
-		serviceArray.add(new IaaSService(SmallestFirstScheduler.class, AlwaysOnMachines.class));
-		serviceArray.add(new IaaSService(SmallestFirstScheduler.class, SchedulingDependentMachines.class));
-		serviceArray.add(new IaaSService(RandomScheduler.class, AlwaysOnMachines.class));
-		serviceArray.add(new IaaSService(RandomScheduler.class, SchedulingDependentMachines.class));
-		return serviceArray;
+	public Stream<Class<? extends Scheduler>> allVMSchedulers() {
+		return Stream.of(FirstFitScheduler.class, NonQueueingScheduler.class, SmallestFirstScheduler.class, RandomScheduler.class, RoundRobinScheduler.class);
+	}
+
+	public Stream<Class<? extends PhysicalMachineController>> allPMControllers() {
+		return Stream.of(AlwaysOnMachines.class, SchedulingDependentMachines.class, MultiPMController.class);
+	}
+
+	public List<IaaSService> getNewServiceArray() {
+		return allVMSchedulers().flatMap(
+				vmScheduler -> allPMControllers().map(
+						pmScheduler -> {
+							try {
+								return new IaaSService(vmScheduler, pmScheduler);
+							} catch (Exception e) {
+								throw new RuntimeException(e);
+							}
+						}
+				)).toList();
 	}
 }

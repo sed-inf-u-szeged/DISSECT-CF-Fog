@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 
@@ -104,30 +105,16 @@ public class Repository extends NetworkNode {
 	 *         enough space to store the object
 	 */
 	public boolean registerObject(final StorageObject so) {
-        if (!contents.containsKey(so.id)) {
-            if(!freeSpaceInFuture(so.size)) {
-                return false;
-            }
-
-            contents.put(so.id, so);
-            currentStorageUse += so.size;
-        } else {
-            StorageObject existingSo = contents.get(so.id);
-            if(!freeSpaceInFuture(so.size)) {
-                return false;
-            }
-
-            currentStorageUse -= existingSo.size;
-            existingSo.setSize(existingSo.size+so.size);
-            currentStorageUse += existingSo.size;
-        }
-        return true;
-    }
-	
-	private boolean freeSpaceInFuture(long storageObjectSize) {
-        final long futureFree = getFreeStorageCapacity() - storageObjectSize;
-        return futureFree >= 0;
-    }
+		if (!contents.containsKey(so.id)) {
+			final long futureFree = getFreeStorageCapacity() - so.size;
+			if (futureFree < 0) {
+				return false;
+			}
+			contents.put(so.id, so);
+			currentStorageUse += so.size;
+		}
+		return true;
+	}
 
 	/**
 	 * This function is designed to simulate the erase function of the repository

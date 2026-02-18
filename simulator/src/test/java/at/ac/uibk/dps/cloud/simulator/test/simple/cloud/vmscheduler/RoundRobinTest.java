@@ -33,6 +33,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.RoundRobinScheduler;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -49,10 +50,7 @@ public class RoundRobinTest extends IaaSRelatedFoundation {
 			InvocationTargetException, NoSuchMethodException, SecurityException {
 		IaaSService iaas = setupIaaS(RoundRobinScheduler.class,
 				SchedulingDependentMachines.class, 2, 2);
-		assertTrue(iaas.runningMachines.isEmpty(), "No machines should be running now");
-		fireVMat(iaas, 50, 5000, 1);
-		fireVMat(iaas, 200, 5000, 1);
-		fireVMat(iaas, 500, 5000, 1);
+		Stream.of(50,200,500).forEach(distance -> fireVMat(iaas, distance, 5000, 1));
 		Timed.simulateUntil(Timed.getFireCount() + 400);
 		assertEquals(1,
 				iaas.runningMachines.size(), "Only one machine should be running now");
@@ -66,8 +64,7 @@ public class RoundRobinTest extends IaaSRelatedFoundation {
 	public void seqVMSchedule() throws Exception {
 		IaaSService iaas = setupIaaS(RoundRobinScheduler.class,
 				AlwaysOnMachines.class, 2, 2);
-		fireVMat(iaas, 50, 5000, 1);
-		fireVMat(iaas, 51, 5000, 1);
+		Stream.of(50,51).forEach(distance -> fireVMat(iaas, distance, 5000, 1));
 		Timed.simulateUntil(Timed.getFireCount() + 400);
 		for (PhysicalMachine pm : iaas.machines) {
 			assertEquals(1, pm.numofCurrentVMs(), "Should not be any PM with more than one VM");

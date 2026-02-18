@@ -279,13 +279,10 @@ public class RepositoryTest extends PMRelatedFoundation {
 	public void delayedCancelTransferTest() throws NetworkException {
 		genericCancelTransferTest((final ResourceConsumption con) -> {
 			try {
-				new DeferredEvent(NetworkNode.checkConnectivity(target, source) + 1L) {
-					@Override
-					protected void eventAction() {
+				DeferredEvent.deferAction(NetworkNode.checkConnectivity(target, source) + 1L, () -> {
 						assertTrue(con.isRegistered(), "By this time the registration should have happened");
 						con.cancel();
-					}
-				};
+					});
 			} catch (NetworkException e) {
 				throw new RuntimeException(e);
 			}

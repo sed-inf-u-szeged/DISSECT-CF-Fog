@@ -1,9 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class Offer {
 
     @JsonIgnore
-    public Map<ResourceAgent, Set<Resource>> agentResourcesMap;
+    public Map<ResourceAgent, Set<Component>> agentComponentsMap;
     
     List<Pair<ComputingAppliance, Utilisation>> utilisations;
     
@@ -21,12 +21,10 @@ public class Offer {
     public int id;
     
     boolean isRemainingDeploymentStarted;
-    
 
-
-    public Offer(Map<ResourceAgent, Set<Resource>> agentResourcesMap, int id) {
+    public Offer(Map<ResourceAgent, Set<Component>> agentResourcesMap, int id) {
         this.id = id;
-        this.agentResourcesMap = agentResourcesMap;
+        this.agentComponentsMap = agentResourcesMap;
         this.utilisations = new ArrayList<>();
     }
     
@@ -34,13 +32,13 @@ public class Offer {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("ID: ").append(id).append(System.lineSeparator());
-        for (Map.Entry<ResourceAgent, Set<Resource>> entry : agentResourcesMap.entrySet()) {
+        for (Map.Entry<ResourceAgent, Set<Component>> entry : agentComponentsMap.entrySet()) {
             ResourceAgent agent = entry.getKey();
-            Set<Resource> resources = entry.getValue();
+            Set<Component> components = entry.getValue();
             sb.append(agent.name).append(": ");
 
-            for (Resource resource : resources) {
-                sb.append(resource.name).append(" ");
+            for (Component component : components) {
+                sb.append(component.id).append(" ");
             }
             sb.append(System.lineSeparator()); 
         }

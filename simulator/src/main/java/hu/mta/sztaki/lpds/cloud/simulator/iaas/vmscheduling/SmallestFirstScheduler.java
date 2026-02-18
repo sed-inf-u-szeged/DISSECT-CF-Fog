@@ -25,6 +25,7 @@
 
 package hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -71,6 +72,7 @@ public class SmallestFirstScheduler extends FirstFitScheduler {
 		 * far.
 		 */
 		private static final String UFCmessage = "Unexpected function call";
+		@Serial
 		private static final long serialVersionUID = 2693241597335321816L;
 
 		/**

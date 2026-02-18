@@ -25,6 +25,7 @@
 
 package hu.mta.sztaki.lpds.cloud.simulator.io;
 
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -49,6 +50,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 public class NetworkNode {
 
 	public static class NetworkException extends Exception {
+		@Serial
 		private static final long serialVersionUID = 5173643896341066497L;
 
 		public NetworkException(String msg) {
@@ -86,12 +88,7 @@ public class NetworkNode {
 		private SingleTransfer(final int latency, final long tottr, final double limit, final MaxMinConsumer in,
 				final MaxMinProvider out, final ResourceConsumption.ConsumptionEvent e) {
 			super(tottr, limit, in, out, e);
-			new DeferredEvent(latency) {
-				@Override
-				protected void eventAction() {
-					regAndCancelOnFailure();
-				}
-			};
+			DeferredEvent.deferAction(latency, this::regAndCancelOnFailure);
 		}
 
 		private void regAndCancelOnFailure() {
@@ -153,7 +150,6 @@ public class NetworkNode {
 	 * for the simulation at hand).
 	 */
 	private String name;
-	
 	/**
 	 * The direct network connections of this network node.
 	 * 
@@ -177,6 +173,14 @@ public class NetworkNode {
 	 * behaviors.
 	 */
 	private final Map<String, PowerState> networkPowerBehavior;
+	
+	/**
+	 * Returns the latency values associated with the nodes.
+	 *
+	 */
+	public Map<String, Integer> getLatencies() {
+	    return this.latencies;
+	}
 
 	/**
 	 * This function initializes the bandwidth spreaders for the node to ensure
@@ -229,20 +233,6 @@ public class NetworkNode {
 		return (long) inbws.getPerTickProcessingPower();
 	}
 
-	/**
-     * Determines the latency values of the nodes
-     */
-    public Map<String, Integer> getLatencies() {
-        return this.latencies;
-    }
-    
-    /**
-     * Updates or adds a new latency connection 
-     */
-    public void addLatencies(String repository,int latencyValue) {
-        this.latencies.put(repository, latencyValue);
-    }
-    
 	/**
 	 * The bandwidth available when duplicating local disk contents.
 	 * 
@@ -366,12 +356,12 @@ public class NetworkNode {
 	}
 	
 	/**
-     * Allows to modify the networknode's name. If the name is changed, it may be necessary to update the corresponding
-     * latencyMaps as well.
-     * @param name the new name of the node
-     */
+	 *  Allows to modify the networknode's name
+	 *
+	 * @param name the name to be set
+	 */
     public void setName(String name) {
-        this.name = name;
+        this.name = name;        
     }
 
 	/**

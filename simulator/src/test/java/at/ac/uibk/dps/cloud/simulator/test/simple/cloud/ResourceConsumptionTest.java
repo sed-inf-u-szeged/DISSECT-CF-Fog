@@ -246,15 +246,10 @@ public class ResourceConsumptionTest extends ConsumptionEventFoundation {
 		// The tested consumption
 		con = createAUnitConsumption(null);
 		con.registerConsumption();
-		new DeferredEvent(after - before) {
-			@Override
-			protected void eventAction() {
-				// This should come just on the same time the consumption
-				// finishes = allowing to test if RS handles these situations
-				// correctly
-				con.suspend();
-			}
-		};
+		// This should come just on the same time the consumption
+		// finishes = allowing to test if RS handles these situations
+		// correctly
+		DeferredEvent.deferAction(after - before, con::suspend);
 		Timed.fire();
 		Timed.simulateUntilLastEvent();
 		// Resume right after the suspend

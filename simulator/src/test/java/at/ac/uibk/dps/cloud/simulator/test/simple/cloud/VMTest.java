@@ -479,16 +479,13 @@ public class VMTest extends IaaSRelatedFoundation {
 		centralVM.subscribeStateChange((VirtualMachine vmInt, State oldState, State newState) -> {
 			if (newState.equals(VirtualMachine.State.RUNNING) && haveNotBeenThere[0]) {
 				haveNotBeenThere[0] = false;
-				new DeferredEvent(aSecond) {
-					@Override
-					protected void eventAction() {
+				DeferredEvent.deferAction(aSecond, () -> {
 						try {
 							doMigration(pmtarget, pm, centralVM, false);
 						} catch (Exception e) {
 							throw new IllegalStateException("Second migration failed", e);
 						}
-					}
-				};
+					});
 			}
 		});
 		Timed.simulateUntilLastEvent();
@@ -678,16 +675,13 @@ public class VMTest extends IaaSRelatedFoundation {
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
 	public void allowDestroyDuringInitialTransfer() throws VMManagementException, NetworkException {
 		switchOnVMwithMaxCapacity(centralVM, false);
-		new DeferredEvent(1) {
-			@Override
-			protected void eventAction() {
+		DeferredEvent.deferAction(1, () -> {
 				try {
 					centralVM.destroy(false);
 				} catch (VMManagementException e) {
 					throw new RuntimeException(e);
 				}
-			}
-		};
+			});
 		Timed.simulateUntilLastEvent();
 		assertEquals( VirtualMachine.State.DESTROYED, centralVM.getState(),"Should get to destroyed");
 		switchOnVMwithMaxCapacity(centralVM, true);

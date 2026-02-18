@@ -1,5 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.agent.forecast;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ForecasterManager {
 
-    public static String predictorScriptDir; 
-    
     private final List<ForecasterWorker> workers = new ArrayList<>();
     
     private final AtomicInteger rr = new AtomicInteger(0);
@@ -37,8 +39,25 @@ public class ForecasterManager {
         return instance;
     }
 
+    /* sequential creation of workers
     private ForecasterManager(String predictorScriptDir, int workerCount, int basePort, String modelPath) {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        for (int i = 0; i < workerCount; i++) {
+            int port = basePort + i;
+            try {
+                ForecasterWorker w = startWorker(predictorScriptDir, modelPath, port);
+                workers.add(w);
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownAll));
+    }
+     */
+
+    private ForecasterManager(String predictorScriptDir, int workerCount, int basePort, String modelPath) {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
         List<Future<ForecasterWorker>> futures = new ArrayList<>();
         
         for (int i = 0; i < workerCount; i++) {
@@ -57,7 +76,6 @@ public class ForecasterManager {
             }
         }
         executor.shutdown();
-
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownAll));
     }
 
@@ -70,6 +88,7 @@ public class ForecasterManager {
             );
             pb.directory(new File(predictorScriptDir));
             pb.redirectErrorStream(true);
+            pb.environment().put("PYTHONUNBUFFERED", "1");
 
             Process process = pb.start();
 
@@ -86,7 +105,8 @@ public class ForecasterManager {
                         if (line.contains("startup complete")) {
                             readyLatch.countDown();
                         }
-                        System.out.println("\t[forecaster " + port + "] " + line);
+                        SimLogger.logRun("\t[forecaster " + port + "] " + line + " ("
+                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.)");
                     }
                 } catch (IOException e) {
                     if (!shuttingDown) {
@@ -98,7 +118,7 @@ public class ForecasterManager {
             logger.setDaemon(true);
             logger.start();
 
-            boolean success = readyLatch.await(10, TimeUnit.SECONDS);
+            boolean success = readyLatch.await(20, TimeUnit.SECONDS);
             if (!success) {
                 throw new IllegalStateException("Worker on port " + port + " not ready in time");
             }
@@ -132,7 +152,7 @@ public class ForecasterManager {
             p.destroy();
             try {
                 if (!p.waitFor(3, TimeUnit.SECONDS)) {
-                    System.out.println("Worker on port " + w.getPort() + " did not stop in time, destroying forcibly");
+                    System.out.println("Worker on port " + w.getPort() + " did not stop in time, force-destroying..");
                     p.destroyForcibly();
                 }
             } catch (InterruptedException e) {

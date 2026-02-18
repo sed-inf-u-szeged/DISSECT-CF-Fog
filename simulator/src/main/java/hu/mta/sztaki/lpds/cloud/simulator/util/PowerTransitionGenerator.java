@@ -74,18 +74,14 @@ public class PowerTransitionGenerator {
         return new EnumMap<PowerStateKind, Map<String, PowerState>>(Arrays.stream(PowerStateKind.values()).map(kind -> {
             final HashMap<String, PowerState> statemap = new HashMap<>();
             switch (kind) {
-                case host:
+                case host -> {
                     final PowerState hostDefault = new PowerState(idlepower, maxpower - idlepower, LinearConsumptionModel::new);
                     statemap.putAll(PhysicalMachine.StatesOfHighEnergyConsumption.stream().collect(Collectors.toMap(Enum::toString, astate -> hostDefault)));
                     statemap.put(PhysicalMachine.State.OFF.toString(),
                             new PowerState(minpower, 0, ConstantConsumptionModel::new));
-                    break;
-                case network:
-                    putBasicStateBehaviour(statemap, idlepower, maxpower, netDivider);
-                    break;
-                case storage:
-                    putBasicStateBehaviour(statemap, idlepower, maxpower, diskDivider);
-                    break;
+                }
+                case network -> putBasicStateBehaviour(statemap, idlepower, maxpower, netDivider);
+                case storage -> putBasicStateBehaviour(statemap, idlepower, maxpower, diskDivider);
             }
             return Pair.of(kind, statemap);
         }).collect(Collectors.toMap(Pair::getLeft, Pair::getRight)));

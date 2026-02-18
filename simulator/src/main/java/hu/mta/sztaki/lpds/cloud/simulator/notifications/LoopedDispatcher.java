@@ -57,11 +57,8 @@ public class LoopedDispatcher implements EventDispatcherCore {
 	public <T, P> void removeAll(final StateDependentEventHandler<T, P> handler, final List<T> items) {
 		handler.listeners.removeAll(items);
 		switch (handler.listeners.size()) {
-		case 0:
-			handler.eventing = NullDispatcher.instance;
-			break;
-		case 1:
-			handler.eventing = DirectDispatcher.instance;
+			case 0 -> handler.eventing = NullDispatcher.instance;
+			case 1 -> handler.eventing = DirectDispatcher.instance;
 		}
 	}
 }

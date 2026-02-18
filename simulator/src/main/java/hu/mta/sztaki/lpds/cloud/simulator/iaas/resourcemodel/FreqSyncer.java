@@ -30,7 +30,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import static java.util.function.Predicate.not;
 
@@ -270,7 +269,7 @@ public class FreqSyncer extends Timed {
                     initDGMap(newInfluenceGroup);
                     var notClassified = getCompleteDGStream();
                     // Separate the newly identified subgroup into its own
-                    notClassified.filter(rs -> rs.stillInDepGroup).peek(rs -> newInfluenceGroup.get(rs.spreaderType()).add(rs)).collect(Collectors.toList()).forEach(rs ->
+                    notClassified.filter(rs -> rs.stillInDepGroup).peek(rs -> newInfluenceGroup.get(rs.spreaderType()).add(rs)).toList().forEach(rs ->
                             myDepGroup.get(rs.spreaderType()).remove(rs) // remove the new sub group's members from the original
                     );
                     // by this time we have a smaller influence group in the current freq syncer as the new group has some of the old members

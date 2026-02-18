@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent.forecast;
 
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -53,4 +55,3 @@ public class ForecasterWorker {
         }
     }
 }
-

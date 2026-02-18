@@ -85,12 +85,7 @@ public class PowerMeterTest extends IaaSRelatedFoundation {
 		long after = Timed.getFireCount();
 		assertEquals(before, after, "Should not be any events if a meter is not executing");
 		meter.startMeter(aSecond, true);
-		new DeferredEvent(aSecond) {
-			@Override
-			protected void eventAction() {
-				meter.stopMeter();
-			}
-		};
+		DeferredEvent.deferAction(aSecond, meter::stopMeter);
 		Timed.simulateUntilLastEvent();
 		assertEquals(totalIdle * aSecond, meter.getTotalConsumption(), 0.1, "The idle machine's consumption should not depend on the measurement frequency of the meter");
 		assertFalse(meter.isSubscribed());
@@ -246,9 +241,7 @@ public class PowerMeterTest extends IaaSRelatedFoundation {
 							final PhysicalMachine.StateChangeListener localListener = this;
 							// Round 1: keep this event running until round 0
 							// was running.
-							new DeferredEvent((round == 1 ? len[0] - Timed.getFireCount() : 1000)) {
-								@Override
-								protected void eventAction() {
+							DeferredEvent.deferAction(round == 1 ? len[0] - Timed.getFireCount() : 1000, () -> {
 									// We make sure the meter's reading is
 									// updated
 									switch (round) {
@@ -258,9 +251,7 @@ public class PowerMeterTest extends IaaSRelatedFoundation {
 										List<PhysicalMachine> newpmlist = Arrays.asList(dummyPMsCreator(machineCount,
 												coreCount, IaaSServiceTest.dummyPMPerCorePP,
 												IaaSServiceTest.dummyPMMemory));
-										for (PhysicalMachine pm : newpmlist) {
-											pm.subscribeStateChangeEvents(localListener);
-										}
+										newpmlist.forEach(apm -> apm.subscribeStateChangeEvents(localListener));
 										iaas.bulkHostRegistration(newpmlist);
 										break;
 									case 1:
@@ -273,14 +264,11 @@ public class PowerMeterTest extends IaaSRelatedFoundation {
 									default:
 
 									}
-								}
-							};
+								});
 						} else if (counter[0] == machineCount * 2) {
 							// All four machines running, let's wait a little
 							// for some idle consumptions
-							new DeferredEvent(1000) {
-								@Override
-								protected void eventAction() {
+							DeferredEvent.deferAction(1000, () -> {
 									switch (round) {
 									case 1:
 									case 3:
@@ -295,8 +283,7 @@ public class PowerMeterTest extends IaaSRelatedFoundation {
 										meteredResults[1] = myMeter.getTotalConsumption();
 									default:
 									}
-								}
-							};
+								});
 						}
 					}
 				}

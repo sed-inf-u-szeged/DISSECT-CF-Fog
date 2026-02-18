@@ -27,6 +27,7 @@ package hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -116,7 +117,7 @@ public class PowerState {
 	/**
 	 * the list of those objects who are prepared to handle power state changes
 	 */
-	private final ArrayList<PowerCharacteristicsChange> listeners = new ArrayList<>();
+	private final List<PowerCharacteristicsChange> listeners = new ArrayList<>();
 
 	/**
 	 * Allow the creation of a new power state object with initial power state
@@ -183,9 +184,7 @@ public class PowerState {
 	private void notifyCharacteristicsListeners() {
 		final long currentTime = Timed.getFireCount();
 		if (currentTime != pastNotification) {
-			for (PowerCharacteristicsChange l : listeners) {
-				l.prePowerChangeEvent(this);
-			}
+			listeners.forEach(l -> l.prePowerChangeEvent(this));
 			pastNotification = currentTime;
 		}
 	}

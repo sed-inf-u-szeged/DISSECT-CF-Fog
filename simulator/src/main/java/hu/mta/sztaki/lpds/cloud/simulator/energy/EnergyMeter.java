@@ -65,9 +65,8 @@ public abstract class EnergyMeter extends Timed {
 	 *            The meter refresh frequency.
 	 * @param dropPriorReading
 	 *            <ul>
-	 *            <li>False: the totalConsumption values will accumulate from a
-	 *            previous metering session 
-	 *            <li>True: the totalconsumption
+	 *            <it>False: the totalConsumption values will accumulate from a
+	 *            previous metering session <it>True: the totalconsumption
 	 *            values will start from 0 after the completion of this
 	 *            function.
 	 *            </ul>

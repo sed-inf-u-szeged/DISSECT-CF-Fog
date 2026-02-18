@@ -30,7 +30,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.function.Failable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -55,10 +57,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 
 public class IaaSServiceTest extends IaaSRelatedFoundation {
-	ArrayList<IaaSService> services = new ArrayList<>();
+	List<IaaSService> services;
 
 	@BeforeEach
-	public void resetSim() throws Exception {
+	public void resetSim() {
 		services = getNewServiceArray();
 	}
 
@@ -206,25 +208,24 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 		}
 	}
 
-	private ArrayList<VirtualMachine> requestVMs() throws VMManagementException {
-		ArrayList<VirtualMachine> vms = new ArrayList<>();
-		for (IaaSService iaas : services) {
-			vms.add(iaas.requestVM((VirtualAppliance) iaas.repositories.get(0).contents().iterator().next(),
-					iaas.getCapacities(), iaas.repositories.get(0), 1)[0]);
-		}
-		return vms;
+	private Stream<VirtualMachine> requestVMStream() {
+		return Failable.stream(services).map(iaas ->
+				iaas.requestVM((VirtualAppliance) iaas.repositories.get(0).contents().iterator().next(),
+						iaas.getCapacities(), iaas.repositories.get(0), 1)[0]
+		).stream();
 	}
 
-	@Test
+	private List<VirtualMachine> requestVMs() {
+		return requestVMStream().toList();
+	}
+
+		@Test
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
-	public void vmRequestTest() throws VMManagementException {
+	public void vmRequestTest() {
 		constructMinimalIaaS();
-		ArrayList<VirtualMachine> vms = requestVMs();
+		var vms = requestVMs();
 		Timed.simulateUntilLastEvent();
-		int runningvms = 0;
-		for (VirtualMachine vm : vms) {
-			runningvms += vm.getState() == VirtualMachine.State.RUNNING ? 1 : 0;
-		}
+		var runningvms = vms.stream().filter(vm -> vm.getState() == State.RUNNING).count();
 		assertEquals(services.size(), runningvms, "All IaaSs should have a running VM");
 	}
 
@@ -232,7 +233,7 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
 	public void vmTerminateTest() throws VMManagementException {
 		constructMinimalIaaS();
-		ArrayList<VirtualMachine> vms = requestVMs();
+		var vms = requestVMs();
 		Timed.simulateUntilLastEvent();
 		int i = 0;
 		for (IaaSService iaas : services) {
@@ -271,9 +272,9 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 
 	@Test
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
-	public void crossVMFaultyTerminationTest() throws VMManagementException {
+	public void crossVMFaultyTerminationTest() {
 		constructMinimalIaaS();
-		ArrayList<VirtualMachine> vms = requestVMs();
+		List<VirtualMachine> vms = requestVMs();
 		Timed.simulateUntilLastEvent();
 		int i = services.size() - 1;
 		ArrayList<Exception> exs = new ArrayList<>();
@@ -307,9 +308,9 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 
 	@Test
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
-	public void vmListingTest() throws VMManagementException {
+	public void vmListingTest() {
 		constructMinimalIaaS();
-		ArrayList<VirtualMachine> vms = requestVMs();
+		List<VirtualMachine> vms = requestVMs();
 		Timed.simulateUntilLastEvent();
 		ArrayList<VirtualMachine> reportedvms = new ArrayList<>();
 		for (IaaSService iaas : services) {
@@ -320,10 +321,9 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 
 	@Test
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
-	public void vmQueuedListingTest() throws VMManagementException {
+	public void vmQueuedListingTest() {
 		constructMinimalIaaS();
-		ArrayList<VirtualMachine> vms = requestVMs();
-		vms.addAll(requestVMs()); // second unfulfillable vm set
+		ArrayList<VirtualMachine> vms = new ArrayList<>(Stream.concat(requestVMStream(), requestVMStream()).toList()); // second is unfulfillable vm stream
 		Timed.simulateUntilLastEvent();
 		ArrayList<VirtualMachine> reportedvms = new ArrayList<>(vms.size());
 		for (IaaSService iaas : services) {
@@ -459,7 +459,7 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 
 	@Test
 	@Timeout(value = 100, unit = TimeUnit.MILLISECONDS)
-	public void registeringRunningTest() throws VMManagementException {
+	public void registeringRunningTest() {
 		for (IaaSService s : services) {
 			PhysicalMachine pm = dummyPMcreator();
 			pm.turnon();
@@ -467,7 +467,7 @@ public class IaaSServiceTest extends IaaSRelatedFoundation {
 			s.registerRepository(dummyRepoCreator(true));
 			s.registerHost(pm);
 		}
-		ArrayList<VirtualMachine> vms = requestVMs();
+		List<VirtualMachine> vms = requestVMs();
 		Timed.simulateUntilLastEvent();
 		for (int i = 0; i < vms.size(); i++) {
 			IaaSService s = services.get(i);

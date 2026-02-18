@@ -30,6 +30,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,7 @@ public interface VMManager<E, F> {
 	 */
 	class VMManagementException extends Exception {
 
+		@Serial
 		private static final long serialVersionUID = 4420666848803005233L;
 
 		public VMManagementException(final String message) {
@@ -79,6 +81,7 @@ public interface VMManager<E, F> {
 	 * 
 	 */
 	class NoSuchVMException extends VMManagementException {
+		@Serial
 		private static final long serialVersionUID = 777996106319988828L;
 
 		public NoSuchVMException(final String message) {

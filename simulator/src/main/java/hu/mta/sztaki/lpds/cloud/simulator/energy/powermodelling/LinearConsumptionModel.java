@@ -34,7 +34,7 @@ package hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling;
 public class LinearConsumptionModel extends PowerState.ConsumptionModel {
 	@Override
 	protected double evaluateConsumption(final double load) {
-		final PowerState ps=getMyPowerState();
+		var ps=getMyPowerState();
 		return load * ps.getConsumptionRange() + ps.getMinConsumption();
 	}
 }

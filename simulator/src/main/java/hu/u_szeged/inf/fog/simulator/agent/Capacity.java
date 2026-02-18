@@ -1,8 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ public class Capacity {
 
         State state;
 
-        public Resource resource;
+        public Component component;
 
         public double utilisedCpu;
 
@@ -30,17 +30,19 @@ public class Capacity {
 
         public long utilisedStorage;
 
-        String type;
+        boolean leadResource;
 
         public VirtualMachine vm;
 
         public long initTime;
 
-        private Utilisation(Resource resource, State state) {
-            this.resource = resource;
-            this.utilisedCpu = safe(resource.cpu, 0.0);
-            this.utilisedMemory = safe(resource.memory, 0L);
-            this.utilisedStorage = safe(resource.size, 0L);
+        public long endTime; // TODO: for shutdown purposes
+
+        private Utilisation(Component component, State state) {
+            this.component = component;
+            this.utilisedCpu = safe(component.requirements.cpu, 0.0);
+            this.utilisedMemory = safe(component.requirements.memory, 0L);
+            this.utilisedStorage = safe(component.requirements.storage, 0L);
             this.state = state;
         }
 
@@ -50,9 +52,9 @@ public class Capacity {
 
         @Override
         public String toString() {
-            return "Utilisation [state=" + state + ", resource=" + resource.name + ", utilisedCpu=" + utilisedCpu
+            return "Utilisation [state=" + state + ", resource=" + component.id + ", utilisedCpu=" + utilisedCpu
                     + ", utilisedMemory=" + utilisedMemory + ", utilisedStorage=" + utilisedStorage
-                    + ", type=" + type + ", initTime=" + initTime + ", vm=" + vm + "]";
+                    + ", leadResource=" + leadResource + ", initTime=" + initTime + ", vm=" + vm + "]";
         }
     }
 
@@ -74,18 +76,18 @@ public class Capacity {
         this.utilisations = new ArrayList<>();
     }
 
-    public void reserveCapacity(Resource resource) {
-        Utilisation utilisation = new Utilisation(resource, Utilisation.State.RESERVED);
+    public void reserveCapacity(Component component) {
+        Utilisation utilisation = new Utilisation(component, Utilisation.State.RESERVED);
         this.utilisations.add(utilisation);
-        this.cpu -= safe(resource.cpu, 0.0);
-        this.memory -= safe(resource.memory, 0L);
-        this.storage -= safe(resource.size, 0L);
+        this.cpu -= safe(component.requirements.cpu, 0.0);
+        this.memory -= safe(component.requirements.memory, 0L);
+        this.storage -= safe(component.requirements.storage, 0L);
     }
 
-    public void releaseCapacity(Resource resource) {
+    public void releaseCapacity(Component component) {
         List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
         for (Utilisation utilisation : utilisations) {
-            if (utilisation.resource == resource && utilisation.state.equals(Utilisation.State.RESERVED)) {
+            if (utilisation.component == component && utilisation.state.equals(Utilisation.State.RESERVED)) {
                 this.cpu += utilisation.utilisedCpu;
                 this.memory += utilisation.utilisedMemory;
                 this.storage += utilisation.utilisedStorage;
@@ -95,10 +97,10 @@ public class Capacity {
         utilisations.removeAll(utilisationsToBeRemoved);
     }
 
-    public void assignCapacity(Set<Resource> resources, Offer offer) {
-        for (Resource resource : resources) {
+    public void assignCapacity(Set<Component> components, Offer offer) {
+        for (Component component : components) {
             for (Utilisation util : utilisations) {
-                if (util.resource == resource) {
+                if (util.component == component) {
                     util.state = Utilisation.State.ASSIGNED;
                     offer.utilisations.add(Pair.of(this.node, util));
                 }

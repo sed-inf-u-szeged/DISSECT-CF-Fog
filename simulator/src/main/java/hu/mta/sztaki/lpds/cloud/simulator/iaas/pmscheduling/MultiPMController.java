@@ -112,7 +112,7 @@ public class MultiPMController extends SchedulingDependentMachines {
                     parent.sched.getTotalQueued());
             final double fltfix = toSwitchOn.getRequiredCPUs() / (pmsize * 1000);
             currentlyStartingPMs.stream().filter(pm -> !pm.isRunning()).map(PhysicalMachine::getCapacities).forEach(toSwitchOn::subtract);
-            parent.machines.stream().sequential().filter(pm -> PhysicalMachine.ToOfforOff.contains(pm.getState())).takeWhile(p -> toSwitchOn.getRequiredCPUs() > fltfix).forEach(n -> {
+            parent.machines.stream().filter(pm -> PhysicalMachine.ToOfforOff.contains(pm.getState())).takeWhile(p -> toSwitchOn.getRequiredCPUs() > fltfix).forEach(n -> {
                 turnOnSelectedPM(n);
                 toSwitchOn.subtract(n.getCapacities());
             });

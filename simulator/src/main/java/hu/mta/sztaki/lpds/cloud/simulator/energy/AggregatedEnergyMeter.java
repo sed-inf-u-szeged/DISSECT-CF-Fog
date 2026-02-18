@@ -61,7 +61,7 @@ public class AggregatedEnergyMeter extends EnergyMeter {
 	public boolean startMeter(long interval, boolean dropPriorReading) {
 		// Make sure the meteringstarted field is updated correctly.
 		super.startMeter(interval, dropPriorReading);
-		boolean ret=true;
+		var ret=true;
 		if(supervised.stream().anyMatch(s -> !s.startMeter(interval,dropPriorReading))) {
 			// Some meters did not start because they already did some
 			// metering prior to this startmeter request

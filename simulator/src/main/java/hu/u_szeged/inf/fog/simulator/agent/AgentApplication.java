@@ -1,122 +1,119 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
+/**
+ * An application consists of a set of components and global optimization
+ * priorities. The class is mainly a data model intended to be populated from
+ * a JSON application description.
+ */
 public class AgentApplication {
-    
-    static class Component {
-        
-        public String name;
-        public String image; 
-        public String type;
-        
-        public String toString() {
-            return "Component [name=" + name + ", image=" + image + ", type=" + type + "]";
-        }
-    }
-    
-    public static class Resource {
-        
-        public String name;
-        public Double cpu;
-        public Long memory;
-        public Integer instances;
-        public String provider;
-        public String location;
-        public Long size;
-        public Boolean edge;
-        
-        public double getTotalReqCpu() {
-            if (cpu != null) {
-                return cpu * (instances == null ? 1 : instances);
-            }
-            return 1;
-        }
 
-        public String toString() {
-            return "Resource [name=" + name + ", cpu=" + cpu + ", memory=" + memory + ", instances=" + instances
-                    + ", provider=" + provider + ", location=" + location + ", size=" + size + ", edge=" + edge + "]";
-        } 
-    }
+    public String name; 
 
-    static class Mapping {
-        
-        public String component;
-        public String resource;
+    public String type;
 
-        public String toString() {
-            return "Mapping [component=" + component + ", resource=" + resource + "]";
-        }
-    }
+    public double energy;
     
-    public String name;
+    public double price;
+    
+    public double latency;
+    
+    public double bandwidth;
+        
     public List<Component> components;
-    public List<Resource> resources;
-    public List<Mapping> mapping;
-
-    public List<Offer> offers;
-    public int winningOffer;
-    
-    protected int agentsNotifiedCounter;
     
     public double deploymentTime;
-    
-    public double energyPriority;
-    
-    public double pricePriority;
-    
-    public double latencyPriority;
-    
-    public double bandwidthPriority;
-    
-    public HashMap<String, Number> configuration;
-        
-    public static List<AgentApplication> agentApplications = new ArrayList<>();
-    @JsonIgnore
-    public Set<ResourceAgent> networkingAgents;
-    @JsonIgnore
-    public int broadcastCount = 0;
 
-    public AgentApplication() {
-        this.offers = new ArrayList<>();
-        agentApplications.add(this);
-        networkingAgents = new HashSet<>(ResourceAgent.resourceAgents);
-    }
+    public long terminationTime;
+
+    public long submissionTime;
+
+    public int broadcastCount;
+    
+    public Set<ResourceAgent> offerGeneratingAgents;
+    
+    public int activeBroadcastingMessages;
+    
+    public List<Offer> offers = new ArrayList<>();
+    
+    public int winningOffer;
+
+    /**
+     * Represents a single component of an application.
+     */
+    public static class Component {
         
-    public String toString() {
-        return "AgentApplication [name=" + name + ", components=" + components + ", resources=" + resources
-                + ", mapping=" + mapping + "]";
+        public String id;
+        
+        public ComponentRequirements requirements;
+        
+        public ComponentProperties properties;
+
+        @Override
+        public String toString() {
+            return "Component [id=" + id + ", requirements=" + requirements + ", properties=" + properties + "]";
+        }
     }
-    
+
+    /**
+     * Defines resource requirements of a component.
+     */
+    public static class ComponentRequirements {
+        
+        public Double cpu;
+        
+        public Long memory;
+        
+        public Long storage;
+        
+        public String location;
+        
+        public String provider;
+        
+        public Boolean edge;
+
+        @Override
+        public String toString() {
+            return "ComponentRequirements [cpu=" + cpu + ", memory=" + memory + ", storage=" + storage + ", location="
+                    + location + ", provider=" + provider + ", edge=" + edge + "]";
+        }
+    }
+
+    /**
+     * Defines application-specific properties of a component.
+     */
+    public static class ComponentProperties {
+        
+        public String kind;
+
+        public Long image;
+        
+        public Boolean inside;
+        
+        public Boolean sun;
+
+        @Override
+        public String toString() {
+            return "ComponentProperties [kind=" + kind + ", image=" + image + ", inside=" + inside + ", sun=" + sun
+                    + "]";
+        }
+    }
+
+    /**
+     * Prefixes component ids with the application name to ensure uniqueness.
+     */
     public void reName() {
-        for (Component c : this.components) {
-            c.name = this.name + "-" + c.name;
-        }
-        for (Resource r : this.resources) {
-            r.name = this.name + "-" + r.name;
-        }
-        for (Mapping m : this.mapping) {
-            m.resource = this.name + "-" + m.resource;
-            m.component = this.name + "-" + m.component;
+        for (Component component : components) {
+            component.id = name + "-" + component.properties.kind + "-" + component.id;
         }
     }
-    
-    public String getComponentName(String resource) {
-        for (Mapping m : this.mapping) {
-            if (m.resource.equals(resource)) {
-                return m.component;
-            }
-        }
-        return null;
-    }
-    
-    public Component getComponent(String name) {
-        for (Component component : this.components) {
-            if (component.name.equals(name)) {
-                return component;
-            }
-        }
-        return null;
+
+    @Override
+    public String toString() {
+        return "AgentApplication [name=" + name + ", energy=" + energy + ", price=" + price + ", latency=" + latency
+                + ", bandwidth=" + bandwidth + ", components=" + components + "]";
     }
 }

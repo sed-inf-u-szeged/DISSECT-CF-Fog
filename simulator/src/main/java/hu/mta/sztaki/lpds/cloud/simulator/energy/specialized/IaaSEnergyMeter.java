@@ -32,7 +32,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.ResourceConstraints;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,16 +85,16 @@ public class IaaSEnergyMeter extends AggregatedEnergyMeter implements VMManager.
 	 */
 	@Override
 	public void capacityChanged(ResourceConstraints newCapacity, List<PhysicalMachine> affectedCapacity) {
-		long freq = -1;
+		var freq = -1L;
 		if (isSubscribed()) {
 			freq = getFrequency();
 			stopMeter();
 		}
 		if (newCapacity.compareTo(oldCapacity) < 0) {
 			// Decreased
-			Iterator<? extends EnergyMeter> meters = supervised.iterator();
+			var meters = supervised.iterator();
 			while (meters.hasNext()) {
-				PhysicalMachineEnergyMeter m = (PhysicalMachineEnergyMeter) meters.next();
+				var m = (PhysicalMachineEnergyMeter) meters.next();
 				if (affectedCapacity.remove(m.getObserved())) {
 					meters.remove();
 				}

@@ -46,11 +46,13 @@ public class StorageObject {
 	 */
 	public final String id;
 	/**
-	 * The actual size of the object.
+	 * The actual size of the object. This is immutable, if a storage object
+	 * needs to increase in size in a repository, it is recommended to replace
+	 * it with a bigger one while holding the same name.
 	 * 
 	 * unit: bytes
 	 */
-	public long size; // TODO: set back to final
+	public final long size;
 
 	/**
 	 * Allows the creation of the storage object with unknown size (the
@@ -97,14 +99,6 @@ public class StorageObject {
 	 */
 	public StorageObject newCopy(final String myid) {
 		return new StorageObject(myid, size, false);
-	}
-
-	/**
-	 * Setter for size of object
-	 * @param size
-	 */
-	public void setSize(long size) {
-		this.size = size;
 	}
 
 	/**

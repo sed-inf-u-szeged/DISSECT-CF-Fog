@@ -24,10 +24,11 @@
 package hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.pmiterators;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * The user of the iterator will not know the order in which the PMs are
@@ -48,7 +49,7 @@ public class RandomIterator extends PMIterator {
 	/**
 	 * The actual order of the indexes used when returning the next PM
 	 */
-	private int[] randomIndexes = new int[0];
+	private List<Integer> randomIndexes = new ArrayList<>();
 
 	/**
 	 * The constructor of the random iterator just passes the pm list to its
@@ -69,21 +70,19 @@ public class RandomIterator extends PMIterator {
 	public void reset() {
 		super.reset();
 		resetCounter++;
-		if (maxIndex != randomIndexes.length || resetCounter % 10000 == 0) {
-			randomIndexes = new int[maxIndex];
-			final boolean[] usedidxs=new boolean[maxIndex];
-			Arrays.fill(usedidxs,false);
-			for (int i = 0; i < maxIndex; i++) {
-				do {
-					randomIndexes[i]=SeedSyncer.centralRnd.nextInt(maxIndex);
-				} while(usedidxs[randomIndexes[i]]);
-				usedidxs[randomIndexes[i]]=true;
-			}
+		var doShuffle = resetCounter % 10000 == 0;
+		if (maxIndex != randomIndexes.size()) {
+			randomIndexes.clear();
+			IntStream.range(0, maxIndex).forEach(randomIndexes::add);
+			doShuffle = true;
+		}
+		if (doShuffle) {
+			Collections.shuffle(randomIndexes);
 		}
 	}
 
 	@Override
 	public PhysicalMachine next() {
-		return pmList.get(randomIndexes[index++]);
+		return pmList.get(randomIndexes.get(index++));
 	}
 }
