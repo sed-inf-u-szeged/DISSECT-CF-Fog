@@ -10,7 +10,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.List;
@@ -28,7 +27,7 @@ public class Config {
                     Map.entry("rankingMethod", "random")
             );
 
-    public static final Map<String, Object> NOISE_CLASS_ONFIGURATION =
+    public static final Map<String, Object> NOISE_CLASS_CONFIGURATION =
             Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)),
@@ -72,7 +71,7 @@ public class Config {
             );
 
     //public static final Map<String, Object> APP_TYPE = DUMMY_CONFIGURATION;
-    public static final Map<String, Object> APP_TYPE = NOISE_CLASS_ONFIGURATION;
+    public static final Map<String, Object> APP_TYPE = NOISE_CLASS_CONFIGURATION;
     
     public static IaaSService createNode(String name, double cpu, long memory, long storage,
                                          double minpower, double idlepower, double maxpower,

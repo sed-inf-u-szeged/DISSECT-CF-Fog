@@ -8,7 +8,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
-import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
@@ -21,9 +20,6 @@ import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
-
-import static hu.u_szeged.inf.fog.simulator.agent.demo.Config.DUMMY_CONFIGURATION;
-import static hu.u_szeged.inf.fog.simulator.agent.demo.Config.NOISE_CLASS_ONFIGURATION;
 
 public class Deployment extends Timed {
 
@@ -118,9 +114,9 @@ public class Deployment extends Timed {
             }
         } else if (app.type.equals("noise-classification")) {
             GreedyNoiseSwarmAgent sa = null;
-            if(Config.NOISE_CLASS_ONFIGURATION.get("swarmAgentType").equals("greedy")) {
+            if(Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("greedy")) {
                 sa = new GreedyNoiseSwarmAgent(app);
-            } else if (Config.NOISE_CLASS_ONFIGURATION.get("swarmAgentType").equals("forecast")){
+            } else if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("forecast")){
                 sa = new ForecastBasedSwarmAgent(app);
             } else {
                 SimLogger.logError("This type of SA is unfamiliar in the application");
@@ -138,7 +134,7 @@ public class Deployment extends Timed {
                     SimLogger.logError("This type of component is unfamiliar in the application");
                 }
             }
-            sa.startNecesseryServices((int) Config.NOISE_CLASS_ONFIGURATION.get("minContainerCount"));
+            sa.startNecesseryServices((int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount"));
         } else {
             SimLogger.logError("Unknown application type to deploy: " + Config.APP_TYPE);
         }

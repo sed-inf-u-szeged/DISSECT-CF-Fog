@@ -13,7 +13,6 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.Sun;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
-import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.DirectMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
@@ -45,9 +44,9 @@ public class NoiseClassDemo {
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
         /* Forecaster */
-        if (Config.NOISE_CLASS_ONFIGURATION.get("swarmAgentType").equals("forecast")) {
-            ForecasterManager.getInstance((String) Config.NOISE_CLASS_ONFIGURATION.get("predictorDir"),
-                    4, 1337, (String) Config.NOISE_CLASS_ONFIGURATION.get("predictorModelPath"));
+        if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("forecast")) {
+            ForecasterManager.getInstance((String) Config.NOISE_CLASS_CONFIGURATION.get("predictorDir"),
+                    4, 1337, (String) Config.NOISE_CLASS_CONFIGURATION.get("predictorModelPath"));
         }
 
         /* image service config */
@@ -58,7 +57,7 @@ public class NoiseClassDemo {
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)));
 
         /* RPi config */
-        List<Integer> delays = (List<Integer>) Config.NOISE_CLASS_ONFIGURATION.get("submissionDelay");
+        List<Integer> delays = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
         for (int i = 1; i <= delays.size(); i++) {
             ComputingAppliance rpi1 = new ComputingAppliance(
                 Config.createNode("RPi1" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
@@ -208,7 +207,7 @@ public class NoiseClassDemo {
         ra5.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         /* app submission */
-        List<Path> appDescriptionFiles = Files.list((Path) Config.NOISE_CLASS_ONFIGURATION.get("inputDir"))
+        List<Path> appDescriptionFiles = Files.list((Path) Config.NOISE_CLASS_CONFIGURATION.get("inputDir"))
                 .filter(f -> f.toString().endsWith(".json"))
                 .toList();
 
@@ -315,7 +314,7 @@ public class NoiseClassDemo {
                     }
                 }
             }
-            soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_ONFIGURATION.get("resFileSize");
+            soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize");
             totalGeneratedFiles += sa.totalGeneratedFiles;
         }
 
@@ -335,7 +334,7 @@ public class NoiseClassDemo {
 
         SimLogger.logRes("Total energy (kWh): " + totalEnergy);
 
-        SimLogger.logRes("Size of generated files (MB): " + totalGeneratedFiles * (long) Config.NOISE_CLASS_ONFIGURATION.get("soundFileSize") / ScenarioBase.MB_IN_BYTE);
+        SimLogger.logRes("Size of generated files (MB): " + totalGeneratedFiles * (long) Config.NOISE_CLASS_CONFIGURATION.get("soundFileSize") / ScenarioBase.MB_IN_BYTE);
         SimLogger.logRes("Number of sound events (pc.): " + totalGeneratedFiles);
 
         SimLogger.logRes("Number of offloaded sound events (pc.): " + NoiseSensor.totalOffloadedFiles);
@@ -346,7 +345,7 @@ public class NoiseClassDemo {
 
         SimLogger.logRes("Average end-to-end latency (sec.): " + RemoteServer.totalEndToEndLatency / soundFilesOnRemoteServers / 1000.0);
         SimLogger.logRes("Time below the temperature threshold (%): " + calculateTimeBelowThrottling(
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorTemperaturePath, (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuTempTreshold")));
+                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorTemperaturePath, (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")));
     }
 
     private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {

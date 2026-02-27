@@ -32,20 +32,23 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
     private int currentClassifierIndex;
 
+    /**
+     * window with CPU loads for downscaling
+     */
     final Deque<CpuTemperatureSample> cpuTemperatureSamples = new ArrayDeque<>();
 
     NoiseAppCsvExporter noiseAppCsvExporter;
 
     public GreedyNoiseSwarmAgent(AgentApplication app) {
         super(app);
-        subscribe((long) Config.NOISE_CLASS_ONFIGURATION.get("samplingFreq") * 6); // every 1 min.
-        if ((boolean) Config.NOISE_CLASS_ONFIGURATION.get("csvLogging")) {
+        subscribe((long) Config.NOISE_CLASS_CONFIGURATION.get("samplingFreq") * 6); // every 1 min.
+        if ((boolean) Config.NOISE_CLASS_CONFIGURATION.get("csvLogging")) {
             this.noiseAppCsvExporter = new NoiseAppCsvExporter(this);
         }
     }
 
     public void shutdown(long fires) {
-        if ((app.submissionTime + (long) Config.NOISE_CLASS_ONFIGURATION.get("simLength")) < fires) {
+        if ((app.submissionTime + (long) Config.NOISE_CLASS_CONFIGURATION.get("simLength")) < fires) {
             if(totalGeneratedFiles == this.filesSentToDatabase){
                 for(Object component : this.observedAppComponents){
                     if(component instanceof NoiseSensor ns){
@@ -60,7 +63,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 // TODO: release capacities
             }
 
-            if (shutdownCounter == ((List<Integer>) Config.NOISE_CLASS_ONFIGURATION.get("submissionDelay")).size()){
+            if (shutdownCounter == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()){
                 for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                     edc.stop();
                 }
@@ -112,7 +115,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 double load = 0.0;
                 if (ns.processedFilesLastMinute > 0) {
                     double lengthOfProcessing =
-                            (double) Config.NOISE_CLASS_ONFIGURATION.get("lengthOfProcessing");
+                            (double) Config.NOISE_CLASS_CONFIGURATION.get("lengthOfProcessing");
 
                     load = Math.min(
                             100.0 * (ns.processedFilesLastMinute * lengthOfProcessing) / this.getFrequency(),
@@ -149,7 +152,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
             if (o instanceof NoiseSensor ns) {
                 if (minSearch) {
                     if (ns.cpuTemperature < min && !this.noiseSensorsWithClassifier.contains(ns)
-                            && ns.cpuTemperature < (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuTempTreshold")) {
+                            && ns.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")) {
                         best = ns;
                         min = ns.cpuTemperature;
                     }
@@ -170,7 +173,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         }
 
         long elapsed = Timed.getFireCount() - cpuTemperatureSamples.peekFirst().timestamp;
-        if (elapsed < (long) Config.NOISE_CLASS_ONFIGURATION.get("cpuTimeWindow")) {
+        if (elapsed < (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow")) {
             return Double.MAX_VALUE;
         }
 
@@ -183,23 +186,23 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
     }
 
     void scale(double avgCpuLoad) {
-        if (noiseSensorsWithClassifier.size() < (int) Config.NOISE_CLASS_ONFIGURATION.get("minContainerCount")) {
+        if (noiseSensorsWithClassifier.size() < (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount")) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to minimum requirement");
                 noiseSensorsWithClassifier.add(ns);
             }
-        } else if (avgCpuLoad > (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuLoadScaleUp")) {
+        } else if (avgCpuLoad > (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp")) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to large load");
                 noiseSensorsWithClassifier.add(ns);
             }
-        } else if (getAverageClassifierCpuLoadOverWindow() < (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuLoadScaleDown")) {
+        } else if (getAverageClassifierCpuLoadOverWindow() < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleDown")) {
             NoiseSensor ns = findSensorByCpuTemperature(false);
-            if (ns != null && noiseSensorsWithClassifier.size() > (int) Config.NOISE_CLASS_ONFIGURATION.get("minContainerCount")) {
+            if (ns != null && noiseSensorsWithClassifier.size() > (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount")) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was turned off at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS  + " min. due to small load");
                 noiseSensorsWithClassifier.remove(ns);

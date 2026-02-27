@@ -67,7 +67,7 @@ public class NoiseSensor extends Timed {
             @Override
             protected void eventAction() {
                 remoteServer = findRemoteServer();
-                subscribe((long) Config.NOISE_CLASS_ONFIGURATION.get("samplingFreq"));
+                subscribe((long) Config.NOISE_CLASS_CONFIGURATION.get("samplingFreq"));
             }
         };
     }
@@ -76,9 +76,9 @@ public class NoiseSensor extends Timed {
     public void tick(long fires) {
         this.adjustTemperatureByEnv();
 
-        if ((swarmAgent.app.submissionTime + (long) Config.NOISE_CLASS_ONFIGURATION.get("simLength")) > fires) {
+        if ((swarmAgent.app.submissionTime + (long) Config.NOISE_CLASS_CONFIGURATION.get("simLength")) > fires) {
             String filename = Timed.getFireCount() + "-" + util.component.id;
-            long fileSize = (long) Config.NOISE_CLASS_ONFIGURATION.get("soundFileSize");
+            long fileSize = (long) Config.NOISE_CLASS_CONFIGURATION.get("soundFileSize");
             StorageObject so = new StorageObject(filename, fileSize, false);
             RemoteServer.networkTimePerFile.put(filename, Timed.getFireCount());
 
@@ -86,14 +86,14 @@ public class NoiseSensor extends Timed {
             pm.localDisk.registerObject(so);
 
             int soundValue;
-            if (Config.NOISE_CLASS_ONFIGURATION.get("samplingStrategy").equals("lazy")){
+            if (Config.NOISE_CLASS_CONFIGURATION.get("samplingStrategy").equals("lazy")){
                 soundValue = lazySoundValue();
             } else {
                 soundValue = randomSoundValue();
             }
             swarmAgent.totalGeneratedFiles++;
 
-            if (soundValue > (int) Config.NOISE_CLASS_ONFIGURATION.get("soundThreshold")) {
+            if (soundValue > (int) Config.NOISE_CLASS_CONFIGURATION.get("soundThreshold")) {
                 totalSoundEventsToProcess++;
                 this.filesToProcess.add(so);
             } else {
@@ -112,7 +112,7 @@ public class NoiseSensor extends Timed {
     private void offload() {
         PhysicalMachine pm = this.util.vm.getResourceAllocation().getHost();
 
-        int limit = (int) Config.NOISE_CLASS_ONFIGURATION.get("offloadLimitPerIteration");
+        int limit = (int) Config.NOISE_CLASS_CONFIGURATION.get("offloadLimitPerIteration");
         for (int i = 0; i < limit; i++) {
             StorageObject so = filesToProcess.poll();
             if (so == null) {
@@ -152,7 +152,7 @@ public class NoiseSensor extends Timed {
 
     private void sendResultToDatabase(Repository from, Repository to, StorageObject so) {
         from.deregisterObject(so);
-        StorageObject resFile = new StorageObject(so.id, (long) Config.NOISE_CLASS_ONFIGURATION.get("resFileSize"), false);
+        StorageObject resFile = new StorageObject(so.id, (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize"), false);
         from.registerObject(resFile);
 
         try {
@@ -178,8 +178,8 @@ public class NoiseSensor extends Timed {
     private void adjustTemperatureByEnv() {
         final double sun = Sun.getInstance().getSunStrength();
 
-        final double minCpuTemp = (double) Config.NOISE_CLASS_ONFIGURATION.get("minCpuTemp");
-        final double maxCpuTemp = (double) Config.NOISE_CLASS_ONFIGURATION.get("maxCpuTemp");
+        final double minCpuTemp = (double) Config.NOISE_CLASS_CONFIGURATION.get("minCpuTemp");
+        final double maxCpuTemp = (double) Config.NOISE_CLASS_CONFIGURATION.get("maxCpuTemp");
 
         // base active cooling 
         double delta = (minCpuTemp - cpuTemperature) * 0.02;
@@ -211,14 +211,14 @@ public class NoiseSensor extends Timed {
     
     private void runSoundClassification() {
        
-        if (this.cpuTemperature < (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuTempTreshold") && !this.filesToProcess.isEmpty()) {
+        if (this.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold") && !this.filesToProcess.isEmpty()) {
             StorageObject so = filesToProcess.poll();
 
-            double delta = ((double) Config.NOISE_CLASS_ONFIGURATION.get("maxCpuTemp") - cpuTemperature) * 0.016;
+            double delta = ((double) Config.NOISE_CLASS_CONFIGURATION.get("maxCpuTemp") - cpuTemperature) * 0.016;
             cpuTemperature += delta;
            
             try {
-                this.util.vm.newComputeTask((double) Config.NOISE_CLASS_ONFIGURATION.get("lengthOfProcessing") * util.utilisedCpu,
+                this.util.vm.newComputeTask((double) Config.NOISE_CLASS_CONFIGURATION.get("lengthOfProcessing") * util.utilisedCpu,
                         ResourceConsumption.unlimitedProcessing, 
                            new ConsumptionEventAdapter() {
                                             
@@ -236,7 +236,7 @@ public class NoiseSensor extends Timed {
             } catch (NetworkException e) {
                 SimLogger.logError("Sound classification of file " + so.id + " failed: " + e);
             } 
-        } else if (cpuTemperature >= (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuTempTreshold") &&
+        } else if (cpuTemperature >= (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold") &&
                 this.swarmAgent.noiseSensorsWithClassifier.contains(this)) {
             SimLogger.logRun(util.component.id + "'classifier was turned off at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to high temperature");
@@ -246,15 +246,15 @@ public class NoiseSensor extends Timed {
 
     private int randomSoundValue() {
         this.prevSoundValue = SeedSyncer.centralRnd.nextInt(
-                (int) Config.NOISE_CLASS_ONFIGURATION.get("maxSoundLevel")
-            - (int) Config.NOISE_CLASS_ONFIGURATION.get("minSoundLevel") + 1)
-            + (int) Config.NOISE_CLASS_ONFIGURATION.get("minSoundLevel");
+                (int) Config.NOISE_CLASS_CONFIGURATION.get("maxSoundLevel")
+            - (int) Config.NOISE_CLASS_CONFIGURATION.get("minSoundLevel") + 1)
+            + (int) Config.NOISE_CLASS_CONFIGURATION.get("minSoundLevel");
         return prevSoundValue;
     }
     
     private int lazySoundValue() {
-        int min = (int) Config.NOISE_CLASS_ONFIGURATION.get("minSoundLevel");
-        int max = (int) Config.NOISE_CLASS_ONFIGURATION.get("maxSoundLevel");
+        int min = (int) Config.NOISE_CLASS_CONFIGURATION.get("minSoundLevel");
+        int max = (int) Config.NOISE_CLASS_CONFIGURATION.get("maxSoundLevel");
 
         if (prevSoundValue == -1) {
             prevSoundValue = min + SeedSyncer.centralRnd.nextInt(max - min + 1);

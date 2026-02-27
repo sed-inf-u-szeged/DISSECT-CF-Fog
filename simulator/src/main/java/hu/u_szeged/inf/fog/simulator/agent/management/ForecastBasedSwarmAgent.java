@@ -23,7 +23,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
     private int triggerPrediction;
 
-    private Map<String, List<Double>> lastPredictions = new HashMap<>();
+    private final Map<String, List<Double>> lastPredictions = new HashMap<>();
 
     private long lastScalingActionMinute = -1;
 
@@ -40,7 +40,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         cpuTemperatureSamples.addLast(new CpuTemperatureSample(fires, noiseSensorCpuLoads.getRight()));
 
         // TODO: remove hardcoded values
-        if (triggerPrediction % 30 == 0 && windows.values().stream().anyMatch(w -> w.size() == 128)) {
+        if (triggerPrediction % 30 == 0 && windows.values().stream().allMatch(w -> w.size() == 128)) {
             Map<String, String> filesForPredictions = null;
 
             filesForPredictions = writeWindowToCsv(ScenarioBase.RESULT_DIRECTORY);
@@ -68,152 +68,171 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
             this.noiseAppCsvExporter.log(this, noiseSensorCpuLoads);
         }
 
+        if (!lastPredictions.isEmpty()) {
+            for (List<Double> entry : lastPredictions.values()) {
+                entry.remove(0);
+            }
+        }
+
         shutdown(fires);
     }
 
     public void scale(double avgCpuLoad) {
         long nowMinute = (long) (Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS);
-        if (lastScalingActionMinute >= 0 && nowMinute - lastScalingActionMinute < 3) { // TODO: remove hardcoded value
+        long cooldown = (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow") / ScenarioBase.MINUTE_IN_MILLISECONDS;
+        if (lastScalingActionMinute >= 0 && nowMinute - lastScalingActionMinute < cooldown) {
             return;
         }
 
-        int minContainerCount = (int) Config.NOISE_CLASS_ONFIGURATION.get("minContainerCount");
-        double cpuLoadScaleUp = (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuLoadScaleUp");
-        double cpuLoadScaleDown = (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuLoadScaleDown");
+        int minContainerCount = (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount");
+        double cpuLoadScaleUp = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp");
+        double cpuLoadScaleDown = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleDown");
 
-        // A) Minimum requirement: always keep at least minContainerCount
+        final Map<String, Double> tmaxCache = !lastPredictions.isEmpty() ? buildTmaxCache() : null;
+
+        // minimum requirement: always keep at least minContainerCount
         if (noiseSensorsWithClassifier.size() < minContainerCount) {
-            NoiseSensor ns = selectSensorToStartClassifier();
+            NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to minimum requirement");
+
                 noiseSensorsWithClassifier.add(ns);
+                lastScalingActionMinute = nowMinute;
+
             }
             return;
         }
 
-        // B) Predictive thermal scaling: if any running classifier is HOT, start 1 more on a SAFE node
-        if (hasUsablePredictions() && hasHotRunningClassifier()) {
-            NoiseSensor ns = selectSensorToStartClassifier();
+        // predictive scaling: if any running classifier is HOT, start 1 more on a SAFE node
+        if (!lastPredictions.isEmpty() && hasHotRunningClassifier(tmaxCache)) {
+            NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to predicted thermal risk (next 1 hour)");
+                        + " min. due to predicted thermal risk (in the next 1 hour)");
                 noiseSensorsWithClassifier.add(ns);
+                lastScalingActionMinute = nowMinute;
             }
             return;
         }
 
-        // C) (Optional) Keep your old load-based scale-up trigger, but place on predicted SAFE node
+        // Keep the load-based scale-up trigger, but place on predicted SAFE node
         if (avgCpuLoad > cpuLoadScaleUp) {
-            NoiseSensor ns = selectSensorToStartClassifier();
+            NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to large load");
                 noiseSensorsWithClassifier.add(ns);
+                lastScalingActionMinute = nowMinute;
             }
             return;
         }
 
-        // D) Downscale (conservative):
+        // downscale
         // only if (1) above minimum, (2) low load over window, (3) no HOT running classifier
         if (noiseSensorsWithClassifier.size() > minContainerCount
-                && getAverageClassifierCpuLoadOverWindow() < cpuLoadScaleDown
-                && !hasHotRunningClassifier()) {
+                && getAverageClassifierCpuLoadOverWindow() < cpuLoadScaleDown) {
 
-            NoiseSensor ns = selectSensorToStopClassifier();
+            NoiseSensor ns = selectSensorToStopClassifier(tmaxCache);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was turned off at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to small load (and no predicted thermal risk)");
+                        + " min. due to small load");
                 noiseSensorsWithClassifier.remove(ns);
+                // record the time of this scaling action
+                lastScalingActionMinute = nowMinute;
             }
         }
     }
 
-    private boolean hasUsablePredictions() {
-        return !lastPredictions.isEmpty()
-                && lastPredictions.values().stream().anyMatch(v -> v != null && v.size() >= 60);
-    }
+    private NoiseSensor selectSensorToStartClassifier(Map<String, Double> tmaxCache) {
+        NoiseSensor bestSafe = null;         // threshold alatt ÉS tmax <= 78
+        double bestSafeCurrent = Double.MAX_VALUE;
+        double bestSafeTmax = Double.MAX_VALUE; // tie-breakernek
 
-    private NoiseSensor selectSensorToStartClassifier() {
-        NoiseSensor best = null;
-        double bestTmax = Double.POSITIVE_INFINITY;
+        NoiseSensor coldest = null;          // threshold alatti abszolút leghidegebb (fallback)
+        double coldestCurrent = Double.MAX_VALUE;
+
+        double cpuTempThreshold = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold");
+        double safeTmax = 78.0;
 
         for (Object object : observedAppComponents) {
-            if (object instanceof NoiseSensor sensor){
-                if (noiseSensorsWithClassifier.contains(sensor)) continue;
+            if (!(object instanceof NoiseSensor sensor)) continue;
+            if (noiseSensorsWithClassifier.contains(sensor)) continue;
 
-                if (!isSafeForScaleOut(sensor)) continue;
+            double current = sensor.cpuTemperature;
 
-                String deviceId = sensor.util.component.id;
-                Double tmax = getMaxPredictedCpuTempNextHour(deviceId);
+            // threshold felett nem indítunk
+            if (current >= cpuTempThreshold) {
+                continue;
+            }
 
-                if (tmax < bestTmax) {
-                    bestTmax = tmax;
-                    best = sensor;
+            // 1) Mindig frissítjük a threshold alatti leghidegebbet (fallback)
+            if (current < coldestCurrent) {
+                coldestCurrent = current;
+                coldest = sensor;
+            }
+
+            // 2) Ha van predikció, nézzük a safe jövőt is
+            if (tmaxCache != null) {
+                double tmax = tmaxCache.get(sensor.util.component.id);
+
+                if (tmax <= safeTmax) {
+                    // itt választhatsz policy-t:
+                    // a) leghidegebb most nyer, tmax csak tie-break
+                    if (current < bestSafeCurrent || (current == bestSafeCurrent && tmax < bestSafeTmax)) {
+                        bestSafeCurrent = current;
+                        bestSafeTmax = tmax;
+                        bestSafe = sensor;
+                    }
+
+                    // (ha inkább a legalacsonyabb tmax a fő, csak cseréld meg a feltételt)
                 }
             }
         }
 
-        if (best == null) {
-            best = findSensorByCpuTemperature(true);
-        }
-
-        return best;
+        // ha van predikcióval is safe, az az elsődleges, különben a fallback
+        return (bestSafe != null) ? bestSafe : coldest;
     }
 
-    private NoiseSensor selectSensorToStopClassifier() {
+    private NoiseSensor selectSensorToStopClassifier(Map<String, Double> tmaxCache) {
+        if (lastPredictions.isEmpty()) {
+            return findSensorByCpuTemperature(false);
+        }
+
         NoiseSensor worst = null;
-        double worstTmax = Double.NEGATIVE_INFINITY;
+        double worstTmax = Double.MIN_VALUE;
 
         for (NoiseSensor sensor : noiseSensorsWithClassifier) {
-            Double tmax = getMaxPredictedCpuTempNextHour(sensor.util.component.id);
+            Double tmax = tmaxCache.get(sensor.util.component.id);
             if (tmax > worstTmax) {
                 worstTmax = tmax;
                 worst = sensor;
             }
         }
 
-        if (worst == null) {
-            worst = findSensorByCpuTemperature(false);
-        }
-
         return worst;
     }
 
-    private boolean isHot(NoiseSensor sensor) {
-        Double maxTempNextHour = getMaxPredictedCpuTempNextHour(sensor.util.component.id);
-        return maxTempNextHour >= 78.0; // TODO: remove hardcoded value
-    }
-
-    private boolean hasHotRunningClassifier() {
-        for (NoiseSensor sensor : noiseSensorsWithClassifier) {
-            if (isHot(sensor)) {
-                return true;
+    private boolean hasHotRunningClassifier(Map<String, Double> tmaxCache) {
+        if(!lastPredictions.isEmpty()){
+            for (NoiseSensor sensor : noiseSensorsWithClassifier) {
+                double maxTempNextHour = tmaxCache.get(sensor.util.component.id);
+                if (maxTempNextHour >= 78.0) { // TODO: remove hardcoded value
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    private boolean isSafeForScaleOut(NoiseSensor sensor) {
-        Double maxTempNextHour = getMaxPredictedCpuTempNextHour(sensor.util.component.id);
-        return maxTempNextHour < 78.0;
-    }
-
     private double getMaxPredictedCpuTempNextHour(String deviceId) {
-        if (deviceId == null) {
-            return Double.POSITIVE_INFINITY;
-        }
-
         List<Double> prediction = lastPredictions.get(deviceId);
-        if (prediction == null || prediction.size() < 60) {
-            return Double.POSITIVE_INFINITY;
-        }
 
-        double max = Double.NEGATIVE_INFINITY;
+        double max = Double.MIN_VALUE;
         for (int i = 0; i < 60; i++) {
             Double value = prediction.get(i);
             if (value != null && value > max) {
@@ -221,11 +240,28 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
             }
         }
 
-        if (max == Double.NEGATIVE_INFINITY) {
-            return Double.POSITIVE_INFINITY;
+        return max;
+    }
+
+    private Map<String, Double> buildTmaxCache() {
+        Map<String, Double> tmax = new HashMap<>();
+
+        // futó classifier-ek
+        for (NoiseSensor s : noiseSensorsWithClassifier) {
+            tmax.put(s.util.component.id, getMaxPredictedCpuTempNextHour(s.util.component.id));
         }
 
-        return max;
+        // jelöltek indításhoz (observedAppComponents-ből)
+        for (Object o : observedAppComponents) {
+            if (o instanceof NoiseSensor s) {
+                // csak akkor kell, ha nem fut rajta classifier
+                if (!noiseSensorsWithClassifier.contains(s)) {
+                    tmax.putIfAbsent(s.util.component.id, getMaxPredictedCpuTempNextHour(s.util.component.id));
+                }
+            }
+        }
+
+        return tmax;
     }
 
     public Map<String, List<Double>> loadPredictions(Map<String, String> filesWithPredictions) {

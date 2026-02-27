@@ -192,7 +192,7 @@ public class NoiseAppCsvExporter implements Closeable {
                 sumOfCpuTemperatures += ns.cpuTemperature;
                 totalSensors++;
 
-                if (ns.cpuTemperature < (double) Config.NOISE_CLASS_ONFIGURATION.get("cpuTempTreshold")) {
+                if (ns.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")) {
                     availableSensors++;
                 }
 
