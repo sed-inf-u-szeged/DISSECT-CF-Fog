@@ -1,0 +1,39 @@
+title: DISSECT-CF-Fog Tutorial
+description: "This site contains an introductory tutorial for the DISSECT-CF-Fog Simulator, a walkthrough its demos — showcasing how to use the simulator on a basic level."
+theme: just-the-docs
+
+favicon_ico: "/assets/images/dcf-logo-min.png"
+
+url: "https://sed-inf-u-szeged.github.io"
+baseurl: "/DISSECT-CF-Fog"
+
+aux_links:
+  "DISSECT-CF-Fog on GitHub": "https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog"
+
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+
+# Footer Content, could have other footer things, currently I have nothing else (if need it can be done with footer_content: "" after the back to the top key/tag)
+# Back to top link
+back_to_top: true
+back_to_top_text: "Back to top"
+
+callouts:
+  highlight:
+    color: yellow
+  important:
+    title: Important
+    color: blue
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: red
