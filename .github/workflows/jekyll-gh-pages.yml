@@ -1,4 +1,4 @@
-name: Build and deploy Jekyll site from gh-pages
+name: Build and Deploy Jekyll (gh-pages source)
 
 on:
   push:
@@ -24,14 +24,17 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          source: ./
-          destination: ./_site
+          ruby-version: "3.1"
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Build site
+        run: bundle exec jekyll build -d _site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -41,6 +44,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
