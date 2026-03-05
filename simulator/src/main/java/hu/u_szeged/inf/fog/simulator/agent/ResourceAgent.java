@@ -159,7 +159,7 @@ public class ResourceAgent {
             }
 
             /*
-            Offer winningOffer = app.offers.get(app.winningOffer);
+            Offer winningOffer = ;
             for (ResourceAgent agent : ResourceAgent.resourceAgents) {
                 for (Capacity capacity : agent.capacities) {
                     freeReservedResourcesExceptWinningOffer(app.name, capacity, winningOffer);

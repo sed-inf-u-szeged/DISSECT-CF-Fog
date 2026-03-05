@@ -90,7 +90,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
         final Map<String, Double> tmaxCache = !lastPredictions.isEmpty() ? buildTmaxCache() : null;
 
-        // minimum requirement: always keep at least minContainerCount
+        // minimum requirement
         if (noiseSensorsWithClassifier.size() < minContainerCount) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
@@ -105,20 +105,20 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
             return;
         }
 
-        // predictive scaling: if any running classifier is HOT, start 1 more on a SAFE node
+        // predictive scaling
         if (!lastPredictions.isEmpty() && hasHotRunningClassifier(tmaxCache)) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to predicted thermal risk (in the next 1 hour)");
+                        + " min. due to predicted thermal risk");
                 noiseSensorsWithClassifier.add(ns);
                 lastScalingActionMinute = nowMinute;
             }
             return;
         }
 
-        // Keep the load-based scale-up trigger, but place on predicted SAFE node
+        // load-based scale-up trigger
         if (avgCpuLoad > cpuLoadScaleUp) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
@@ -132,7 +132,6 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         }
 
         // downscale
-        // only if (1) above minimum, (2) low load over window, (3) no HOT running classifier
         if (noiseSensorsWithClassifier.size() > minContainerCount
                 && getAverageClassifierCpuLoadOverWindow() < cpuLoadScaleDown) {
 
@@ -149,11 +148,11 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
     }
 
     private NoiseSensor selectSensorToStartClassifier(Map<String, Double> tmaxCache) {
-        NoiseSensor bestSafe = null;         // threshold alatt ÉS tmax <= 78
+        NoiseSensor bestSafe = null;
         double bestSafeCurrent = Double.MAX_VALUE;
-        double bestSafeTmax = Double.MAX_VALUE; // tie-breakernek
+        double bestSafeTmax = Double.MAX_VALUE;
 
-        NoiseSensor coldest = null;          // threshold alatti abszolút leghidegebb (fallback)
+        NoiseSensor coldest = null;
         double coldestCurrent = Double.MAX_VALUE;
 
         double cpuTempThreshold = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold");
@@ -165,36 +164,28 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
             double current = sensor.cpuTemperature;
 
-            // threshold felett nem indítunk
             if (current >= cpuTempThreshold) {
                 continue;
             }
 
-            // 1) Mindig frissítjük a threshold alatti leghidegebbet (fallback)
             if (current < coldestCurrent) {
                 coldestCurrent = current;
                 coldest = sensor;
             }
 
-            // 2) Ha van predikció, nézzük a safe jövőt is
             if (tmaxCache != null) {
                 double tmax = tmaxCache.get(sensor.util.component.id);
 
                 if (tmax <= safeTmax) {
-                    // itt választhatsz policy-t:
-                    // a) leghidegebb most nyer, tmax csak tie-break
                     if (current < bestSafeCurrent || (current == bestSafeCurrent && tmax < bestSafeTmax)) {
                         bestSafeCurrent = current;
                         bestSafeTmax = tmax;
                         bestSafe = sensor;
                     }
-
-                    // (ha inkább a legalacsonyabb tmax a fő, csak cseréld meg a feltételt)
                 }
             }
         }
 
-        // ha van predikcióval is safe, az az elsődleges, különben a fallback
         return (bestSafe != null) ? bestSafe : coldest;
     }
 
@@ -246,18 +237,9 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
     private Map<String, Double> buildTmaxCache() {
         Map<String, Double> tmax = new HashMap<>();
 
-        // futó classifier-ek
-        for (NoiseSensor s : noiseSensorsWithClassifier) {
-            tmax.put(s.util.component.id, getMaxPredictedCpuTempNextHour(s.util.component.id));
-        }
-
-        // jelöltek indításhoz (observedAppComponents-ből)
         for (Object o : observedAppComponents) {
             if (o instanceof NoiseSensor s) {
-                // csak akkor kell, ha nem fut rajta classifier
-                if (!noiseSensorsWithClassifier.contains(s)) {
-                    tmax.putIfAbsent(s.util.component.id, getMaxPredictedCpuTempNextHour(s.util.component.id));
-                }
+                tmax.put(s.util.component.id, getMaxPredictedCpuTempNextHour(s.util.component.id));
             }
         }
 
