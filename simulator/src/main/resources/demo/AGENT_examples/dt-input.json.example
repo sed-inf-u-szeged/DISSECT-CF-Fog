@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "request_id": "dt-request-001",
+    "application_type": "InnoRenew",
+    "prediction_horizon_min": "60",
+    "result_callback": "https://orchestrator/api/dt-results/"
+  },
+  "resources": [
+    {
+      "node_id": "edge-1",
+      "cpu": 8,
+      "storage_gb": 128,
+      "memory_mb": 16000,
+      "location": "EU",
+      "provider": "local",
+      "node_type": "edge",
+      "avg_latency_ms": 12,
+      "avg_bandwidth_mbps": 90
+    },
+    {
+      "node_id": "vm-1",
+      "cpu": 16,
+      "storage_gb": 500,
+      "memory_mb": 32000,
+      "location": "EU",
+      "provider": "AWS",
+      "node_type": "vm",
+      "avg_latency_ms": 25,
+      "avg_bandwidth_mbps": 250
+    }
+  ],
+  "application": {
+    "application_id": "innorenew-app-01",
+    "components": [
+      {
+        "component_id": "sensor-1",
+        "mapped_node": "edge-1",
+        "cpu_request": 1,
+        "memory_request_mb": 512,
+        "workload": "https://monitoring/api/workloads/sensor-1",
+        "properties": {
+          "component_type": "noise-sensor",
+          "image_size_bytes": 2147483648,
+          "inside": false,
+          "sun": false
+        }
+      },
+      {
+        "component_id": "server-1",
+        "mapped_node": "vm-1",
+        "cpu_request": 4,
+        "memory_request_mb": 4096,
+        "workload": "",
+        "properties": {
+          "component_type": "server",
+          "image_size_bytes": 1073741824,
+          "instances": 2,
+          "replicas_min": 1,
+          "replicas_max": 4
+        }
+      }
+    ]
+  },
+  "reconfiguration_requests": [
+    {
+      "scenario_id": "current",
+      "actions": []
+    },
+    {
+      "scenario_id": "candidate-1",
+      "actions": [
+        {
+          "action_type": "create",
+          "component_id": "server-2",
+          "component_type": "server",
+          "target_node": "edge-2"
+        }
+      ]
+    },
+    {
+      "scenario_id": "candidate-2",
+      "description": "Migrate server-1 to edge-2",
+      "actions": [
+        {
+          "action_type": "migrate",
+          "component_id": "server-1",
+          "target_node": "edge-2"
+        }
+      ]
+    }
+  ]
+}
