@@ -3,7 +3,7 @@
     "request_id": "dt-request-001",
     "application_type": "InnoRenew",
     "prediction_horizon_min": "60",
-    "result_callback": "https://orchestrator/api/dt-results/"
+    "result_callback": "http://10.0.0.15:8080/api/dt-results"
   },
   "resources": [
     {
@@ -37,7 +37,7 @@
         "mapped_node": "edge-1",
         "cpu_request": 1,
         "memory_request_mb": 512,
-        "workload": "https://monitoring/api/workloads/sensor-1",
+        "workload": "http://10.0.0.20:8080/api/workloads/sensor-1",
         "properties": {
           "component_type": "noise-sensor",
           "image_size_bytes": 2147483648,
