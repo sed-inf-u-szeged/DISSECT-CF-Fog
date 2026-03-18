@@ -9,16 +9,19 @@ permalink: /
 
 ---
 
-### **Welcome!** This site provides an introductory tutorial for the **[DISSECT-CF-Fog Simulator]**.  
+## **Welcome!**
+### This site provides an introductory tutorial for the **[DISSECT-CF-Fog Simulator]{:target="_blank"}**.
+
 The tutorial explains the **simulator’s key components** (classes) used in the simulations.  
-After introducing the components, you’ll find ***walkthroughs of simple [demos]*** that showcase how to use the simulator at a basic level.
+After introducing the components, you’ll find **walkthroughs of [demos]{:target="_blank"}** that showcase how to use the simulator at a basic level.  
 
 {: .important }
 > 
 - Not every class is covered in this guide — mostly only those used in the demos.
 - Only essential methods and ones used in the demos are explained.
+- This tutorial only helps you start out, for more in-depth knowledge checkout the javadoc documentation.
 
-## [Let's get started!]({% link setup.md %})
+## [Let's get started!](setup)
 
 
 

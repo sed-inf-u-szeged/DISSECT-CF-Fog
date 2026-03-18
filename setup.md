@@ -5,8 +5,10 @@ description: "DISSECT-CF-Fog Simulator Setup."
 permalink: /setup
 ---
 
-# Setting up the simulator environment
+# Setting up the environment
 
 ---
 
-## [SETUP](https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/blob/master/simulator/README.md)
+### The setup process can be found in the simulator's [README.md]:target="_blank"}.
+
+[README.md]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/blob/master/simulator/README.md
