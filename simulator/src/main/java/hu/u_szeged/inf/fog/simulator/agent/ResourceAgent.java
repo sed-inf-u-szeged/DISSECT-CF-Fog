@@ -48,6 +48,8 @@ public class ResourceAgent {
     
     public static int maxRebroadcast = 2;
 
+    public static int failedDeployments = 0;
+
     //public int servedAsGatewayCount = 0;
     //public int winningOfferSelectionCount = 0;
     //public Map<ResourceAgent, Double> staticScores = new HashMap<>();
@@ -474,6 +476,12 @@ public class ResourceAgent {
             if (offer.id == -1) {
                 SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
                 releaseResourcesDueToNoOffers(app);
+
+                failedDeployments++;
+                List<Integer> submissionCounts = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
+                if (failedDeployments == submissionCounts.size()) {
+                    SimLogger.logError("All deployment attempts have failed.");
+                }
                 return;
             }
             for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {

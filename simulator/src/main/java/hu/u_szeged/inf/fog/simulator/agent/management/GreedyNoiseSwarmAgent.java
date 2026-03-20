@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.agent.management;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
@@ -26,7 +27,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
     public List<NoiseSensor> noiseSensorsWithClassifier = new ArrayList<>();
 
-    private static int shutdownCounter;
+    public static int shutdownCounter;
 
     public long filesSentToDatabase;
 
@@ -63,7 +64,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 // TODO: release capacities
             }
 
-            if (shutdownCounter == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()){
+            if (shutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
                 for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                     edc.stop();
                 }

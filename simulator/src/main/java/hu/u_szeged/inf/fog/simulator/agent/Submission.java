@@ -10,6 +10,7 @@ import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,13 +22,13 @@ public class Submission extends Timed {
     
     int bcastMessageSize;
     
-    public Submission(String filepath, int bcastMessageSize) {
+    public Submission(Path filepath, int bcastMessageSize) {
     
-        SimLogger.logRun("Application description " + new File(filepath).getName()
+        SimLogger.logRun("Application description " + filepath.getFileName()
             + " was submitted at: " + Timed.getFireCount() /  ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
         
-        if (ResourceAgent.allResourceAgents.size() < 2) {
-            SimLogger.logError("Only one RA is available in the system!");
+        if (ResourceAgent.allResourceAgents.size() <= 1) {
+            SimLogger.logError("There is no enough ResourceAgent to submit the application");
         }
         
         this.app = AgentApplicationReader.readJson(filepath);

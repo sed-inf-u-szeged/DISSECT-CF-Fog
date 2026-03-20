@@ -13,6 +13,7 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.Sun;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
+import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.DirectMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
@@ -29,10 +30,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class NoiseClassDemo {
@@ -43,7 +41,24 @@ public class NoiseClassDemo {
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
-        /* Forecaster */
+        List<Path> appDescriptionFiles = Files.list((Path) Config.NOISE_CLASS_CONFIGURATION.get("inputDir"))
+                .filter(f -> f.toString().endsWith(".json"))
+                .sorted(Comparator.comparing(f -> f.getFileName().toString()))
+                .toList();
+
+        boolean hasDuplicates = appDescriptionFiles.stream()
+                .map(p -> p.getFileName().toString())
+                .distinct()
+                .count() != appDescriptionFiles.size();
+
+        List<Integer> delays = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
+        if (appDescriptionFiles.size() != delays.size() || hasDuplicates) {
+            SimLogger.logError(
+                    "The number of application description files must be the same as the number of submission delays, and the filenames must be unique."
+            );
+        }
+
+        /* forecaster */
         if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("forecast")) {
             ForecasterManager.getInstance((String) Config.NOISE_CLASS_CONFIGURATION.get("predictorDir"),
                     4, 1337, (String) Config.NOISE_CLASS_CONFIGURATION.get("predictorModelPath"));
@@ -57,8 +72,7 @@ public class NoiseClassDemo {
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)));
 
         /* RPi config */
-        List<Integer> delays = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
-        for (int i = 1; i <= delays.size(); i++) {
+        for (int i = 0; i < delays.size(); i++) {
             ComputingAppliance rpi1 = new ComputingAppliance(
                 Config.createNode("RPi1" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
                         2, 4, 15, 12_500, 15, sharedLatencyMap),
@@ -160,17 +174,19 @@ public class NoiseClassDemo {
         Map<String, String> mapping = new HashMap<>();
         ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, new DirectMappingStrategy(mapping), new FloodingMessagingStrategy());
 
-        for (int i = 1; i <= delays.size(); i++) {
-            mapping.put("UNC-" + i + "-noise-sensor-01", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-02", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-03", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-04", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-05", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-06", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-07", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-08", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-09", "Agent0");
-            mapping.put("UNC-" + i + "-noise-sensor-10", "Agent0");
+        for (int i = 0; i < delays.size(); i++) {
+            String nameWithoutExtension = appDescriptionFiles.get(i).getFileName().toString().replaceFirst("\\.[^.]+$", "");
+
+            mapping.put(nameWithoutExtension + "-noise-sensor-01", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-02", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-03", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-04", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-05", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-06", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-07", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-08", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-09", "Agent0");
+            mapping.put(nameWithoutExtension + "-noise-sensor-10", "Agent0");
 
             ra0.initResourceAgent(resourceAgentVa, resourceAgentArc,
                     new Capacity(ComputingAppliance.allComputingAppliances.get("RPi1" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
@@ -207,39 +223,38 @@ public class NoiseClassDemo {
         ra5.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         /* app submission */
-        List<Path> appDescriptionFiles = Files.list((Path) Config.NOISE_CLASS_CONFIGURATION.get("inputDir"))
-                .filter(f -> f.toString().endsWith(".json"))
-                .toList();
-
         int i = 0;
-        for (Path file : appDescriptionFiles) {
+        for (Path filepath : appDescriptionFiles) {
             new DeferredEvent(delays.get(i) * ScenarioBase.MINUTE_IN_MILLISECONDS) {
 
                 @Override
                 protected void eventAction() {
-                    new Submission(file.toString(), 2048);
+                    new Submission(filepath, 2048);
                 }
             };
             i++;
         }
-        
+
         Sun.init(6, 20, 13, 1.5);
         long starttime = System.nanoTime();
         //Timed.simulateUntil((long) Config.NOISE_CLASS_ONFIGURATION.get("simLength"));
         Timed.simulateUntilLastEvent();
         long stoptime = System.nanoTime();
         Path energyValues = EnergyDataCollector.writeToFile(ScenarioBase.RESULT_DIRECTORY);
-        CsvVisualiser.visualise(
-                "noise",
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").soundValuesPath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorTemperaturePath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorCpuLoadPath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorClassifierCountPath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").processedFilePath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").fileMigrationCountPath,
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").sunIntensityPath,
-                energyValues
-        ).write();
+        for (NoiseAppCsvExporter noiseAppCsvExporter : NoiseAppCsvExporter.allNoiseAppCsvExporters.values()){
+            CsvVisualiser.visualise(
+                    noiseAppCsvExporter.appName,
+                    noiseAppCsvExporter.soundValuesPath,
+                    noiseAppCsvExporter.noiseSensorTemperaturePath,
+                    noiseAppCsvExporter.noiseSensorCpuLoadPath,
+                    noiseAppCsvExporter.noiseSensorClassifierCountPath,
+                    noiseAppCsvExporter.processedFilePath,
+                    noiseAppCsvExporter.fileMigrationCountPath,
+                    noiseAppCsvExporter.sunIntensityPath,
+                    energyValues
+            ).write();
+        }
+
 
         /* results */
 
@@ -316,6 +331,10 @@ public class NoiseClassDemo {
             }
             soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize");
             totalGeneratedFiles += sa.totalGeneratedFiles;
+            if (sa instanceof ForecastBasedSwarmAgent fbsa){
+                SimLogger.logRes("\tNumber of forecasts: " + fbsa.forecastingTimes.size());
+            }
+
         }
 
         double totalEnergy = 0;
@@ -325,7 +344,7 @@ public class NoiseClassDemo {
         }
 
         SimLogger.logEmptyLine();
-        SimLogger.logRes("Simulated time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
+        SimLogger.logRes("Simulated time (hour): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
         //SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
@@ -341,11 +360,15 @@ public class NoiseClassDemo {
         SimLogger.logRes("Number of sound events requiring processing (pc.): " + NoiseSensor.totalSoundEventsToProcess);
         SimLogger.logRes("Number of processed files (pc.): " + NoiseSensor.totalProcessedFiles);
         SimLogger.logRes("Number of sound files on noise sensors: " + soundFilesOnNoiseSensors);
-        //SimLogger.logRes("Processing ratio (%): " + (soundFilesOnRemoteServers / (double) NoiseSensor.totalSoundEventsToProcess * 100));
+        SimLogger.logRes("Number of sound files on the remote servers: " + soundFilesOnRemoteServers);
 
         SimLogger.logRes("Average end-to-end latency (sec.): " + RemoteServer.totalEndToEndLatency / soundFilesOnRemoteServers / 1000.0);
-        SimLogger.logRes("Time below the temperature threshold (%): " + calculateTimeBelowThrottling(
-                NoiseAppCsvExporter.allNoiseAppCsvExporters.get("UNC-1").noiseSensorTemperaturePath, (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")));
+        double avgTimeBelowThrottling = 0.0;
+        for (NoiseAppCsvExporter noiseAppCsvExporter : NoiseAppCsvExporter.allNoiseAppCsvExporters.values()){
+            avgTimeBelowThrottling += calculateTimeBelowThrottling(
+                    noiseAppCsvExporter.noiseSensorTemperaturePath, (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold"));
+        }
+        SimLogger.logRes("Time below the temperature threshold (%):" + avgTimeBelowThrottling / NoiseAppCsvExporter.allNoiseAppCsvExporters.size());
     }
 
     private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {

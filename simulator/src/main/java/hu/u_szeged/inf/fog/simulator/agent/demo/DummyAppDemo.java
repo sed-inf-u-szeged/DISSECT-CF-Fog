@@ -116,7 +116,7 @@ public class DummyAppDemo {
 
                 @Override
                 protected void eventAction() {
-                    new Submission(file.toString(), 2048);
+                    new Submission(file, 2048);
                 }
             };
             i++;

@@ -22,6 +22,7 @@ public class NoiseAppCsvExporter implements Closeable {
     public static Map<String, NoiseAppCsvExporter> allNoiseAppCsvExporters = new HashMap<>();
 
     private boolean headerWritten;
+    public String appName;
 
     public final Path soundValuesPath;
     public final Path noiseSensorTemperaturePath;
@@ -43,7 +44,7 @@ public class NoiseAppCsvExporter implements Closeable {
     //File cpuLoad;
 
     public NoiseAppCsvExporter(SwarmAgent swarmAgent) {
-        String appName = swarmAgent.app.name;
+        this.appName = swarmAgent.app.name;
         allNoiseAppCsvExporters.put(appName, this);
 
         try {

@@ -25,6 +25,8 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
     private final Map<String, List<Double>> lastPredictions = new HashMap<>();
 
+    public final ArrayList<Long> forecastingTimes = new ArrayList<>();
+
     private long lastScalingActionMinute = -1;
 
     public ForecastBasedSwarmAgent(AgentApplication app) {
@@ -41,6 +43,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
         // TODO: remove hardcoded values
         if (triggerPrediction % 30 == 0 && windows.values().stream().allMatch(w -> w.size() == 128)) {
+            forecastingTimes.add(fires / ScenarioBase.MINUTE_IN_MILLISECONDS);
             Map<String, String> filesForPredictions = null;
 
             filesForPredictions = writeWindowToCsv(ScenarioBase.RESULT_DIRECTORY);

@@ -102,15 +102,6 @@ public class AgentApplication {
         }
     }
 
-    /**
-     * Prefixes component ids with the application name to ensure uniqueness.
-     */
-    public void reName() {
-        for (Component component : components) {
-            component.id = name + "-" + component.properties.kind + "-" + component.id;
-        }
-    }
-
     @Override
     public String toString() {
         return "AgentApplication [name=" + name + ", energy=" + energy + ", price=" + price + ", latency=" + latency
