@@ -14,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.Sun;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
 import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.DirectMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
@@ -331,9 +332,17 @@ public class NoiseClassDemo {
             }
             soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize");
             totalGeneratedFiles += sa.totalGeneratedFiles;
+
+            if (sa instanceof GreedyNoiseSwarmAgent gnsa){
+                SimLogger.logRes("Scaling decision type - count:");
+                gnsa.decisionType.forEach((key, value) ->
+                        SimLogger.logRes("\t" + key + ": " + value)
+                );
+            }
             if (sa instanceof ForecastBasedSwarmAgent fbsa){
                 SimLogger.logRes("\tNumber of forecasts: " + fbsa.forecastingTimes.size());
             }
+
 
         }
 

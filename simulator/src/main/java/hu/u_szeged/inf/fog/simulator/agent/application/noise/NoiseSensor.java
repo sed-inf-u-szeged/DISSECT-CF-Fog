@@ -238,9 +238,10 @@ public class NoiseSensor extends Timed {
             } 
         } else if (cpuTemperature >= (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold") &&
                 this.swarmAgent.noiseSensorsWithClassifier.contains(this)) {
+            this.swarmAgent.noiseSensorsWithClassifier.remove(this);
+            this.swarmAgent.decisionType.compute("scale-down-temperature", (k, v) -> v + 1);
             SimLogger.logRun(util.component.id + "'classifier was turned off at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to high temperature");
-            this.swarmAgent.noiseSensorsWithClassifier.remove(this);
         }
     }
 

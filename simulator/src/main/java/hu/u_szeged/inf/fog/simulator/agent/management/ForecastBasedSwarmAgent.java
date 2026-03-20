@@ -31,6 +31,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
     public ForecastBasedSwarmAgent(AgentApplication app) {
         super(app);
+        decisionType.put("scale-up-predictive", 0);
     }
 
     @Override
@@ -83,9 +84,6 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
     public void scale(double avgCpuLoad) {
         long nowMinute = (long) (Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS);
         long cooldown = (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow") / ScenarioBase.MINUTE_IN_MILLISECONDS;
-        if (lastScalingActionMinute >= 0 && nowMinute - lastScalingActionMinute < cooldown) {
-            return;
-        }
 
         int minContainerCount = (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount");
         double cpuLoadScaleUp = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp");
@@ -94,17 +92,23 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         final Map<String, Double> tmaxCache = !lastPredictions.isEmpty() ? buildTmaxCache() : null;
 
         // minimum requirement
-        if (noiseSensorsWithClassifier.size() < minContainerCount) {
+        while (noiseSensorsWithClassifier.size() < minContainerCount) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
-            if (ns != null) {
-                SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
-                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to minimum requirement");
-
-                noiseSensorsWithClassifier.add(ns);
-                lastScalingActionMinute = nowMinute;
-
+            if (ns == null) {
+                break;
             }
+            noiseSensorsWithClassifier.add(ns);
+            decisionType.compute("scale-up-min", (k, v) -> v + 1);
+            SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
+                    + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                    + " min. due to minimum requirement");
+        }
+
+        if (noiseSensorsWithClassifier.size() < minContainerCount) {
+            return;
+        }
+
+        if (lastScalingActionMinute >= 0 && nowMinute - lastScalingActionMinute < cooldown) {
             return;
         }
 
@@ -112,11 +116,12 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         if (!lastPredictions.isEmpty() && hasHotRunningClassifier(tmaxCache)) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
+                noiseSensorsWithClassifier.add(ns);
+                lastScalingActionMinute = nowMinute;
+                decisionType.compute("scale-up-predictive", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to predicted thermal risk");
-                noiseSensorsWithClassifier.add(ns);
-                lastScalingActionMinute = nowMinute;
             }
             return;
         }
@@ -125,11 +130,12 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         if (avgCpuLoad > cpuLoadScaleUp) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns != null) {
+                noiseSensorsWithClassifier.add(ns);
+                lastScalingActionMinute = nowMinute;
+                decisionType.compute("scale-up-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to large load");
-                noiseSensorsWithClassifier.add(ns);
-                lastScalingActionMinute = nowMinute;
             }
             return;
         }
@@ -140,12 +146,12 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
             NoiseSensor ns = selectSensorToStopClassifier(tmaxCache);
             if (ns != null) {
+                noiseSensorsWithClassifier.remove(ns);
+                lastScalingActionMinute = nowMinute;
+                decisionType.compute("scale-down-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was turned off at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to small load");
-                noiseSensorsWithClassifier.remove(ns);
-                // record the time of this scaling action
-                lastScalingActionMinute = nowMinute;
             }
         }
     }

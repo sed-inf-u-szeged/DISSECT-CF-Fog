@@ -30,7 +30,7 @@ public class Config {
     public static final Map<String, Object> NOISE_CLASS_CONFIGURATION =
             Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
-                    Map.entry("submissionDelay", List.of(0, 0)),
+                    Map.entry("submissionDelay", List.of(0)),
                     //Map.entry("submissionDelay", List.of(0, 0, 0, 60, 60, 120, 150, 150, 150, 150)), // 10 app
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("soundFileSize", 655_360L), // 640 kB
@@ -58,8 +58,8 @@ public class Config {
                     //Map.entry("rankingMethod", "vote_wo_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability_mul"),
-                    //Map.entry("swarmAgentType", "greedy"),
-                    Map.entry("swarmAgentType", "forecast"),
+                    Map.entry("swarmAgentType", "greedy"),
+                    //Map.entry("swarmAgentType", "forecast"),
                     Map.entry("csvLogging", true),
                     Map.entry("predictorDir", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/"),
                     Map.entry("predictorModelPath", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/checkpoints/" +
