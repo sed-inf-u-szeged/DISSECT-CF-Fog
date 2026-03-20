@@ -397,7 +397,7 @@ poetry.toml
 # Additional 
 .checkstyle
 *sim_res*
-*AGENT_examples*
+AGENT_examples/
 *out.xml
 /target/
 .idea
