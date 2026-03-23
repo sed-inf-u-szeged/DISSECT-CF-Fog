@@ -19,15 +19,15 @@ import java.util.concurrent.*;
 
 public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
-    public final Map<String, Deque<Double>> windows = new HashMap<>();
+    public final Map<String, Deque<Double>> windowsForPrediction = new HashMap<>();
 
-    private int triggerPrediction;
+    protected int triggerPrediction;
 
-    private final Map<String, List<Double>> lastPredictions = new HashMap<>();
+    protected final Map<String, List<Double>> lastPredictions = new HashMap<>();
 
     public final ArrayList<Long> forecastingTimes = new ArrayList<>();
 
-    private long lastScalingActionMinute = -1;
+    protected long lastScalingActionMinute = -1;
 
     public ForecastBasedSwarmAgent(AgentApplication app) {
         super(app);
@@ -36,14 +36,11 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
     @Override
     public void tick(long fires) {
-        Pair<Map<NoiseSensor, Double>, Double> noiseSensorCpuLoads = updateCpuMetricsForLastMinute(windows);
-        if (!cpuTemperatureSamples.isEmpty()) {
-            cpuTemperatureSamples.removeFirst();
-        }
-        cpuTemperatureSamples.addLast(new CpuTemperatureSample(fires, noiseSensorCpuLoads.getRight()));
+        Pair<Map<NoiseSensor, Double>, Double> noiseSensorCpuLoads = updateCpuMetricsForLastMinute(windowsForPrediction);
+        cpuTemperatureSamples.addLast(noiseSensorCpuLoads.getRight());
 
         // TODO: remove hardcoded values
-        if (triggerPrediction % 30 == 0 && windows.values().stream().allMatch(w -> w.size() == 128)) {
+        if (triggerPrediction % 30 == 0 && windowsForPrediction.values().stream().allMatch(w -> w.size() == 128)) {
             forecastingTimes.add(fires / ScenarioBase.MINUTE_IN_MILLISECONDS);
             Map<String, String> filesForPredictions = null;
 
@@ -290,10 +287,6 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
 
     private Map<String, String> callPredictorScript(Map<String, String> files) {
-        if (!SystemUtils.IS_OS_LINUX) {
-            SimLogger.logError("Unsupported operating system");
-        }
-
         Map<String, String> resultFiles = new ConcurrentHashMap<>();
 
         int threads = Math.min(files.size(), Runtime.getRuntime().availableProcessors());
@@ -313,7 +306,10 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
                     Path outputFile = inputFile.resolveSibling(predictionName);
                     String outputPath = outputFile.toString();
 
-                    ForecasterManager.getInstance().predict(inputPath, outputPath);
+                    String predictorInputPath = toPredictorPath(inputPath);
+                    String predictorOutputPath = toPredictorPath(outputPath);
+
+                    ForecasterManager.getInstance().predict(predictorInputPath, predictorOutputPath);
 
                     resultFiles.put(deviceId, outputPath);
                 } catch (IOException | InterruptedException e) {
@@ -336,6 +332,21 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         return resultFiles;
     }
 
+    private static String toPredictorPath(String path) {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            return path;
+        }
+
+        String converted = path.replace("\\", "/");
+
+        if (converted.length() >= 2 && converted.charAt(1) == ':') {
+            char drive = Character.toLowerCase(converted.charAt(0));
+            converted = "/mnt/" + drive + converted.substring(2);
+        }
+
+        return converted;
+    }
+
     private void deleteFiles(Map<String, String> files) {
         for (String path : files.values()) {
             File f = new File(path);
@@ -354,7 +365,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
         Map<String, String> result = new HashMap<>();
 
-        for (Map.Entry<String, Deque<Double>> entry : windows.entrySet()) {
+        for (Map.Entry<String, Deque<Double>> entry : windowsForPrediction.entrySet()) {
             String sensorId = entry.getKey();
             Deque<Double> window = entry.getValue();
 
@@ -390,7 +401,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         StringBuilder sb = new StringBuilder();
         sb.append("Sliding windows {\n");
 
-        for (Map.Entry<String, Deque<Double>> entry : windows.entrySet()) {
+        for (Map.Entry<String, Deque<Double>> entry : windowsForPrediction.entrySet()) {
             sb.append("  ")
                     .append(entry.getKey())
                     .append(": ")

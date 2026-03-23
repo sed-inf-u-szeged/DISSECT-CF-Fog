@@ -4,7 +4,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RemoteServer {
@@ -13,6 +15,8 @@ public class RemoteServer {
     public static Map<String, Long> networkTimePerFile = new HashMap<>();
 
     public static long totalEndToEndLatency;
+
+    public List<Long> latencies = new ArrayList<>();
 
     GreedyNoiseSwarmAgent swarmAgent;
     

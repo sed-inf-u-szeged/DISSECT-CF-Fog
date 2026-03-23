@@ -31,27 +31,29 @@ public class Config {
             Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)),
+                    //Map.entry("submissionDelay", List.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
                     //Map.entry("submissionDelay", List.of(0, 0, 0, 60, 60, 120, 150, 150, 150, 150)), // 10 app
+                    Map.entry("noiseSensorCount", 100),
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("soundFileSize", 655_360L), // 640 kB
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("minSoundLevel", 30), // dB
                     Map.entry("maxSoundLevel", 130), // dB
-                    Map.entry("soundThreshold", 70), // dB
+                    Map.entry("soundThreshold", 0), // dB
                     Map.entry("minCpuTemp", 55D), // ℃
                     Map.entry("maxCpuTemp", 85D), // ℃
                     Map.entry("cpuTempTreshold", 80D), // ℃
                     Map.entry("minContainerCount", 2), // pc.
                     Map.entry("lengthOfProcessing", 1_700D), // ms
-                    Map.entry("cpuTimeWindow", 300_000L), // 5 min.
+                    Map.entry("cpuTimeWindow", 60_000L), // 1 min.
                     Map.entry("cpuLoadScaleUp", 70D), // %
                     Map.entry("cpuLoadScaleDown", 30D), // %
-                    Map.entry("offloadLimitPerIteration", Integer.MAX_VALUE),
-                    //Map.entry("offloadLimitPerIteration", 3_600),
+                    Map.entry("offloadLimitPerIteration", 0.5),  // [0.0-1.0]
                     //Map.entry("samplingStrategy", "random"),
                     Map.entry("samplingStrategy", "lazy"),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("rankingMethod", "random"),
+                    Map.entry("onlyFirstOffer", "true"),
                     //Map.entry("rankingMethod", "rank_no_re"),
                     //Map.entry("rankingMethod", "rank_re_add"),
                     //Map.entry("rankingMethod", "rank_re_mul"),
@@ -61,8 +63,8 @@ public class Config {
                     Map.entry("swarmAgentType", "greedy"),
                     //Map.entry("swarmAgentType", "forecast"),
                     Map.entry("csvLogging", true),
-                    Map.entry("predictorDir", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/"),
-                    Map.entry("predictorModelPath", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/checkpoints/" +
+                    Map.entry("predictorDir", "/home/markusa/Swarmchestrate-TSforecasting/"),
+                    Map.entry("predictorModelPath", "/home/markusa/Swarmchestrate-TSforecasting/checkpoints/" +
                             "simulator1__UNC-1-Noise-Sensor-6_1min_pl128")
                     /*
                     public static final String RANKING_SCRIPT = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator/call_ranking_func.py";

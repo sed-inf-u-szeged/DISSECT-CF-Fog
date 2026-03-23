@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent.management;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
@@ -15,16 +16,6 @@ import java.util.*;
 
 public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
-    static class CpuTemperatureSample {
-        long timestamp;
-        double cpuLoad;
-
-        CpuTemperatureSample(long ts, double load) {
-            this.timestamp = ts;
-            this.cpuLoad = load;
-        }
-    }
-
     public List<NoiseSensor> noiseSensorsWithClassifier = new ArrayList<>();
 
     public static int shutdownCounter;
@@ -38,7 +29,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
     /**
      * window with CPU loads for downscaling
      */
-    final Deque<CpuTemperatureSample> cpuTemperatureSamples = new ArrayDeque<>();
+    final Deque<Double> cpuTemperatureSamples = new ArrayDeque<>();
 
     NoiseAppCsvExporter noiseAppCsvExporter;
 
@@ -81,25 +72,27 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                     edc.stop();
                 }
             }
-
-            //System.out.println(SwarmAgent.totalGeneratedFiles == GreedyNoiseSwarmAgent.filesSentToDatabase);
-            //System.out.println(shutdownCounter + " " + ((List<Integer>) Config.NOISE_CLASS_ONFIGURATION.get("submissionDelay")).size());
         }
     }
 
     public void startNecesseryServices(int num) {
-        int count = 0;
+        List<NoiseSensor> sensors = new ArrayList<>();
         for (Object component : this.observedAppComponents) {
             if (component instanceof NoiseSensor ns) {
-                noiseSensorsWithClassifier.add(ns);
-
-                SimLogger.logRun(ns.util.component.id + "'s classifier was started to meet the required service count at: "
-                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
-                count++;
-                if (count >= num) {
-                    break;
-                }
+                sensors.add(ns);
             }
+        }
+
+        Collections.shuffle(sensors, SeedSyncer.centralRnd);
+        int limit = Math.min(num, sensors.size());
+
+        for (int i = 0; i < limit; i++) {
+            NoiseSensor ns = sensors.get(i);
+            noiseSensorsWithClassifier.add(ns);
+            SimLogger.logRun(
+                    ns.util.component.id + "'s classifier was started to meet the required service count at: "
+                            + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min."
+            );
         }
     }
 
@@ -116,8 +109,15 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         return item;
     }
 
-
-    Pair<Map<NoiseSensor, Double>, Double> updateCpuMetricsForLastMinute(Map<String, Deque<Double>> windows) {
+    /**
+     * Calculates CPU load metrics for all noise sensors for the last minute.
+     * Optionally maintains a sliding window of past CPU temperatures for each sensor.
+     *
+     * @param windowsForPrediction a map of sliding windows used to store CPU temperatures
+     * @return a pair where the first value is a map of sensors and their current CPU load,
+     *         and the second value is the average CPU load of sensors that processed data in the last minute
+     */
+    Pair<Map<NoiseSensor, Double>, Double> updateCpuMetricsForLastMinute(Map<String, Deque<Double>> windowsForPrediction) {
         Map<NoiseSensor, Double> loads = new LinkedHashMap<>();
         double sum = 0.0;
         int count = 0;
@@ -140,8 +140,10 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 }
                 loads.put(ns, load);
 
-                if (windows != null) {
-                    Deque<Double> window = windows.get(ns.util.component.id);
+                // memory for CPU temperature prediction
+                if (windowsForPrediction != null) {
+
+                    Deque<Double> window = windowsForPrediction.get(ns.util.component.id);
 
                     if (window.size() == 128) { // TODO: remove this hardcoded value
                         window.removeFirst();
@@ -181,21 +183,19 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
     }
 
     double getAverageClassifierCpuLoadOverWindow() {
-        if (cpuTemperatureSamples.isEmpty()) {
-            return Double.MAX_VALUE;
-        }
+        long entries = (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow")
+                / ScenarioBase.MINUTE_IN_MILLISECONDS;
 
-        long elapsed = Timed.getFireCount() - cpuTemperatureSamples.peekFirst().timestamp;
-        if (elapsed < (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow")) {
-            return Double.MAX_VALUE;
+        while (cpuTemperatureSamples.size() > entries + 1) {
+            cpuTemperatureSamples.pollFirst();
         }
 
         double sum = 0.0;
-        for (CpuTemperatureSample s : cpuTemperatureSamples) {
-            sum += s.cpuLoad;
+        for (double value : cpuTemperatureSamples) {
+            sum += value;
         }
 
-        return (sum / cpuTemperatureSamples.size());
+        return cpuTemperatureSamples.isEmpty() ? 100.0 : (sum / cpuTemperatureSamples.size());
     }
 
     void scale(double avgCpuLoad) {
@@ -218,14 +218,13 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         if (scaledToMinimum) {
             return;
         }
-
         if (avgCpuLoad > (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp")) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns != null) {
                 noiseSensorsWithClassifier.add(ns);
                 decisionType.compute("scale-up-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
-                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to large load");
+                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min. due to large load ");
             }
         } else if (getAverageClassifierCpuLoadOverWindow() < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleDown")) {
             NoiseSensor ns = findSensorByCpuTemperature(false);
@@ -241,11 +240,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
     @Override
     public void tick(long fires) {
         Pair<Map<NoiseSensor, Double>, Double> noiseSensorCpuLoads = updateCpuMetricsForLastMinute(null);
-
-        if (!cpuTemperatureSamples.isEmpty()) {
-            cpuTemperatureSamples.removeFirst();
-        }
-        cpuTemperatureSamples.addLast(new CpuTemperatureSample(fires, noiseSensorCpuLoads.getRight()));
+        cpuTemperatureSamples.addLast(noiseSensorCpuLoads.getRight());
 
         this.scale(noiseSensorCpuLoads.getRight());
 

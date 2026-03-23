@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.agent.forecast;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -81,12 +82,23 @@ public class ForecasterManager {
 
     private ForecasterWorker startWorker(String predictorScriptDir, String modelPath, int port) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    "uv", "run", "forecaster_service.py",
-                    "--model_path", modelPath,
-                    "--port", String.valueOf(port)
-            );
-            pb.directory(new File(predictorScriptDir));
+            ProcessBuilder pb = null;
+            if (SystemUtils.IS_OS_LINUX) {
+                pb = new ProcessBuilder(
+                        "uv", "run", "forecaster_service.py",
+                        "--model_path", modelPath,
+                        "--port", String.valueOf(port)
+                );
+                pb.directory(new File(predictorScriptDir));
+            } else if (SystemUtils.IS_OS_WINDOWS) {
+                String cmd = "cd " + predictorScriptDir + " && uv run forecaster_service.py --model_path "
+                        + modelPath + " --port " + port;
+
+                pb = new ProcessBuilder("wsl.exe", "bash", "-lc", cmd);
+            } else {
+                SimLogger.logError("Unsupported OS: " + SystemUtils.OS_NAME);
+            }
+
             pb.redirectErrorStream(true);
             pb.environment().put("PYTHONUNBUFFERED", "1");
 

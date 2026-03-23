@@ -17,8 +17,7 @@ import hu.u_szeged.inf.fog.simulator.common.util.RepoFileManager;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.*;
 
 public class NoiseSensor extends Timed {
 
@@ -36,7 +35,13 @@ public class NoiseSensor extends Timed {
 
     public double cpuTemperature;
 
-    Deque<StorageObject> filesToProcess = new ArrayDeque<>();
+    PriorityQueue<StorageObject> filesToProcess = new PriorityQueue<>(
+            Comparator
+                    .comparingLong((StorageObject obj) ->
+                            RemoteServer.networkTimePerFile.getOrDefault(obj.id, Long.MAX_VALUE)
+                    )
+                    .thenComparing(obj -> obj.id)
+    );
 
     public int processedFilesLastMinute;
 
@@ -58,8 +63,8 @@ public class NoiseSensor extends Timed {
         prevSoundValue = -1;
         this.swarmAgent.observedAppComponents.add(this);
 
-        if(swarmAgent instanceof ForecastBasedSwarmAgent){
-            ((ForecastBasedSwarmAgent) swarmAgent).windows.putIfAbsent(util.component.id, new ArrayDeque<>());
+        if(swarmAgent instanceof ForecastBasedSwarmAgent) {
+            ((ForecastBasedSwarmAgent) swarmAgent).windowsForPrediction.putIfAbsent(util.component.id, new ArrayDeque<>());
         }
 
         new DeferredEvent(SeedSyncer.centralRnd.nextInt(20) * 1000L) {
@@ -74,7 +79,7 @@ public class NoiseSensor extends Timed {
 
     @Override
     public void tick(long fires) {
-        this.adjustTemperatureByEnv();
+       this.adjustTemperatureByEnv();
 
         if ((swarmAgent.app.submissionTime + (long) Config.NOISE_CLASS_CONFIGURATION.get("simLength")) > fires) {
             String filename = Timed.getFireCount() + "-" + util.component.id;
@@ -105,22 +110,35 @@ public class NoiseSensor extends Timed {
         if (this.swarmAgent.noiseSensorsWithClassifier.contains(this)) {
             runSoundClassification();
         } else {
-            offload();
+            int limit = 0;
+            if (swarmAgent.noiseSensorsWithClassifier.size() < 2) {
+                limit = (int) (filesToProcess.size() * (double) Config.NOISE_CLASS_CONFIGURATION.get("offloadLimitPerIteration"));
+            } else{
+                limit = filesToProcess.size();
+            }
+            offload(limit);
         }  
     }
         
     private void offload() {
         PhysicalMachine pm = this.util.vm.getResourceAllocation().getHost();
 
-        int limit = (int) Config.NOISE_CLASS_CONFIGURATION.get("offloadLimitPerIteration");
+        int limit = 0;
+        if (swarmAgent.noiseSensorsWithClassifier.size() < 2) {
+            limit = (int) (filesToProcess.size() * (double) Config.NOISE_CLASS_CONFIGURATION.get("offloadLimitPerIteration"));
+        } else{
+            limit = filesToProcess.size();
+        }
+
         for (int i = 0; i < limit; i++) {
             StorageObject so = filesToProcess.poll();
             if (so == null) {
                 break;
             }
+
             NoiseSensor ns = swarmAgent.getNextClassifierForOffloading();
             if (ns == null) {
-                filesToProcess.addFirst(so);
+                filesToProcess.add(so);
                 break;
             }
 
@@ -131,6 +149,7 @@ public class NoiseSensor extends Timed {
                     @Override
                     public void conComplete() {
                         totalOffloadedFiles++;
+                        //ns.filesToProcess.addFirst(so);
                         ns.filesToProcess.add(so);
                         pm.localDisk.deregisterObject(so);
                     }
@@ -139,6 +158,42 @@ public class NoiseSensor extends Timed {
                 SimLogger.logError("Offloading sound file " + so.id + " failed: " + e);
             }
         }
+    }
+
+    private void offload(int limit) {
+        if (limit > 0 && !swarmAgent.noiseSensorsWithClassifier.contains(this)) {
+            PhysicalMachine pm = this.util.vm.getResourceAllocation().getHost();
+            StorageObject so = filesToProcess.poll();
+            if (so == null) {
+                return;
+            }
+
+            NoiseSensor ns = swarmAgent.getNextClassifierForOffloading();
+            if (ns == null) {
+                //filesToProcess.addFirst(so);
+                filesToProcess.add(so);
+                return;
+            }
+
+            try {
+                this.fileMigrationCounter++;
+                pm.localDisk.requestContentDelivery(so.id, ns.util.vm.getResourceAllocation().getHost().localDisk, new ConsumptionEventAdapter() {
+
+                    @Override
+                    public void conComplete() {
+                        totalOffloadedFiles++;
+                        //ns.filesToProcess.addFirst(so);
+                        ns.filesToProcess.add(so);
+                        pm.localDisk.deregisterObject(so);
+                        int remainingLimit = limit - 1;
+                        offload(remainingLimit);
+                    }
+                });
+            } catch (NetworkException e) {
+                SimLogger.logError("Offloading sound file " + so.id + " failed: " + e);
+            }
+        }
+
     }
 
     private RemoteServer findRemoteServer() {
@@ -165,7 +220,9 @@ public class NoiseSensor extends Timed {
                         to.deregisterObject(resFile);
                         RepoFileManager.mergeFiles(to, resFile, swarmAgent.app.name);
                         swarmAgent.filesSentToDatabase++;
-                        RemoteServer.totalEndToEndLatency += Timed.getFireCount() - RemoteServer.networkTimePerFile.remove(so.id);
+                        long latency =  Timed.getFireCount() - RemoteServer.networkTimePerFile.remove(so.id);
+                        remoteServer.latencies.add(latency);
+                        RemoteServer.totalEndToEndLatency += latency;
                     }
                     
                 });
@@ -187,13 +244,13 @@ public class NoiseSensor extends Timed {
         // heating based on the conditions
         if (this.inside) {
             if (this.sunExposed) {
-                delta += 0.35 * sun;
+                delta += 0.2 * sun;
             }
         } else {
             if (this.sunExposed) {
-                delta += 1.0 * sun; // 1.5
+                delta += 0.8 * sun; // 1.5
             } else {
-                delta += 0.5 * sun; // 0.75
+                delta += 0.4 * sun; // 0.75
             }
         }
 
@@ -225,7 +282,6 @@ public class NoiseSensor extends Timed {
                             @Override
                             public void conComplete() {
                                 processedFileCounter++;
-                                //NoiseSensor.totalTimeOnNetwork += app.configuration.get("lengthOfProcessing").longValue(); TODO
                                 totalProcessedFiles++;
                                 processedFilesLastMinute++;
                                 runSoundClassification();

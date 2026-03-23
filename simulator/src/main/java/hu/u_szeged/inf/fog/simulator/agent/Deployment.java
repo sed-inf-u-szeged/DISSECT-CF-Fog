@@ -122,8 +122,6 @@ public class Deployment extends Timed {
                 SimLogger.logError("This type of SA is unfamiliar in the application");
             }
 
-            // TODO: PredictorBasedSwarmAgent sa = new PredictorBasedSwarmAgent(app, Config.PREDICTOR_SCRIPT);
-
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 if (util.getRight().component.id.contains("noise-sensor")) {
                     new NoiseSensor(sa, util.getRight(), util.getRight().component.properties.inside, util.getRight().component.properties.sun);

@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -38,7 +39,7 @@ public class ResourceAgent {
 
     private double hourlyPrice;
 
-    public Map<String, Capacity> capacities = new HashMap<>();
+    public Map<String, Capacity> capacities = new LinkedHashMap<>();
 
     MappingStrategy agentStrategy;
     
@@ -292,9 +293,9 @@ public class ResourceAgent {
 
     private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Component>> pairs, AgentApplication app) {
         Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations = new LinkedHashSet<>();
-
+        AtomicBoolean found = new AtomicBoolean(false);
         generateCombinations(pairs, app.components.size(), uniqueCombinations,
-                new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
+                new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), found);
 
         for (Set<Pair<ResourceAgent, Component>> combination : uniqueCombinations) {
             Map<ResourceAgent, Set<Component>> agentResourcesMap = new HashMap<>();
@@ -315,10 +316,17 @@ public class ResourceAgent {
                                       Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations,
                                       Set<Pair<ResourceAgent, Component>> currentCombination,
                                       Set<Component> includedComponents,
-                                      Set<String> seenStates) {
+                                      Set<String> seenStates, AtomicBoolean found) {
+
+        if (found.get()) {
+            return;
+        }
 
         if (includedComponents.size() == componentCount) {
             uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
+            if (Config.APP_TYPE.get("onlyFirstOffer").equals("true")) {
+                found.set(true);
+            }
             return;
         }
 
@@ -335,7 +343,10 @@ public class ResourceAgent {
                 currentCombination.add(pair);
                 includedComponents.add(pair.getRight());
 
-                generateCombinations(pairs, componentCount, uniqueCombinations, currentCombination, includedComponents, seenStates);
+                generateCombinations(pairs, componentCount, uniqueCombinations, currentCombination, includedComponents, seenStates, found);
+                if (found.get()) {
+                    return;
+                }
 
                 currentCombination.remove(pair);
                 includedComponents.remove(pair.getRight());

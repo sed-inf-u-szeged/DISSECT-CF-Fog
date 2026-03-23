@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class Submission extends Timed {
@@ -35,6 +36,7 @@ public class Submission extends Timed {
         this.app.submissionTime = Timed.getFireCount();
         this.bcastMessageSize = bcastMessageSize;
         List<ResourceAgent> agents = new ArrayList<>(ResourceAgent.allResourceAgents.values());
+        //agents.sort(Comparator.comparing(ra -> ra.name));
         agent = agents.get(SeedSyncer.centralRnd.nextInt(agents.size()));
         this.registerImages(app.components);
         subscribe(1_000);

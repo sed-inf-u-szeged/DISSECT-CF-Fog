@@ -22,7 +22,7 @@ public class NoiseAppCsvExporter implements Closeable {
     public static Map<String, NoiseAppCsvExporter> allNoiseAppCsvExporters = new HashMap<>();
 
     private boolean headerWritten;
-    public String appName;
+    public SwarmAgent swarmAgent;
 
     public final Path soundValuesPath;
     public final Path noiseSensorTemperaturePath;
@@ -44,37 +44,37 @@ public class NoiseAppCsvExporter implements Closeable {
     //File cpuLoad;
 
     public NoiseAppCsvExporter(SwarmAgent swarmAgent) {
-        this.appName = swarmAgent.app.name;
-        allNoiseAppCsvExporters.put(appName, this);
+        this.swarmAgent = swarmAgent;
+        allNoiseAppCsvExporters.put(this.swarmAgent.app.name, this);
 
         try {
             soundValuesPath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-sound-values.csv"
+                    this.swarmAgent.app.name + "-sound-values.csv"
             );
             noiseSensorTemperaturePath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-noise-sensor-temperature.csv"
+                    this.swarmAgent.app.name + "-noise-sensor-temperature.csv"
             );
             noiseSensorClassifierCountPath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-noise-sensor-classifier-count.csv"
+                    this.swarmAgent.app.name + "-noise-sensor-classifier-count.csv"
             );
             processedFilePath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-processed-files-count.csv"
+                    this.swarmAgent.app.name + "-processed-files-count.csv"
             );
             fileMigrationCountPath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-file-migration-count.csv"
+                    this.swarmAgent.app.name + "-file-migration-count.csv"
             );
             sunIntensityPath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-sun-intensity.csv"
+                    this.swarmAgent.app.name + "-sun-intensity.csv"
             );
             noiseSensorCpuLoadPath = Paths.get(
                     ScenarioBase.RESULT_DIRECTORY,
-                    appName + "-noise-sensor-cpu-load.csv"
+                    this.swarmAgent.app.name + "-noise-sensor-cpu-load.csv"
             );
 
             soundValuesWriter = new PrintWriter(

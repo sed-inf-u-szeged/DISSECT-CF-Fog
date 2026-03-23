@@ -8,6 +8,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
@@ -28,6 +29,8 @@ import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +42,7 @@ public class NoiseClassDemo {
     public static void main(String[] args) throws Exception {
 
         SimLogger.setLogging(1, true);
+        SeedSyncer.modifySeed(1234567);
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
@@ -74,139 +78,78 @@ public class NoiseClassDemo {
 
         /* RPi config */
         for (int i = 0; i < delays.size(); i++) {
-            ComputingAppliance rpi1 = new ComputingAppliance(
-                Config.createNode("RPi1" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.51, 13.79), "EU", "", true);
+            for(int j = 1; j <= (int) Config.NOISE_CLASS_CONFIGURATION.get("noiseSensorCount"); j++) {
+                ComputingAppliance rpi1 = new ComputingAppliance(
+                        Config.createNode("RPi" + i + j, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                                2, 4, 15, 12_500, 15, sharedLatencyMap),
+                        new GeoLocation(45.51, 13.79), "EU", "", true);
 
-            ComputingAppliance rpi2 = new ComputingAppliance(
-                    Config.createNode("RPi2" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.52, 13.69), "EU", "", true);
-
-            ComputingAppliance rpi3 = new ComputingAppliance(
-                    Config.createNode("RPi3" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.58, 13.66), "", "", true);
-
-            ComputingAppliance rpi4 = new ComputingAppliance(
-                    Config.createNode("RPi4" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.46, 13.81), "", "", true);
-
-            ComputingAppliance rpi5 = new ComputingAppliance(
-                    Config.createNode("RPi5" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.53, 13.71), "", "", true);
-
-            ComputingAppliance rpi6 = new ComputingAppliance(
-                    Config.createNode("RPi6" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.58, 13.74), "", "", true);
-
-            ComputingAppliance rpi7 = new ComputingAppliance(
-                    Config.createNode("RPi7" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.50, 13.70), "", "", true);
-
-            ComputingAppliance rpi8 = new ComputingAppliance(
-                    Config.createNode("RPi8" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.62, 13.76), "", "", true);
-
-            ComputingAppliance rpi9 = new ComputingAppliance(
-                    Config.createNode("RPi9" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.59, 13.67), "", "", true);
-
-            ComputingAppliance rpi10 = new ComputingAppliance(
-                    Config.createNode("RPi10" + i, 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                            2, 4, 15, 12_500, 15, sharedLatencyMap),
-                new GeoLocation(45.52, 13.66), "", "", true);
-
-            new EnergyDataCollector("RPi1" + i + "-energy", rpi1.iaas,true,true);
-            new EnergyDataCollector("RPi2" + i + "-energy", rpi2.iaas,true, true);
-            new EnergyDataCollector("RPi3" + i + "-energy", rpi3.iaas,true, true);
-            new EnergyDataCollector("RPi4" + i + "-energy", rpi4.iaas,true, true);
-            new EnergyDataCollector("RPi5" + i + "-energy", rpi5.iaas,true, true);
-            new EnergyDataCollector("RPi6" + i + "-energy", rpi6.iaas,true, true);
-            new EnergyDataCollector("RPi7" + i + "-energy", rpi7.iaas,true, true);
-            new EnergyDataCollector("RPi8" + i + "-energy", rpi8.iaas,true, true);
-            new EnergyDataCollector("RPi9" + i + "-energy", rpi9.iaas,true, true);
-            new EnergyDataCollector("RPi10" + i + "-energy", rpi10.iaas,true, true);
+                new EnergyDataCollector("RPi" + i + j + "-energy", rpi1.iaas,true,true);
+            }
         }
 
         /* node config */
         final ComputingAppliance node1 = new ComputingAppliance(
                 Config.createNode("Node1", 52, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        35, 200, 535, 100_000, 70, sharedLatencyMap),
+                        35, 200, 535, 100_000, 20, sharedLatencyMap),
                 new GeoLocation(51.5074, -0.1278), "EU", "Azure", false); // London
 
+        /*
         final ComputingAppliance node2 = new ComputingAppliance(
                 Config.createNode("Node2", 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 296, 493, 37_500, 30, sharedLatencyMap),
+                        30, 296, 493, 100_000, 70, sharedLatencyMap),
                 new GeoLocation(48.8566, 2.3522), "EU", "AWS", false); // Paris
 
         final ComputingAppliance node3 = new ComputingAppliance(
                 Config.createNode("Node3", 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        40, 398, 533, 150_000, 60, sharedLatencyMap),
+                        40, 398, 533, 100_000, 70, sharedLatencyMap),
                 new GeoLocation(52.5200, 13.4050), "EU", "Azure", false); // Berlin
 
         final ComputingAppliance node4 = new ComputingAppliance(
                 Config.createNode("Node4", 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 150, 535, 37_500, 70, sharedLatencyMap),
+                        30, 150, 535, 100_000, 70, sharedLatencyMap),
                 new GeoLocation(41.8781, -87.6298), "US", "AWS", false); // Chicago
 
         final ComputingAppliance node5 = new ComputingAppliance(
                 Config.createNode("Node5", 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        40, 200, 506, 150_000, 60, sharedLatencyMap),
+                        40, 200, 506, 100_000, 70, sharedLatencyMap),
                 new GeoLocation(29.7604, -95.3698), "US", "Azure", false); // Houston
+        */
 
         new EnergyDataCollector("Node1-energy", node1.iaas,true, true);
-        new EnergyDataCollector("Node2-energy", node2.iaas,true, true);
-        new EnergyDataCollector("Node3-energy", node3.iaas,true, true);
-        new EnergyDataCollector("Node4-energy", node4.iaas,true, true);
-        new EnergyDataCollector("Node5-energy", node5.iaas,true, true);
+        //new EnergyDataCollector("Node2-energy", node2.iaas,true, true);
+        //new EnergyDataCollector("Node3-energy", node3.iaas,true, true);
+        //new EnergyDataCollector("Node4-energy", node4.iaas,true, true);
+        //new EnergyDataCollector("Node5-energy", node5.iaas,true, true);
 
         /* agent config */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L);
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
 
-        Map<String, String> mapping = new HashMap<>();
+        Map<String, String> mapping = new LinkedHashMap<>();
         ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, new DirectMappingStrategy(mapping), new FloodingMessagingStrategy());
 
+        List<Capacity> capacities = new ArrayList<>();
         for (int i = 0; i < delays.size(); i++) {
             String nameWithoutExtension = appDescriptionFiles.get(i).getFileName().toString().replaceFirst("\\.[^.]+$", "");
 
-            mapping.put(nameWithoutExtension + "-noise-sensor-01", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-02", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-03", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-04", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-05", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-06", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-07", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-08", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-09", "Agent0");
-            mapping.put(nameWithoutExtension + "-noise-sensor-10", "Agent0");
-
-            ra0.initResourceAgent(resourceAgentVa, resourceAgentArc,
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi1" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi2" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi3" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi4" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi5" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi6" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi7" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi8" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi9" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(ComputingAppliance.allComputingAppliances.get("RPi10" + i), 5, 8 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE)
-            );
+            for(int j = 1; j <= (int) Config.NOISE_CLASS_CONFIGURATION.get("noiseSensorCount"); j++) {
+                mapping.put(nameWithoutExtension + "-noise-sensor-" + j, "Agent0");
+                capacities.add(new Capacity(
+                        ComputingAppliance.allComputingAppliances.get("RPi" + i + j),
+                        5,
+                        8 * ScenarioBase.GB_IN_BYTE,
+                        256 * ScenarioBase.GB_IN_BYTE
+                ));
+            }
         }
+        ra0.initResourceAgent(resourceAgentVa, resourceAgentArc, capacities.toArray(new Capacity[0]));
         
         ResourceAgent ra1 = 
                 new ResourceAgent("Agent1", 0.00013889, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node1, 10, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
+        /*
         ResourceAgent ra2 = 
                 new ResourceAgent("Agent2", 0.00277778, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra2.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node2, 10, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
@@ -222,6 +165,7 @@ public class NoiseClassDemo {
         ResourceAgent ra5 = 
                 new ResourceAgent("Agent5", 0.00005556, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra5.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        */
 
         /* app submission */
         int i = 0;
@@ -241,10 +185,12 @@ public class NoiseClassDemo {
         //Timed.simulateUntil((long) Config.NOISE_CLASS_ONFIGURATION.get("simLength"));
         Timed.simulateUntilLastEvent();
         long stoptime = System.nanoTime();
+
         Path energyValues = EnergyDataCollector.writeToFile(ScenarioBase.RESULT_DIRECTORY);
         for (NoiseAppCsvExporter noiseAppCsvExporter : NoiseAppCsvExporter.allNoiseAppCsvExporters.values()){
+
             CsvVisualiser.visualise(
-                    noiseAppCsvExporter.appName,
+                    noiseAppCsvExporter.swarmAgent.app.name,
                     noiseAppCsvExporter.soundValuesPath,
                     noiseAppCsvExporter.noiseSensorTemperaturePath,
                     noiseAppCsvExporter.noiseSensorCpuLoadPath,
@@ -252,7 +198,8 @@ public class NoiseClassDemo {
                     noiseAppCsvExporter.processedFilePath,
                     noiseAppCsvExporter.fileMigrationCountPath,
                     noiseAppCsvExporter.sunIntensityPath,
-                    energyValues
+                    energyValues,
+                    exportCdfToCsv(ScenarioBase.RESULT_DIRECTORY, noiseAppCsvExporter.swarmAgent)
             ).write();
         }
 
@@ -328,6 +275,24 @@ public class NoiseClassDemo {
                             resFile = so;
                         }
                     }
+                    Collections.sort(rs.latencies);
+                    int n = rs.latencies.size();
+                    double max = rs.latencies.get(n - 1) / 1000.0;
+                    double p95 = rs.latencies.get((int) Math.ceil(n * 0.95) - 1) / 1000.0;
+                    double p99 = rs.latencies.get((int) Math.ceil(n * 0.99) - 1) / 1000.0;
+                    double median = rs.latencies.get(n / 2) / 1000.0;
+                    long count = rs.latencies.stream()
+                            .filter(l -> l <= 10_000)
+                            .count();
+
+                    double percentage = (count * 100.0) / rs.latencies.size();
+
+                    SimLogger.logRes("End-to-end latency (s):");
+                    SimLogger.logRes("\tMax: " + max);
+                    SimLogger.logRes("\tp95: " + p95);
+                    SimLogger.logRes("\tp99: " + p99);
+                    SimLogger.logRes("\tMedian: " + median);
+                    SimLogger.logRes("\t<=10s: " + percentage + "%");
                 }
             }
             soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize");
@@ -353,7 +318,7 @@ public class NoiseClassDemo {
         }
 
         SimLogger.logEmptyLine();
-        SimLogger.logRes("Simulated time (hour): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
+        SimLogger.logRes("Simulated time (minutes): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
         //SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
@@ -378,6 +343,35 @@ public class NoiseClassDemo {
                     noiseAppCsvExporter.noiseSensorTemperaturePath, (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold"));
         }
         SimLogger.logRes("Time below the temperature threshold (%):" + avgTimeBelowThrottling / NoiseAppCsvExporter.allNoiseAppCsvExporters.size());
+    }
+
+    private static Path exportCdfToCsv(String resultDirectory, SwarmAgent swarmAgent) throws IOException {
+        for (Object component : swarmAgent.observedAppComponents) {
+            if (component instanceof RemoteServer rs) {
+                List<Long> latencies = rs.latencies;
+
+                List<Long> sorted = new ArrayList<>(latencies);
+                Collections.sort(sorted);
+                Path outputPath = Path.of(resultDirectory, "latency-cdf.csv");
+
+                try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
+                    writer.write("latency_sec,cdf");
+                    writer.newLine();
+
+                    int n = sorted.size();
+                    for (int i = 0; i < n; i++) {
+                        double latencySec = sorted.get(i) / 1000.0;
+                        double cdf = (i + 1) / (double) n;
+
+                        writer.write(latencySec + "," + cdf);
+                        writer.newLine();
+                    }
+                }
+
+                return outputPath;
+            }
+        }
+        return null;
     }
 
     private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {
