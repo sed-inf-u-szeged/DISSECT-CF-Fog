@@ -61,10 +61,11 @@ public class Config {
                     //Map.entry("rankingMethod", "vote_w_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability_mul"),
                     //Map.entry("swarmAgentType", "greedy"),
-                    Map.entry("swarmAgentType", "forecast"),
+                    //Map.entry("swarmAgentType", "forecast"),
+                    Map.entry("swarmAgentType", "scalable_greedy"),
                     Map.entry("csvLogging", true),
-                    Map.entry("predictorDir", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/"),
-                    Map.entry("predictorModelPath", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/checkpoints/" +
+                    Map.entry("predictorDir", "/home/markusa/Swarmchestrate-TSforecasting/"),
+                    Map.entry("predictorModelPath", "/home/markusa/Swarmchestrate-TSforecasting/checkpoints/" +
                             "simulator1__UNC-1-Noise-Sensor-6_1min_pl128")
                     /*
                     public static final String RANKING_SCRIPT = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator/call_ranking_func.py";

@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.ScalableGreedySwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
@@ -118,6 +119,8 @@ public class Deployment extends Timed {
                 sa = new GreedyNoiseSwarmAgent(app);
             } else if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("forecast")){
                 sa = new ForecastBasedSwarmAgent(app);
+            } else if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("scalable_greedy")) {
+                sa = new ScalableGreedySwarmAgent(app);
             } else {
                 SimLogger.logError("This type of SA is unfamiliar in the application");
             }

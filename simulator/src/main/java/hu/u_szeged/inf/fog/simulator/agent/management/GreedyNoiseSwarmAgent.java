@@ -237,6 +237,31 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         }
     }
 
+    protected int getExtraScaleUpCountFromQueue() {
+        int queueLength = 0;
+        int availableSensors = 0;
+
+        for (Object o : this.observedAppComponents) {
+            if (o instanceof NoiseSensor ns) {
+                queueLength += ns.filesToProcess.size();
+
+                if (ns.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")
+                        && !this.noiseSensorsWithClassifier.contains(ns)) {
+                    availableSensors++;
+                }
+            }
+        }
+
+        int requiredClassifiers = (int) Math.ceil((double) queueLength / (int) Config.NOISE_CLASS_CONFIGURATION.get("noiseSensorCount") * 2);
+        int extraNeeded = requiredClassifiers - this.noiseSensorsWithClassifier.size();
+
+        if (extraNeeded < 1) {
+            extraNeeded = 1;
+        }
+
+        return Math.min(extraNeeded, availableSensors);
+    }
+
     @Override
     public void tick(long fires) {
         Pair<Map<NoiseSensor, Double>, Double> noiseSensorCpuLoads = updateCpuMetricsForLastMinute(null);

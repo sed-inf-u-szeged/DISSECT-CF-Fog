@@ -78,31 +78,6 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         shutdown(fires);
     }
 
-    private int getExtraScaleUpCountFromQueue() {
-        int queueLength = 0;
-        int availableSensors = 0;
-
-        for (Object o : this.observedAppComponents) {
-            if (o instanceof NoiseSensor ns) {
-                queueLength += ns.filesToProcess.size();
-
-                if (ns.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")
-                        && !this.noiseSensorsWithClassifier.contains(ns)) {
-                    availableSensors++;
-                }
-            }
-        }
-
-        int requiredClassifiers = (int) Math.ceil((double) queueLength / (int) Config.NOISE_CLASS_CONFIGURATION.get("noiseSensorCount"));
-        int extraNeeded = requiredClassifiers - this.noiseSensorsWithClassifier.size();
-
-        if (extraNeeded < 1) {
-            extraNeeded = 1;
-        }
-
-        return Math.min(extraNeeded, availableSensors);
-    }
-
     public void scale(double avgCpuLoad) {
         long nowMinute = (long) (Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS);
         long cooldown = (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow") / ScenarioBase.MINUTE_IN_MILLISECONDS;
