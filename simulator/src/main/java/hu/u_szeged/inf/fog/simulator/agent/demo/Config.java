@@ -39,7 +39,7 @@ public class Config {
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("minSoundLevel", 30), // dB
                     Map.entry("maxSoundLevel", 130), // dB
-                    Map.entry("soundThreshold", 0), // dB
+                    Map.entry("soundThreshold", 60), // dB
                     Map.entry("minCpuTemp", 55D), // ℃
                     Map.entry("maxCpuTemp", 85D), // ℃
                     Map.entry("cpuTempTreshold", 80D), // ℃
@@ -60,11 +60,11 @@ public class Config {
                     //Map.entry("rankingMethod", "vote_wo_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability_mul"),
-                    Map.entry("swarmAgentType", "greedy"),
-                    //Map.entry("swarmAgentType", "forecast"),
+                    //Map.entry("swarmAgentType", "greedy"),
+                    Map.entry("swarmAgentType", "forecast"),
                     Map.entry("csvLogging", true),
-                    Map.entry("predictorDir", "/home/markusa/Swarmchestrate-TSforecasting/"),
-                    Map.entry("predictorModelPath", "/home/markusa/Swarmchestrate-TSforecasting/checkpoints/" +
+                    Map.entry("predictorDir", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/"),
+                    Map.entry("predictorModelPath", "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting/checkpoints/" +
                             "simulator1__UNC-1-Noise-Sensor-6_1min_pl128")
                     /*
                     public static final String RANKING_SCRIPT = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator/call_ranking_func.py";

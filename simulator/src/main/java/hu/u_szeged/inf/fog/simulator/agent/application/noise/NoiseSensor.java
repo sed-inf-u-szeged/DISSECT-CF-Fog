@@ -35,7 +35,7 @@ public class NoiseSensor extends Timed {
 
     public double cpuTemperature;
 
-    PriorityQueue<StorageObject> filesToProcess = new PriorityQueue<>(
+    public PriorityQueue<StorageObject> filesToProcess = new PriorityQueue<>(
             Comparator
                     .comparingLong((StorageObject obj) ->
                             RemoteServer.networkTimePerFile.getOrDefault(obj.id, Long.MAX_VALUE)
@@ -248,14 +248,14 @@ public class NoiseSensor extends Timed {
             }
         } else {
             if (this.sunExposed) {
-                delta += 0.8 * sun; // 1.5
+                delta += 0.75 * sun; // 1.5
             } else {
-                delta += 0.4 * sun; // 0.75
+                delta += 0.375 * sun; // 0.75
             }
         }
 
         // noise
-        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.1;
+        delta += (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.25;
         cpuTemperature += delta;
         
         if (cpuTemperature < minCpuTemp) {

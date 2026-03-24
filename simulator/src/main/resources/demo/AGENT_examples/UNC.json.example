@@ -9,7 +9,7 @@
 
   "components": [
     {
-      "id": "01",
+      "id": "1",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -23,7 +23,7 @@
       }
     },
     {
-      "id": "02",
+      "id": "2",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -37,7 +37,7 @@
       }
     },
     {
-      "id": "03",
+      "id": "3",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -51,7 +51,7 @@
       }
     },
     {
-      "id": "04",
+      "id": "4",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -65,7 +65,7 @@
       }
     },
     {
-      "id": "05",
+      "id": "5",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -79,7 +79,7 @@
       }
     },
     {
-      "id": "06",
+      "id": "6",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -93,7 +93,7 @@
       }
     },
     {
-      "id": "07",
+      "id": "7",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -107,7 +107,7 @@
       }
     },
     {
-      "id": "08",
+      "id": "8",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,
@@ -121,7 +121,7 @@
       }
     },
     {
-      "id": "09",
+      "id": "9",
       "requirements": {
         "cpu": 4,
         "memory": 4294967296,

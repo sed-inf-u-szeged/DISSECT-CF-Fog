@@ -78,6 +78,31 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         shutdown(fires);
     }
 
+    private int getExtraScaleUpCountFromQueue() {
+        int queueLength = 0;
+        int availableSensors = 0;
+
+        for (Object o : this.observedAppComponents) {
+            if (o instanceof NoiseSensor ns) {
+                queueLength += ns.filesToProcess.size();
+
+                if (ns.cpuTemperature < (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold")
+                        && !this.noiseSensorsWithClassifier.contains(ns)) {
+                    availableSensors++;
+                }
+            }
+        }
+
+        int requiredClassifiers = (int) Math.ceil((double) queueLength / (int) Config.NOISE_CLASS_CONFIGURATION.get("noiseSensorCount"));
+        int extraNeeded = requiredClassifiers - this.noiseSensorsWithClassifier.size();
+
+        if (extraNeeded < 1) {
+            extraNeeded = 1;
+        }
+
+        return Math.min(extraNeeded, availableSensors);
+    }
+
     public void scale(double avgCpuLoad) {
         long nowMinute = (long) (Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS);
         long cooldown = (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow") / ScenarioBase.MINUTE_IN_MILLISECONDS;
@@ -111,30 +136,52 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
         // predictive scaling
         if (!lastPredictions.isEmpty() && hasHotRunningClassifier(tmaxCache)) {
-            NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
-            if (ns != null) {
+            int startCount = getExtraScaleUpCountFromQueue();
+            boolean started = false;
+
+            for (int i = 0; i < startCount; i++) {
+                NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
+                if (ns == null) {
+                    break;
+                }
+
                 noiseSensorsWithClassifier.add(ns);
+                started = true;
                 lastScalingActionMinute = nowMinute;
                 decisionType.compute("scale-up-predictive", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to predicted thermal risk");
+                        + " min. due to predicted thermal risk (" + (i + 1) + ")");
             }
-            return;
+
+            if (started) {
+                return;
+            }
         }
 
         // load-based scale-up trigger
         if (avgCpuLoad > cpuLoadScaleUp) {
-            NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
-            if (ns != null) {
+            int startCount = getExtraScaleUpCountFromQueue();
+            boolean started = false;
+
+            for (int i = 0; i < startCount; i++) {
+                NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
+                if (ns == null) {
+                    break;
+                }
+
                 noiseSensorsWithClassifier.add(ns);
+                started = true;
                 lastScalingActionMinute = nowMinute;
                 decisionType.compute("scale-up-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min. due to large load");
+                        + " min. due to large load (" + (i + 1) + ")");
             }
-            return;
+
+            if (started) {
+                return;
+            }
         }
 
         // downscale
