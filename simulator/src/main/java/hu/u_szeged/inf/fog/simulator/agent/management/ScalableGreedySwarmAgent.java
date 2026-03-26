@@ -58,20 +58,22 @@ public class ScalableGreedySwarmAgent extends GreedyNoiseSwarmAgent {
         double cpuLoadScaleUp = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp");
         double cpuLoadScaleDown = (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleDown");
 
-        // minimum requirement
+        boolean scaledToMinimum = false;
         while (noiseSensorsWithClassifier.size() < minContainerCount) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns == null) {
-                break;
+                return;
             }
             noiseSensorsWithClassifier.add(ns);
             decisionType.compute("scale-up-min", (k, v) -> v + 1);
+            scaledToMinimum = true;
+
             SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                     + " min. due to minimum requirement");
         }
 
-        if (noiseSensorsWithClassifier.size() < minContainerCount) {
+        if (scaledToMinimum) {
             return;
         }
 
@@ -79,33 +81,24 @@ public class ScalableGreedySwarmAgent extends GreedyNoiseSwarmAgent {
             return;
         }
 
-        // load-based scale-up trigger
+        // load-based scaling
         if (avgCpuLoad > cpuLoadScaleUp) {
             int startCount = getExtraScaleUpCountFromQueue();
-            boolean started = false;
 
             for (int i = 0; i < startCount; i++) {
                 NoiseSensor ns = findSensorByCpuTemperature(true);
                 if (ns == null) {
-                    break;
+                    return;
                 }
 
                 noiseSensorsWithClassifier.add(ns);
-                started = true;
                 lastScalingActionMinute = nowMinute;
                 decisionType.compute("scale-up-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to large load (" + (i + 1) + ")");
             }
-
-            if (started) {
-                return;
-            }
-        }
-
-        // downscale
-        if (noiseSensorsWithClassifier.size() > minContainerCount
+        } else if (noiseSensorsWithClassifier.size() > minContainerCount
                 && getAverageClassifierCpuLoadOverWindow() < cpuLoadScaleDown) {
 
             NoiseSensor ns =findSensorByCpuTemperature(false);

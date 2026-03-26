@@ -88,20 +88,22 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
         final Map<String, Double> tmaxCache = !lastPredictions.isEmpty() ? buildTmaxCache() : null;
 
-        // minimum requirement
+        boolean scaledToMinimum = false;
         while (noiseSensorsWithClassifier.size() < minContainerCount) {
             NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
             if (ns == null) {
-                break;
+                return;
             }
             noiseSensorsWithClassifier.add(ns);
             decisionType.compute("scale-up-min", (k, v) -> v + 1);
+            scaledToMinimum = true;
+
             SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                     + " min. due to minimum requirement");
         }
 
-        if (noiseSensorsWithClassifier.size() < minContainerCount) {
+        if (scaledToMinimum) {
             return;
         }
 
@@ -117,7 +119,7 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
             for (int i = 0; i < startCount; i++) {
                 NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
                 if (ns == null) {
-                    break;
+                    return;
                 }
 
                 noiseSensorsWithClassifier.add(ns);
@@ -137,30 +139,21 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
         // load-based scale-up trigger
         if (avgCpuLoad > cpuLoadScaleUp) {
             int startCount = getExtraScaleUpCountFromQueue();
-            boolean started = false;
 
             for (int i = 0; i < startCount; i++) {
                 NoiseSensor ns = selectSensorToStartClassifier(tmaxCache);
                 if (ns == null) {
-                    break;
+                    return;
                 }
 
                 noiseSensorsWithClassifier.add(ns);
-                started = true;
                 lastScalingActionMinute = nowMinute;
                 decisionType.compute("scale-up-load", (k, v) -> v + 1);
                 SimLogger.logRun(ns.util.component.id + "'classifier was started at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min. due to large load (" + (i + 1) + ")");
             }
-
-            if (started) {
-                return;
-            }
-        }
-
-        // downscale
-        if (noiseSensorsWithClassifier.size() > minContainerCount
+        } else if (noiseSensorsWithClassifier.size() > minContainerCount
                 && getAverageClassifierCpuLoadOverWindow() < cpuLoadScaleDown) {
 
             NoiseSensor ns = selectSensorToStopClassifier(tmaxCache);

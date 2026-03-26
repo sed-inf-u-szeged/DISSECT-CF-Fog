@@ -61,8 +61,8 @@ public class Config {
                     //Map.entry("rankingMethod", "vote_w_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability_mul"),
                     //Map.entry("swarmAgentType", "greedy"),
-                    //Map.entry("swarmAgentType", "forecast"),
-                    Map.entry("swarmAgentType", "scalable_greedy"),
+                    Map.entry("swarmAgentType", "forecast"),
+                    //Map.entry("swarmAgentType", "scalable_greedy"),
                     Map.entry("csvLogging", true),
                     Map.entry("predictorDir", "/home/markusa/Swarmchestrate-TSforecasting/"),
                     Map.entry("predictorModelPath", "/home/markusa/Swarmchestrate-TSforecasting/checkpoints/" +

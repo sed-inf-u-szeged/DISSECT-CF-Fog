@@ -200,10 +200,11 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
     void scale(double avgCpuLoad) {
         boolean scaledToMinimum = false;
-        while (noiseSensorsWithClassifier.size() < (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount")) {
+        int minContainerCount = (int) Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount");
+        while (noiseSensorsWithClassifier.size() < minContainerCount) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns == null) {
-                break;
+                return;
             }
 
             noiseSensorsWithClassifier.add(ns);
@@ -218,6 +219,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         if (scaledToMinimum) {
             return;
         }
+
         if (avgCpuLoad > (double) Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp")) {
             NoiseSensor ns = findSensorByCpuTemperature(true);
             if (ns != null) {

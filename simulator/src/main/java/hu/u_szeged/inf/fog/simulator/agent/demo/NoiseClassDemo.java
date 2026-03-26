@@ -352,6 +352,7 @@ public class NoiseClassDemo {
 
                 List<Long> sorted = new ArrayList<>(latencies);
                 Collections.sort(sorted);
+
                 Path outputPath = Path.of(resultDirectory, "latency-cdf.csv");
 
                 try (BufferedWriter writer = Files.newBufferedWriter(outputPath)) {
@@ -359,12 +360,20 @@ public class NoiseClassDemo {
                     writer.newLine();
 
                     int n = sorted.size();
-                    for (int i = 0; i < n; i++) {
-                        double latencySec = sorted.get(i) / 1000.0;
-                        double cdf = (i + 1) / (double) n;
+                    long prev = Long.MIN_VALUE;
 
-                        writer.write(latencySec + "," + cdf);
-                        writer.newLine();
+                    for (int i = 0; i < n; i++) {
+                        long current = sorted.get(i);
+
+                        if (current != prev) {
+                            double latencySec = current / 1000.0;
+                            double cdf = (i + 1) / (double) n;
+
+                            writer.write(latencySec + "," + cdf);
+                            writer.newLine();
+
+                            prev = current;
+                        }
                     }
                 }
 
