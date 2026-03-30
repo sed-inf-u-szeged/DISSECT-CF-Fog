@@ -18,12 +18,12 @@ permalink: /basics/time
 
 ## [DES]{:target="_blank"}
 
-The simulator follows the discrete-event simulation model. This means that the simulator models the operation of a system as a (discrete) **sequence of events in time**. 
-This also entails that we can access the system only at specific points in time.
+The simulator follows the discrete-event simulation model. This means that the simulator models the operation of a system as a (discrete) **sequence of events in time**.
+This also means that we can access the system only at specific points in simulated time.
 
 It is important to mention that systems using DES separate **real time** and **simulated time** thanks to their internal clocks.
 
-This is also why no change in the system is assumed to occur between consecutive events; thus, the simulation time can **directly jump to** the occurrence time of **the next event**.  
+Therefore, no changes are assumed to occur between consecutive events, and the simulation time can **jump directly** to the occurrence of the **next event**.
 This means that there can be instances where only seconds pass in real time, but the simulator's time models the system's actions years into the future.
 
 
@@ -41,7 +41,7 @@ allowing them to use virtually **any measurement** as their unit of time.
 In these simulators we call this unit of time a **tick**.
 
 {: .important}
-Ticks can represent nanoseconds, months, even years, as long as everything (that is time-related) uses the **same measurement consistently**.  
+Ticks can represent nanoseconds, months, or even years, as long as all time-related measurements in the simulation use the **same unit consistently**.
 In most examples, ticks can be thought of as **milliseconds** unless stated otherwise.
 
 
@@ -327,7 +327,7 @@ public class DeferredExample extends DeferredEvent {
         new TimedExample("TimedTest #2", 25);
     }
 
-public static void main(String[] args) {
+    public static void main(String[] args) {
         new TimedExample("TimedTest #1", 100);
         new DeferredExample(200);
 
@@ -359,6 +359,9 @@ TimedTest #2 - time: 300
 
 Process finished with exit code 0
 ```
+
+{: .note}
+The simulator handles overlapping events automatically, which is why TimedTest #1 and #2 may appear at the same tick in output.
 
 Inspecting the output we can see that TimedTest #1, which was created in main with a frequency of 100 ticks, runs before the one with 25 frequency.  
 TimedTest #2 only writes to the console once the simulation is past 200 ticks (at 225), since this is

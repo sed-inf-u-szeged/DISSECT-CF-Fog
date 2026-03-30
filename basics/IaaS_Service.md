@@ -25,7 +25,7 @@ Although cloud systems are often divided into IaaS, PaaS, and SaaS layers, this 
 {: .text-center}
 
 As a result, we will work directly with components like physical machines, virtual machines, repositories, and resource constraints, just like before.
-However, unlike in the previous example - where we manually created VMs on our PM - we now delegate this task to the **[IaaSService]{:target="_blank"}** class, which manages its own PMs and handles the scheduling of VM requests.
+However, unlike in the previous example - where we manually created VMs on our PM - we now delegate this task to the **[IaaSService]{:target="_blank"}** class, which manages its own PMs and handles VM scheduling.
 
 Just like a real IaaS service.
 
@@ -112,7 +112,7 @@ This function allows the IaaS to grow its storage capacities.
 
 ## Example
 
-Now that we know how to set up a IaaSService for the simulation, let's look at its usage through an actual [example]{:target="_blank"}.
+Now that we know how to set up an IaaSService for the simulation, let's look at its usage through an actual [example]{:target="_blank"}.
 
 ```java
 package hu.u_szeged.inf.fog.simulator.demo.simple;
@@ -213,8 +213,8 @@ At first glance, this example is very similar to the [previous example](vm#examp
 Let’s take a look at the differences:
 - Right at the beginning we [instantiate](#iaasservice---constructor) an IaaSService.
   We use the [FirstFitScheduler]{:target="_blank"} class for VM scheduling and the [AlwaysOnMachines]{:target="_blank"} class for PM control.
-- We create PhysicalMachines just like in the previous example. The difference is that we register them using the [registerHost](#registerhost) function, making them available to the IaaSService.
-- We create a cloud storage for the IaaSService and attach it using the [registerRepository](#registerrepository) function.
+- We create PhysicalMachines just like in the previous example. The difference is that we register them using the [registerHost](#registerhost) function, which makes them available to the IaaSService.
+- We create cloud storage for the IaaSService and attach it using the [registerRepository](#registerrepository) function.
 - Finally, we set up the VMs just as before, except that [requestVM](#requestvm) is now called on the IaaSService instead of directly on the PMs, since the service manages those machines.
   - This time, instead of one VM, we request three to better demonstrate cloud-like behavior.
 - We can use the usual [simulateUntilLastEvent](time#simulateuntillastevent) call to run the simulation.
@@ -241,7 +241,7 @@ Considering the similarities between the examples - and the fact that the main d
 - We print the time after the simulation ends, which represents the point when all requested VMs are running.
 - We list the machines managed by the IaaSService:
   - We can see their running VMs and storage:
-    - The first PM hosts 2 VMs, while the second hosts 1. This is because the defined ARC which uses exactly half of a PM’s original resources, allowing at most two VMs to fit on one machine.
+    - The first PM hosts 2 VMs, while the second hosts 1. This is because the defined ARC, which uses exactly half of a PM’s original resources, allowing at most two VMs to fit on a single machine.
     - We can also observe that each repository contains a copy of the 1 GB VM image.
 - Finally, we print the IaaSService’s repository (the cloud storage), which contains the original image file registered with the "ubuntu" identifier.
 

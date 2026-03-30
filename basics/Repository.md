@@ -140,6 +140,10 @@ Initiates transfer from a remote location.
 **Return:**
 The consumption object that represents the appropriate data transfer or null if it is not possible to initiate. (In the upcoming example this won't matter.)
 
+
+---
+
+
 ## Example
 
 Let's look at an actual data [transfer example]{:target="_blank"}!

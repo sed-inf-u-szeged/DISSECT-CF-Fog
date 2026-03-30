@@ -19,7 +19,7 @@ After introducing the components, you’ll find **walkthroughs of [demos]{:targe
 > 
 - Not every class is covered in this guide — mostly only those used in the demos.
 - Only essential methods and ones used in the demos are explained.
-- This tutorial only helps you start out, for more in-depth knowledge checkout the javadoc documentation.
+- This tutorial only helps you start out. For more in-depth knowledge, check out the javadoc documentation.
 
 ## [Let's get started!](setup)
 

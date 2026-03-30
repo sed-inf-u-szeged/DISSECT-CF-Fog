@@ -33,6 +33,10 @@ Such resources may include, for example, **storage services** or the rental of *
 We already know how to do the first step from the [previous example](repository#example) (since VirtualAppliances are just specific
 type of StorageObjects), but haven't really worked with the **PhysicalMachine** class, so let's take a look at that.
 
+
+---
+
+
 ## [PhysicalMachine]{:target="_blank"}
 
 This class represents a single Physical machine with computing resources as well as local disks and network connections.
@@ -168,7 +172,7 @@ The resource consumption object that will represent the CPU consumption. Could r
 
 ## Example
 
-Now with every knowledge of knowing how to create VMs and use them, let's look at an actual [example]{:target="_blank"}. 
+Now that we know how to create VMs and use them, let's look at an actual [example]{:target="_blank"}.
 
 ```java
 package hu.u_szeged.inf.fog.simulator.demo.simple;

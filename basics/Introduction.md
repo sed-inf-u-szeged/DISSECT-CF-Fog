@@ -26,9 +26,9 @@ For more details check out the current **[DISSECT-CF-Fog](https://github.com/sed
 
 ## What will be in this section?
 
-As previously said DISSECT-CF-Fog builds onto DISSECT-CF. Therefore, most of the **basic components** come from the original simulator.
+As previously said, DISSECT-CF-Fog builds onto DISSECT-CF. Therefore, most of the **basic components** come from the original simulator.
 
-Since DISSECT-CF-Fog simulates **fogs** and **(mobile) edge devices** as fundamental elements of the system, they will be also covered in the basics section.
+Since DISSECT-CF-Fog simulates **fogs** and **(mobile) edge devices** as fundamental elements of the system, they will also be covered in the basics section.
 
 ![](../assets/images/dcfarc.jpg "DISSECT-CF Architecture")
 {: .text-center}
