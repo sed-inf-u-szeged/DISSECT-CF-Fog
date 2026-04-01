@@ -20,8 +20,6 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -165,7 +163,7 @@ public class EdgeDevice extends Device {
      * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
     public void selectBestCommunicationProtocol(){
-        if(this.battery == null){
+        if(this.battery == null){ // már egyszer checkolva van a tick()-ben szóval lehet fölös de elfér egyelőre
             return;
         }
 
@@ -291,12 +289,16 @@ public class EdgeDevice extends Device {
 
         try {
             if (this.deviceStrategy.chosenApplication != null) {
+                // TODO átküldött taskok -> application
+
                 this.startDataTransfer();
                 this.stopVm();
             } else {
                 if (this.localVm == null || this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
                     this.startVm();
                 } else {
+                    // TOOD lokálisan feldolgozott taskok
+
                     long dataToBeProcessed = 0;
                     ArrayList<StorageObject> dataToBeRemoved = new ArrayList<>();
                     for (StorageObject so : this.localMachine.localDisk.contents()) {
