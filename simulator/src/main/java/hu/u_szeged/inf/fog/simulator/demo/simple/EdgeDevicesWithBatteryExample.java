@@ -20,6 +20,7 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.*;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -39,9 +40,9 @@ public class EdgeDevicesWithBatteryExample {
         ComputingAppliance fog1 = new ComputingAppliance(cloudfile, "fog1", new GeoLocation(47.6, 17.9), 50);
         ComputingAppliance fog2 = new ComputingAppliance(cloudfile, "fog2", new GeoLocation(46.0, 18.2), 50);
 
-        new EnergyDataCollector("cloud1", cloud1.iaas, true);
-        new EnergyDataCollector("fog1", fog1.iaas, true);
-        new EnergyDataCollector("fog2", fog2.iaas, true);
+        new EnergyDataCollector("cloud1", cloud1.iaas, false, true);
+        new EnergyDataCollector("fog1", fog1.iaas, false, true);
+        new EnergyDataCollector("fog2", fog2.iaas, false, true);
 
         fog1.setParent(cloud1, 77);
         fog2.setParent(cloud1, 80);

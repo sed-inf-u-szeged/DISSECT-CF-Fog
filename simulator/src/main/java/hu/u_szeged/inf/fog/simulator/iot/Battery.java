@@ -80,7 +80,7 @@ public class Battery extends Timed {
      * Last reading of the pmEnergyDataCollector used to calculate consumption.
      */
     @Getter @Setter
-    private double lastReading;
+    private double lastReading = 0;
 
     /**
      * Used to stop battery drainage or task execution while charging.
@@ -147,16 +147,31 @@ public class Battery extends Timed {
     public void tick(long fires) {
         if(stopTime < Timed.getFireCount()){
             unsubscribe();
+            for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
+                edc.stop();
+            }
         }
 
-        if(currLevel - drainRate / 60 < 0){
+        double convertTo_mAh = pmEnergyDataCollector.accumulatedEnergy/3600000/voltage*1000;
+
+//        if(currLevel - drainRate / 60 < 0){
+//            unsubscribe();
+//            new Charge(chargeTime);
+//            return;
+//        }
+        if(currLevel - (convertTo_mAh - lastReading) <= 0){
             unsubscribe();
             new Charge(chargeTime);
             return;
         }
 
         // mAh/h a drainRate, de az event percenkénti, ezért lesz a mAh/hból mAh/min
-        currLevel -= drainRate / 60;
+        //currLevel -= drainRate / 60;
+
+
+        System.out.println("EDC: " + convertTo_mAh);
+        currLevel -= convertTo_mAh - lastReading;
+        lastReading = convertTo_mAh;
 
         readings.put(fires, currLevel);
     }
@@ -171,6 +186,7 @@ public class Battery extends Timed {
         @Override
         protected void eventAction() {
             currLevel = maxCapacity;
+
             readings.put(Timed.getFireCount(),currLevel);
 
             isCharging = false;

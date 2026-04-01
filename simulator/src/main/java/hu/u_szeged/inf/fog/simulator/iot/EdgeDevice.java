@@ -166,7 +166,7 @@ public class EdgeDevice extends Device {
      * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
     public void selectBestCommunicationProtocol(){
-        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
+        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (miket kezel az MEC szerver)
         List<String> options = new ArrayList<>();
 
 
@@ -259,42 +259,42 @@ public class EdgeDevice extends Device {
 
                                         //System.out.println("End task "+ this.hashCode() + ": " + Timed.getFireCount());
 
-                                        if(battery != null) {
-                                            /*
-                                            //battery számítások
-                                            cpuUtilization = numberOfInstructions / (numberOfCpuCores * instructionsPerTick * taskTime) (taskTime tickben)
-                                            0-1 közötti érték kihasználtságra
-
-                                            avgPowerConsumption = idlePower + cpuUtilization * (maxPower − idlePower),
-                                            de ez lekérhető a PM cpuTransitionjéből getCurrentPowerrel ahol a paraméter a cpuUtilization
-                                            ez a CPU fogyasztása W-ban
-
-                                            totalEnergyConsumedDuringTask = avgPowerConsumption * (t/3600000)
-                                            (ha t msbe van, és igy lesz akkor végeredmény Wh)
-                                            a tényleges energiaigénye a tasknak Wh-ban
-
-                                            battery csökkentéshez mértékegység váltás kell Wh -> mAh
-                                            energyConsumed_Ah = energyConsumed_Wh / voltage
-                                            energyConsumed_mAh = energyConsumed_Ah * 1000
-                                            newBatteryLvl = max(0, currentLvl-energyConsumed_mAh)
-                                            */
-                                            double taskTime = Timed.getFireCount() - taskStartTime;
-
-                                            //consumption
-                                            double cpuUtilization = noi / (localMachine.getCapacities().getTotalProcessingPower() * taskTime);
-                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(cpuUtilization);
-                                            /* //alternative calculation, same result
-                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getMinConsumption() +
-                                                cpuUtilization * localMachine.getCurrentPowerBehavior().getConsumptionRange();*/
-                                            double taskEnergyConsumption = avgPowerConsumption * (taskTime / 3600000);
-
-                                            //conversion to mAh
-                                            taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
-
-                                            //drain
-                                            battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
-                                            battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
-                                        }
+//                                        if(battery != null) {
+//                                            /*
+//                                            //battery számítások
+//                                            cpuUtilization = numberOfInstructions / (numberOfCpuCores * instructionsPerTick * taskTime) (taskTime tickben)
+//                                            0-1 közötti érték kihasználtságra
+//
+//                                            avgPowerConsumption = idlePower + cpuUtilization * (maxPower − idlePower),
+//                                            de ez lekérhető a PM cpuTransitionjéből getCurrentPowerrel ahol a paraméter a cpuUtilization
+//                                            ez a CPU fogyasztása W-ban
+//
+//                                            totalEnergyConsumedDuringTask = avgPowerConsumption * (t/3600000)
+//                                            (ha t msbe van, és igy lesz akkor végeredmény Wh)
+//                                            a tényleges energiaigénye a tasknak Wh-ban
+//
+//                                            battery csökkentéshez mértékegység váltás kell Wh -> mAh
+//                                            energyConsumed_Ah = energyConsumed_Wh / voltage
+//                                            energyConsumed_mAh = energyConsumed_Ah * 1000
+//                                            newBatteryLvl = max(0, currentLvl-energyConsumed_mAh)
+//                                            */
+//                                            double taskTime = Timed.getFireCount() - taskStartTime;
+//
+//                                            //consumption
+//                                            double cpuUtilization = noi / (localMachine.getCapacities().getTotalProcessingPower() * taskTime);
+//                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(cpuUtilization);
+//                                            /* //alternative calculation, same result
+//                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getMinConsumption() +
+//                                                cpuUtilization * localMachine.getCurrentPowerBehavior().getConsumptionRange();*/
+//                                            double taskEnergyConsumption = avgPowerConsumption * (taskTime / 3600000);
+//
+//                                            //conversion to mAh
+//                                            taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
+//
+//                                            //drain
+//                                            battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
+//                                            battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
+//                                        }
                                     }
                                 });
                         if (rc != null) {
