@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 
@@ -30,33 +31,42 @@ public class CommunicationProtocol {
     az egyes értékeken még dolgozni kell, mert jelenleg még nem találtam megfelelő forrást amiből egyértelmű adatok jönnének le szóval
     egyelőre a legtöbb dolog placeholder és nincs sok értelmük főleg, hogy a maxpowert nem is tudom hogy kéne belőni mert szinte sose láttom csak az idlet
     */
-    public Repository newWifiRepository(){
+    public Repository newWifiRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(0.065, 1.55, 2.0, 1, 2);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-        return new Repository(4_294_967_296L, "WIFI-Repo" + WiFiRepoCounter++, 18750,18750,18750, new HashMap<>(), stTransitions, nwTransitions); //150 Mbit/s
+        Repository repository = new Repository(4_294_967_296L, "WIFI-Repo" + WiFiRepoCounter++, 18750,18750,18750, new HashMap<>(), stTransitions, nwTransitions); //150 Mbit/s
+        repository.setState(NetworkNode.State.RUNNING);
+
+        return repository;
     }
 
-    public Repository new5GRepository(){
+    public Repository new5GRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(0.065, 1.65, 2.0, 1, 2);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-        return new Repository(4_294_967_296L, "5G-Repo" + _5GRepoCounter++, 12500,12500,12500, new HashMap<>(), stTransitions, nwTransitions); //100 Mbit/s
+        Repository repository = new Repository(4_294_967_296L, "5G-Repo" + _5GRepoCounter++, 12500,12500,12500, new HashMap<>(), stTransitions, nwTransitions); //100 Mbit/s
+        repository.setState(NetworkNode.State.RUNNING);
+
+        return repository;
     }
 
-    public Repository newLoRaRepository(){
+    public Repository newLoRaRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(0.045, 1.45, 2.0, 1, 2);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
 
-        return new Repository(4_294_967_296L, "LORA-Repo" + LoRaRepoCounter++, 1,1,1, new HashMap<>(), stTransitions, nwTransitions); //8 Kbit/s?
+        Repository repository = new Repository(4_294_967_296L, "LORA-Repo" + LoRaRepoCounter++, 1,1,1, new HashMap<>(), stTransitions, nwTransitions); //8 Kbit/s?
+        repository.setState(NetworkNode.State.RUNNING);
+
+        return repository;
     }
 }

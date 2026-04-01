@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Battery;
+import hu.u_szeged.inf.fog.simulator.iot.CommunicationProtocol;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -75,7 +76,8 @@ public class EdgeDevicesWithBatteryExample {
 
             //System.out.println(cpuTransitions.get("OFF").getMinConsumption()/4.4*1000);
 
-            Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
+            // Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
+            Repository repo = CommunicationProtocol.getInstance().newWifiRepository();
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
 
             Device device;
@@ -92,6 +94,7 @@ public class EdgeDevicesWithBatteryExample {
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();
+        //Timed.simulateUntil(188000000);
         long stoptime = System.nanoTime();
 
 //        ScenarioBase.calculateIoTCost();

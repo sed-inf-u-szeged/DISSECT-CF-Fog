@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
@@ -13,7 +12,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
-import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -22,6 +20,8 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -62,10 +62,6 @@ public class EdgeDevice extends Device {
      */
     public Map<String, Repository> communicationProtocols = new HashMap<String, Repository>();
 
-    /**
-     * The communication protocols the edge device can use.
-     */
-    public String currentCommProt;
 
     /**
      * Constructs a new EdgeDevice instance.
@@ -85,8 +81,11 @@ public class EdgeDevice extends Device {
             DeviceStrategy deviceStrategy, PhysicalMachine localMachine, double instructionPerByte, int latency, 
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
-        setCommunicationProtocols(true, true, true);
-        //selectBestCommunicationProtocol();
+        try{
+            setCommunicationProtocols(true, true, true);
+        } catch (NetworkException e) {
+            throw new RuntimeException(e);
+        }
         //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
         this.startTime = startTime + delay;
@@ -149,7 +148,7 @@ public class EdgeDevice extends Device {
     /**
      * Sets what communication protocols the edge device can use.
      */
-    public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora){
+    public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora) throws NetworkException {
         communicationProtocols.clear();
         if(wifi){
             communicationProtocols.put("WIFI", CommunicationProtocol.getInstance().newWifiRepository());
@@ -166,35 +165,101 @@ public class EdgeDevice extends Device {
      * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
     public void selectBestCommunicationProtocol(){
-        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
-        List<String> options = new ArrayList<>();
-
-
-        // alapból mec szerver alapján options feltöltés, esetleg súlyozás a device és szerver közti táv alapján
-        // itt nem vagyok teljesen még 100%ig biztos hogy hogy nézem meg még hogy éppen melyik szervert választjuk, ez lehet applicationbe kerül át dunno
-
-
-        // (pl ha csak 1-et választhatunk akkor fölös bármit tesztelni és csak azt adjuk vissza egyből)
-        //példa váltásra, alapeset
-        if(options.size() == 1){
-            // 1. ehhez a variációhoz módosítani kéne a sztakis pm-et, hogy a localdisk ne legyen final amit nem akarunk
-            //localMachine.localDisk = communicationProtocols.get(options.get(0));
-
+        if(this.battery == null){
+            return;
         }
 
-        //battery alapján választás
-        // >75% a leggyorsabb (jelenleg wifi, az eszik a legtöbbet is)
-        // >35% a közepes ami az 5g ami szintén elég sokat fogyaszt, de gyors, lehet a 35% sok de lényegtelen
-        // <=35% lassú de keveset fogyasztó lora
+        //probléma volt akkor ha lokális feldolgozás során report váltok szóval ez megment
+        if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)){
+            return;
+        }
 
+        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
+        List<String> options = new ArrayList<>();
+        this.deviceStrategy.findApplication(); // ezzel elvileg a legjobb szervert választjuk ki a stratégiának megfelelően szóval arra nem kell feltételt írni?
+        if(this.deviceStrategy.chosenApplication != null){
+            options = this.deviceStrategy.chosenApplication.computingAppliance.communicationProtocols;
+        }
+
+        //van legalább egy közös commprot, ha nincs akkor lehet le kéne valahogy kezelni, de akkor csak megtartanánk a jelenlegi repot nem tudom lehet túl gondolom
+        boolean atLeastOne = false;
+        for (String commProtocol : options) {
+            if(communicationProtocols.containsKey(commProtocol)){
+                atLeastOne = true;
+                break;
+            }
+        }
+        if(!atLeastOne){
+            return;
+        }
+
+
+        String first = "WIFI";
+        String second = "5G";
+        String third = "LORA";
+        /*
+        sorrend felállítás, hogy melyik a legjobb commprot
+        ezen bőven lehetne finomítani elég sok feltétellel meg szebb kivitelezéssel hogyha több commprot is lenne,
+        de egyelőre csak töltöttséget nézünk és csak a 3 commprotot vizsgáljuk -> elég statikus döntések lesznek amég más feltétel nincs
+        a másik feltétel meg az hogy választható ami a kövi résznél lesz kiválasztva
+        */
+
+
+        if(this.battery.getCurrentPercentage() > 70){
+            first = "WIFI";
+            second = "5G";
+            third = "LORA";
+        } else if(this.battery.getCurrentPercentage() > 50){
+            first = "5G";
+            second = "WIFI";
+            third = "LORA";
+        } else if(this.battery.getCurrentPercentage() > 30){
+            first = "5G";
+            second = "LORA";
+            third = "WIFI";
+        } else if(this.battery.getCurrentPercentage() <= 30){ //lehetne else de ha változnak a feltételek vszeg kellene?
+            first = "LORA";
+            second = "5G";
+            third = "WIFI";
+        }
+
+        Repository swap = null;
+
+        //választás, a sorrend alapján
+        if(options.contains(first)){
+            swap = communicationProtocols.get(first);
+        } else if(options.contains(second)){
+            swap = communicationProtocols.get(second);
+        } else if(options.contains(third)){
+            swap = communicationProtocols.get(third);
+        }
+
+        // TODO figyelni arra hogy ha váltunk akkor a repokba levő (adat /) TASK maradjon meg
+        if(swap != null && swap != localMachine.localDisk){
+
+            for (var connection : localMachine.localDisk.getLatencies().entrySet()){
+                swap.addLatencies(connection.getKey(), connection.getValue());
+            }
+
+            for (StorageObject c : localMachine.localDisk.contents()){
+                //időt nem befolyásolva átmásoljuk a elemeket -> csak commprot váltás
+                swap.registerObject(c);
+                // meg egyéb adattagok is vannak amivel nem tudom kéne e törődni
+                // Taskal ez is változik
+            }
+
+            // törölni kell a másolás után mert amúgy duplikátumok lesznek
+            for (StorageObject c : swap.contents()){
+                localMachine.localDisk.deregisterObject(c);
+            }
+
+            //System.out.println("Changed CommunicationProtocol(?)");
+            localMachine.localDisk = swap;
+        }
 
         //egyéb opciók
         //pl task priority / deadline sürget -> gyorsabb kapcsolat, de ehhez előbb kell a task absztrakció
-
-        // TODO mindig meghívódik majd a tickben meg egyszer inicializáláskor
     }
-
-    //private void swapCommunicationProtocol()
 
 
     /**
@@ -218,7 +283,11 @@ public class EdgeDevice extends Device {
         }
         MobilityEvent.changePositionEvent(this, newLocation);
 
-        this.deviceStrategy.findApplication(); 
+        if (battery != null) {
+            selectBestCommunicationProtocol(); //ebbe benne van a this.deviceStrategy.findApplication();
+        } else{
+            this.deviceStrategy.findApplication();
+        }
 
         try {
             if (this.deviceStrategy.chosenApplication != null) {
