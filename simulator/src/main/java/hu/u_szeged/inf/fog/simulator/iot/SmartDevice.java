@@ -84,6 +84,10 @@ public class SmartDevice extends Device {
      */
     @Override
     public void tick(long fires) {
+        if(battery != null && battery.isCharging()){
+            return;
+        }
+
         if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
             new Sensor(this, 1);
         }
@@ -93,10 +97,6 @@ public class SmartDevice extends Device {
             this.devicePath.add(new GeoLocation(this.geoLocation.latitude, this.geoLocation.longitude));
         }
         MobilityEvent.changePositionEvent(this, newLocation);
-
-        if(battery != null && battery.isCharging()){
-            return;
-        }
 
         this.deviceStrategy.findApplication();
 

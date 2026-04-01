@@ -163,10 +163,10 @@ public class EdgeDevice extends Device {
     }
 
     /**
-     * Select what communication protocol the edge device should use given its battery state and the server(s)in its vicinity.
+     * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
     public void selectBestCommunicationProtocol(){
-        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk
+        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
         List<String> options = new ArrayList<>();
 
 
@@ -180,17 +180,6 @@ public class EdgeDevice extends Device {
             // 1. ehhez a variációhoz módosítani kéne a sztakis pm-et, hogy a localdisk ne legyen final amit nem akarunk
             //localMachine.localDisk = communicationProtocols.get(options.get(0));
 
-            // 2. ennél a variációnál meg nem tudom, hogy mennyire őrülne meg az energiamérő és ha megőrül hogy őrül meg, még nem lett tesztelve
-            /*EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                    PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
-                    //az itteni értékeknek is nem tudom minek kéne lenni, a legjobb az lenne ha lelehetne copyzni :p
-
-            PhysicalMachine newPM = new PhysicalMachine(localMachine.getPerTickProcessingPower(), 1, localMachine.getCapacities().getRequiredMemory(),
-                                                        communicationProtocols.get(currentCommProt), 0, 0, transitions.get(PowerTransitionGenerator.PowerStateKind.host));
-            */
-
-            // 3. adattagot nem módosítunk a sztakiba, de csinálunk valami "copy konstruktort" (vagy hát majdnem az, csak repot tudnánk cserélni és minden más adattagot megtartani)
-            //PhysicalMachine changedRepoPM = new PhysicalMachine(localMachine, communicationProtocols.get(currentCommProt));
         }
 
         //battery alapján választás
@@ -204,6 +193,8 @@ public class EdgeDevice extends Device {
 
         // TODO mindig meghívódik majd a tickben meg egyszer inicializáláskor
     }
+
+    //private void swapCommunicationProtocol()
 
 
     /**

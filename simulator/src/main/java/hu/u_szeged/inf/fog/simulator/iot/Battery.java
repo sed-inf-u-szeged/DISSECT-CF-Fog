@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -66,9 +67,20 @@ public class Battery extends Timed {
     /**
      * The time it takes to charge the battery from 0% to 100% (in ticks).
      */
-    @Getter
-    @Setter
+    @Getter @Setter
     private long chargeTime;
+
+    /**
+     * The EnergyDataCollector for the Device's PhysicalMachine
+     */
+    @Getter @Setter
+    private EnergyDataCollector pmEnergyDataCollector;
+
+    /**
+     * Last reading of the pmEnergyDataCollector used to calculate consumption.
+     */
+    @Getter @Setter
+    private double lastReading;
 
     /**
      * Used to stop battery drainage or task execution while charging.
@@ -77,8 +89,7 @@ public class Battery extends Timed {
     private boolean isCharging;
 
     //STOPTIME adattag hogy lehessen simulate until last eventezni, az eszköz stopTimeja alapján van beállítva
-    @Setter
-    @Getter
+    @Setter @Getter
     private long stopTime;
 
     //hashmap vszeg gyorsabb, de igy olvashatóbb a csv
@@ -104,6 +115,8 @@ public class Battery extends Timed {
         this.currLevel = maxCapacity;
         this.isCharging = false;
 
+        this.setBackPreference(true);
+
         readings.put(Timed.getFireCount(), currLevel);
         subscribe(60000);
     }
@@ -118,6 +131,8 @@ public class Battery extends Timed {
 
         this.currLevel = batteryType.maxCapacity;
         this.isCharging = false;
+
+        this.setBackPreference(true);
 
         readings.put(Timed.getFireCount(), currLevel);
         subscribe(60000);

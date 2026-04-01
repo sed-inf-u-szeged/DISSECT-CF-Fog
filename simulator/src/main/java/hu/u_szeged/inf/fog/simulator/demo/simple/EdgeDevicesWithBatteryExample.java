@@ -52,11 +52,11 @@ public class EdgeDevicesWithBatteryExample {
         Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
         Instance instance3 = new Instance("instance3", va, arc, 0.102 / 60 / 60 / 1000);
 
-        Application application1 = new Application("App-1", 1 * 60 * 1000, 250, 2_500, false,
+        Application application1 = new Application("App-1", 60 * 1000, 250, 2_500, false,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance3);
-        Application application2 = new Application("App-2", 1 * 60 * 1000, 250, 2_500, true,
+        Application application2 = new Application("App-2", 60 * 1000, 250, 2_500, true,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance2);
-        Application application3 = new Application("App-3", 1 * 60 * 1000, 250, 2_500, true,
+        Application application3 = new Application("App-3", 60 * 1000, 250, 2_500, true,
                 new RuntimeAwareApplicationStrategy(0.9, 2.0), instance1);
 
         cloud1.addApplication(application1);
@@ -81,7 +81,8 @@ public class EdgeDevicesWithBatteryExample {
             Device device;
             Battery battery;
             double step = SeedSyncer.centralRnd.nextDouble();
-            battery = new Battery("battery"+i, 3500, 4.4f, cpuTransitions.get("OFF").getMinConsumption(), 2 * 60 * 60 * 1000);
+            //battery = new Battery("battery"+i, 3500, 4.4f, cpuTransitions.get("OFF").getMinConsumption(), 2 * 60 * 60 * 1000);
+            battery = new Battery("battery"+i, Battery.BatteryType.PHONE_BATTERY);
             device = new EdgeDevice(0, 100 * 60 * 60 * 1000, 100, 60 * 1000,
                     new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
                     new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
@@ -96,7 +97,7 @@ public class EdgeDevicesWithBatteryExample {
 //        ScenarioBase.calculateIoTCost();
 //        ScenarioBase.logBatchProcessing(stoptime - starttime);
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-//        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
         MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
 
         for (Device device : deviceList) {

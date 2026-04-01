@@ -601,7 +601,7 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	 * represent the PM's network connections as the disk is represented with the
 	 * repository interface.
 	 */
-	public final Repository localDisk;
+	public Repository localDisk;
 	/**
 	 * this is the array of resource allocations which contain all not yet
 	 * used/expired resource allocations.
