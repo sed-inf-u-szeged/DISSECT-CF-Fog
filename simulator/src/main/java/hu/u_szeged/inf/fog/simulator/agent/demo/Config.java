@@ -33,13 +33,13 @@ public class Config {
                     Map.entry("submissionDelay", List.of(0)),
                     //Map.entry("submissionDelay", List.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
                     //Map.entry("submissionDelay", List.of(0, 0, 0, 60, 60, 120, 150, 150, 150, 150)), // 10 app
-                    Map.entry("noiseSensorCount", 100),
+                    Map.entry("noiseSensorCount", 10),
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("soundFileSize", 655_360L), // 640 kB
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("minSoundLevel", 30), // dB
                     Map.entry("maxSoundLevel", 130), // dB
-                    Map.entry("soundThreshold", 60), // dB
+                    Map.entry("soundThreshold", 0), // dB
                     Map.entry("minCpuTemp", 55D), // ℃
                     Map.entry("maxCpuTemp", 85D), // ℃
                     Map.entry("cpuTempTreshold", 80D), // ℃
@@ -60,8 +60,8 @@ public class Config {
                     //Map.entry("rankingMethod", "vote_wo_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability"),
                     //Map.entry("rankingMethod", "vote_w_reliability_mul"),
-                    //Map.entry("swarmAgentType", "greedy"),
-                    Map.entry("swarmAgentType", "forecast"),
+                    Map.entry("swarmAgentType", "greedy"),
+                    //Map.entry("swarmAgentType", "forecast"),
                     //Map.entry("swarmAgentType", "scalable_greedy"),
                     Map.entry("csvLogging", true),
                     Map.entry("predictorDir", "/home/markusa/Swarmchestrate-TSforecasting/"),
