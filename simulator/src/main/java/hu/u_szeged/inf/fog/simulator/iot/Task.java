@@ -1,16 +1,23 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import lombok.Getter;
 
+@Getter
 public class Task extends StorageObject {
 
+    //a taskok elnevezéséhez számláló, ha tipusosak lesznek lehet le lesz cserélve
     private static int count = 1;
 
-    // ez még kérdéses milyen érték és a prio minél kisebb annál fontosabb vagy fordítva,
-    // fix intervallum legyen vagy dinamikusabb (összes taskot be lehetne sorolni vagy csak egy általános)
+    // 1-10
+    // 1 - lowest, 10 - highest
     public int priority;
 
-    //a tick ameddig kész kell lenni
+    //az idő amikor létre lett hozva, nem tudom lesz e használva, de elfér
+    public long created;
+
+    //a tick ameddig kész kell lenni - egyelőre 10p = 600000 tick minden
     public long deadline;
 
     public Task(String myid, long mysize, boolean vary) {
@@ -21,5 +28,6 @@ public class Task extends StorageObject {
         super("Task" + count++, size, false);
         this.priority = priority;
         this.deadline = deadline;
+        this.created = Timed.getFireCount();
     }
 }

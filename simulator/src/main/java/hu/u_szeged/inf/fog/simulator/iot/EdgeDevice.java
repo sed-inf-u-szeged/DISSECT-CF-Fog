@@ -290,6 +290,7 @@ public class EdgeDevice extends Device {
         try {
             if (this.deviceStrategy.chosenApplication != null) {
                 // TODO átküldött taskok -> application
+                // egyelőre applicationbe jönnek létre a taskok
 
                 this.startDataTransfer();
                 this.stopVm();
@@ -297,7 +298,7 @@ public class EdgeDevice extends Device {
                 if (this.localVm == null || this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
                     this.startVm();
                 } else {
-                    // TOOD lokálisan feldolgozott taskok
+                    // TODO lokálisan feldolgozott taskok
 
                     long dataToBeProcessed = 0;
                     ArrayList<StorageObject> dataToBeRemoved = new ArrayList<>();

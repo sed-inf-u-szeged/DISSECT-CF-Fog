@@ -12,12 +12,15 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
+import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 /**
  * This class is an abstract representation of an IoT application. It receives data
@@ -127,6 +130,14 @@ public class Application extends Timed {
      * It indicates how many tasks are currently being processed.
      */
     private int taskInProgress;
+
+    /**
+     * Tasks associated with this application.
+     */
+    public PriorityQueue<Task> tasks = new PriorityQueue<>(
+            Comparator.comparing(Task::getPriority).reversed().thenComparing(Task::getDeadline));
+
+
 
     /**
      * This list stores the start and end timestamps of the tasks.
@@ -334,18 +345,34 @@ public class Application extends Timed {
             FeatureManager.getInstance().getFeatureByName(
                     String.format("%s::%s", computingAppliance.name, featureName)).computeValue();
         }
-        
+
+        //System.out.println("size: "+tasks.size());
+        //még nem feldolgozott adat
         long unprocessedData = (this.receivedData - this.processedData);
+
+        //van mit feldolgozni...
         if (unprocessedData > 0) {
             long alreadyProcessedData = 0;
+
+            //amíg nincs minden adat taskba rendezve és ütemezve
             while (unprocessedData != alreadyProcessedData) {
                 long allocatedData = Math.min(unprocessedData - alreadyProcessedData, this.tasksize);
+
+                //minden task 5 prio, 10pel későbbi deadline
+                Task task = new Task(allocatedData, 5, Timed.getFireCount()+10*60*1000);
+                tasks.add(task);
+
+                //(szabad) vm keresés
                 final AppVm appVm = this.vmSearch();
+
+                //ha nincs vm akkor inditani kell
                 if (appVm == null) {
                     double ratio = (double) unprocessedData / this.tasksize;
                     SimLogger.logRun(name + " has " + unprocessedData + " bytes left, "
                             + this.computingAppliance.getLoadOfResource() + " load (%),"
                             + " unprocessed data / tasksize ratio: " + ratio + ". Decision: ");
+
+                    //offloading
                     if (Double.compare(ratio, this.applicationStrategy.activationRatio) > 0) {
                         long dataForTransfer = ((long) ((unprocessedData - alreadyProcessedData)
                                 / this.applicationStrategy.transferDivider));
@@ -356,6 +383,7 @@ public class Application extends Timed {
                     break;
                 }
 
+                //innen van a "feldolgozás"/scheduling - a try catchig
                 final double noi = allocatedData == this.tasksize ? this.instructions
                         : (this.instructions * allocatedData / this.tasksize);
                 alreadyProcessedData += allocatedData;
@@ -363,16 +391,23 @@ public class Application extends Timed {
                 Application.totalProcessedSize += allocatedData;
                 appVm.isWorking = true;
                 this.taskInProgress++;
+
+
+
                 try {
                     appVm.vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing,
                             new ConsumptionEventAdapter() {
                                 final long taskStartTime = Timed.getFireCount();
                                 final long allocatedDataTemp = allocatedData;
                                 final double noiTemp = noi;
+                                //és evvel akkor a fenti dolgok nem is feltétlen kellenek, mert lehet ez a sok változó de minden task sizeból ered, (azaz allocatedata)
+                                //final double Task taskTemp = task
+
 
                                 @Override
                                 public void conComplete() {
-                                    saveStorageObject(allocatedData);
+                                    saveStorageObject(allocatedData); //ezt nem vágom
+                                    //kéne egy tasks.remove poll vagy valami, a collectiontől függ, de vszeg treeset lesz
                                     appVm.isWorking = false;
                                     appVm.taskCounter++;
                                     taskInProgress--;
@@ -390,6 +425,10 @@ public class Application extends Timed {
                 }
 
             }
+
+
+
+
         }
         this.countVmRunningTime();
         this.turnOffVm();
