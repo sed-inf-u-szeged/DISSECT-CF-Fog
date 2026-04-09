@@ -20,6 +20,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
 import java.util.*;
@@ -86,6 +87,7 @@ public class EdgeDevice extends Device {
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
         setCommunicationProtocols(true, true, true);
+        // default communication protocol, can be changed later based on conditions
         //selectBestCommunicationProtocol();
         //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;

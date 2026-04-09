@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.iot;
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -79,8 +80,8 @@ public class Battery extends Timed {
     /**
      * Last reading of the pmEnergyDataCollector used to calculate consumption.
      */
-    @Getter @Setter
-    private double lastReading = 0;
+    //@Getter @Setter
+    //private double lastReading = 0;
 
     /**
      * Used to stop battery drainage or task execution while charging.
@@ -148,18 +149,21 @@ public class Battery extends Timed {
         if(stopTime < Timed.getFireCount()){
             unsubscribe();
             for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
-                edc.stop();
+                if(edc.isSubscribed()){
+                    edc.stop();
+                    SimLogger.logRes(edc.name + " " + edc.accumulatedEnergy);
+                }
             }
         }
 
-        double convertTo_mAh = pmEnergyDataCollector.accumulatedEnergy/3600000/voltage*1000;
+        double convertTo_mAh = pmEnergyDataCollector.delteEnergy/3600000/voltage*1000;
 
 //        if(currLevel - drainRate / 60 < 0){
 //            unsubscribe();
 //            new Charge(chargeTime);
 //            return;
 //        }
-        if(currLevel - (convertTo_mAh - lastReading) <= 0){
+        if (currLevel - convertTo_mAh <= 0) {
             unsubscribe();
             new Charge(chargeTime);
             return;
@@ -170,8 +174,8 @@ public class Battery extends Timed {
 
 
         System.out.println("EDC: " + convertTo_mAh);
-        currLevel -= convertTo_mAh - lastReading;
-        lastReading = convertTo_mAh;
+        currLevel -= convertTo_mAh;
+        //lastReading = convertTo_mAh;
 
         readings.put(fires, currLevel);
     }

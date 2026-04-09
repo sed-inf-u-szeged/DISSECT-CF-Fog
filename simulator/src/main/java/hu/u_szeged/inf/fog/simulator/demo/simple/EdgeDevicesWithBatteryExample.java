@@ -68,7 +68,7 @@ public class EdgeDevicesWithBatteryExample {
         for (int i = 0; i < 6; i++) {
             HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
             EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                    PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
+                    PowerTransitionGenerator.generateTransitions( 0.02,  0.25, 2.2, 12, 3);
 
             final Map<String, PowerState> cpuTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
             final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
@@ -78,6 +78,7 @@ public class EdgeDevicesWithBatteryExample {
 
             Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
+
 
             Device device;
             Battery battery;
@@ -99,7 +100,7 @@ public class EdgeDevicesWithBatteryExample {
 //        ScenarioBase.logBatchProcessing(stoptime - starttime);
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
-        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+//        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
 
         for (Device device : deviceList) {
             device.battery.writeToFileConsumption(ScenarioBase.resultDirectory);
