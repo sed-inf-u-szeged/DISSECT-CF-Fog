@@ -64,7 +64,7 @@ public class EdgeDevice extends Device {
     /**
      * The communication protocols the edge device can use.
      */
-    public Map<String, Repository> communicationProtocols = new HashMap<String, Repository>();
+    public Map<String, Repository> communicationProtocols = new LinkedHashMap<String, Repository>();
 
 
     /**
@@ -131,7 +131,7 @@ public class EdgeDevice extends Device {
 
         //az előző metódus beállítja a használható repókat, wifi akkor is van ha mind3 false lenne, a default repo elérhetőség sorrendjében
         // wifi -> 5g -> lora, tehát kb mindig wifi lesz a default repo
-        this.localMachine = new PhysicalMachine(cores,perCoreProcessing,memory,communicationProtocols.get(0),onD,offD,
+        this.localMachine = new PhysicalMachine(cores,perCoreProcessing,memory,communicationProtocols.entrySet().iterator().next().getValue(),onD,offD,
                                                 transitions.get(PowerTransitionGenerator.PowerStateKind.host));
 
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
