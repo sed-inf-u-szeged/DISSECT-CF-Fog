@@ -32,7 +32,7 @@ public class EnergyDataCollector extends Timed {
     
     boolean logging;
     
-    String name;
+    public String name;
 
     private boolean deltaMode;
 
@@ -41,6 +41,8 @@ public class EnergyDataCollector extends Timed {
     private boolean hasLast;
 
     public double accumulatedEnergy;
+
+    public double delteEnergy;
     
     /**
      * Creates an energy data collector for an IaaS service.
@@ -108,23 +110,22 @@ public class EnergyDataCollector extends Timed {
             total = iaasEnergyMeter.getTotalConsumption();
         }
 
-        double energyConsumption;
-
         if (!deltaMode) {
-            energyConsumption = total;
+            delteEnergy = total;
             accumulatedEnergy = total;
         } else {
             if (!hasLast) {
-                energyConsumption = 0.0;
+                delteEnergy = 0.0;
                 hasLast = true;
             } else {
-                energyConsumption = total - lastTotalConsumption;
+                delteEnergy = total - lastTotalConsumption;
             }
             lastTotalConsumption = total;
-            accumulatedEnergy += energyConsumption;
+            accumulatedEnergy += delteEnergy;
         }
+
         if (logging) {
-            readings.get(name).put(fires, energyConsumption);
+            readings.get(name).put(fires, delteEnergy);
         }
     }
 

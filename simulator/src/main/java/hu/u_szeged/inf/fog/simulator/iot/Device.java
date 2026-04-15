@@ -17,6 +17,8 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
+
 import java.util.ArrayList;
 
 /**
@@ -297,33 +299,6 @@ public abstract class Device extends Timed {
             localMachine.localDisk.deregisterObject(this.so);
             application.receivedData += this.so.size;
             this.device.sentData += this.so.size;
-
-            if(battery != null){
-                double transferTime = Timed.getFireCount() - transferStartTime;
-
-                //TODO
-                //probléma párhuzamos fájlküldés/fogadással, szóval lehet full kuka, de ötlet,
-                //consumption
-
-                //ha nem kell bandwith mert implicit használva van már time miatt akkor nem tom hogy lesz belőle fogyasztás
-                //a cpus verzió mintájára csak ez az ötletem van
-                double networkUtilization = this.so.size / (localMachine.localDisk.outbws.getPerTickProcessingPower() * transferTime); //transferSize (byte) / bandwith (byte/ms) * transferTime (ms)?
-                //System.out.println("size: " + this.so.size + ", bw: " + localMachine.localDisk.outbws.getPerTickProcessingPower() + ", transfertime: " + transferTime + ", networkUtil: " + networkUtilization);
-
-                double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(networkUtilization);
-                //a felső reálisabb, de lehet ez is ? idk
-                //double avgPowerConsumption = localMachine.localDisk.outbws.getCurrentPowerBehavior().getCurrentPower(networkUtilization);
-
-                double transferEnergyConsumption = avgPowerConsumption * (transferTime / 3600000);
-
-                //conversion to mAh
-                transferEnergyConsumption = transferEnergyConsumption / battery.getVoltage() * 1000;
-                //System.out.println("avgPowerCons: " + avgPowerConsumption + ", taskEnergyC: " + transferEnergyConsumption);
-
-                //drain
-                battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - transferEnergyConsumption));
-                battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
-            }
         }
 
         /**
@@ -343,8 +318,10 @@ public abstract class Device extends Timed {
     }
 
     public void setBattery(Battery battery){
-        this.battery = battery;
+        battery.setPmEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.localMachine, true, true));
         battery.setStopTime(stopTime);
+
+        this.battery = battery;
     }
 
 

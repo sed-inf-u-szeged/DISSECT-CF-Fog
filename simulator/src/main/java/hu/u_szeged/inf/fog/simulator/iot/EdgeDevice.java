@@ -18,6 +18,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
 import java.util.*;
@@ -165,6 +166,7 @@ public class EdgeDevice extends Device {
     public void selectBestCommunicationProtocol(){
         if(this.battery == null){ // már egyszer checkolva van a tick()-ben szóval lehet fölös de elfér egyelőre
             return;
+
         }
 
         //probléma volt akkor ha lokális feldolgozás során report váltok szóval ez megment
@@ -330,43 +332,6 @@ public class EdgeDevice extends Device {
                                                 + (Timed.getFireCount() - taskStartTime) + " instructions: " + noi);
 
                                         //System.out.println("End task "+ this.hashCode() + ": " + Timed.getFireCount());
-
-                                        if(battery != null) {
-                                            /*
-                                            //battery számítások
-                                            cpuUtilization = numberOfInstructions / (numberOfCpuCores * instructionsPerTick * taskTime) (taskTime tickben)
-                                            0-1 közötti érték kihasználtságra
-
-                                            avgPowerConsumption = idlePower + cpuUtilization * (maxPower − idlePower),
-                                            de ez lekérhető a PM cpuTransitionjéből getCurrentPowerrel ahol a paraméter a cpuUtilization
-                                            ez a CPU fogyasztása W-ban
-
-                                            totalEnergyConsumedDuringTask = avgPowerConsumption * (t/3600000)
-                                            (ha t msbe van, és igy lesz akkor végeredmény Wh)
-                                            a tényleges energiaigénye a tasknak Wh-ban
-
-                                            battery csökkentéshez mértékegység váltás kell Wh -> mAh
-                                            energyConsumed_Ah = energyConsumed_Wh / voltage
-                                            energyConsumed_mAh = energyConsumed_Ah * 1000
-                                            newBatteryLvl = max(0, currentLvl-energyConsumed_mAh)
-                                            */
-                                            double taskTime = Timed.getFireCount() - taskStartTime;
-
-                                            //consumption
-                                            double cpuUtilization = noi / (localMachine.getCapacities().getTotalProcessingPower() * taskTime);
-                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getCurrentPower(cpuUtilization);
-                                            /* //alternative calculation, same result
-                                            double avgPowerConsumption = localMachine.getCurrentPowerBehavior().getMinConsumption() +
-                                                cpuUtilization * localMachine.getCurrentPowerBehavior().getConsumptionRange();*/
-                                            double taskEnergyConsumption = avgPowerConsumption * (taskTime / 3600000);
-
-                                            //conversion to mAh
-                                            taskEnergyConsumption = taskEnergyConsumption / battery.getVoltage() * 1000;
-
-                                            //drain
-                                            battery.setCurrLevel(Math.max(0, battery.getCurrLevel() - taskEnergyConsumption));
-                                            battery.readings.put(Timed.getFireCount(), battery.getCurrLevel());
-                                        }
                                     }
                                 });
                         if (rc != null) {

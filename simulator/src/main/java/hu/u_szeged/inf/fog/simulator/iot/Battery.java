@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.iot;
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -77,12 +78,6 @@ public class Battery extends Timed {
     private EnergyDataCollector pmEnergyDataCollector;
 
     /**
-     * Last reading of the pmEnergyDataCollector used to calculate consumption.
-     */
-    @Getter @Setter
-    private double lastReading;
-
-    /**
      * Used to stop battery drainage or task execution while charging.
      */
     @Getter
@@ -147,16 +142,24 @@ public class Battery extends Timed {
     public void tick(long fires) {
         if(stopTime < Timed.getFireCount()){
             unsubscribe();
+            for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
+                if(edc.isSubscribed()){
+                    edc.stop();
+                    SimLogger.logRes(edc.name + " " + edc.accumulatedEnergy);
+                }
+            }
         }
 
-        if(currLevel - drainRate / 60 < 0){
+        double convertTo_mAh = pmEnergyDataCollector.delteEnergy/3600000/voltage*1000;
+
+        if (currLevel - convertTo_mAh <= 0) {
             unsubscribe();
             new Charge(chargeTime);
             return;
         }
 
-        // mAh/h a drainRate, de az event percenkénti, ezért lesz a mAh/hból mAh/min
-        currLevel -= drainRate / 60;
+        //System.out.println("EDC: " + convertTo_mAh);
+        currLevel -= convertTo_mAh;
 
         readings.put(fires, currLevel);
     }
@@ -171,6 +174,7 @@ public class Battery extends Timed {
         @Override
         protected void eventAction() {
             currLevel = maxCapacity;
+
             readings.put(Timed.getFireCount(),currLevel);
 
             isCharging = false;
