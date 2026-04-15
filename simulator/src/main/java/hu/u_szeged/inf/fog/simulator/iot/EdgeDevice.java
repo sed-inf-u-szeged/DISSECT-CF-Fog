@@ -127,7 +127,7 @@ public class EdgeDevice extends Device {
         }
 
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                PowerTransitionGenerator.generateTransitions( 0.02,  0.25, 2.2, 12, 3);
+                PowerTransitionGenerator.generateTransitions( cpuMinPower,  cpuIdlePower, cpuMaxPower, diskDivider, netDivider);
 
         //az előző metódus beállítja a használható repókat, wifi akkor is van ha mind3 false lenne, a default repo elérhetőség sorrendjében
         // wifi -> 5g -> lora, tehát kb mindig wifi lesz a default repo
