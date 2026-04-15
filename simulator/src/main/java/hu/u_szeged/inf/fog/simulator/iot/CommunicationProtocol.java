@@ -33,7 +33,7 @@ public class CommunicationProtocol {
     */
     public Repository newWifiRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                PowerTransitionGenerator.generateTransitions(0.065, 1.55, 2.0, 1, 2);
+                PowerTransitionGenerator.generateTransitions(0.02,  0.25, 2.2, 12, 3);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
@@ -46,7 +46,7 @@ public class CommunicationProtocol {
 
     public Repository new5GRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                PowerTransitionGenerator.generateTransitions(0.065, 1.65, 2.0, 1, 2);
+                PowerTransitionGenerator.generateTransitions(0.04, 0.045, 2.5, 12, 3);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
@@ -59,7 +59,7 @@ public class CommunicationProtocol {
 
     public Repository newLoRaRepository() throws NetworkNode.NetworkException {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                PowerTransitionGenerator.generateTransitions(0.045, 1.45, 2.0, 1, 2);
+                PowerTransitionGenerator.generateTransitions(0.01, 0.015, 1.8, 12, 3);
 
         final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
         final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);

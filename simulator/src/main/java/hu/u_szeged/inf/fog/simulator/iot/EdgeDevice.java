@@ -13,6 +13,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
@@ -21,6 +22,9 @@ import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -169,7 +173,7 @@ public class EdgeDevice extends Device {
 
         }
 
-        //probléma volt akkor ha lokális feldolgozás során report váltok szóval ez megment
+        //probléma volt akkor ha lokális feldolgozás során repot váltok szóval ez megment
         if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)){
             return;
         }
@@ -180,6 +184,33 @@ public class EdgeDevice extends Device {
         if(this.deviceStrategy.chosenApplication != null){
             options = this.deviceStrategy.chosenApplication.computingAppliance.communicationProtocols;
         }
+//        else{
+//            // ha nem tudja használni az eszköz a szervert feldolgozásra akkor a wifi repo legyen bent
+//
+//            if(communicationProtocols.get("WIFI") != localMachine.localDisk){
+//                Repository swap = communicationProtocols.get("WIFI");
+//                try( FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/swap.txt",true)){
+//                    fw.write(Timed.getFireCount() + " " + this.battery.getName() + " from:" + this.localMachine.localDisk.getName() + " to:" + swap.getName() + "\n");
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
+//
+//                for (var connection : localMachine.localDisk.getLatencies().entrySet()){
+//                    swap.addLatencies(connection.getKey(), connection.getValue());
+//                }
+//
+//                for (StorageObject c : localMachine.localDisk.contents()){
+//                    swap.registerObject(c);
+//                }
+//
+//                for (StorageObject c : swap.contents()){
+//                    localMachine.localDisk.deregisterObject(c);
+//                }
+//
+//                localMachine.localDisk = swap;
+//                return;
+//            }
+//        }
 
         //van legalább egy közös commprot, ha nincs akkor lehet le kéne valahogy kezelni, de akkor csak megtartanánk a jelenlegi repot nem tudom lehet túl gondolom
         boolean atLeastOne = false;
@@ -236,6 +267,12 @@ public class EdgeDevice extends Device {
 
         // TODO figyelni arra hogy ha váltunk akkor a repokba levő (adat /) TASK maradjon meg
         if(swap != null && swap != localMachine.localDisk){
+            try( FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/swap.txt",true)){
+               fw.write(Timed.getFireCount() + " " + this.battery.getName() + " from:" + this.localMachine.localDisk.getName() + " to:" + swap.getName() + "\n");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
 
             for (var connection : localMachine.localDisk.getLatencies().entrySet()){
                 swap.addLatencies(connection.getKey(), connection.getValue());
