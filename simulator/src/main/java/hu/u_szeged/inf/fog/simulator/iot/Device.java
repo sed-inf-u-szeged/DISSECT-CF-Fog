@@ -317,12 +317,4 @@ public abstract class Device extends Timed {
         }
     }
 
-    public void setBattery(Battery battery){
-        battery.setPmEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.localMachine, true, true));
-        battery.setStopTime(stopTime);
-
-        this.battery = battery;
-    }
-
-
 }

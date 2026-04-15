@@ -15,6 +15,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -140,7 +141,6 @@ public class EdgeDevice extends Device {
         this.fileSize = fileSize;
         this.geoLocation = mobilityStrategy.startPosition;
         this.freq = freq;
-
         this.mobilityStrategy = mobilityStrategy;
         Device.allDevices.add(this);
         this.instructionPerByte = instructionPerByte;
@@ -149,7 +149,11 @@ public class EdgeDevice extends Device {
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
         this.latency = latency;
+
+        battery.setPmEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.localMachine, true, true));
+        battery.setStopTime(stopTime);
         this.battery = battery;
+        
         this.edgeDeviceArc = new AlterableResourceConstraints(localMachine.getCapacities().getRequiredCPUs(),
                 localMachine.getCapacities().getRequiredProcessingPower(),
                 localMachine.getCapacities().getRequiredMemory());
