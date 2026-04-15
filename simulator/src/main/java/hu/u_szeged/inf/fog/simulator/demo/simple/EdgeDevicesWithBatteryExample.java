@@ -1,18 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.demo.simple;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
-import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
-import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Battery;
-import hu.u_szeged.inf.fog.simulator.iot.CommunicationProtocol;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -67,43 +62,30 @@ public class EdgeDevicesWithBatteryExample {
 
         ArrayList<Device> deviceList = new ArrayList<Device>();
         for (int i = 0; i < 6; i++) {
-            HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
-            EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                    PowerTransitionGenerator.generateTransitions( 0.02,  0.25, 2.2, 12, 3);
-
-            final Map<String, PowerState> cpuTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
-            final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
-            final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
-
-            //System.out.println(cpuTransitions.get("OFF").getMinConsumption()/4.4*1000);
-
-            // Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
-            Repository repo = CommunicationProtocol.getInstance().newWifiRepository();
-            PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
-
-
             Device device;
             Battery battery;
             double step = SeedSyncer.centralRnd.nextDouble();
-            //battery = new Battery("battery"+i, 3500, 4.4f, cpuTransitions.get("OFF").getMinConsumption(), 2 * 60 * 60 * 1000);
+
             battery = new Battery("battery"+i, Battery.BatteryType.PHONE_BATTERY);
-            device = new EdgeDevice(0, 100 * 60 * 60 * 1000, 100, 60 * 1000,
+
+            device = new EdgeDevice(2, 0.001, 2_174_483_648L, 0, 0,
+                    0.02,  0.25, 2.2, 12, 3,
+                    0, 100 * 60 * 60 * 1000, 100 , 60 * 1000,
                     new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
-                    new RandomDeviceStrategy(), localMachine, 0.1, 50, true);
+                    new RandomDeviceStrategy(), 0.1, 50, battery, true);
             device.setBattery(battery);
             deviceList.add(device);
         }
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();
-        //Timed.simulateUntil(188000000);
         long stoptime = System.nanoTime();
 
 //        ScenarioBase.calculateIoTCost();
 //        ScenarioBase.logBatchProcessing(stoptime - starttime);
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 //        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 
         for (Device device : deviceList) {
             device.battery.writeToFileConsumption(ScenarioBase.resultDirectory);

@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
@@ -12,6 +13,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
+import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -19,7 +21,6 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
 import java.io.File;
@@ -85,11 +86,11 @@ public class EdgeDevice extends Device {
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
         try{
+            //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
             setCommunicationProtocols(true, true, true);
         } catch (NetworkException e) {
             throw new RuntimeException(e);
         }
-        //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
         this.startTime = startTime + delay;
         this.stopTime = stopTime + delay;
@@ -111,6 +112,52 @@ public class EdgeDevice extends Device {
         this.startMeter();
         this.localMachine.turnon();
     }
+
+
+    public EdgeDevice(double cores, double perCoreProcessing, long memory, int onD, int offD,
+                      double cpuMinPower, double cpuIdlePower, double cpuMaxPower, double diskDivider, double netDivider,
+                      long startTime, long stopTime, long fileSize, long freq, MobilityStrategy mobilityStrategy,
+                      DeviceStrategy deviceStrategy, double instructionPerByte, int latency, Battery battery,
+                      boolean pathLogging) {
+
+        try{
+            setCommunicationProtocols(true, true, true);
+        } catch (NetworkException e) {
+            throw new RuntimeException(e);
+        }
+
+        EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
+                PowerTransitionGenerator.generateTransitions( 0.02,  0.25, 2.2, 12, 3);
+
+        //az előző metódus beállítja a használható repókat, wifi akkor is van ha mind3 false lenne, a default repo elérhetőség sorrendjében
+        // wifi -> 5g -> lora, tehát kb mindig wifi lesz a default repo
+        this.localMachine = new PhysicalMachine(cores,perCoreProcessing,memory,communicationProtocols.get(0),onD,offD,
+                                                transitions.get(PowerTransitionGenerator.PowerStateKind.host));
+
+        long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
+        this.startTime = startTime + delay;
+        this.stopTime = stopTime + delay;
+        this.fileSize = fileSize;
+        this.geoLocation = mobilityStrategy.startPosition;
+        this.freq = freq;
+
+        this.mobilityStrategy = mobilityStrategy;
+        Device.allDevices.add(this);
+        this.instructionPerByte = instructionPerByte;
+        this.isPathLogged = pathLogging;
+        this.devicePath = new ArrayList<GeoLocation>();
+        this.deviceStrategy = deviceStrategy;
+        this.deviceStrategy.device = this;
+        this.latency = latency;
+        this.battery = battery;
+        this.edgeDeviceArc = new AlterableResourceConstraints(localMachine.getCapacities().getRequiredCPUs(),
+                localMachine.getCapacities().getRequiredProcessingPower(),
+                localMachine.getCapacities().getRequiredMemory());
+        this.startMeter();
+        this.localMachine.turnon();
+    }
+
+
 
     /**
      * Starts the virtual machine if it is not already running.
@@ -153,7 +200,7 @@ public class EdgeDevice extends Device {
      */
     public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora) throws NetworkException {
         communicationProtocols.clear();
-        if(wifi){
+        if(wifi || (!_5g && !lora)){ //ha mind false akkor nem tudna kommunikálni, szóval csak tudja mit akar a szimuláció készítő, de mégis le lesz kezelve, így mert a repo meg kell
             communicationProtocols.put("WIFI", CommunicationProtocol.getInstance().newWifiRepository());
         }
         if(_5g){
