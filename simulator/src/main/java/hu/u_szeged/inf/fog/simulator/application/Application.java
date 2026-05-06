@@ -10,17 +10,18 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAda
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.application.strategy.ApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
+import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.PriorityQueue;
+
+import java.util.*;
 
 /**
  * This class is an abstract representation of an IoT application. It receives data
@@ -50,12 +51,12 @@ public class Application extends Timed {
      * It aggregates the size of each file transfer during offloading decisions.
      */
     public static long totalBytesOnNetwork;
-    
+
     /**
      * A helper variable for monitoring the timestamp of the most recent task processing.
      */
     public static long lastAction;
-    
+
     /**
      * A helper variable to track the amount of data processed by the application.
      */
@@ -95,7 +96,7 @@ public class Application extends Timed {
      * False if the application cannot receive data directly from IoT devices, only from another application.
      */
     public boolean serviceable;
-    
+
     /**
      * The number of instructions associated to a task with maximum size in order to simulate VM utilization.
      */
@@ -120,7 +121,7 @@ public class Application extends Timed {
      * It defines the type of the VMs (image, flavor, price, etc.) used by this application. 
      */
     public Instance instance;
-    
+
     /**
      * It denotes if this application is supposed to receive data from another application.
      */
@@ -134,10 +135,13 @@ public class Application extends Timed {
     /**
      * Tasks associated with this application.
      */
-    public PriorityQueue<Task> tasks = new PriorityQueue<>(
+    public Set<Task> tasks = new TreeSet<>(
             Comparator.comparing(Task::getPriority).reversed().thenComparing(Task::getDeadline));
 
-
+    /**
+     * The types of tasks this application can process.
+     */
+    public List<TaskType> types;
 
     /**
      * This list stores the start and end timestamps of the tasks.
@@ -156,7 +160,7 @@ public class Application extends Timed {
      * @param instance the type of the VMs used by this application
      */
     public Application(String name, long freq, long tasksize, double instructions, boolean serviceable,
-            ApplicationStrategy applicationStrategy, Instance instance) {
+                       ApplicationStrategy applicationStrategy, Instance instance) {
         Application.allApplications.add(this);
         this.deviceList = new ArrayList<>();
         this.utilisedVms = new ArrayList<>();
@@ -168,6 +172,34 @@ public class Application extends Timed {
         this.instructions = instructions;
         this.applicationStrategy = applicationStrategy;
         this.applicationStrategy.application = this;
+    }
+
+    /**
+     * Constructs a new Application with the specified parameters, including a type for processing tasks.
+     *
+     * @param name the name of the application
+     * @param freq the frequency of the periodic task execution (time interval in ms)
+     * @param tasksize the max size of a task (in bytes)
+     * @param instructions the number of instructions that a task with max size can represent
+     * @param serviceable indicates whether the application is able to receive data from IoT devices
+     * @param applicationStrategy the logic for finding another application in case of offloading
+     * @param instance the type of the VMs used by this application
+     * @param type the type of tasks the application can process
+     */
+    public Application(String name, long freq, long tasksize, double instructions, boolean serviceable,
+                       ApplicationStrategy applicationStrategy, Instance instance, TaskType... type) {
+        Application.allApplications.add(this);
+        this.deviceList = new ArrayList<>();
+        this.utilisedVms = new ArrayList<>();
+        this.name = name;
+        this.instance = instance;
+        this.freq = freq;
+        this.tasksize = tasksize;
+        this.serviceable = serviceable;
+        this.instructions = instructions;
+        this.applicationStrategy = applicationStrategy;
+        this.applicationStrategy.application = this;
+        this.types = Arrays.asList(type); // ezen már nem lehet változtatni
     }
 
     /**
@@ -346,78 +378,145 @@ public class Application extends Timed {
                     String.format("%s::%s", computingAppliance.name, featureName)).computeValue();
         }
 
-        //System.out.println("size: "+tasks.size());
-        //még nem feldolgozott adat
-        long unprocessedData = (this.receivedData - this.processedData);
+        long unprocessedDataFromTasks = 0;
+        for (StorageObject so : this.computingAppliance.iaas.repositories.get(0).contents()){
+            if (!(so instanceof VirtualAppliance)) {
+                unprocessedDataFromTasks+=so.size;
+            }
+        }
 
-        //van mit feldolgozni...
-        if (unprocessedData > 0) {
-            long alreadyProcessedData = 0;
+        //task merging
+        // a this.tasks-ba csak mergelt taskok mennek már, ahol elvileg nem garantált hogy mind tasksize méretű,
+        // utána csak a VM kiosztásnál nyúlunk a this.tasks-hoz, nem mergelünk tovább, ezen lehetne változtatni?
+        // habár a fejembe amikor megy a VM scheduling akkor nem nagyon kéne maradnia tasknak de lehet el vagyok tájolva
+        if (unprocessedDataFromTasks > 0) {
 
-            //amíg nincs minden adat taskba rendezve és ütemezve
-            while (unprocessedData != alreadyProcessedData) {
-                long allocatedData = Math.min(unprocessedData - alreadyProcessedData, this.tasksize);
+            Collection<StorageObject> tasksToRemoveFromRepo = new ArrayList<>();
 
-                //minden task 5 prio, 10pel későbbi deadline
-                Task task = new Task(allocatedData, 5, Timed.getFireCount()+10*60*1000);
-                tasks.add(task);
+            for (TaskType t : types){ //minden típus szerint összegyüjtjük a taskokat (minden típusból lesz x db mergelt task és kiürül a repo jó ha jól megy )
 
+                //összeszedjük hogy mely taskokat fogjuk mergelni
+                Collection<StorageObject> tasksToMerge = new ArrayList<>();
+                long mergeTaskSize = 0;
+
+                for (StorageObject so : this.computingAppliance.iaas.repositories.get(0).contents()) {
+                    //elvileg sensor már taskot generál csak szóval nem kéne előfordulnia
+                    if (!(so instanceof Task)) continue;
+                    Task task = (Task) so;
+
+                    //csak adott típusúakat mergelünk
+                    if (task.type != t) continue;
+
+                    //sose kéne előfordulnia, ha jól van összerakva az example
+                    if (task.size > this.tasksize) {
+                        throw new IllegalStateException("Task larger than max task size of application");
+                    }
+
+                    //ha nagyobb lenne a tasksizenál a jelenlegi taskkal, akkor mergelünk előtte
+                    if (mergeTaskSize + task.size > this.tasksize) {
+                        if (!tasksToMerge.isEmpty()) { //ez lehet fölös check az exception után(?), de elfér
+                            Task merged = Task.merge(tasksToMerge, t);
+                            this.tasks.add(merged);
+
+                            tasksToMerge.clear();
+                            mergeTaskSize = 0;
+                        }
+                    }
+
+                    // jelenlegi task hozzáadása a mergelendőkhöz (tehát maradhat nem mergelt task a taskToMergebe pl az utolsó elemnél)
+                    tasksToMerge.add(task);
+                    tasksToRemoveFromRepo.add(task);
+                    mergeTaskSize += task.size;
+                }
+                // a hátra maradt adag mergelése
+                if (!tasksToMerge.isEmpty()) {
+                    Task merged = Task.merge(tasksToMerge, t);
+                    this.tasks.add(merged);
+                }
+            }
+            //repoból törlés, elvileg itt már üresnek kéne lennie a reponak +- image file
+            for (StorageObject SoToRemove : tasksToRemoveFromRepo) {
+                this.computingAppliance.iaas.repositories.get(0).deregisterObject(SoToRemove);
+            }
+            System.out.println("reposize after merges (should be 0 + vmimages so like 2):" + this.computingAppliance.iaas.repositories.get(0).contents().size());
+            System.out.println("mergedtasks-" + this.tasks.size());
+        }
+
+
+
+        /*TODO Task.update();
+        ez updatelné a taskok prio adattagját deadline alapján (közelebbi deadline magasabb prio),
+        itt figyelni kell hogyha updateoljuk az elemeket a this.tasks-ba akkor nem lesz már rendezett, tehát majd sortolni kell valahol, vszeg a függvényben
+
+        */
+
+
+
+
+        //eddigre rendezve lesznek a taskok tehát lehet kiosztani őket
+        //vm kérés és computeTask
+
+        if(!this.tasks.isEmpty()){ //akkor szórakozunk vmel ha van (merged)task
+
+            int tasksToOffload = (int) Math.round(this.tasks.size()*0.1); //taskoks 10%át offloadoljuk i guess
+            while(tasks.size() != tasksToOffload){
                 //(szabad) vm keresés
                 final AppVm appVm = this.vmSearch();
 
-                //ha nincs vm akkor inditani kell
+                //ha nincs vm csinálunk, offloading nem tom itt lesz e
                 if (appVm == null) {
-                    double ratio = (double) unprocessedData / this.tasksize;
-                    SimLogger.logRun(name + " has " + unprocessedData + " bytes left, "
-                            + this.computingAppliance.getLoadOfResource() + " load (%),"
-                            + " unprocessed data / tasksize ratio: " + ratio + ". Decision: ");
+                    double ratio = (double) unprocessedDataFromTasks / this.tasksize;
+                    SimLogger.logRun(name + " has " + tasks.size() + " tasks left, "
+                            + this.computingAppliance.getLoadOfResource() + " load (%)");
 
-                    //offloading
+                    // TODO offloading
+                    /* vszeg nem is itt a nullchecknél lesz?
                     if (Double.compare(ratio, this.applicationStrategy.activationRatio) > 0) {
                         long dataForTransfer = ((long) ((unprocessedData - alreadyProcessedData)
                                 / this.applicationStrategy.transferDivider));
                         SimLogger.logRun("\tdata is ready to be transferred: " + dataForTransfer + " ");
                         this.applicationStrategy.findApplication(dataForTransfer);
-                    }
+                    }*/
+
                     this.createVm();
-                    break;
+                    break; // várunk kövi tickre hogy legyen vm?
                 }
 
-                //innen van a "feldolgozás"/scheduling - a try catchig
-                final double noi = allocatedData == this.tasksize ? this.instructions
-                        : (this.instructions * allocatedData / this.tasksize);
-                alreadyProcessedData += allocatedData;
-                this.processedData += allocatedData;
-                Application.totalProcessedSize += allocatedData;
                 appVm.isWorking = true;
+                Task taskToCompute = this.tasks.iterator().next();
+                this.tasks.remove(taskToCompute);
+                long taskSize = taskToCompute.size;
+                double noi = taskToCompute.size == this.tasksize ? this.instructions
+                        : (this.instructions * taskToCompute.size / this.tasksize);
+                this.processedData += taskSize;
+                Application.totalProcessedSize += taskSize;
                 this.taskInProgress++;
 
-
-
                 try {
+
                     appVm.vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing,
                             new ConsumptionEventAdapter() {
                                 final long taskStartTime = Timed.getFireCount();
-                                final long allocatedDataTemp = allocatedData;
+                                final long taskSizeTemp = taskSize;
                                 final double noiTemp = noi;
-                                //és evvel akkor a fenti dolgok nem is feltétlen kellenek, mert lehet ez a sok változó de minden task sizeból ered, (azaz allocatedata)
-                                //final double Task taskTemp = task
-
+                                final Task taskTemp = taskToCompute;
 
                                 @Override
                                 public void conComplete() {
-                                    saveStorageObject(allocatedData); //ezt nem vágom
-                                    //kéne egy tasks.remove poll vagy valami, a collectiontől függ, de vszeg treeset lesz
                                     appVm.isWorking = false;
                                     appVm.taskCounter++;
                                     taskInProgress--;
+                                    tasks.remove(taskTemp);
                                     Application.lastAction = Timed.getFireCount();
                                     timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),
                                             Integer.toString(appVm.id)));
+                                    String devices = taskTemp.notify.stream()
+                                            .map(d -> "Device-" + d.hashCode())
+                                            .collect(java.util.stream.Collectors.joining(", "));
                                     SimLogger.logRun(name + " VM-" + appVm.id + " started at: " + taskStartTime
-                                            + " finished at: " + Timed.getFireCount() + " bytes: " + allocatedDataTemp
+                                            + " finished at: " + Timed.getFireCount() + " bytes: " + taskSizeTemp
                                             + " took: " + (Timed.getFireCount() - taskStartTime) + " instructions: "
-                                            + noiTemp);
+                                            + noiTemp + " taskID: " + taskTemp.id + " Devices to be notified: " + devices);
                                 }
                             });
                 } catch (NetworkException e) {
@@ -425,11 +524,12 @@ public class Application extends Timed {
                 }
 
             }
-
-
-
-
         }
+
+
+        // eddig tart az unprocessed > 0 if
+
+        //ez a rész marad, a törölt / nem használt adattagok alapján kell refactorolni, elvileg nem nehéz?
         this.countVmRunningTime();
         this.turnOffVm();
 

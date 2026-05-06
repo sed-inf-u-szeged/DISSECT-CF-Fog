@@ -4,23 +4,24 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
+import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
 /**
- * The strategy considers both resource load and latency to ensure efficient data transfer.
+ * The strategy considers both resource load, latency and processable task type to ensure efficient data transfer.
  */
-public class RuntimeAwareApplicationStrategy extends ApplicationStrategy {
+public class RuntimeAndTypeAwareApplicationStrategy extends ApplicationStrategy {
 
     /**
      * Constructs a new strategy with the specified activation ratio and transfer divider.
      *
-     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio 
+     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio
      * @param transferDivider determining the ratio of the data to be transferred
      */
-    public RuntimeAwareApplicationStrategy(double activationRatio, double transferDivider) {
+    public RuntimeAndTypeAwareApplicationStrategy(double activationRatio, double transferDivider) {
         this.activationRatio = activationRatio;
         this.transferDivider = transferDivider;
     }
@@ -29,13 +30,13 @@ public class RuntimeAwareApplicationStrategy extends ApplicationStrategy {
      * Finds a suitable application from the available computing appliances based on load and latency,
      * and starts a data transfer to the chosen application.
      *
-     * @param dataForTransfer the amount of data to be transferred
+     * @param tasksForTransfer the tasks to be transmitted
      */
     @Override
-    public void findApplication(long dataForTransfer) {
-
+    public void findApplication(Set<Task> tasksForTransfer) {
         ArrayList<ComputingAppliance> availableComputingAppliances = this.getComputingAppliances();
-        if (availableComputingAppliances.size() > 0) {
+        Application chosenApplication = null;
+        if (!availableComputingAppliances.isEmpty()) {
             ComputingAppliance selectedCa = availableComputingAppliances.get(0);
             for (ComputingAppliance ca : this.getComputingAppliances()) {
                 int lat1 = selectedCa.iaas.repositories.get(0).getLatencies()
@@ -43,18 +44,34 @@ public class RuntimeAwareApplicationStrategy extends ApplicationStrategy {
                 int lat2 = ca.iaas.repositories.get(0).getLatencies().get(ca.iaas.repositories.get(0).getName());
                 if (selectedCa.getLoadOfResource() > ca.getLoadOfResource() && lat1 > lat2) {
                     selectedCa = ca;
+                    for (Application app : selectedCa.applications){
+                        for(TaskType t : application.types){
+                            if(!app.types.contains(t)){
+                                chosenApplication = null;
+                                break;
+                            } else{
+                                chosenApplication = app;
+                            }
+                        }
+                    }
                 }
             }
-            Application chosenApplication = selectedCa.applications
-                    .get(SeedSyncer.centralRnd.nextInt(selectedCa.applications.size()));
-            this.startDataTranfer(chosenApplication, dataForTransfer);
+
+            if(chosenApplication!=null){
+                // TODO nincs implementálva
+                this.startDataTranfer(chosenApplication, tasksForTransfer);
+            }
+
         }
     }
 
+    //unused
     @Override
-    public void findApplication(Set<Task> tasksForTransfer) {
+    public void findApplication(long dataForTransfer) {
 
     }
+
+
 
 
 }

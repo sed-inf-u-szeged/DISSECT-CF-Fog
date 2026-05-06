@@ -1,7 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Task;
+
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * The strategy selects a random application from the parent computing appliance to initiate a data transfer to it.
@@ -33,5 +38,10 @@ public class PushUpApplicationStrategy extends ApplicationStrategy {
                     .get(SeedSyncer.centralRnd.nextInt(this.application.computingAppliance.parent.applications.size()));
             this.startDataTranfer(chosenApplication, dataForTransfer);
         }
+    }
+
+    @Override
+    public void findApplication(Set<Task> tasksForTransfer) {
+
     }
 }

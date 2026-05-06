@@ -1,7 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.pliant.FuzzyIndicators;
 import hu.u_szeged.inf.fog.simulator.pliant.Sigmoid;
@@ -11,12 +13,8 @@ import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
+
+import java.util.*;
 
 /**
  * This class represents an application strategy based on Fuzzy logic and Pliant system.
@@ -45,6 +43,11 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         if (this.getComputingAppliances().size() > 0) {
             this.startDataTranfer(decisionMaker(this.getComputingAppliances()), dataForTransfer);
         }
+    }
+
+    @Override
+    public void findApplication(Set<Task> tasksForTransfer) {
+
     }
 
     /**

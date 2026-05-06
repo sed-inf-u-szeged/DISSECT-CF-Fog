@@ -5,9 +5,13 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption.ConsumptionEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * This is an abstract class to implement arbitrary offloading logic 
@@ -40,6 +44,13 @@ public abstract class ApplicationStrategy {
      * @param dataForTransfer the amount of data to be transmitted
      */
     public abstract void findApplication(long dataForTransfer);
+
+    /**
+     * The method to be overridden, which defines the logic of the offloading strategy.
+     *
+     * @param tasksForTransfer the tasks to be transmitted
+     */
+    public abstract void findApplication(Set<Task> tasksForTransfer);
 
     /**
      * This returns the available nodes (physical resources) connected to
@@ -92,5 +103,15 @@ public abstract class ApplicationStrategy {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * Initiates a data transfer process between the current application and the chosen application.
+     *
+     * @param chosenApplication the application to transfer data to
+     * @param tasksForTransfer  the tasks to be transmitted
+     */
+    protected void startDataTranfer(Application chosenApplication, Set<Task> tasksForTransfer) {
+        //TODO
     }
 }

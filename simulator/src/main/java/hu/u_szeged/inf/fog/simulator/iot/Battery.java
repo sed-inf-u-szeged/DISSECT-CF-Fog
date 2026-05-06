@@ -72,10 +72,10 @@ public class Battery extends Timed {
     private long chargeTime;
 
     /**
-     * The EnergyDataCollector for the Device's PhysicalMachine
+     * The EnergyDataCollector for the Device's PhysicalMachine (and communicationProtocols) handled by the IaasService (communicationProtocolManager).
      */
     @Getter @Setter
-    private EnergyDataCollector pmEnergyDataCollector;
+    private EnergyDataCollector energyDataCollector;
 
     /**
      * Used to stop battery drainage or task execution while charging.
@@ -150,7 +150,7 @@ public class Battery extends Timed {
             }
         }
 
-        double convertTo_mAh = pmEnergyDataCollector.delteEnergy/3600000/voltage*1000;
+        double convertTo_mAh = energyDataCollector.delteEnergy/3600000/voltage*1000;
 
         if (currLevel - convertTo_mAh <= 0) {
             unsubscribe();

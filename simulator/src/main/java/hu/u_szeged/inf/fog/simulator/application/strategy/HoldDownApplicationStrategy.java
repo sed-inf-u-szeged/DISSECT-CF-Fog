@@ -1,8 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * The strategy selects an application from the neighboring computing appliance with the least resource load.
@@ -42,5 +47,10 @@ public class HoldDownApplicationStrategy extends ApplicationStrategy {
                     .get(SeedSyncer.centralRnd.nextInt(selectedCa.applications.size()));
             this.startDataTranfer(chosenApplication, dataForTransfer);
         }
+    }
+
+    @Override
+    public void findApplication(Set<Task> tasksForTransfer) {
+
     }
 }

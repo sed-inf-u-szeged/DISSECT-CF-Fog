@@ -58,10 +58,18 @@ public class MobilityEvent {
             device.application = application;
             application.deviceList.add(device);
             device.caRepository = application.computingAppliance.iaas.repositories.get(0);
-            device.localMachine.localDisk.addLatencies(
-                    device.application.computingAppliance.iaas.repositories.get(0).getName(),
-                    device.latency + (int) (device.geoLocation
-                            .calculateDistance(device.application.computingAppliance.geoLocation) / 1000));
+            if(device.currentCommunicationProtocolRepo != null) {
+                device.currentCommunicationProtocolRepo.addLatencies(
+                        device.application.computingAppliance.iaas.repositories.get(0).getName(),
+                        device.latency + (int) (device.geoLocation
+                                .calculateDistance(device.application.computingAppliance.geoLocation) / 1000));
+            } else{
+                device.localMachine.localDisk.addLatencies(
+                        device.application.computingAppliance.iaas.repositories.get(0).getName(),
+                        device.latency + (int) (device.geoLocation
+                                .calculateDistance(device.application.computingAppliance.geoLocation) / 1000));
+            }
+
 
             connectToNodeEventCounter++;
 
@@ -88,13 +96,25 @@ public class MobilityEvent {
         device.application = application;
         device.caRepository = application.computingAppliance.iaas.repositories.get(0);
         application.deviceList.add(device);
-        device.localMachine.localDisk.getLatencies()
-                .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
-        device.localMachine.localDisk.addLatencies(
-                device.application.computingAppliance.iaas.repositories.get(0).getName(),
-                device.latency
-                        + (int) (device.geoLocation.calculateDistance(device.application.computingAppliance.geoLocation)
-                                / 1000));
+
+        if(device.currentCommunicationProtocolRepo != null) {
+            device.currentCommunicationProtocolRepo.getLatencies()
+                    .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
+            device.currentCommunicationProtocolRepo.addLatencies(
+                    device.application.computingAppliance.iaas.repositories.get(0).getName(),
+                    device.latency
+                            + (int) (device.geoLocation.calculateDistance(device.application.computingAppliance.geoLocation)
+                            / 1000));
+        } else{
+            device.localMachine.localDisk.getLatencies()
+                    .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
+            device.localMachine.localDisk.addLatencies(
+                    device.application.computingAppliance.iaas.repositories.get(0).getName(),
+                    device.latency
+                            + (int) (device.geoLocation.calculateDistance(device.application.computingAppliance.geoLocation)
+                            / 1000));
+        }
+
 
         changeNodeEventCounter++;
 
@@ -115,8 +135,14 @@ public class MobilityEvent {
      * @param application the application from which the device disconnects
      */
     public static void disconnectFromNodeEvent(Device device, Application application) {
-        device.localMachine.localDisk.getLatencies()
-                .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
+        if(device.currentCommunicationProtocolRepo != null) {
+            device.currentCommunicationProtocolRepo.getLatencies()
+                    .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
+        } else{
+            device.localMachine.localDisk.getLatencies()
+                    .remove(device.application.computingAppliance.iaas.repositories.get(0).getName());
+        }
+
         device.application.deviceList.remove(device);
         device.application = null;
         device.caRepository = null;

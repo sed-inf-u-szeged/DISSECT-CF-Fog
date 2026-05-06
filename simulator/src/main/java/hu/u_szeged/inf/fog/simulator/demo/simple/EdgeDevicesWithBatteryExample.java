@@ -10,8 +10,10 @@ import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.Battery;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
+import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.strategy.DistanceAndTypeBasedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
@@ -49,12 +51,12 @@ public class EdgeDevicesWithBatteryExample {
         Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
         Instance instance3 = new Instance("instance3", va, arc, 0.102 / 60 / 60 / 1000);
 
-        Application application1 = new Application("App-1", 60 * 1000, 250, 2_500, false,
-                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance3);
-        Application application2 = new Application("App-2", 60 * 1000, 250, 2_500, true,
-                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance2);
-        Application application3 = new Application("App-3", 60 * 1000, 250, 2_500, true,
-                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance1);
+        Application application1 = new Application("App-1", 60 * 1000, 3000, 30_000, false,
+                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
+        Application application2 = new Application("App-2", 60 * 1000, 3000, 30_000, true,
+                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
+        Application application3 = new Application("App-3", 60 * 1000, 3000, 30_000, true,
+                new RuntimeAwareApplicationStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
 
         cloud1.addApplication(application1);
         fog1.addApplication(application2);
@@ -70,12 +72,12 @@ public class EdgeDevicesWithBatteryExample {
 
             device = new EdgeDevice(2, 0.001, 2_174_483_648L, 0, 0,
                     0.02,  0.25, 2.2, 12, 3,
-                    0, 100 * 60 * 60 * 1000, 100 , 60 * 1000,
+                    0, 50 * 60 * 60 * 1000, 1000 , 60 * 1000,
                     new RandomWalkMobilityStrategy(new GeoLocation(47 + step, 19 - step), 0.0027, 0.0055, 10_000),
-                    new RandomDeviceStrategy(), 0.1, 50, battery, true);
-            device.setBattery(battery);
+                    new DistanceAndTypeBasedDeviceStrategy(), 0.1, 50, battery, TaskType.MEDICAL, true);
             deviceList.add(device);
         }
+        //check tasksize < 1 generated data / task problem, mindenhol tasksize >= generated data
 
         long starttime = System.nanoTime();
         Timed.simulateUntilLastEvent();
@@ -84,7 +86,7 @@ public class EdgeDevicesWithBatteryExample {
 //        ScenarioBase.calculateIoTCost();
 //        ScenarioBase.logBatchProcessing(stoptime - starttime);
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-//        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 
         for (Device device : deviceList) {

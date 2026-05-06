@@ -2,13 +2,17 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine.StateChangeException;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
@@ -24,9 +28,9 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -62,10 +66,6 @@ public class EdgeDevice extends Device {
      */
     public ArrayList<TimelineEntry> timelineEntries = new ArrayList<TimelineEntry>();
 
-    /**
-     * The communication protocols the edge device can use.
-     */
-    public Map<String, Repository> communicationProtocols = new LinkedHashMap<String, Repository>();
 
 
     /**
@@ -87,8 +87,8 @@ public class EdgeDevice extends Device {
             boolean pathLogging) {
         this.battery = null;  //default erre inicializálódik but for good measure
         try{
-            //ez fogja inicializálni a current commprot adattagot és állítja be a repot is a localMachinenál
-            setCommunicationProtocols(true, true, true);
+            //emiatt összetörik ez a konstruktor, de mivel a többi része is erre épül a classnak ezért mindegy hogy marad-e
+            setUsableCommunicationProtocols(true, true, true);
         } catch (NetworkException e) {
             throw new RuntimeException(e);
         }
@@ -118,11 +118,20 @@ public class EdgeDevice extends Device {
     public EdgeDevice(double cores, double perCoreProcessing, long memory, int onD, int offD,
                       double cpuMinPower, double cpuIdlePower, double cpuMaxPower, double diskDivider, double netDivider,
                       long startTime, long stopTime, long fileSize, long freq, MobilityStrategy mobilityStrategy,
-                      DeviceStrategy deviceStrategy, double instructionPerByte, int latency, Battery battery,
+                      DeviceStrategy deviceStrategy, double instructionPerByte, int latency, Battery battery, TaskType type,
                       boolean pathLogging) {
 
         try{
-            setCommunicationProtocols(true, true, true);
+            this.communicationProtocolManager = new IaaSService(FirstFitScheduler.class, AlwaysOnMachines.class);
+        } catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException | SecurityException e){
+            e.printStackTrace();
+        }
+
+
+        try{
+            // ez inicializálja a communicationProtocols mapet és az IaasService (commProtManager) commprot repoit is
+            setUsableCommunicationProtocols(true, true, true);
         } catch (NetworkException e) {
             throw new RuntimeException(e);
         }
@@ -130,10 +139,18 @@ public class EdgeDevice extends Device {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions( cpuMinPower,  cpuIdlePower, cpuMaxPower, diskDivider, netDivider);
 
-        //az előző metódus beállítja a használható repókat, wifi akkor is van ha mind3 false lenne, a default repo elérhetőség sorrendjében
-        // wifi -> 5g -> lora, tehát kb mindig wifi lesz a default repo
-        this.localMachine = new PhysicalMachine(cores,perCoreProcessing,memory,communicationProtocols.entrySet().iterator().next().getValue(),onD,offD,
+        // "fake" repo a PM-nek közel 0 fogyasztással, a ténylegesen használt repok a commProtosok
+        EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> PMrepoTransitions =
+                PowerTransitionGenerator.generateTransitions(0.02, 0.25, 2.2, 1000000, 1000000);
+        final Map<String, PowerState> PMrepoStTransitions = PMrepoTransitions.get(PowerTransitionGenerator.PowerStateKind.storage);
+        final Map<String, PowerState> PMrepoNwTransitions = PMrepoTransitions.get(PowerTransitionGenerator.PowerStateKind.network);
+        Repository physicalMachineRepo = new Repository(4_294_967_296L, "Device-" + this.hashCode() + "-PM_repo",
+                1,1,5000, new HashMap<>(),
+                PMrepoStTransitions, PMrepoNwTransitions);
+        this.localMachine = new PhysicalMachine(cores,perCoreProcessing,memory,physicalMachineRepo,onD,offD,
                                                 transitions.get(PowerTransitionGenerator.PowerStateKind.host));
+
+        this.communicationProtocolManager.registerHost(localMachine);
 
         long delay = Math.abs(SeedSyncer.centralRnd.nextLong() % 180) * 1000;
         this.startTime = startTime + delay;
@@ -149,8 +166,9 @@ public class EdgeDevice extends Device {
         this.deviceStrategy = deviceStrategy;
         this.deviceStrategy.device = this;
         this.latency = latency;
+        this.type = type;
 
-        battery.setPmEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.localMachine, true, true));
+        battery.setEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.communicationProtocolManager, true, true));
         battery.setStopTime(stopTime);
         this.battery = battery;
         
@@ -158,7 +176,7 @@ public class EdgeDevice extends Device {
                 localMachine.getCapacities().getRequiredProcessingPower(),
                 localMachine.getCapacities().getRequiredMemory());
         this.startMeter();
-        this.localMachine.turnon();
+        //this.localMachine.turnon(); iaasservice elinditja őket
     }
 
 
@@ -202,32 +220,107 @@ public class EdgeDevice extends Device {
     /**
      * Sets what communication protocols the edge device can use.
      */
-    public void setCommunicationProtocols(boolean wifi, boolean _5g, boolean lora) throws NetworkException {
-        communicationProtocols.clear();
-        if(wifi || (!_5g && !lora)){ //ha mind false akkor nem tudna kommunikálni, szóval csak tudja mit akar a szimuláció készítő, de mégis le lesz kezelve, így mert a repo meg kell
-            communicationProtocols.put("WIFI", CommunicationProtocol.getInstance().newWifiRepository());
+    public void setUsableCommunicationProtocols(boolean wifi, boolean _5g, boolean lora) throws NetworkException {
+        //első meghivásnál feltöltjük az EdgeDevicehoz generált 3 repot (akkor is mind3 ha nem használja mind3at, lehet wasteful de egyszerűbb kezelni)
+        //főleg hogy LORA repo a default amikor nincs szerver rangeben
+        //ez a rész lehet okosabb lenne a konstruktorba de az is igyis már túl hosszú
+        if(communicationProtocolRepos.isEmpty()){
+            communicationProtocolRepos.add(CommunicationProtocol.getInstance().newWifiRepository());
+            communicationProtocolRepos.add(CommunicationProtocol.getInstance().new5GRepository());
+            communicationProtocolRepos.add(CommunicationProtocol.getInstance().newLoRaRepository());
+
+            //mindet hozzáadjuk a managerhez
+            for (Repository r : communicationProtocolRepos) {
+                communicationProtocolManager.registerRepository(r);
+            }
+        }
+
+        //a ténylegesen használható repok megadása / változtatása az újonnali meghívásnál
+        usableCommunicationProtocols.clear();
+        if(wifi || (!_5g && !lora)){ //ha mind false akkor nem tudna kommunikálni, szóval csak tudja mit akar a szimuláció készítő, de mégis le lesz kezelve, így mert a repo kell
+            usableCommunicationProtocols.add("WIFI");
+            this.currentCommunicationProtocol = "WIFI";
         }
         if(_5g){
-            communicationProtocols.put("5G", CommunicationProtocol.getInstance().new5GRepository());
+            usableCommunicationProtocols.add("5G");
+            this.currentCommunicationProtocol = "5G";
         }
         if(lora){
-            communicationProtocols.put("LORA", CommunicationProtocol.getInstance().newLoRaRepository());
+            usableCommunicationProtocols.add("LORA");
+            this.currentCommunicationProtocol = "LORA";
+        }
+
+        swapCommunicationProtocolTo(this.currentCommunicationProtocol); //defaultba LORA
+    }
+
+    //ezzel történik a tényleges váltás egyik protokollról a másikra
+    private void swapCommunicationProtocolTo(String newCommunicationProtocol) throws NetworkException {
+        //logging help, törölhető
+        if(battery != null){
+            if(currentCommunicationProtocol.equals(newCommunicationProtocol)){
+                return;
+            }
+            try( FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/swap.txt",true)){
+                fw.write(Timed.getFireCount() + " " + this.battery.getName() + " from:" + currentCommunicationProtocol + " to:" + newCommunicationProtocol + "\n");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        this.currentCommunicationProtocol = newCommunicationProtocol;
+        for (Repository r : communicationProtocolRepos) {
+            if (r.getName().contains(currentCommunicationProtocol)){
+                currentCommunicationProtocolRepo = r;
+                break;
+            }
+        }
+
+
+        //ha van adat amit át kell vinni a repok között azt lementjük, majd lejebb a tényleges "váltásnál" hozzáadjuk őket
+        Map<String, Integer> swapLatencies = new HashMap<>();
+        Collection<StorageObject> swapContents = new ArrayList<>();
+        for (Repository r : this.communicationProtocolRepos){
+            if(!r.contents().isEmpty() || !r.getLatencies().isEmpty()){
+                swapLatencies.putAll(r.getLatencies());
+                swapContents.addAll(r.contents());
+
+                //amiben volt azt töröljük
+                r.getLatencies().clear();
+                for (StorageObject so : swapContents) {
+                    r.deregisterObject(so);
+                }
+                break; //mivel csak egy running reponak kéne lenni ezért, ha egy meg van nem kell megnézni a többi tartalmát (?)
+            }
+        }
+
+        //leállít minden repot kivéve a paraméterben levőt (mert az elinditja ha nem az), majd megkéne hivni a konstruktorba is, vagy a setCommprotba okosabb
+        for (Repository r : this.communicationProtocolRepos){
+            if(r.getName().contains(newCommunicationProtocol)){
+                r.getLatencies().putAll(swapLatencies);
+                for (StorageObject so : swapContents) {
+                    r.registerObject(so);
+                }
+
+                r.setState(NetworkNode.State.RUNNING);
+            } else{
+                r.setState(NetworkNode.State.OFF);
+            }
         }
     }
 
     /**
      * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
-    public void selectBestCommunicationProtocol(){
+    public void selectBestCommunicationProtocol() throws NetworkException {
         if(this.battery == null){ // már egyszer checkolva van a tick()-ben szóval lehet fölös de elfér egyelőre
             return;
 
         }
 
-        //probléma volt akkor ha lokális feldolgozás során repot váltok szóval ez megment
-        if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)){
-            return;
-        }
+//        //probléma volt akkor ha lokális feldolgozás során repot váltok szóval enélkül nem fut kód amég nincs refaktorálás
+//        if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)){
+//            return;
+//        }
 
         // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
         List<String> options = new ArrayList<>();
@@ -235,38 +328,18 @@ public class EdgeDevice extends Device {
         if(this.deviceStrategy.chosenApplication != null){
             options = this.deviceStrategy.chosenApplication.computingAppliance.communicationProtocols;
         }
-//        else{
-//            // ha nem tudja használni az eszköz a szervert feldolgozásra akkor a wifi repo legyen bent
-//
-//            if(communicationProtocols.get("WIFI") != localMachine.localDisk){
-//                Repository swap = communicationProtocols.get("WIFI");
-//                try( FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/swap.txt",true)){
-//                    fw.write(Timed.getFireCount() + " " + this.battery.getName() + " from:" + this.localMachine.localDisk.getName() + " to:" + swap.getName() + "\n");
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//
-//                for (var connection : localMachine.localDisk.getLatencies().entrySet()){
-//                    swap.addLatencies(connection.getKey(), connection.getValue());
-//                }
-//
-//                for (StorageObject c : localMachine.localDisk.contents()){
-//                    swap.registerObject(c);
-//                }
-//
-//                for (StorageObject c : swap.contents()){
-//                    localMachine.localDisk.deregisterObject(c);
-//                }
-//
-//                localMachine.localDisk = swap;
-//                return;
-//            }
-//        }
+        else{
+            // ha nem tudja használni az eszköz a szervert feldolgozásra akkor a lora repo legyen "használva"
+            if(!("LORA".equals(currentCommunicationProtocol))){
+                swapCommunicationProtocolTo("LORA");
+            }
+        }
 
+        //TODO ez a: "nem lehet kapcsolatot létesíteni a szerverrel" az majd átmegy a strategybe a findAppba(?)
         //van legalább egy közös commprot, ha nincs akkor lehet le kéne valahogy kezelni, de akkor csak megtartanánk a jelenlegi repot nem tudom lehet túl gondolom
         boolean atLeastOne = false;
         for (String commProtocol : options) {
-            if(communicationProtocols.containsKey(commProtocol)){
+            if(usableCommunicationProtocols.contains(commProtocol)){
                 atLeastOne = true;
                 break;
             }
@@ -276,16 +349,13 @@ public class EdgeDevice extends Device {
         }
 
 
+        /*
+        TODO értelmes heurisztika, figyelembe véve a taskokat itt is szerveren is, a batteryt,
+        deadlineokat (pl közelebbi deadline -> gyorsabb kapcsolat jobb heurisztika érték), minden ami csak eszembe jut és logikus
+        */
         String first = "WIFI";
         String second = "5G";
         String third = "LORA";
-        /*
-        sorrend felállítás, hogy melyik a legjobb commprot
-        ezen bőven lehetne finomítani elég sok feltétellel meg szebb kivitelezéssel hogyha több commprot is lenne,
-        de egyelőre csak töltöttséget nézünk és csak a 3 commprotot vizsgáljuk -> elég statikus döntések lesznek amég más feltétel nincs
-        a másik feltétel meg az hogy választható ami a kövi résznél lesz kiválasztva
-        */
-
 
         if(this.battery.getCurrentPercentage() > 70){
             first = "WIFI";
@@ -305,48 +375,14 @@ public class EdgeDevice extends Device {
             third = "WIFI";
         }
 
-        Repository swap = null;
-
         //választás, a sorrend alapján
-        if(options.contains(first)){
-            swap = communicationProtocols.get(first);
-        } else if(options.contains(second)){
-            swap = communicationProtocols.get(second);
-        } else if(options.contains(third)){
-            swap = communicationProtocols.get(third);
+        if(options.contains(first) && usableCommunicationProtocols.contains(first)){
+            swapCommunicationProtocolTo(first);
+        } else if(options.contains(second) && usableCommunicationProtocols.contains(second)){
+            swapCommunicationProtocolTo(second);
+        } else if(options.contains(third) && usableCommunicationProtocols.contains(third)){
+            swapCommunicationProtocolTo(third);
         }
-
-        // TODO figyelni arra hogy ha váltunk akkor a repokba levő (adat /) TASK maradjon meg
-        if(swap != null && swap != localMachine.localDisk){
-            try( FileWriter fw = new FileWriter(ScenarioBase.resultDirectory + "/swap.txt",true)){
-               fw.write(Timed.getFireCount() + " " + this.battery.getName() + " from:" + this.localMachine.localDisk.getName() + " to:" + swap.getName() + "\n");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-
-            for (var connection : localMachine.localDisk.getLatencies().entrySet()){
-                swap.addLatencies(connection.getKey(), connection.getValue());
-            }
-
-            for (StorageObject c : localMachine.localDisk.contents()){
-                //időt nem befolyásolva átmásoljuk a elemeket -> csak commprot váltás
-                swap.registerObject(c);
-                // meg egyéb adattagok is vannak amivel nem tudom kéne e törődni
-                // Taskal ez is változik
-            }
-
-            // törölni kell a másolás után mert amúgy duplikátumok lesznek
-            for (StorageObject c : swap.contents()){
-                localMachine.localDisk.deregisterObject(c);
-            }
-
-            //System.out.println("Changed CommunicationProtocol(?)");
-            localMachine.localDisk = swap;
-        }
-
-        //egyéb opciók
-        //pl task priority / deadline sürget -> gyorsabb kapcsolat, de ehhez előbb kell a task absztrakció
     }
 
 
@@ -372,7 +408,11 @@ public class EdgeDevice extends Device {
         MobilityEvent.changePositionEvent(this, newLocation);
 
         if (battery != null) {
-            selectBestCommunicationProtocol(); //ebbe benne van a this.deviceStrategy.findApplication();
+            try {
+                selectBestCommunicationProtocol(); //ebbe benne van a this.deviceStrategy.findApplication();
+            } catch (NetworkException e) {
+                throw new RuntimeException(e);
+            }
         } else{
             this.deviceStrategy.findApplication();
         }
@@ -380,8 +420,6 @@ public class EdgeDevice extends Device {
         try {
             if (this.deviceStrategy.chosenApplication != null) {
                 // TODO átküldött taskok -> application
-                // egyelőre applicationbe jönnek létre a taskok
-
                 this.startDataTransfer();
                 this.stopVm();
             } else {
@@ -389,15 +427,25 @@ public class EdgeDevice extends Device {
                     this.startVm();
                 } else {
                     // TODO lokálisan feldolgozott taskok
+                    /*
+                    amúgy ennek van bármi értelme hogy mergeljünk local taskokat? mert a feldolgozásnál pár sorral lejebb úgyis csak a size számít
+                    esetleg arra tudok gondolni, hogy lementjük a ConsumptionEventAdapterbe a (mergelt) Taskot és növelünk vmi külső EdgeDevicebeli
+                    változót ami azt mutatja hogy task nem lett időre kész? pl missedDeadlines++
+                    de ettől független majdnem minden existing code megmarad csak lesz előtte egy Merge amit nem is mentünk le a repoba csak az adapterbe?
+                    */
+                    //Task processedTask = Task.merge(this.localMachine.localDisk.contents());
+                    //System.out.println(processedTask);
+                    //System.out.println(this.localMachine.localDisk.contents().size());
 
                     long dataToBeProcessed = 0;
                     ArrayList<StorageObject> dataToBeRemoved = new ArrayList<>();
-                    for (StorageObject so : this.localMachine.localDisk.contents()) {
+                    for (StorageObject so : this.currentCommunicationProtocolRepo.contents()) {
                         if (!(so instanceof VirtualAppliance)) {
                             dataToBeProcessed += so.size;
                             dataToBeRemoved.add(so);
                         }
                     }
+
                     if (dataToBeProcessed > 0) {
                         final EdgeDevice edgeDevice = this;
                         final long currentlyProcessedData = dataToBeProcessed;
@@ -424,7 +472,7 @@ public class EdgeDevice extends Device {
                                 });
                         if (rc != null) {
                             for (StorageObject so : dataToBeRemoved) {
-                                this.localMachine.localDisk.deregisterObject(so);
+                                this.currentCommunicationProtocolRepo.deregisterObject(so);
                             }
                         }
                     }
