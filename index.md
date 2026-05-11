@@ -26,7 +26,7 @@ The simulator allows you to experiment with:
 
 At a high level, the simulator is built around a **core simulation engine**, surrounded by tools and extensions:
 
-![](assets/images/dissect-cf-fog-figure.png "DISSECT-CF-Fog")
+![](assets/images/home_architecture.png "DISSECT-CF-Fog")
 {: .text-center}
 
 
