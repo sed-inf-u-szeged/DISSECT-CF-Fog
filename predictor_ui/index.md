@@ -1,12 +1,12 @@
 ---
 title: Predictor UI
-nav_order: 6
+nav_order: 7
 permalink: /predui
 ---
 
-# Web Application
+# Predictor UI
 
 This section will showcase the [Predictor UI] module of the simulator.
 {: .fs-6 .fw-300 }
 
-[Web Application]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/predictor-ui
+[Predictor UI]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/predictor-ui

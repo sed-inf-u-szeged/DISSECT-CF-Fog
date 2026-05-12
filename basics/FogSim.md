@@ -216,7 +216,18 @@ Let’s examine how these changes affect the outputs:
     - their coverage ranges,
     - and device movement paths.
   - Unlike the previous example, the visualization is clearer due to finite node ranges instead of infinite coverage.
+  
+![](../assets/images/fog_sim_map.png "Fog Simulation map.html")
+{: .text-center}
 
+- **timeline.html**
+  - On the timeline we can see that the fog node that has App-2 worked the most, since 4 out of 10 devices are in the vicinity of it.
+  - We can also see the Device here as previously mentioned since some device instances (EdgeDevice) are now capable of local processing.
+
+![](../assets/images/fog_sim_timeline1.png "Fog Simulation timeline.html top-part")
+{: .text-center}
+![](../assets/images/fog_sim_timeline2.png "Fog Simulation timeline.html bottom-part")
+{: .text-center}
 ---
 
 With these additions, the simulation becomes significantly more realistic.

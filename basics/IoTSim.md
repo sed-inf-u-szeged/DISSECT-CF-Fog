@@ -549,6 +549,9 @@ The **map.html** file visualizes the system:
 
 Because of this randomness, device positions change with each run, while cloud locations remain fixed.
 
+![](../assets/images/iot_sim_map.png "IoT Simulation map.html")
+{: .text-center}
+
 ---
 
 The **timeline** is a visual representation of the console logs.
@@ -558,6 +561,9 @@ It shows:
 - data processing events,
 - application activity over time.
 This can make complex interactions easier to understand compared to raw logs.
+
+![](../assets/images/iot_sim_timeline.png "IoT Simulation timeline.html")
+{: .text-center}
 
 ---
 
