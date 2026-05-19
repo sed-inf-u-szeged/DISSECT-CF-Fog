@@ -5,12 +5,11 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption.ConsumptionEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -46,7 +45,7 @@ public abstract class ApplicationStrategy {
     public abstract void findApplication(long dataForTransfer);
 
     /**
-     * The method to be overridden, which defines the logic of the offloading strategy.
+     * The method to be overridden, which defines the logic of the offloading strategy when offloading tasks.
      *
      * @param tasksForTransfer the tasks to be transmitted
      */
@@ -106,12 +105,46 @@ public abstract class ApplicationStrategy {
     }
 
     /**
-     * Initiates a data transfer process between the current application and the chosen application.
+     * Initiates a data transfer with the given set of tasks of the same type
+     * to process between the current application and the chosen application.
      *
      * @param chosenApplication the application to transfer data to
      * @param tasksForTransfer  the tasks to be transmitted
      */
     protected void startDataTranfer(Application chosenApplication, Set<Task> tasksForTransfer) {
-        //TODO
+        if (chosenApplication != null) {
+            tasksForTransfer.forEach(task -> {
+                chosenApplication.incomingData++;
+                try {
+                    NetworkNode.initTransfer(task.size, ResourceConsumption.unlimitedProcessing,
+                            this.application.computingAppliance.iaas.repositories.get(0),
+                            chosenApplication.computingAppliance.iaas.repositories.get(0), new ConsumptionEvent() {
+                                long onNetwork = Timed.getFireCount();
+
+                                @Override
+                                public void conComplete() {
+                                    if (!chosenApplication.isSubscribed()) {
+                                        chosenApplication.subscribeApplication();
+                                    }
+                                    //az offloadolt taskok már mergeltek, nincs értelme a repoba registerelni őket mehetnek egyből tasks-ba
+                                    chosenApplication.tasks.add(task);
+                                    application.tasks.remove(task);
+                                    chosenApplication.incomingData--;
+
+                                    Application.totalTimeOnNetwork += (Timed.getFireCount() - onNetwork);
+                                    Application.totalBytesOnNetwork += task.size;
+                                }
+
+                                @Override
+                                public void conCancelled(ResourceConsumption problematic) {
+                                    System.err.println("WARNING: Task transfer between the applications is unsuccessful!");
+                                    System.exit(0);
+                                }
+                            });
+                } catch (NetworkException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 }

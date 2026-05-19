@@ -438,45 +438,42 @@ public class Application extends Timed {
             for (StorageObject SoToRemove : tasksToRemoveFromRepo) {
                 this.computingAppliance.iaas.repositories.get(0).deregisterObject(SoToRemove);
             }
-            System.out.println("reposize after merges (should be 0 + vmimages so like 2):" + this.computingAppliance.iaas.repositories.get(0).contents().size());
-            System.out.println("mergedtasks-" + this.tasks.size());
         }
 
-
-
-        /*TODO Task.update();
-        ez updatelné a taskok prio adattagját deadline alapján (közelebbi deadline magasabb prio),
-        itt figyelni kell hogyha updateoljuk az elemeket a this.tasks-ba akkor nem lesz már rendezett, tehát majd sortolni kell valahol, vszeg a függvényben
-
-        */
-
-
+        //ez updateli a taskok prio adattagját deadline alapján (közelebbi deadline magasabb prio),
+        tasks = Task.update(tasks);
 
 
         //eddigre rendezve lesznek a taskok tehát lehet kiosztani őket
         //vm kérés és computeTask
 
-        if(!this.tasks.isEmpty()){ //akkor szórakozunk vmel ha van (merged)task
+        if(!this.tasks.isEmpty()){ //akkor foglakozunk vmmel ha van (merged)task
 
-            int tasksToOffload = (int) Math.round(this.tasks.size()*0.1); //taskoks 10%át offloadoljuk i guess
-            while(tasks.size() != tasksToOffload){
+            int tasksToOffload = (int) Math.round(this.tasks.size()*0.5); //taskoks 50%át/transferdivider offloadoljuk i guess, placeholder
+            while(!tasks.isEmpty()){
                 //(szabad) vm keresés
                 final AppVm appVm = this.vmSearch();
 
-                //ha nincs vm csinálunk, offloading nem tom itt lesz e
+                //ha nincs vm offloadolunk és inditunk új vmet következő feladatokank
                 if (appVm == null) {
                     double ratio = (double) unprocessedDataFromTasks / this.tasksize;
-                    SimLogger.logRun(name + " has " + tasks.size() + " tasks left, "
+                    SimLogger.logRun(name + " has " + tasks.size() + " tasks left, ratio: " + ratio + ", "
                             + this.computingAppliance.getLoadOfResource() + " load (%)");
 
-                    // TODO offloading
-                    /* vszeg nem is itt a nullchecknél lesz?
+                    //offloading
+                    //itt az tasksForTransfernek külön típusokra szedve kéne offloadolni
                     if (Double.compare(ratio, this.applicationStrategy.activationRatio) > 0) {
-                        long dataForTransfer = ((long) ((unprocessedData - alreadyProcessedData)
-                                / this.applicationStrategy.transferDivider));
-                        SimLogger.logRun("\tdata is ready to be transferred: " + dataForTransfer + " ");
-                        this.applicationStrategy.findApplication(dataForTransfer);
-                    }*/
+                        Set<Task> tasksForTransfer = new HashSet<>();
+                        tasks.forEach(task -> {
+                            if(tasksForTransfer.size()<tasksToOffload / this.applicationStrategy.transferDivider){
+                                tasksForTransfer.add(task);
+                            }
+                        });
+                        SimLogger.logRun("\tTasks are ready to be transferred: " /*+ tasksForTransfer + " "*/);
+                        if(!tasksForTransfer.isEmpty()){
+                            this.applicationStrategy.findApplication(tasksForTransfer);
+                        }
+                    }
 
                     this.createVm();
                     break; // várunk kövi tickre hogy legyen vm?
@@ -484,7 +481,7 @@ public class Application extends Timed {
 
                 appVm.isWorking = true;
                 Task taskToCompute = this.tasks.iterator().next();
-                this.tasks.remove(taskToCompute);
+                this.tasks.remove(taskToCompute); //az Task.update és newComputeTask miatt muszáj itt kivenni a taskot, hogy ne osszuk ki újra
                 long taskSize = taskToCompute.size;
                 double noi = taskToCompute.size == this.tasksize ? this.instructions
                         : (this.instructions * taskToCompute.size / this.tasksize);
@@ -493,7 +490,6 @@ public class Application extends Timed {
                 this.taskInProgress++;
 
                 try {
-
                     appVm.vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing,
                             new ConsumptionEventAdapter() {
                                 final long taskStartTime = Timed.getFireCount();
@@ -506,17 +502,15 @@ public class Application extends Timed {
                                     appVm.isWorking = false;
                                     appVm.taskCounter++;
                                     taskInProgress--;
-                                    tasks.remove(taskTemp);
                                     Application.lastAction = Timed.getFireCount();
                                     timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),
                                             Integer.toString(appVm.id)));
-                                    String devices = taskTemp.notify.stream()
-                                            .map(d -> "Device-" + d.hashCode())
-                                            .collect(java.util.stream.Collectors.joining(", "));
+
+                                    String devices = String.join(", ", taskTemp.notify);
                                     SimLogger.logRun(name + " VM-" + appVm.id + " started at: " + taskStartTime
                                             + " finished at: " + Timed.getFireCount() + " bytes: " + taskSizeTemp
                                             + " took: " + (Timed.getFireCount() - taskStartTime) + " instructions: "
-                                            + noiTemp + " taskID: " + taskTemp.id + " Devices to be notified: " + devices);
+                                            + noiTemp + " taskID: " + taskTemp.id + " devices to be notified: " + devices);
                                 }
                             });
                 } catch (NetworkException e) {
@@ -527,9 +521,6 @@ public class Application extends Timed {
         }
 
 
-        // eddig tart az unprocessed > 0 if
-
-        //ez a rész marad, a törölt / nem használt adattagok alapján kell refactorolni, elvileg nem nehéz?
         this.countVmRunningTime();
         this.turnOffVm();
 

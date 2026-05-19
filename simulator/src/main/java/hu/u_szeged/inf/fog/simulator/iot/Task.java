@@ -26,7 +26,7 @@ public class Task extends StorageObject {
     public long deadline;
 
     //azon eszközök listája akiket "értesíteni kell" -> vszeg egy log lesz amiben meg lesznek említve mert visszacsatolás fájdalmas
-    public Set<Device> notify = new HashSet<>();
+    public Set<String> notify = new HashSet<>();
 
     //alapból kis taskok ezzel jönnek létre
     public Task(long size, int priority, long deadline, TaskType type, Device toNotify) {
@@ -34,12 +34,12 @@ public class Task extends StorageObject {
         this.priority = priority;
         this.deadline = deadline;
         this.type = type;
-        notify.add(toNotify);
+        notify.add("Device-" + toNotify.hashCode());
         this.created = Timed.getFireCount();
     }
 
-    //task mergelés a más féle név miatt másik konstruktor
-    private Task(String id, long size, int priority, long deadline, TaskType type, List<Device> toNotify) {
+    //task mergeléshez a más féle név miatt másik konstruktor
+    private Task(String id, long size, int priority, long deadline, TaskType type, Set<String> toNotify) {
         super(id, size, false);
         this.priority = priority;
         this.deadline = deadline;
@@ -57,7 +57,7 @@ public class Task extends StorageObject {
         long combinedSize = 0;
         long closestDeadline = Long.MAX_VALUE;
         int highestPriority = 0;
-        List<Device> mergedNotify = new ArrayList<>();
+        Set<String> mergedNotify = new HashSet<>();
 
         for (StorageObject task : tasks) {
             if(!(task instanceof Task) || ((Task) task).type != type) {
@@ -86,14 +86,36 @@ public class Task extends StorageObject {
         return new Task(sb.toString(),combinedSize, highestPriority, closestDeadline, type, mergedNotify);
     }
 
-    //frissiti a beadott collection taskjait az alapján hogy a deadline mennyire közeleg a létrehozatalhoz képest
-    public static Collection<StorageObject> update(Collection<StorageObject> tasks) {
-        //TODO prio max 10; deadline - jelenlegi tick / 10 és ez lesz 1 arány ami mindig +1 prio (tehát medical a 6os prioval 4 ilyen "arány" után lesz maxos)
+    //frissiti a beadott collection taskjainak prioritását az alapján hogy a deadline mennyire közeleg a létrehozatalhoz képest
+    public static Set<Task> update(Set<Task> tasks) {
+        //prio max TaskType alapján prio + 4 legfeljebb (medical max 10, traffic max 7, weather max 5);
+        Set<Task> updated = new TreeSet<>(
+                Comparator.comparing(Task::getPriority)
+                        .reversed()
+                        .thenComparing(Task::getDeadline)
+        );
 
-        //ha ezt meghivom az appban lévő setre, akkor nem lesz rendezve a modosítás után
-        //opt1 reinsert (mindent kiveszek és visszarkok, eléggé overkill vszeg)
-        //opt2 resort after update
-        return tasks;
+        for (Task t : tasks) {
+            // új task létrehozása, hogy rendezett set legyen a módosítások után is
+            long currentTime = Timed.getFireCount();
+            int newPriority;
+            double ratio = (double) Math.max(t.deadline - currentTime, 0) / (t.deadline - t.created);
+            if(ratio<0.2){
+                newPriority = t.type.getPriority()+4;
+            } else if (ratio<0.4) {
+                newPriority = t.type.getPriority()+3;
+            } else if (ratio<0.6) {
+                newPriority = t.type.getPriority()+2;
+            } else if (ratio<0.8) {
+                newPriority = t.type.getPriority()+1;
+            } else{
+                newPriority = t.type.getPriority();
+            }
+            Task newTask = new Task(t.id,t.size,newPriority,t.deadline,t.type,t.notify);
+            updated.add(newTask);
+        }
+
+        return updated;
     }
 
 

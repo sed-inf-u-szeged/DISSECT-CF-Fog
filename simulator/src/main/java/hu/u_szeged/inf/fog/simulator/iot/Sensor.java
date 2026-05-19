@@ -2,8 +2,6 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
-import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.util.ArrayList;
 
@@ -43,11 +41,7 @@ public class Sensor extends DeferredEvent {
     @Override
     protected void eventAction() {
         Task so = new Task(this.device.fileSize, this.device.type.getPriority(),Timed.getFireCount()+10*60*1000, this.device.type, this.device);
-        /* régi kód
-        StorageObject so = new StorageObject(
-                this.device.localMachine.localDisk.getName() + " " + this.device.fileSize + " " + Timed.getFireCount(),
-                this.device.fileSize, false);
-         */
+
         if (this.device.currentCommunicationProtocolRepo.registerObject(so)) {
             this.device.generatedData += so.size;
             Device.totalGeneratedSize += so.size;

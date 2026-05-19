@@ -210,7 +210,7 @@ public class EdgeDevice extends Device {
     private void stopVm() {
         if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             try {
-                this.localVm.switchoff(true);
+                this.localVm.switchoff(false);
             } catch (StateChangeException e) {
                 e.printStackTrace();
             }
@@ -253,9 +253,11 @@ public class EdgeDevice extends Device {
         swapCommunicationProtocolTo(this.currentCommunicationProtocol); //defaultba LORA
     }
 
-    //ezzel történik a tényleges váltás egyik protokollról a másikra
+    /**
+     * This method does the actual swapping of the communicationProtocols.
+     */
     private void swapCommunicationProtocolTo(String newCommunicationProtocol) throws NetworkException {
-        //logging help, törölhető
+        //logging, törölhető
         if(battery != null){
             if(currentCommunicationProtocol.equals(newCommunicationProtocol)){
                 return;
@@ -312,19 +314,13 @@ public class EdgeDevice extends Device {
      * Select what communication protocol the edge device should use given its battery state and the server(s) in its vicinity.
      */
     public void selectBestCommunicationProtocol() throws NetworkException {
-        if(this.battery == null){ // már egyszer checkolva van a tick()-ben szóval lehet fölös de elfér egyelőre
+        if(this.battery == null){
             return;
-
         }
 
-//        //probléma volt akkor ha lokális feldolgozás során repot váltok szóval enélkül nem fut kód amég nincs refaktorálás
-//        if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)){
-//            return;
-//        }
-
-        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk (ezek azok amiket kezel az MEC szerver)
+        // feltöltjük ezt a listát azokkal a communication protokollokkal amik közül válaszhatunk, és utána választunk
         List<String> options = new ArrayList<>();
-        this.deviceStrategy.findApplication(); // ezzel elvileg a legjobb szervert választjuk ki a stratégiának megfelelően szóval arra nem kell feltételt írni?
+        this.deviceStrategy.findApplication(); // ezzel elvileg a legközelebbi szervert választjuk ki mert distanceandtype based strategyt használunk
         if(this.deviceStrategy.chosenApplication != null){
             options = this.deviceStrategy.chosenApplication.computingAppliance.communicationProtocols;
         }
@@ -419,24 +415,12 @@ public class EdgeDevice extends Device {
 
         try {
             if (this.deviceStrategy.chosenApplication != null) {
-                // TODO átküldött taskok -> application
                 this.startDataTransfer();
                 this.stopVm();
             } else {
                 if (this.localVm == null || this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
                     this.startVm();
                 } else {
-                    // TODO lokálisan feldolgozott taskok
-                    /*
-                    amúgy ennek van bármi értelme hogy mergeljünk local taskokat? mert a feldolgozásnál pár sorral lejebb úgyis csak a size számít
-                    esetleg arra tudok gondolni, hogy lementjük a ConsumptionEventAdapterbe a (mergelt) Taskot és növelünk vmi külső EdgeDevicebeli
-                    változót ami azt mutatja hogy task nem lett időre kész? pl missedDeadlines++
-                    de ettől független majdnem minden existing code megmarad csak lesz előtte egy Merge amit nem is mentünk le a repoba csak az adapterbe?
-                    */
-                    //Task processedTask = Task.merge(this.localMachine.localDisk.contents());
-                    //System.out.println(processedTask);
-                    //System.out.println(this.localMachine.localDisk.contents().size());
-
                     long dataToBeProcessed = 0;
                     ArrayList<StorageObject> dataToBeRemoved = new ArrayList<>();
                     for (StorageObject so : this.currentCommunicationProtocolRepo.contents()) {
@@ -469,6 +453,12 @@ public class EdgeDevice extends Device {
 
                                         //System.out.println("End task "+ this.hashCode() + ": " + Timed.getFireCount());
                                     }
+
+                                    @Override
+                                    public void conCancelled(ResourceConsumption problematic) {
+                                        SimLogger.logRun("Device-" + edgeDevice.hashCode() + " started at: "
+                                                + taskStartTime + " failed to process " + currentlyProcessedData + " bytes.");
+                                    }
                                 });
                         if (rc != null) {
                             for (StorageObject so : dataToBeRemoved) {
@@ -481,7 +471,9 @@ public class EdgeDevice extends Device {
         } catch (NetworkException e) {
             e.printStackTrace();
         }
+
         if (Timed.getFireCount() > stopTime && (this.locallyProcessedData + this.sentData) == this.generatedData) {
+            SimLogger.logRun("Device-"+this.hashCode()+" has stopped.");
             this.stopMeter();
         }
     }

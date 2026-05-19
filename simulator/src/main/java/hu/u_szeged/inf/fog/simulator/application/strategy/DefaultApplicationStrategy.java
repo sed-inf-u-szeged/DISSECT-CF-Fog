@@ -1,9 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
-import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
-
-import java.util.Collection;
 import java.util.Set;
 
 /**
