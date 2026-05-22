@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.messagestrategy;
 
+import hu.u_szeged.inf.fog.simulator.agent.GuidedResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.List;
 
@@ -13,5 +14,5 @@ public abstract class MessagingStrategy {
      * @param gateway the gateway resource agent for which neighbors are filtered
      * @return a list of resource agents selected to be networked with the gateway
      */
-    public abstract List<ResourceAgent> filterAgents(ResourceAgent gateway);
+    public abstract List<GuidedResourceAgent> filterAgents(GuidedResourceAgent gateway);
 }

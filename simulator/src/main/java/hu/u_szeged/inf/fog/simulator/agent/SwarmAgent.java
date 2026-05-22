@@ -48,6 +48,8 @@ public class SwarmAgent extends Timed {
     public final Map<String, Deque<Double>> windows = new HashMap<>();
 
 
+    private static int shutdownCounter = 0;
+    
     public SwarmAgent(AgentApplication app) {
         this.app = app;
         this.components = new ArrayList<>();
@@ -66,8 +68,43 @@ public class SwarmAgent extends Timed {
         }
     }
 
+    public void shutdown(long fires) {
+        if (app.runtimeInMinutes == -1) {
+            return;
+        }
+
+        if (app.deploymentAlgorithmFinishedTime + app.runtimeInMinutes <= fires) {
+            SimLogger.logRun("Swarm Agent is shutting down");
+
+            for (Object component : this.components) {
+                if (component instanceof NoiseSensor) {
+                    SimLogger.logRun("Noise Sensor is shutting down");
+
+                    NoiseSensor ns = (NoiseSensor) component;
+                    ns.shutdown();
+                }
+            }
+
+            this.unsubscribe();
+
+            shutdownCounter++;
+
+            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
+                for (Capacity capacity : agent.capacities) {
+                    for (AgentApplication.Resource resource : this.app.resources) {
+                        capacity.releaseAllocatedCapacityForShutdown(resource);
+                    }
+                }
+            }
+
+            SimLogger.logRun(app.name + " application shut down at: " + Timed.getFireCount());
+        }
+    }
+
     @Override
     public void tick(long fires) {
+        shutdown(fires);
+
         double avgCpuLoad = avgCpu();
         cpuTempSamples.addLast(new CpuTempSample(Timed.getFireCount(), avgCpuLoad));
         if (!cpuTempSamples.isEmpty()) {

@@ -77,6 +77,7 @@ public class Deployment extends Timed {
             this.leadResource.getRight().setToAllocated();
             SimLogger.logRun("Lead Resource (" + this.leadResource.getRight().resource.name + ") for " 
                     + this.app.name + " was initilised at: " + Timed.getFireCount() / 1000.0 / 60.0 + " min.");
+
             unsubscribe();
 
             new Deployment(null, this.offer, this.app);
@@ -99,6 +100,18 @@ public class Deployment extends Timed {
             unsubscribe();
             
             // The deployment is now done!
+
+            //Reinforcement Learning (MAB) START-----
+
+            // Physical deployment time
+            app.physicalDeploymentFinishedTime = Timed.getFireCount(); //app.deploymentTime has a weird number, so using my own
+
+            if (app.reinforcementLearning) {
+                app.mabLearningDecisionMaker.scoreDeployment(app);
+            }
+
+            //Reinforcement Learning END-----
+
             SwarmAgent sa = new SwarmAgent(app);
             
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {

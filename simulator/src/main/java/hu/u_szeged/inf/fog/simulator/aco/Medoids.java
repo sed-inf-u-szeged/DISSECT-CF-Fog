@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.workflow.aco;
+package hu.u_szeged.inf.fog.simulator.aco;
 
 import hu.u_szeged.inf.fog.simulator.node.WorkflowComputingAppliance;
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class Medoids {
 
         System.out.println("Iterations: " + iterationCounter);
         System.out.println("Medoids: "  + newMedoids);
-        CentralisedAntOptimiser.printClusterAssignments(clusters);
+        CentralisedAntOptimiserWorkflow.printClusterAssignments(clusters);
         //System.exit(0);
         return clusters;
     }
@@ -55,7 +55,7 @@ public class Medoids {
             double bestLatency = Double.MAX_VALUE;
             
             for (int medoid : medoids) {
-                double latency = CentralisedAntOptimiser.calculateHeuristic(nodesToBeClustered.get(medoid), node);
+                double latency = CentralisedAntOptimiserWorkflow.calculateHeuristic(nodesToBeClustered.get(medoid), node);
                 if (latency < bestLatency) {
                     bestLatency = latency;
                     bestMedoid = medoid;
@@ -80,7 +80,7 @@ public class Medoids {
             for (WorkflowComputingAppliance candidate : clusterNodes) {
                 double totalLatency = 0;
                 for (WorkflowComputingAppliance other : clusterNodes) {
-                    totalLatency += CentralisedAntOptimiser.calculateHeuristic(candidate, other); 
+                    totalLatency += CentralisedAntOptimiserWorkflow.calculateHeuristic(candidate, other);
                 }
                 if (totalLatency < minTotalLatency) {
                     minTotalLatency = totalLatency;

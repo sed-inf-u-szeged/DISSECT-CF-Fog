@@ -55,7 +55,9 @@ public class NoiseSensor extends Timed {
     
     private RemoteServer remoteServer;
     
-    public int prevSoundValue; 
+    public int prevSoundValue;
+
+    boolean shutDown = false;
     
     public NoiseSensor(AgentApplication app, SwarmAgent sa, 
             Utilisation util, long freq, int threshold, boolean inside, boolean sunExposed) {
@@ -83,6 +85,11 @@ public class NoiseSensor extends Timed {
 
     @Override
     public void tick(long fires) {
+        //In some rare cases somehow the tick was called after a successful unsubscribe
+        if (shutDown) {
+            return;
+        }
+
         this.adjustTemperatureByEnv();
         
         String filename = Timed.getFireCount() + "-" + app.getComponentName(util.resource.name);
@@ -267,5 +274,10 @@ public class NoiseSensor extends Timed {
         prevSoundValue = Math.max(min, Math.min(max, prevSoundValue));
 
         return prevSoundValue;
+    }
+
+    public void shutdown() {
+        shutDown = true;
+        unsubscribe();
     }
 }

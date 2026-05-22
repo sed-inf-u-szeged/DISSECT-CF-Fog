@@ -1,6 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import hu.u_szeged.inf.fog.simulator.agent.decision.MABLearningDecisionMaker;
+
 import java.util.*;
 
 public class AgentApplication {
@@ -56,8 +58,31 @@ public class AgentApplication {
     public List<Mapping> mapping;
 
     public List<Offer> offers;
+
+    // Q Learning related
+    @JsonIgnore
+    public boolean reinforcementLearning;
+
+    @JsonIgnore
+    public MABLearningDecisionMaker mabLearningDecisionMaker;
+
+    @JsonIgnore
+    public long deploymentStartedTime;
+
+    @JsonIgnore
+    public long deploymentAlgorithmFinishedTime;
+
+    @JsonIgnore
+    public long physicalDeploymentFinishedTime;
+
+    @JsonIgnore
+    public long messageCount;
+
+    public int runtimeInMinutes = -1;
+
+
     public int winningOffer;
-    
+
     protected int agentsNotifiedCounter;
     
     public double deploymentTime;
@@ -73,15 +98,19 @@ public class AgentApplication {
     public HashMap<String, Number> configuration;
         
     public static List<AgentApplication> agentApplications = new ArrayList<>();
+
     @JsonIgnore
-    public Set<ResourceAgent> networkingAgents;
+    public Set<GuidedResourceAgent> networkingAgents;
     @JsonIgnore
     public int broadcastCount = 0;
 
     public AgentApplication() {
         this.offers = new ArrayList<>();
         agentApplications.add(this);
-        networkingAgents = new HashSet<>(ResourceAgent.resourceAgents);
+
+        if (GuidedResourceAgent.GuidedResourceAgents != null) {
+            networkingAgents = new HashSet<>(GuidedResourceAgent.GuidedResourceAgents);
+        }
     }
         
     public String toString() {
@@ -118,5 +147,23 @@ public class AgentApplication {
             }
         }
         return null;
+    }
+
+    public void normalizePriorities() {
+        double sum = bandwidthPriority + energyPriority + pricePriority + latencyPriority;
+
+        if (sum != 1.0 && sum != 0.0) {
+            bandwidthPriority /= sum;
+            energyPriority /= sum;
+            pricePriority /= sum;
+            latencyPriority /= sum;
+        }
+
+        if (sum == 0.0) {
+            bandwidthPriority = 0.25;
+            energyPriority = 0.25;
+            pricePriority = 0.25;
+            latencyPriority = 0.25;
+        }
     }
 }

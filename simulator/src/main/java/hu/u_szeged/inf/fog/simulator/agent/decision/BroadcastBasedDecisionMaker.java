@@ -1,0 +1,43 @@
+package hu.u_szeged.inf.fog.simulator.agent.decision;
+
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Resource;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.StandardResourceAgent;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.*;
+
+public class BroadcastBasedDecisionMaker extends DecisionMaker {
+
+    @Override
+    public void start(AgentApplication app) {
+        this.generateOffers(app);
+    }
+
+    @Override
+    protected void generateOffers(AgentApplication app) {
+        List<Pair<ResourceAgent, Resource>> agentResourcePairs = new ArrayList<>();
+
+        for (StandardResourceAgent agent : StandardResourceAgent.standardResourceAgents) {
+            agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.resources));
+        }
+
+        /*
+        for (Pair<ResourceAgent, Resource> pair : agentResourcePairs) {
+            System.out.println(pair.getLeft().name + " " + pair.getRight().name);
+        }
+        */
+
+        generateUniqueOfferCombinations(agentResourcePairs, app);
+
+        standardSender.processAppOffer(app);
+
+        /*
+        System.out.println(app.name);
+        for (Offer o : app.offers) {
+            System.out.println(o);
+        }
+        */
+    }
+}
