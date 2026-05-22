@@ -130,6 +130,8 @@ public abstract class ApplicationStrategy {
                                     chosenApplication.tasks.add(task);
                                     application.tasks.remove(task);
                                     chosenApplication.incomingData--;
+                                    application.offloadedData += task.size;
+                                    chosenApplication.receivedData += task.size;
 
                                     Application.totalTimeOnNetwork += (Timed.getFireCount() - onNetwork);
                                     Application.totalBytesOnNetwork += task.size;

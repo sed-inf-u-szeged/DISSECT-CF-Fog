@@ -37,6 +37,30 @@ import java.util.*;
 public class Application extends Timed {
 
     /**
+     * Constant value, that is used to tune the application task processing.
+     * It is the number of tasks that should warrant the start of a new VM.
+     * Example: in case of 5 tasks to be processed, 5/2 = 2.5 ~ 3 VMs will be started (if not already running.)
+    */
+    private static final int TASKS_PER_VM_SCALE_RATIO = 2;
+
+    /**
+     * Constant value, that is used to tune the application task processing.
+     * It is the maximum number of VMs that can started at once, even if more would be ideal.
+     */
+    private static final int MAX_VM_STARTS_PER_TICK = 5;
+
+    /**
+     * Constant value, that is used to tune the application task processing.
+     * The maximum number of task to be offloaded at once.
+     */
+    private static final int MAX_OFFLOAD_TASKS_PER_TICK = 10;
+
+    /**
+     * The amount of data offloaded by the application.
+     */
+    public long offloadedData;
+
+    /**
      * A list containing references to all applications.
      * Each element in the list is an instance of the {@code Application} class.
      */
@@ -80,7 +104,7 @@ public class Application extends Timed {
     /**
      * The frequency of periodic task execution (time interval in ms).
      */
-    protected long freq;
+    public long freq;
 
     /**
      * A list of IoT devices that transmit data to this application.
@@ -100,7 +124,7 @@ public class Application extends Timed {
     /**
      * The number of instructions associated to a task with maximum size in order to simulate VM utilization.
      */
-    double instructions;
+    public double instructions;
 
     /**
      * The logic determining which other IoT application receives IoT data in case of offloading.
@@ -368,6 +392,103 @@ public class Application extends Timed {
     }
 
     /**
+     * Counts the currently running VMs.
+     *
+     * @return the amount of running VMs.
+     */
+    public int countRunningVms() {
+        int count = 0;
+        for (AppVm appVm : this.utilisedVms) {
+            if (appVm.vm.getState().equals(VirtualMachine.State.RUNNING)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Assigns the tasks not yet processed to any running, non-working VM.
+     */
+    private void assignTasksToIdleVms() {
+        AppVm appVm;
+
+        while (!this.tasks.isEmpty() && (appVm = this.vmSearch()) != null) {
+            Task taskToCompute = this.tasks.iterator().next();
+            startTaskOnVm(appVm, taskToCompute);
+        }
+    }
+
+    /**
+     * Starts the newComputeTask for the task on the given appVm.
+     * @param appVm the appVm the newComputeTask is called on
+     * @param taskToCompute the task to be processed.
+     */
+    private void startTaskOnVm(AppVm appVm, Task taskToCompute) {
+        appVm.isWorking = true;
+        this.tasks.remove(taskToCompute); //az Task.update és newComputeTask miatt muszáj itt kivenni a taskot, hogy ne osszuk ki újra
+        long taskSize = taskToCompute.size;
+        double noi = taskToCompute.size == this.tasksize ? this.instructions : (this.instructions * taskToCompute.size / this.tasksize);
+
+        this.taskInProgress++;
+
+        try {
+            appVm.vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing,
+                    new ConsumptionEventAdapter() {
+                        final long taskStartTime = Timed.getFireCount();
+                        final long taskSizeTemp = taskSize;
+                        final double noiTemp = noi;
+                        final Task taskTemp = taskToCompute;
+
+                        @Override
+                        public void conComplete() {
+                            appVm.isWorking = false;
+                            appVm.taskCounter++;
+                            taskInProgress--;
+
+                            processedData += taskSize;
+                            Application.totalProcessedSize += taskSize;
+
+                            Application.lastAction = Timed.getFireCount();
+                            timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),
+                                    Integer.toString(appVm.id)));
+
+                            String devices = String.join(", ", taskTemp.notify);
+                            SimLogger.logRun(name + " VM-" + appVm.id + " started at: " + taskStartTime
+                                    + " finished at: " + Timed.getFireCount() + " bytes: " + taskSizeTemp
+                                    + " took: " + (Timed.getFireCount() - taskStartTime) + " instructions: "
+                                    + noiTemp + " taskID: " + taskTemp.id + " devices to be notified: " + devices);
+                        }
+                    });
+        } catch (NetworkException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void offloadTasks(int maxTasksToOffload) {
+        Map<TaskType, Set<Task>> tasksByType = new HashMap<>(); // szortírozzuk a taskokat task alapján, vegyesen nem lehet offloadolni
+
+        int selected = 0;
+        Iterator<Task> iterator = this.tasks.iterator(); //whileba mapet nem tudom lehet e másképp bejárni
+
+        while (iterator.hasNext() && selected < maxTasksToOffload) {
+            Task task = iterator.next();
+
+            if (!tasksByType.containsKey(task.type)) {
+                tasksByType.put(task.type, new HashSet<Task>());
+            }
+
+            tasksByType.get(task.type).add(task);
+            selected++;
+        }
+
+        for (Set<Task> taskGroup : tasksByType.values()) {
+            if (!taskGroup.isEmpty()) {
+                this.applicationStrategy.findApplication(taskGroup); //tasktípusonkénti csoportokat offloadolunk
+            }
+        }
+    }
+
+    /**
      * The main logic of the application including the management of the unprocessed data,
      * task allocation, and scaling- and offloading decision making.
      */
@@ -445,86 +566,54 @@ public class Application extends Timed {
 
 
         //eddigre rendezve lesznek a taskok tehát lehet kiosztani őket
-        //vm kérés és computeTask
 
         if(!this.tasks.isEmpty()){ //akkor foglakozunk vmmel ha van (merged)task
+            SimLogger.logRun(name + " has " + tasks.size() + " tasks left, " +
+                    + this.computingAppliance.getLoadOfResource() + " load (%)");
 
-            int tasksToOffload = (int) Math.round(this.tasks.size()*0.5); //taskoks 50%át/transferdivider offloadoljuk i guess, placeholder
-            while(!tasks.isEmpty()){
-                //(szabad) vm keresés
-                final AppVm appVm = this.vmSearch();
+            int queuedTasks = this.tasks.size(); //feldolgozásra váró feladatokat
+            int runningVms = countRunningVms(); //futóvmek
 
-                //ha nincs vm offloadolunk és inditunk új vmet következő feladatokank
-                if (appVm == null) {
-                    double ratio = (double) unprocessedDataFromTasks / this.tasksize;
-                    SimLogger.logRun(name + " has " + tasks.size() + " tasks left, ratio: " + ratio + ", "
-                            + this.computingAppliance.getLoadOfResource() + " load (%)");
+            //ideális esetben ennyi VM fut a feldolgozásra váró feladatok alapján
+            int targetRunningVms = (int) Math.ceil((double) queuedTasks / TASKS_PER_VM_SCALE_RATIO);
 
-                    //offloading
-                    //itt az tasksForTransfernek külön típusokra szedve kéne offloadolni
-                    if (Double.compare(ratio, this.applicationStrategy.activationRatio) > 0) {
-                        Set<Task> tasksForTransfer = new HashSet<>();
-                        tasks.forEach(task -> {
-                            if(tasksForTransfer.size()<tasksToOffload / this.applicationStrategy.transferDivider){
-                                tasksForTransfer.add(task);
-                            }
-                        });
-                        SimLogger.logRun("\tTasks are ready to be transferred: " /*+ tasksForTransfer + " "*/);
-                        if(!tasksForTransfer.isEmpty()){
-                            this.applicationStrategy.findApplication(tasksForTransfer);
-                        }
-                    }
+            //végül ténylegesen el is inditjuk a vmeket
+            int vmsToStart = Math.max(0, targetRunningVms - runningVms);
+            vmsToStart = Math.min(vmsToStart, MAX_VM_STARTS_PER_TICK);
 
-                    this.createVm();
-                    break; // várunk kövi tickre hogy legyen vm?
+            SimLogger.logRun("\tRunning VMs: " + runningVms + (vmsToStart != 0 ?
+                                    (", trying to start " + vmsToStart + " VM(s)") : ""));
+
+            for (int i = 0; i < vmsToStart; i++) {
+                // lehet elég lenne csak a createVm
+                // this.createVm();
+                if (!this.createVm()) {
+                    break;
                 }
+            }
 
-                appVm.isWorking = true;
-                Task taskToCompute = this.tasks.iterator().next();
-                this.tasks.remove(taskToCompute); //az Task.update és newComputeTask miatt muszáj itt kivenni a taskot, hogy ne osszuk ki újra
-                long taskSize = taskToCompute.size;
-                double noi = taskToCompute.size == this.tasksize ? this.instructions
-                        : (this.instructions * taskToCompute.size / this.tasksize);
-                this.processedData += taskSize;
-                Application.totalProcessedSize += taskSize;
-                this.taskInProgress++;
+            assignTasksToIdleVms();
 
-                try {
-                    appVm.vm.newComputeTask(noi, ResourceConsumption.unlimitedProcessing,
-                            new ConsumptionEventAdapter() {
-                                final long taskStartTime = Timed.getFireCount();
-                                final long taskSizeTemp = taskSize;
-                                final double noiTemp = noi;
-                                final Task taskTemp = taskToCompute;
+            //offloading logika, nincs activation ratio használva
+            if (!this.tasks.isEmpty()) {
+                //lokálisan ennyi task feldolgozására van VM
+                int localCapacity = Math.max(1, countRunningVms() * TASKS_PER_VM_SCALE_RATIO);
 
-                                @Override
-                                public void conComplete() {
-                                    appVm.isWorking = false;
-                                    appVm.taskCounter++;
-                                    taskInProgress--;
-                                    Application.lastAction = Timed.getFireCount();
-                                    timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),
-                                            Integer.toString(appVm.id)));
+                //a maradék amire már nincs erőforrásunk, ezeket lehet offloadolni
+                int overload = this.tasks.size() - localCapacity;
 
-                                    String devices = String.join(", ", taskTemp.notify);
-                                    SimLogger.logRun(name + " VM-" + appVm.id + " started at: " + taskStartTime
-                                            + " finished at: " + Timed.getFireCount() + " bytes: " + taskSizeTemp
-                                            + " took: " + (Timed.getFireCount() - taskStartTime) + " instructions: "
-                                            + noiTemp + " taskID: " + taskTemp.id + " devices to be notified: " + devices);
-                                }
-                            });
-                } catch (NetworkException e) {
-                    e.printStackTrace();
+                if (overload > 0) {
+                    int tasksToOffload = Math.min(overload, MAX_OFFLOAD_TASKS_PER_TICK);
+                    SimLogger.logRun("\tTasks expected to be offloaded: " + tasksToOffload);
+                    offloadTasks(tasksToOffload);
                 }
-
             }
         }
-
 
         this.countVmRunningTime();
         this.turnOffVm();
 
-        if (this.incomingData == 0 && this.taskInProgress == 0 && this.processedData == this.receivedData
+        if (this.incomingData == 0 && this.taskInProgress == 0 && this.processedData + this.offloadedData == this.receivedData
                 && this.checkDeviceState()) {
             unsubscribe();
             ComputingAppliance.stopEnergyMetering();

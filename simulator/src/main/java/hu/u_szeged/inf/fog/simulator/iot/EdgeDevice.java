@@ -169,7 +169,7 @@ public class EdgeDevice extends Device {
         this.type = type;
 
         battery.setEnergyDataCollector(new EnergyDataCollector("Device-" + this.hashCode() + "-battery", this.communicationProtocolManager, true, true));
-        battery.setStopTime(stopTime);
+
         this.battery = battery;
         
         this.edgeDeviceArc = new AlterableResourceConstraints(localMachine.getCapacities().getRequiredCPUs(),
@@ -474,6 +474,7 @@ public class EdgeDevice extends Device {
 
         if (Timed.getFireCount() > stopTime && (this.locallyProcessedData + this.sentData) == this.generatedData) {
             SimLogger.logRun("Device-"+this.hashCode()+" has stopped.");
+            battery.setStopTime(Timed.getFireCount());
             this.stopMeter();
         }
     }

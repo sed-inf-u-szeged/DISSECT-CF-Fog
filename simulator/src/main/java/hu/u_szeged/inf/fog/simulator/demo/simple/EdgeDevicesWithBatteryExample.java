@@ -5,21 +5,18 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.application.strategy.MCTCommStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAndTypeAwareApplicationStrategy;
-import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.*;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DistanceAndTypeBasedDeviceStrategy;
-import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.*;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.util.*;
 
 public class EdgeDevicesWithBatteryExample {
@@ -45,7 +42,7 @@ public class EdgeDevicesWithBatteryExample {
         ComputingAppliance fog5 = new ComputingAppliance(cloudfile, "fog5", new GeoLocation(47.4979, 19.04), 80); //BUDAPEST
         ComputingAppliance fog6 = new ComputingAppliance(cloudfile, "fog6", new GeoLocation(47.53, 21.64), 80); // DEBRECEN
 
-
+        ComputingAppliance mainCoud = new ComputingAppliance(cloudfile, "mainCoud", new GeoLocation(52.52, 13.405), 100); //BERLIN
 
         new EnergyDataCollector("cloud1", cloud1.iaas, false, true);
         new EnergyDataCollector("fog1", fog1.iaas, false, true);
@@ -56,6 +53,7 @@ public class EdgeDevicesWithBatteryExample {
         new EnergyDataCollector("cloud3", cloud3.iaas, false, true);
         new EnergyDataCollector("fog5", fog5.iaas, false, true);
         new EnergyDataCollector("fog6", fog6.iaas, false, true);
+        new EnergyDataCollector("mainCoud", mainCoud.iaas, false, true);
 
         fog1.setParent(cloud1, 77);
         fog2.setParent(cloud1, 80);
@@ -68,7 +66,11 @@ public class EdgeDevicesWithBatteryExample {
         fog5.setParent(cloud3, 78);
         fog6.setParent(cloud3, 82);
         fog5.addNeighbor(fog6, 90);
-        
+
+        cloud1.setParent(mainCoud, 110);
+        cloud2.setParent(mainCoud, 80);
+        cloud3.setParent(mainCoud, 100);
+
 
         Instance instance1 = new Instance("instance1", va, arc, 0.0255 / 60 / 60 / 1000);
         Instance instance2 = new Instance("instance2", va, arc, 0.051 / 60 / 60 / 1000);
@@ -79,25 +81,49 @@ public class EdgeDevicesWithBatteryExample {
         Instance instance7 = new Instance("instance7", va, arc, 0.0255 / 60 / 60 / 1000);
         Instance instance8 = new Instance("instance8", va, arc, 0.051 / 60 / 60 / 1000);
         Instance instance9 = new Instance("instance9", va, arc, 0.102 / 60 / 60 / 1000);
+        Instance instance10 = new Instance("instance10", va, arc, 0.122 / 60 / 60 / 1000);
 
-        Application application1 = new Application("App-1-M", 60 * 1000, 300000, 3_000_000, true,
+//        Application application1 = new Application("App-1-M", 60 * 1000, 5000, 50_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
+//        Application application2 = new Application("App-2-M", 60 * 1000, 5000, 50_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
+//        Application application3 = new Application("App-3-M", 60 * 1000, 5000, 50_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
+//        Application application4 = new Application("App-4-T", 60 * 1000, 10_000, 100_000, false,
+//                new MCTCommStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
+//        Application application5 = new Application("App-5-T", 60 * 1000, 10_000, 100_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
+//        Application application6 = new Application("App-6-T", 60 * 1000, 10_000, 100_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
+//        Application application7 = new Application("App-7-W", 60 * 1000, 20_000, 200_000, false,
+//                new MCTCommStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
+//        Application application8 = new Application("App-8-W", 60 * 1000, 20_000, 200_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
+//        Application application9 = new Application("App-9-W", 60 * 1000, 20_000, 200_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
+//        Application application10 = new Application("App-10-ALL", 60 * 1000, 30_000, 30_000, true,
+//                new MCTCommStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
+
+        Application application1 = new Application("App-1-M", 60 * 1000, 5000, 50_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
-        Application application2 = new Application("App-2-M", 60 * 1000, 300000, 3_000_000, true,
+        Application application2 = new Application("App-2-M", 60 * 1000, 5000, 50_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
-        Application application3 = new Application("App-3-M", 60 * 1000, 300000, 3_000_000, true,
+        Application application3 = new Application("App-3-M", 60 * 1000, 5000, 50_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
-        Application application4 = new Application("App-4-T", 60 * 1000, 300000, 3_000_000, false,
+        Application application4 = new Application("App-4-T", 60 * 1000, 10_000, 100_000, false,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
-        Application application5 = new Application("App-5-T", 60 * 1000, 300000, 3_000_000, true,
+        Application application5 = new Application("App-5-T", 60 * 1000, 10_000, 100_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
-        Application application6 = new Application("App-6-T", 60 * 1000, 300000, 3_000_000, true,
+        Application application6 = new Application("App-6-T", 60 * 1000, 10_000, 100_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
-        Application application7 = new Application("App-7-W", 60 * 1000, 300000, 3_000_000, false,
+        Application application7 = new Application("App-7-W", 60 * 1000, 20_000, 200_000, false,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
-        Application application8 = new Application("App-8-W", 60 * 1000, 300000, 3_000_000, true,
+        Application application8 = new Application("App-8-W", 60 * 1000, 20_000, 200_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
-        Application application9 = new Application("App-9-W", 60 * 1000, 300000, 3_000_000, true,
+        Application application9 = new Application("App-9-W", 60 * 1000, 20_000, 200_000, true,
                 new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
+        Application application10 = new Application("App-10-ALL", 60 * 1000, 30_000, 30_000, true,
+                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
 
         cloud1.addApplication(application1);
         fog1.addApplication(application2);
@@ -111,6 +137,7 @@ public class EdgeDevicesWithBatteryExample {
         fog5.addApplication(application8);
         fog6.addApplication(application9);
 
+        mainCoud.addApplication(application10);
 
         ArrayList<Device> deviceList = new ArrayList<Device>();
         for (int i = 0; i < 100; i++) {
@@ -152,13 +179,20 @@ public class EdgeDevicesWithBatteryExample {
         Timed.simulateUntilLastEvent();
         long stoptime = System.nanoTime();
 
-//        ScenarioBase.calculateIoTCost();
-//        ScenarioBase.logBatchProcessing(stoptime - starttime);
+
+        ScenarioBase.calculateIoTCost();
+        // TODO a különböző EDC-k használata miatt a logbatch processing nem működik rendesen, az energy mérős adatok számolása ki lett kommentezve, hogy a többi adat vizsgálható legyen
+        // az új application tick miatt a received / processed értékeknél a received lehet magasabb (offloading esetén is növekszik a received)
+        ScenarioBase.logBatchProcessing(stoptime - starttime);
+
+
+
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
 //        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
-        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
+        EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory); //energy.csv
 
     /*
+    // ezt lekéne csökkenteni max 30 device kiiratására (lehet random), mert 100/1000 csv fájl az egyes batteryknek kicsit sok
         for (Device device : deviceList) {
             device.battery.writeToFileConsumption(ScenarioBase.resultDirectory);
             //device.battery.writeToFilePercentage(ScenarioBase.resultDirectory);

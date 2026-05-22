@@ -40,7 +40,7 @@ public class Sensor extends DeferredEvent {
      */
     @Override
     protected void eventAction() {
-        Task so = new Task(this.device.fileSize, this.device.type.getPriority(),Timed.getFireCount()+10*60*1000, this.device.type, this.device);
+        Task so = new Task(this.device.fileSize, this.device.type.getPriority(),Timed.getFireCount()+20*60*1000, this.device.type, this.device);
 
         if (this.device.currentCommunicationProtocolRepo.registerObject(so)) {
             this.device.generatedData += so.size;

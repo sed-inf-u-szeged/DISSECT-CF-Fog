@@ -9,7 +9,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
 import hu.u_szeged.inf.fog.simulator.application.AppVm;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.iot.CommunicationProtocol;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -18,7 +17,6 @@ import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
@@ -194,8 +192,15 @@ public class ComputingAppliance {
         }
        
         if (devicesDown && applicationsDown) {
-            for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+//            for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
+//                edc.stop();
+//            }
+            //TODO once the refactoring is done only the top one should be left,
+            //currently only the bottom one stops every EDC, since most are the batteries that were using the new EDC
+            //the call is ugly, but this way its obvious that the newer EDC is used here
+            for (var edc : hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector.allEnergyCollectors.values()){
                 edc.stop();
+                //SimLogger.logRes("[RES]:" + edc.name + " " + edc.accumulatedEnergy);
             }
         }
     }

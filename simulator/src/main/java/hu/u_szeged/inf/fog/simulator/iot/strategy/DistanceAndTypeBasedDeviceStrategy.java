@@ -2,6 +2,7 @@
 package hu.u_szeged.inf.fog.simulator.iot.strategy;
 
 import hu.u_szeged.inf.fog.simulator.application.Application;
+import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import java.util.ArrayList;
 
@@ -23,9 +24,21 @@ public class DistanceAndTypeBasedDeviceStrategy extends DeviceStrategy {
 
         if (!availableApplications.isEmpty()) {
             double min = Double.MAX_VALUE;
-            this.chosenApplication = null;
+
             for (Application app : availableApplications) {
                 if (app.types.contains(this.device.type)){
+                    boolean hasAtleastone = false;
+                    for(String commProt : this.device.usableCommunicationProtocols){
+                        if(app.computingAppliance.communicationProtocols.contains(commProt)){
+                            hasAtleastone = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasAtleastone){
+                        continue;
+                    }
+
                     if (this.device.geoLocation.calculateDistance(app.computingAppliance.geoLocation) < min) {
                         min = this.device.geoLocation.calculateDistance(app.computingAppliance.geoLocation);
                         this.chosenApplication = app;

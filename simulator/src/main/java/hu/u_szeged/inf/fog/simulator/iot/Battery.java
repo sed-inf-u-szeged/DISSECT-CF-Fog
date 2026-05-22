@@ -3,7 +3,6 @@ package hu.u_szeged.inf.fog.simulator.iot;
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
-import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,9 +23,8 @@ public class Battery extends Timed {
     // de lesz hozzá setter mert az sztem 2 telefonnál se egyezik meg, vagy ha találok vmi számítási módszert rá akkor le lesz cserélve
     @AllArgsConstructor
     public enum BatteryType{
-        //ide még kell research elég sloppy, főleg a drain és charge értékek
         PHONE_BATTERY(4000, 3.7, 10, 2 * 60 * 60 * 1000), //chargeTime ~2h
-        DRONE_BATTERY(3500, 12, 10, 90 * 60 * 1000), //chargeTime ~90min
+        DRONE_BATTERY(5000, 12, 10, 90 * 60 * 1000), //chargeTime ~90min
         CAR_BATTERY(55000, 12, 40, 6 * 60 * 60 * 1000); //chargeTime 5-7h = ~6? elég változó
 
         public final double maxCapacity;
@@ -94,6 +92,7 @@ public class Battery extends Timed {
     /**
      * Constructor for battery objects
      *
+     * @param name the name of the battery, used for logging
      * @param maxCapacity the maximum capacity of the battery (mAh)
      * @param voltage     the voltage of the battery (V)
      * @param hostMinConsumption the value the battery physical machine's CPU's (and memory) minimal consumption (W)
@@ -105,7 +104,7 @@ public class Battery extends Timed {
         this.voltage = voltage;
         this.drainRate = hostMinConsumption/voltage*1000;
         this.chargeTime = chargeTime;
-        this.stopTime = 60 * 60 * 1000; // 1hour base value
+        this.stopTime = 1000L * 60 * 60 * 1000; // 1000hour base value, should be changed when the device stops
 
         this.currLevel = maxCapacity;
         this.isCharging = false;
@@ -116,13 +115,19 @@ public class Battery extends Timed {
         subscribe(60000);
     }
 
+    /**
+     * Constructor for battery objects
+     *
+     * @param name the name of the battery, used for logging
+     * @param batteryType an enum with these possible values: PHONE_BATTERY, DRONE_BATTERY, CAR_BATTERY
+     */
     public Battery(String name, BatteryType batteryType) {
         this.name = name;
         this.maxCapacity = batteryType.maxCapacity;
         this.voltage = batteryType.voltage;
         this.drainRate = batteryType.drainRate;
         this.chargeTime = batteryType.chargeTime;
-        this.stopTime = 60 * 60 * 1000; // 1hour base value
+        this.stopTime = 1000L * 60 * 60 * 1000; // 1hour base value
 
         this.currLevel = batteryType.maxCapacity;
         this.isCharging = false;
@@ -142,12 +147,6 @@ public class Battery extends Timed {
     public void tick(long fires) {
         if(stopTime < Timed.getFireCount()){
             unsubscribe();
-            for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
-                if(edc.isSubscribed()){
-                    edc.stop();
-                    SimLogger.logRes(edc.name + " " + edc.accumulatedEnergy);
-                }
-            }
         }
 
         double convertTo_mAh = energyDataCollector.delteEnergy/3600000/voltage*1000;
@@ -164,6 +163,10 @@ public class Battery extends Timed {
         readings.put(fires, currLevel);
     }
 
+    /**
+     * This class is an event that helps simulate the battery's charge time, while thats the case the Device can't
+     * generate nor process data. Once it ends the device will be fully charged and can resume its activities.
+     */
     public class Charge extends DeferredEvent{
 
         Charge(long chargeTime){
@@ -182,11 +185,17 @@ public class Battery extends Timed {
         }
     }
 
+    /**
+     * A method that returns the battery's power level in percentage.
+     * @return the battery's power level in percentage.
+     */
     public double getCurrentPercentage(){
         return currLevel / maxCapacity * 100;
     }
 
-
+    /**
+     * A method that creates a CSV file with the battery's power level logs.
+     */
     public void writeToFileConsumption(String resultDirectory){
         try {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");
@@ -203,6 +212,9 @@ public class Battery extends Timed {
     }
 
     //jelenleg az eltérő diagram felosztások miatt használhatatlan
+    /**
+     * A method that creates a CSV file with the battery's power level logs converted to percentages.
+     */
     public void writeToFilePercentage(String resultDirectory){
         try {
             FileWriter fw = new FileWriter(resultDirectory + File.separator + name +".csv");

@@ -74,9 +74,10 @@ public class ScenarioBase {
 
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             SimLogger.logRes("Computing Appliance: " + ca.name);
-            SimLogger.logRes("\tEnergy consumption (kWh): " + EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption / 1000 / 3_600_000);
+            //TODO refactor EDC change
+            //SimLogger.logRes("\tEnergy consumption (kWh): " + EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption / 1000 / 3_600_000);
             SimLogger.logRes("\tBroker: " + ca.broker);
-            totalEnergyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
+            //totalEnergyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
 
             for (PhysicalMachine pm : ca.iaas.machines) {
                 if (pm.localDisk.getMaxStorageCapacity() - pm.localDisk.getFreeStorageCapacity() != 0) {
@@ -129,7 +130,7 @@ public class ScenarioBase {
         SimLogger.logRes("Simulation length (minutes): "
                 + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Runtime (seconds): " + TimeUnit.SECONDS.convert(runtime, TimeUnit.NANOSECONDS));
-        SimLogger.logRes("Total energy consumption of the nodes (kWh): " + totalEnergyConsumption / 1000 / 3_600_000);
+        //SimLogger.logRes("Total energy consumption of the nodes (kWh): " + totalEnergyConsumption / 1000 / 3_600_000);
         SimLogger.logRes(
                 "Total energy consumption of the devices (kWh): " + totalDeviceEnergyConsumption / 1000 / 3_600_000);
         SimLogger.logRes("Total cost ($): " + totalCost);
