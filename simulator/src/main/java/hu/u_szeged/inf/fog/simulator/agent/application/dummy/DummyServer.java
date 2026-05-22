@@ -23,6 +23,8 @@ public class DummyServer extends Timed  {
 
     Utilisation util;
 
+    boolean shutDown = false;
+
     public DummyServer(SwarmAgent swarmAgent, Utilisation util) {
         this.swarmAgent = swarmAgent;
         this.util = util;
@@ -34,12 +36,20 @@ public class DummyServer extends Timed  {
                 subscribe((long) Config.DUMMY_CONFIGURATION.get("samplingFreq")+ SeedSyncer.centralRnd.nextInt(-5,11));
             }
         };
+    }
 
-        // TODO: SETTING UP UNSUBSCRIBE!!
+    public void shutdown() {
+        shutDown = true;
+        unsubscribe();
     }
     
     @Override
     public void tick(long fires) {
+        //In some rare cases somehow the tick was called after a successful unsubscribe
+        if (shutDown) {
+            return;
+        }
+
         DummyServer server = (DummyServer) swarmAgent.observedAppComponents.get(SeedSyncer.centralRnd.nextInt(swarmAgent.observedAppComponents.size()));
         if (server != this) {
             String name = util.component.id + "-" + fires;

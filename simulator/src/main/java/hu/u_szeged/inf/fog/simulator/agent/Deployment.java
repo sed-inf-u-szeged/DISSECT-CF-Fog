@@ -91,6 +91,7 @@ public class Deployment extends Timed {
             this.leadResource.getRight().setToAllocated();
             SimLogger.logRun("Lead Resource (" + this.leadResource.getRight().component.id + ") for "
                     + this.app.name + " started to run at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+
             new Deployment(null, this.offer, this.app);
             unsubscribe();
         } else if(this.leadResource == null && checkRemainingDeployment()) {
@@ -98,6 +99,18 @@ public class Deployment extends Timed {
                     + this.app.name + " started to run at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
             unsubscribe(); // The deployment is now done!
+
+            //Reinforcement Learning (MAB) START-----
+
+            // Physical deployment time
+            app.physicalDeploymentFinishedTime = Timed.getFireCount(); //app.deploymentTime has a weird number, so using my own
+
+            if (app.reinforcementLearning) {
+                app.mabLearningDecisionMaker.scoreDeployment(app);
+            }
+
+            //Reinforcement Learning END-----
+
             deployActaulApplication();
         }
     }

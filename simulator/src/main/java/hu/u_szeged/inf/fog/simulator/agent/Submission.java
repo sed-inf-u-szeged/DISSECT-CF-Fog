@@ -5,6 +5,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.decision.DecisionMaker;
+import hu.u_szeged.inf.fog.simulator.agent.decision.MABLearningDecisionMaker;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -22,8 +24,10 @@ public class Submission extends Timed {
     ResourceAgent agent;
     
     int bcastMessageSize;
+
+    public DecisionMaker decisionMaker;
     
-    public Submission(Path filepath, int bcastMessageSize) {
+    public Submission(Path filepath, int bcastMessageSize, DecisionMaker decisionMaker) {
     
         SimLogger.logRun("Application description " + filepath.getFileName()
             + " was submitted at: " + Timed.getFireCount() /  ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
@@ -36,9 +40,19 @@ public class Submission extends Timed {
         this.app.submissionTime = Timed.getFireCount();
         this.bcastMessageSize = bcastMessageSize;
         List<ResourceAgent> agents = new ArrayList<>(ResourceAgent.allResourceAgents.values());
-        //agents.sort(Comparator.comparing(ra -> ra.name));
-        agent = agents.get(SeedSyncer.centralRnd.nextInt(agents.size()));
+
+        if (decisionMaker.getClass().equals(MABLearningDecisionMaker.class)) {
+            SimLogger.logRun("MAB Learning is used, sticking to one ResourceAgent for all Submissions to make it easier to build the table");
+
+            //Pick a specific agent, should be used when running QLearning to make it easier to build a QTable
+            agent = agents.get(1);
+        } else {
+            //Pick random agent
+            agent = agents.get(SeedSyncer.centralRnd.nextInt(agents.size()));
+        }
+
         this.registerImages(app.components);
+        this.decisionMaker = decisionMaker;
         subscribe(1_000);
     }
    
@@ -64,7 +78,7 @@ public class Submission extends Timed {
             unsubscribe();
             SimLogger.logRun(agent.name + " picked up application " + app.name + " at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
-            agent.broadcast(app, 100);
+            agent.broadcast(app, 100, decisionMaker);
             app.deploymentTime = Timed.getFireCount();
         }
     }

@@ -13,6 +13,7 @@ import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.Sun;
+import hu.u_szeged.inf.fog.simulator.agent.decision.BroadcastBasedDecisionMaker;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
 import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
@@ -127,7 +128,7 @@ public class NoiseClassDemo {
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
 
         Map<String, String> mapping = new LinkedHashMap<>();
-        ResourceAgent ra0 = new ResourceAgent("Agent0", 0.00002778, new DirectMappingStrategy(mapping), new FloodingMessagingStrategy());
+        ResourceAgent ra0 = new StandardResourceAgent("Agent0", 0.00002778, new DirectMappingStrategy(mapping), new FloodingMessagingStrategy());
 
         List<Capacity> capacities = new ArrayList<>();
         for (int i = 0; i < delays.size(); i++) {
@@ -146,7 +147,7 @@ public class NoiseClassDemo {
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc, capacities.toArray(new Capacity[0]));
         
         ResourceAgent ra1 = 
-                new ResourceAgent("Agent1", 0.00013889, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new StandardResourceAgent("Agent1", 0.00013889, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node1, 10, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         /*
@@ -174,7 +175,7 @@ public class NoiseClassDemo {
 
                 @Override
                 protected void eventAction() {
-                    new Submission(filepath, 2048);
+                    new Submission(filepath, 2048, new BroadcastBasedDecisionMaker());
                 }
             };
             i++;

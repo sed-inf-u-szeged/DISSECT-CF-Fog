@@ -6,6 +6,8 @@ import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Capacity {
@@ -35,8 +37,6 @@ public class Capacity {
         public VirtualMachine vm;
 
         public long initTime;
-
-        public long endTime; // TODO: for shutdown purposes
 
         private Utilisation(Component component, State state) {
             this.component = component;
@@ -91,6 +91,29 @@ public class Capacity {
                 this.cpu += utilisation.utilisedCpu;
                 this.memory += utilisation.utilisedMemory;
                 this.storage += utilisation.utilisedStorage;
+                utilisationsToBeRemoved.add(utilisation);
+            }
+        }
+        utilisations.removeAll(utilisationsToBeRemoved);
+    }
+
+    public void releaseAllocatedCapacityForShutdown(Component component) {
+        List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
+        for (Utilisation utilisation : utilisations) {
+            if (utilisation.component == component && utilisation.state.equals(Utilisation.State.ALLOCATED)) {
+                SimLogger.logRun("Allocated capacity has been freed, only use this when shutting down an app! - " + component.id);
+
+                this.cpu += utilisation.utilisedCpu;
+                this.memory += utilisation.utilisedMemory;
+                this.storage += utilisation.utilisedStorage;
+
+                // We have to destroy the VM too, otherwise VM request could fail when trying to deploy new agent application
+                try {
+                    utilisation.vm.destroy(true);
+                } catch (Exception e) {
+                    SimLogger.logError("Exception occurred while destroying VM: " + e.getMessage());
+                }
+
                 utilisationsToBeRemoved.add(utilisation);
             }
         }

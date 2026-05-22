@@ -28,9 +28,10 @@ public class FirstFitMappingStrategy extends MappingStrategy {
             long requiredStorage = 
                     (component.requirements.storage != null && component.requirements.storage > 0) ? component.requirements.storage : 0;
 
+            //had to change <= to < for cpu and memory, 0 cpu/memory remaining kills the RA
             for (Capacity capacity : agent.capacities.values()) {
-                if (isMatchingPreferences(component, capacity) && requiredCpu <= capacity.cpu
-                            && requiredMemory <= capacity.memory && requiredStorage <= capacity.storage) {
+                if (isMatchingPreferences(component, capacity) && requiredCpu < capacity.cpu
+                            && requiredMemory < capacity.memory && requiredStorage < capacity.storage) {
 
                     capacity.reserveCapacity(component);
                     agentResourcePairs.add(Pair.of(agent, component));

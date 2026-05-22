@@ -1,5 +1,8 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import hu.u_szeged.inf.fog.simulator.agent.decision.MABLearningDecisionMaker;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +43,26 @@ public class AgentApplication {
     public List<Offer> offers = new ArrayList<>();
     
     public int winningOffer;
+
+    public long messageCount;
+
+    // Reinforcement Learning related
+    @JsonIgnore
+    public boolean reinforcementLearning;
+
+    @JsonIgnore
+    public MABLearningDecisionMaker mabLearningDecisionMaker;
+
+    @JsonIgnore
+    public long deploymentStartedTime;
+
+    @JsonIgnore
+    public long deploymentAlgorithmFinishedTime;
+
+    @JsonIgnore
+    public long physicalDeploymentFinishedTime;
+
+    public int runtimeInMinutes = -1;
 
     /**
      * Represents a single component of an application.
@@ -106,5 +129,23 @@ public class AgentApplication {
     public String toString() {
         return "AgentApplication [name=" + name + ", energy=" + energy + ", price=" + price + ", latency=" + latency
                 + ", bandwidth=" + bandwidth + ", components=" + components + "]";
+    }
+
+    public void normalizePriorities() {
+        double sum = bandwidth + energy + price + latency;
+
+        if (sum != 1.0 && sum != 0.0) {
+            bandwidth /= sum;
+            energy /= sum;
+            price /= sum;
+            latency /= sum;
+        }
+
+        if (sum == 0.0) {
+            bandwidth = 0.25;
+            energy = 0.25;
+            price = 0.25;
+            latency = 0.25;
+        }
     }
 }

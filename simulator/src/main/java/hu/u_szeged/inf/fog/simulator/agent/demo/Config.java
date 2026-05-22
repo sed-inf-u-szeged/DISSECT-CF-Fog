@@ -19,8 +19,35 @@ public class Config {
 
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
+                    Map.entry("appSimLength", 1 * 60 * 60 * 1000L), // 1 hour (after deployment done); overridden by app settings "minutes" field if exists
+
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
-                    Map.entry("submissionDelay", List.of(0)), // 1 app
+                    //Map.entry("simLength",6 * 60 * 60 * 1000L), // 6 hours
+
+                    /*Map.entry("submissionDelay", List.of(
+                            0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
+                            50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+                            100, 105, 110, 115, 120, 125, 130, 135, 140, 145,
+                            150, 155, 160, 165, 170, 175, 180, 185, 190, 195,
+                            200, 205, 210, 215, 220, 225, 230, 235, 240, 245
+                    )), // limits for at most 50 apps, time is in minutes, 5 min intervals*/
+
+                    Map.entry("submissionDelay", List.of(
+                            0, 10, 20, 30, 40, 50, 60, 70, 80, 90,
+                            100, 110, 120, 130, 140, 150, 160, 170, 180, 190,
+                            200, 210, 220, 230, 240, 250, 260, 270, 280, 290,
+                            300, 310, 320, 330, 340, 350, 360, 370, 380, 390,
+                            400, 410, 420, 430, 440, 450, 460, 470, 480, 490
+                    )), // limits for at most 50 apps, time is in minutes, 10 min intervals
+
+                    /*Map.entry("submissionDelay", List.of(
+                            0, 15, 30, 45, 60, 75, 90, 105, 120, 135,
+                            150, 165, 180, 195, 210, 225, 240, 255, 270, 285,
+                            300, 315, 330, 345, 360, 375, 390, 405, 420, 435,
+                            450, 465, 480, 495, 510, 525, 540, 555, 570, 585,
+                            600, 615, 630, 645, 660, 675, 690, 705, 720, 735
+                    )), // limits for at most 50 apps, time is in minutes, 15 min intervals*/
+
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
