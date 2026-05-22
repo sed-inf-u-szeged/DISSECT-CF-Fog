@@ -108,8 +108,8 @@ public class AgentApplication {
         this.offers = new ArrayList<>();
         agentApplications.add(this);
 
-        if (GuidedResourceAgent.GuidedResourceAgents != null) {
-            networkingAgents = new HashSet<>(GuidedResourceAgent.GuidedResourceAgents);
+        if (GuidedResourceAgent.guidedResourceAgents != null) {
+            networkingAgents = new HashSet<>(GuidedResourceAgent.guidedResourceAgents);
         }
     }
         

@@ -25,14 +25,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
-import hu.u_szeged.inf.fog.simulator.agent.Capacity;
+import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.agent.decision.BroadcastBasedDecisionMaker;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
-import hu.u_szeged.inf.fog.simulator.agent.Deployment;
-import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import hu.u_szeged.inf.fog.simulator.agent.Submission;
-import hu.u_szeged.inf.fog.simulator.agent.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.FirstFitAgentStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.agentstrategy.SimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.messagestrategy.GuidedSearchMessagingStrategy;
@@ -78,19 +74,19 @@ public class AgentTestUNC {
 
         /** ranking config */
         // ResourceAgent.rankingScriptDir = "D:\\Documents\\swarm-deployment\\for_simulator";
-        ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
+        // ResourceAgent.rankingScriptDir = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator";
                 
-        ResourceAgent.rankingMethodName = "rank_no_re";
-        // ResourceAgent.rankingMethodName = "rank_re_add";
-        // ResourceAgent.rankingMethodName = "rank_re_mul";
-        // ResourceAgent.rankingMethodName = "vote_wo_reliability";
-        // ResourceAgent.rankingMethodName = "vote_w_reliability";
-        // ResourceAgent.rankingMethodName = "vote_w_reliability_mul";
-        // ResourceAgent.rankingMethodName = "random";
+        StandardResourceAgent.rankingMethodName = "rank_no_re";
+        // StandardResourceAgent.rankingMethodName = "rank_re_add";
+        // StandardResourceAgent.rankingMethodName = "rank_re_mul";
+        // StandardResourceAgent.rankingMethodName = "vote_wo_reliability";
+        // StandardResourceAgent.rankingMethodName = "vote_w_reliability";
+        // StandardResourceAgent.rankingMethodName = "vote_w_reliability_mul";
+        // StandardResourceAgent.rankingMethodName = "random";
         
         // TS forecaster processes
         ForecasterManager.predictorScriptDir = "/home/markusa/Documents/SZTE/repos/Swarmchestrate-TSforecasting";
-        ForecasterManager.getInstance(ForecasterManager.predictorScriptDir, 4, 1337, 
+        ForecasterManager.getInstance(ForecasterManager.predictorScriptDir, 4, 1337,
                 ForecasterManager.predictorScriptDir + "/checkpoints/simulator1__UNC-1-Noise-Sensor-6_1min_pl128");
         
         /** nodes and RPis */
@@ -235,34 +231,34 @@ public class AgentTestUNC {
         ra0.initResourceAgent(resourceAgentVa, resourceAgentArc);
         */
 
-        new ResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent1", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node1, 10, 52 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent2", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node2, 10, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent3", 0.00041667, resourceAgentVa, resourceAgentArc, new FirstFitAgentStrategy(true), new GuidedSearchMessagingStrategy(),
                 new Capacity(node3, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent4", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node4, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent5", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node5, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent6", 0.00013889, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node6, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent7", 0.00277778, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node7, 64, 64 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent8", 0.00041667, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node8, 48, 48 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent9", 0.00000278, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node9, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
-        new ResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
+        new GuidedResourceAgent("Agent10", 0.00005556, resourceAgentVa, resourceAgentArc, new SimulatedAnnealing(), new GuidedSearchMessagingStrategy(),
                 new Capacity(node10, 32, 32 * 1_073_741_824L, numOfApps * 256 * 1_073_741_824L));
 
         /** Image service */
@@ -289,7 +285,7 @@ public class AgentTestUNC {
 
                 @Override
                 protected void eventAction() {
-                    new Submission(file.toString(), 2048, 0, configuration);
+                    new Submission(file.toString(), 2048, 0, configuration, new BroadcastBasedDecisionMaker());
                 }
             };
         }

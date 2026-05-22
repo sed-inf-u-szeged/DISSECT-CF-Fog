@@ -194,6 +194,29 @@ public abstract class ResourceAgent {
         });
     }
 
+    public double getPrice() {
+        double total = 0, used = 0;
+
+        for (final Capacity cap : capacities) {
+            total += cap.cpu;
+            for (final Utilisation u : cap.utilisations) {
+                if (u.state != null) {
+                    total += u.utilisedCpu;
+                    used += u.utilisedCpu;
+                }
+            }
+        }
+
+        double utilization = used / total;
+        double multiplier = 1;
+
+        if (utilization > 0.5) {
+            multiplier = 1.1 + (utilization - 0.5);
+        }
+
+        return hourlyPrice * multiplier;
+    }
+
     protected abstract void deploy(AgentApplication app, int bcastMessageSize, DecisionMaker decisionMaker);
 
     public abstract void processAppOffer(AgentApplication app);

@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GuidedResourceAgent extends ResourceAgent {
-    public static ArrayList<GuidedResourceAgent> GuidedResourceAgents = new ArrayList<>();
+    public static ArrayList<GuidedResourceAgent> guidedResourceAgents = new ArrayList<>();
 
     public int servedAsGatewayCount = 0;
     public int winningOfferSelectionCount = 0;
@@ -33,13 +33,13 @@ public class GuidedResourceAgent extends ResourceAgent {
     public GuidedResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy, Capacity... capacities) {
         super(name, hourlyPrice, resourceAgentVa, resourceAgentArc, agentStrategy, capacities);
         this.messagingStrategy = messagingStrategy;
-        GuidedResourceAgents.add(this);
+        guidedResourceAgents.add(this);
     }
 
     public GuidedResourceAgent(String name, double hourlyPrice, VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc, AgentStrategy agentStrategy, MessagingStrategy messagingStrategy) {
         super(name, hourlyPrice, resourceAgentVa, resourceAgentArc, agentStrategy);
         this.messagingStrategy = messagingStrategy;
-        GuidedResourceAgents.add(this);
+        guidedResourceAgents.add(this);
     }
 
     @Override
@@ -278,7 +278,7 @@ public class GuidedResourceAgent extends ResourceAgent {
     protected void releaseResourcesAndNotifyNoOffers(AgentApplication app) {
         SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
 
-        for (GuidedResourceAgent agent : GuidedResourceAgent.GuidedResourceAgents) {
+        for (GuidedResourceAgent agent : GuidedResourceAgent.guidedResourceAgents) {
             for (Capacity capacity : agent.capacities) {
                 freeReservedResources(app.name, capacity);
             }
@@ -354,5 +354,7 @@ public class GuidedResourceAgent extends ResourceAgent {
                 );
             }
         }
+
+        this.capacities.addAll(capacities);
     }
 }

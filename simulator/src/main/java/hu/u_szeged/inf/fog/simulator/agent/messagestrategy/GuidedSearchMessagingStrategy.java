@@ -98,7 +98,7 @@ public class GuidedSearchMessagingStrategy extends MessagingStrategy {
     }
 
     private List<GuidedResourceAgent> getPotentialAgents(final GuidedResourceAgent gateway) {
-        return GuidedResourceAgent.GuidedResourceAgents.stream()
+        return GuidedResourceAgent.guidedResourceAgents.stream()
                 .filter(agent -> agent.service.getState().equals(VirtualMachine.State.RUNNING))
                 .filter(agent -> agent.hostNode != gateway.hostNode)
                 .filter(agent -> !agent.equals(gateway))
