@@ -1,6 +1,8 @@
 
 package hu.u_szeged.inf.fog.simulator.iot.strategy;
 
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -35,7 +37,11 @@ public class DistanceAndTypeBasedDeviceStrategy extends DeviceStrategy {
                         }
                     }
 
-                    if (!hasAtleastone){
+                    // nem fogunk offloadolni, ha nem tudja feldolgozni a csomópont a tasktypeunk
+                    // ha az appban kétszer annyi task van mint futóVM
+                    // vagy ha 80% felett van a telefon
+                    if (!hasAtleastone || app.tasks.size() > app.countRunningVms() * 2 ||
+                            (this.device.battery != null && this.device.battery.getCurrentPercentage() > 80)){
                         continue;
                     }
 

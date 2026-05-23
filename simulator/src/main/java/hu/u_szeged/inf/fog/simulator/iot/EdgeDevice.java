@@ -333,24 +333,6 @@ public class EdgeDevice extends Device {
             }
         }
 
-        //TODO ez a: "nem lehet kapcsolatot létesíteni a szerverrel" az majd átmegy a strategybe a findAppba(?)
-        //van legalább egy közös commprot, ha nincs akkor lehet le kéne valahogy kezelni, de akkor csak megtartanánk a jelenlegi repot nem tudom lehet túl gondolom
-        boolean atLeastOne = false;
-        for (String commProtocol : options) {
-            if(usableCommunicationProtocols.contains(commProtocol)){
-                atLeastOne = true;
-                break;
-            }
-        }
-        if(!atLeastOne){
-            return;
-        }
-
-
-        /*
-        TODO értelmes heurisztika, figyelembe véve a taskokat itt is szerveren is, a batteryt,
-        deadlineokat (pl közelebbi deadline -> gyorsabb kapcsolat jobb heurisztika érték), minden ami csak eszembe jut és logikus
-        */
         String first = "WIFI";
         String second = "5G";
         String third = "LORA";

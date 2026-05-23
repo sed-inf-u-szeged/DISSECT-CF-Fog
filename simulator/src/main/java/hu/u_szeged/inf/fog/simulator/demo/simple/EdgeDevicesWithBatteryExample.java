@@ -17,6 +17,8 @@ import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.*;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 
 public class EdgeDevicesWithBatteryExample {
@@ -27,7 +29,7 @@ public class EdgeDevicesWithBatteryExample {
 
         long startClock = System.currentTimeMillis();
 
-//        String runName = "runtimeandtypeaware_500";
+//        String runName = "runtimeandtypeaware_100";
 //        String strategy = "RuntimeAndTypeAware";
 
         String runName = "mctcomm_100";
@@ -208,8 +210,8 @@ public class EdgeDevicesWithBatteryExample {
 //        RunStatistics.saveToCsv(ScenarioBase.resultDirectory, runName, strategy, deviceCount, runtimeMs);
 //        TaskStatistics.saveToCsv(ScenarioBase.resultDirectory);
 
-//        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
-//        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
+        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
+        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory); //energy.csv
 
     /*
@@ -225,6 +227,7 @@ public class EdgeDevicesWithBatteryExample {
                         .mapToObj(i -> Path.of(ScenarioBase.resultDirectory + File.separator + "battery" + i + ".csv"))
                         .toArray(Path[]::new)
         );
-    */
+     */
     }
+
 }
