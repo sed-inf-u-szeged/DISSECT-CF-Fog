@@ -25,7 +25,9 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
+import hu.u_szeged.inf.fog.simulator.util.OffloadingStatistics;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.TaskStatistics;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
 import java.io.FileWriter;
@@ -415,6 +417,8 @@ public class EdgeDevice extends Device {
 
         try {
             if (this.deviceStrategy.chosenApplication != null) {
+                OffloadingStatistics.registerDecision(Task.merge(this.currentCommunicationProtocolRepo.contents(),type), "OFFLOAD",
+                        deviceStrategy.chosenApplication.computingAppliance.name.contains("cloud") ? "CLOUD" : "FOG", "Device"+this.hashCode());
                 this.startDataTransfer();
                 this.stopVm();
             } else {
@@ -435,13 +439,19 @@ public class EdgeDevice extends Device {
                         final long currentlyProcessedData = dataToBeProcessed;
                         double noi = currentlyProcessedData * this.instructionPerByte;
 
+
+
                         ResourceConsumption rc = this.localVm.newComputeTask(noi,
                                 ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                                     final long taskStartTime = Timed.getFireCount();
+                                    final Task mergedTasksForLogging = Task.merge(dataToBeRemoved, type);
 
                                     @Override
                                     public void conComplete() {
                                         //System.out.println("Start task "+ this.hashCode() + ": " + taskStartTime);
+                                        TaskStatistics.registerCompletion(mergedTasksForLogging);
+                                        OffloadingStatistics.registerDecision(mergedTasksForLogging, "LOCAL", "LOCAL", "Device"+this.hashCode());
+
 
                                         locallyProcessedData += currentlyProcessedData;
                                         timelineEntries.add(new TimelineEntry(taskStartTime, Timed.getFireCount(),

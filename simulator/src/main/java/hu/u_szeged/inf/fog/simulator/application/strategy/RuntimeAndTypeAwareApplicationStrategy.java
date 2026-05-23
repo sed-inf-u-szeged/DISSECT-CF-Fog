@@ -3,6 +3,8 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.OffloadingStatistics;
+
 import java.util.Set;
 
 /** * The strategy considers both resource load, latency and processable task type to ensure efficient data transfer. */
@@ -59,6 +61,7 @@ public class RuntimeAndTypeAwareApplicationStrategy extends ApplicationStrategy 
         }
 
         if (bestApplication != null) {
+            OffloadingStatistics.registerDecision(tasksForTransfer.iterator().next(), "OFFLOAD", bestApplication.computingAppliance.name.contains("cloud") ? "CLOUD" : "FOG", "Device"+this.hashCode());
             this.startDataTranfer(bestApplication, tasksForTransfer);
         }
     }

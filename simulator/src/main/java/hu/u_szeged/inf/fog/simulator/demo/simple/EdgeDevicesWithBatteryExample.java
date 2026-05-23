@@ -5,7 +5,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceCons
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
-import hu.u_szeged.inf.fog.simulator.application.strategy.MCTCommStrategy;
+import hu.u_szeged.inf.fog.simulator.application.strategy.MCTCommApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAndTypeAwareApplicationStrategy;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.*;
@@ -23,6 +23,22 @@ public class EdgeDevicesWithBatteryExample {
 
     public static void main(String[] args) throws Exception {
         SimLogger.setLogging(1, true);
+
+
+        long startClock = System.currentTimeMillis();
+
+//        String runName = "runtimeandtypeaware_500";
+//        String strategy = "RuntimeAndTypeAware";
+
+        String runName = "mctcomm_100";
+        String strategy = "MCTComm";
+        int deviceCount = 100;
+
+
+        TaskStatistics.configure(runName, strategy, deviceCount);
+        OffloadingStatistics.configure(runName, strategy, deviceCount);
+
+
 
         String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
 
@@ -83,47 +99,47 @@ public class EdgeDevicesWithBatteryExample {
         Instance instance9 = new Instance("instance9", va, arc, 0.102 / 60 / 60 / 1000);
         Instance instance10 = new Instance("instance10", va, arc, 0.122 / 60 / 60 / 1000);
 
-//        Application application1 = new Application("App-1-M", 60 * 1000, 5000, 50_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
-//        Application application2 = new Application("App-2-M", 60 * 1000, 5000, 50_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
-//        Application application3 = new Application("App-3-M", 60 * 1000, 5000, 50_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
-//        Application application4 = new Application("App-4-T", 60 * 1000, 10_000, 100_000, false,
-//                new MCTCommStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
-//        Application application5 = new Application("App-5-T", 60 * 1000, 10_000, 100_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
-//        Application application6 = new Application("App-6-T", 60 * 1000, 10_000, 100_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
-//        Application application7 = new Application("App-7-W", 60 * 1000, 20_000, 200_000, false,
-//                new MCTCommStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
-//        Application application8 = new Application("App-8-W", 60 * 1000, 20_000, 200_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
-//        Application application9 = new Application("App-9-W", 60 * 1000, 20_000, 200_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
-//        Application application10 = new Application("App-10-ALL", 60 * 1000, 30_000, 30_000, true,
-//                new MCTCommStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
-
         Application application1 = new Application("App-1-M", 60 * 1000, 5000, 50_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
         Application application2 = new Application("App-2-M", 60 * 1000, 5000, 50_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
         Application application3 = new Application("App-3-M", 60 * 1000, 5000, 50_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
         Application application4 = new Application("App-4-T", 60 * 1000, 10_000, 100_000, false,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
         Application application5 = new Application("App-5-T", 60 * 1000, 10_000, 100_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
         Application application6 = new Application("App-6-T", 60 * 1000, 10_000, 100_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
         Application application7 = new Application("App-7-W", 60 * 1000, 20_000, 200_000, false,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
         Application application8 = new Application("App-8-W", 60 * 1000, 20_000, 200_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
         Application application9 = new Application("App-9-W", 60 * 1000, 20_000, 200_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
         Application application10 = new Application("App-10-ALL", 60 * 1000, 30_000, 30_000, true,
-                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
+                new MCTCommApplicationStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
+
+//        Application application1 = new Application("App-1-M", 60 * 1000, 5000, 50_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance3, TaskType.MEDICAL);
+//        Application application2 = new Application("App-2-M", 60 * 1000, 5000, 50_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance2, TaskType.MEDICAL);
+//        Application application3 = new Application("App-3-M", 60 * 1000, 5000, 50_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance1, TaskType.MEDICAL);
+//        Application application4 = new Application("App-4-T", 60 * 1000, 10_000, 100_000, false,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance6, TaskType.TRAFFIC);
+//        Application application5 = new Application("App-5-T", 60 * 1000, 10_000, 100_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance5, TaskType.TRAFFIC);
+//        Application application6 = new Application("App-6-T", 60 * 1000, 10_000, 100_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance4, TaskType.TRAFFIC);
+//        Application application7 = new Application("App-7-W", 60 * 1000, 20_000, 200_000, false,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance9, TaskType.WEATHER);
+//        Application application8 = new Application("App-8-W", 60 * 1000, 20_000, 200_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance8, TaskType.WEATHER);
+//        Application application9 = new Application("App-9-W", 60 * 1000, 20_000, 200_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance7, TaskType.WEATHER);
+//        Application application10 = new Application("App-10-ALL", 60 * 1000, 30_000, 30_000, true,
+//                new RuntimeAndTypeAwareApplicationStrategy(0.9, 2.0), instance10, TaskType.WEATHER, TaskType.TRAFFIC, TaskType.MEDICAL);
 
         cloud1.addApplication(application1);
         fog1.addApplication(application2);
@@ -140,7 +156,7 @@ public class EdgeDevicesWithBatteryExample {
         mainCoud.addApplication(application10);
 
         ArrayList<Device> deviceList = new ArrayList<Device>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < deviceCount; i++) {
             Device device;
             Battery battery = new Battery("battery"+i, Battery.BatteryType.PHONE_BATTERY);
 
@@ -185,7 +201,12 @@ public class EdgeDevicesWithBatteryExample {
         // az új application tick miatt a received / processed értékeknél a received lehet magasabb (offloading esetén is növekszik a received)
         ScenarioBase.logBatchProcessing(stoptime - starttime);
 
+        long runtimeMs = System.currentTimeMillis() - startClock;
 
+//        TaskStatistics.saveToCsv(ScenarioBase.resultDirectory);
+//        OffloadingStatistics.saveToCsv(ScenarioBase.resultDirectory);
+//        RunStatistics.saveToCsv(ScenarioBase.resultDirectory, runName, strategy, deviceCount, runtimeMs);
+//        TaskStatistics.saveToCsv(ScenarioBase.resultDirectory);
 
 //        TimelineVisualiser.generateTimeline(ScenarioBase.resultDirectory);
 //        MapVisualiser.mapGenerator(ScenarioBase.scriptPath, ScenarioBase.resultDirectory, deviceList);

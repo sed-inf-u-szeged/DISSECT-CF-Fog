@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.iot;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
+import hu.u_szeged.inf.fog.simulator.util.TaskStatistics;
 import lombok.Getter;
 
 import java.util.*;
@@ -36,6 +37,8 @@ public class Task extends StorageObject {
         this.type = type;
         notify.add("Device-" + toNotify.hashCode());
         this.created = Timed.getFireCount();
+
+        TaskStatistics.registerTask(this);
     }
 
     //task mergeléshez a más féle név miatt másik konstruktor

@@ -19,6 +19,7 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.util.TaskStatistics;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
 
 import java.util.*;
@@ -441,6 +442,8 @@ public class Application extends Timed {
 
                         @Override
                         public void conComplete() {
+                            TaskStatistics.registerCompletion(taskTemp);
+
                             appVm.isWorking = false;
                             appVm.taskCounter++;
                             taskInProgress--;
@@ -613,8 +616,7 @@ public class Application extends Timed {
         this.countVmRunningTime();
         this.turnOffVm();
 
-        if (this.incomingData == 0 && this.taskInProgress == 0 && this.processedData + this.offloadedData == this.receivedData
-                && this.checkDeviceState()) {
+        if (this.incomingData == 0 && this.taskInProgress == 0 && this.checkDeviceState()) {
             unsubscribe();
             ComputingAppliance.stopEnergyMetering();
             try {

@@ -5,14 +5,13 @@ import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.iot.Task;
 import hu.u_szeged.inf.fog.simulator.iot.TaskType;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.Set;
 
 /**
  * The Minimum Completion Time with Communication heuristic assigns each task to the surrogate with the minimum expected completion time.
  */
-public class MCTCommStrategy extends ApplicationStrategy {
+public class MCTCommApplicationStrategy extends ApplicationStrategy {
 
     /**
      * Constructs a new strategy with the specified activation ratio and transfer divider.
@@ -20,7 +19,7 @@ public class MCTCommStrategy extends ApplicationStrategy {
      * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio
      * @param transferDivider determining the ratio of the data to be transferred
      */
-    public MCTCommStrategy(double activationRatio, double transferDivider) {
+    public MCTCommApplicationStrategy(double activationRatio, double transferDivider) {
         this.activationRatio = activationRatio;
         this.transferDivider = transferDivider;
     }
@@ -68,11 +67,11 @@ public class MCTCommStrategy extends ApplicationStrategy {
                                               + estimateExecutionTime(app, tasksForTransfer);
 
 
-                SimLogger.logRun(
-                        "LocalCT=" + localCompletionTime +
-                                " RemoteCT=" + remoteCompletionTime +
-                                " Candidate=" + app.name
-                );
+//                SimLogger.logRun(
+//                        "LocalCT=" + localCompletionTime +
+//                                " RemoteCT=" + remoteCompletionTime +
+//                                " Candidate=" + app.name
+//                );
 
                 //ha nem lenne kész deadlineig akkor nincs értelme elküldeni
                 if (!meetsDeadline(tasksForTransfer, remoteCompletionTime)) {
@@ -91,11 +90,11 @@ public class MCTCommStrategy extends ApplicationStrategy {
 
         //ha jobb a localnál akkor lehet offloadolni
         if (bestApplication != null && bestCompletionTime < localCompletionTime) {
-            SimLogger.logRun(
-                    "Offloaded to " + bestApplication.name +
-                            " localCT=" + localCompletionTime +
-                            " remoteCT=" + bestCompletionTime
-            );
+//            SimLogger.logRun(
+//                    "Offloaded to " + bestApplication.name +
+//                            " localCT=" + localCompletionTime +
+//                            " remoteCT=" + bestCompletionTime
+//            );
             this.startDataTranfer(bestApplication, tasksForTransfer);
         }
     }
