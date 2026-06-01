@@ -19,6 +19,8 @@ public class Sun {
     private final double peakHour;
     
     private final double gamma;
+
+    private final long startOffsetMs;
     
     /**
      * Private constructor to enforce singleton usage.
@@ -28,11 +30,12 @@ public class Sun {
      * @param peekHour hour of maximum sun strength (0–24)
      * @param gamma curve shaping exponent
      */
-    private Sun(double sunrise, double sunset, double peekHour, double gamma) {
+    private Sun(double sunrise, double sunset, double peekHour, double gamma, long startOffsetMs) {
         this.sunrise = sunrise;
         this.sunset = sunset;
         this.peakHour = peekHour;
-        this.gamma = gamma;        
+        this.gamma = gamma;
+        this.startOffsetMs = startOffsetMs;
     }
     
     /**
@@ -45,11 +48,11 @@ public class Sun {
      * @param peakHour hour of maximum sun strength (0–24)
      * @param gamma curve shaping exponent
      */
-    public static void init(double sunrise, double sunset, double peakHour, double gamma) {
+    public static void init(double sunrise, double sunset, double peakHour, double gamma, long startOffsetMs) {
         if (sunInstance != null) {
             SimLogger.logError("The sun for the environment is already initialised!");
         }
-        sunInstance = new Sun(sunrise, sunset, peakHour, gamma);
+        sunInstance = new Sun(sunrise, sunset, peakHour, gamma, startOffsetMs);
     }
     
     /**
@@ -70,7 +73,7 @@ public class Sun {
      * @return current sun strength (in the range 0–1)
      */
     public double getSunStrength() {
-        long nowMs   = Timed.getFireCount();
+        long nowMs   = Timed.getFireCount() + startOffsetMs;
         long dayMs   = ScenarioBase.DAY_IN_MILLISECONDS;
         long msInDay  = Math.floorMod(nowMs, dayMs);
         double hour =  /* sunrise + */ msInDay / (double) ScenarioBase.HOUR_IN_MILLISECONDS; 

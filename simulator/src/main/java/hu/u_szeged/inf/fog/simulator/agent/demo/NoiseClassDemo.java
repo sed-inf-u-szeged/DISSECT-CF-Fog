@@ -180,7 +180,7 @@ public class NoiseClassDemo {
             i++;
         }
 
-        Sun.init(6, 20, 13, 1.5);
+        Sun.init(6, 20, 13, 1.5, 0);
         long starttime = System.nanoTime();
         //Timed.simulateUntil((long) Config.NOISE_CLASS_ONFIGURATION.get("simLength"));
         Timed.simulateUntilLastEvent();
