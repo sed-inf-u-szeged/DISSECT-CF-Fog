@@ -67,7 +67,7 @@ public class ComputingAppliance {
      
         if (allComputingAppliances.containsKey(name)) {
             SimLogger.logError("ComputingAppliance with name '" + name + "' already exists");
-        }            
+        }
         allComputingAppliances.put(name, this);
     }
 

@@ -12,6 +12,10 @@ public class DigitalTwinRequest {
     public Metadata metadata;
     public List<ResourceNode> resources;
     public Application application;
+    public List<Action> actions;
+
+    @JsonProperty("scenario_id")
+    public String scenarioId;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Metadata {
@@ -46,11 +50,20 @@ public class DigitalTwinRequest {
         @JsonProperty("node_type")
         public String nodeType;
 
-        @JsonProperty("avg_latency_ms")
-        public int avgLatencyMs;
+        @JsonProperty("min_power")
+        public double minPower;
 
-        @JsonProperty("avg_bandwidth_mbps")
-        public int avgBandwidthMbps;
+        @JsonProperty("idle_power")
+        public double idlePower;
+
+        @JsonProperty("max_power")
+        public double maxPower;
+
+        @JsonProperty("latency_ms")
+        public int latencyMs;
+
+        @JsonProperty("bandwidth_mbps")
+        public int bandwidthMbps;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -79,6 +92,37 @@ public class DigitalTwinRequest {
 
         public String workload;
 
-        public JsonNode properties;
+        public ComponentProperties properties;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ComponentProperties {
+
+        @JsonProperty("component_type")
+        public String componentType;
+
+        @JsonProperty("image_size_bytes")
+        public long imageSizeBytes;
+
+        public Boolean inside;
+
+        public Boolean sun;
+
+        //public Integer instances;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Action {
+        @JsonProperty("action_type")
+        public String actionType;
+
+        @JsonProperty("component_id")
+        public String componentId;
+
+        @JsonProperty("component_type")
+        public String componentType;
+
+        @JsonProperty("target_node")
+        public String targetNode;
     }
 }

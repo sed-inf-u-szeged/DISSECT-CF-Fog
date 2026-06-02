@@ -38,7 +38,10 @@ public class Capacity {
 
         public long endTime; // TODO: for shutdown purposes
 
-        private Utilisation(Component component, State state) {
+        public Utilisation() {
+        }
+
+        public Utilisation(Component component, State state) {
             this.component = component;
             this.utilisedCpu = safe(component.requirements.cpu, 0.0);
             this.utilisedMemory = safe(component.requirements.memory, 0L);

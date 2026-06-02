@@ -53,9 +53,9 @@ public class InputValidator {
                 : request.application.components) {
 
             String componentType =
-                    component.properties
-                            .path("component_type")
-                            .asText();
+                    component.properties != null
+                            ? component.properties.componentType
+                            : null;
 
             if (!"noise-sensor".equals(componentType)) {
                 continue;

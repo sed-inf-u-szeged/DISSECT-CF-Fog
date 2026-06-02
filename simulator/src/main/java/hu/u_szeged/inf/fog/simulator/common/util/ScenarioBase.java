@@ -22,6 +22,8 @@ public class ScenarioBase {
     public static final long GB_IN_BYTE = 1_073_741_824L;
 
     public static final long MB_IN_BYTE = 1_048_576L;
+
+    public static final long MBPS_TO_BPMS = 125L;
     
     public static final String RESULT_DIRECTORY;
 

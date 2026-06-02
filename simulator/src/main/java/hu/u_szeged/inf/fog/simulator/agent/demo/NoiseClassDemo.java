@@ -383,7 +383,7 @@ public class NoiseClassDemo {
         return null;
     }
 
-    private static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {
+    static double calculateTimeBelowThrottling(Path path, double cpuThreshold) {
         try (BufferedReader br = Files.newBufferedReader(path)) {
 
             String headerLine = br.readLine();
