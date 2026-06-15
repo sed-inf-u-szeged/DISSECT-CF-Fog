@@ -29,8 +29,8 @@ public class ForecastBasedSwarmAgent extends GreedyNoiseSwarmAgent {
 
     protected long lastScalingActionMinute = -1;
 
-    public ForecastBasedSwarmAgent(AgentApplication app) {
-        super(app);
+    public ForecastBasedSwarmAgent(AgentApplication app, Long freq) {
+        super(app, freq);
         decisionType.put("scale-up-predictive", 0);
     }
 

@@ -345,7 +345,7 @@ public class NoiseClassDemo {
         SimLogger.logRes("Time below the temperature threshold (%):" + avgTimeBelowThrottling / NoiseAppCsvExporter.allNoiseAppCsvExporters.size());
     }
 
-    private static Path exportCdfToCsv(String resultDirectory, SwarmAgent swarmAgent) throws IOException {
+    static Path exportCdfToCsv(String resultDirectory, SwarmAgent swarmAgent) throws IOException {
         for (Object component : swarmAgent.observedAppComponents) {
             if (component instanceof RemoteServer rs) {
                 List<Long> latencies = rs.latencies;

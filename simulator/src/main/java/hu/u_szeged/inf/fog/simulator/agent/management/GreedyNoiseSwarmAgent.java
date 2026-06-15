@@ -33,7 +33,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
     NoiseAppCsvExporter noiseAppCsvExporter;
 
-    public GreedyNoiseSwarmAgent(AgentApplication app) {
+    public GreedyNoiseSwarmAgent(AgentApplication app, Long freq) {
         super(app);
 
         decisionType = new HashMap<>(){
@@ -45,7 +45,12 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
             }
         };
 
-        subscribe((long) Config.NOISE_CLASS_CONFIGURATION.get("samplingFreq") * 6); // every 1 min.
+        if (freq == null){
+            subscribe((long) Config.NOISE_CLASS_CONFIGURATION.get("samplingFreq") * 6); // every 1 min.
+        } else {
+            subscribe(freq);
+        }
+
         if ((boolean) Config.NOISE_CLASS_CONFIGURATION.get("csvLogging")) {
             this.noiseAppCsvExporter = new NoiseAppCsvExporter(this);
         }

@@ -26,8 +26,8 @@ public class ScalableGreedySwarmAgent extends GreedyNoiseSwarmAgent {
 
     protected long lastScalingActionMinute = -1;
 
-    public ScalableGreedySwarmAgent(AgentApplication app) {
-        super(app);
+    public ScalableGreedySwarmAgent(AgentApplication app, Long freq) {
+        super(app, freq);
     }
 
     @Override

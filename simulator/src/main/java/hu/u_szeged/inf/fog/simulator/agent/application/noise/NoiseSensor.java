@@ -11,6 +11,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
+import hu.u_szeged.inf.fog.simulator.agent.dt.NoiseCsvData;
+import hu.u_szeged.inf.fog.simulator.agent.dt.NoiseCsvData.SensorEvent;
 import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.util.RepoFileManager;
@@ -55,17 +57,21 @@ public class NoiseSensor extends Timed {
 
     public int fileMigrationCounter;
 
-    public NoiseSensor(GreedyNoiseSwarmAgent swarmAgent, Utilisation util, boolean inside, boolean sunExposed) {
+    private NoiseCsvData noiseData;
+
+    public NoiseSensor(GreedyNoiseSwarmAgent swarmAgent, Utilisation util, boolean inside, boolean sunExposed, NoiseCsvData noiseData) {
         this.swarmAgent = swarmAgent;
         this.util = util;
         this.inside = inside;
         this.sunExposed = sunExposed;
         prevSoundValue = -1;
         this.swarmAgent.observedAppComponents.add(this);
+        this.noiseData = noiseData;
 
         if(swarmAgent instanceof ForecastBasedSwarmAgent) {
             ((ForecastBasedSwarmAgent) swarmAgent).windowsForPrediction.putIfAbsent(util.component.id, new ArrayDeque<>());
         }
+
 
         new DeferredEvent(SeedSyncer.centralRnd.nextInt(20) * 1000L) {
 
@@ -90,11 +96,29 @@ public class NoiseSensor extends Timed {
             PhysicalMachine pm = this.util.vm.getResourceAllocation().getHost();
             pm.localDisk.registerObject(so);
 
-            int soundValue;
+            int soundValue = -1;
             if (Config.NOISE_CLASS_CONFIGURATION.get("samplingStrategy").equals("lazy")){
                 soundValue = lazySoundValue();
-            } else {
+            } else if (Config.NOISE_CLASS_CONFIGURATION.get("samplingStrategy").equals("random")){
                 soundValue = randomSoundValue();
+            } else if (Config.NOISE_CLASS_CONFIGURATION.get("samplingStrategy").equals("file")){
+                Deque<SensorEvent> events = noiseData.getEvents(util.component.id);
+                SensorEvent currentEvent = events.pollFirst();
+
+                soundValue = (int) currentEvent.value();
+                prevSoundValue = soundValue;
+
+                //System.out.println(util.component.id + " " + Timed.getFireCount() + " " + events.size());
+
+                SensorEvent nextEvent = events.peekFirst();
+                if (nextEvent == null) {
+                    return;
+                }
+                long delayUntilNextEvent = nextEvent.simulationTimeMs() - currentEvent.simulationTimeMs();
+
+                updateFrequency(delayUntilNextEvent);
+            } else {
+                SimLogger.logError("Invalid sampling strategy: " + Config.NOISE_CLASS_CONFIGURATION.get("samplingStrategy"));
             }
             swarmAgent.totalGeneratedFiles++;
 

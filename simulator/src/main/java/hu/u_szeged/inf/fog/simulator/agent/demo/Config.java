@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ public class Config {
             );
 
     public static final Map<String, Object> NOISE_CLASS_CONFIGURATION =
-            Map.ofEntries(
+            new HashMap<>(Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)),
                     //Map.entry("submissionDelay", List.of(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
@@ -50,7 +51,8 @@ public class Config {
                     Map.entry("cpuLoadScaleDown", 30D), // %
                     Map.entry("offloadLimitPerIteration", 0.5),  // [0.0-1.0]
                     //Map.entry("samplingStrategy", "random"),
-                    Map.entry("samplingStrategy", "lazy"),
+                    //Map.entry("samplingStrategy", "lazy"),
+                    Map.entry("samplingStrategy", "file"),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("rankingMethod", "random"),
                     Map.entry("onlyFirstOffer", "true"),
@@ -71,7 +73,7 @@ public class Config {
                     public static final String RANKING_SCRIPT = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator/call_ranking_func.py";
                     public static final String PREDICTOR_SCRIPT = "/;
                     */
-            );
+            ));
 
     //public static final Map<String, Object> APP_TYPE = DUMMY_CONFIGURATION;
     public static final Map<String, Object> APP_TYPE = NOISE_CLASS_CONFIGURATION;

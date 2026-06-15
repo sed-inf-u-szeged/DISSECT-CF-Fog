@@ -116,18 +116,18 @@ public class Deployment extends Timed {
         } else if (app.type.equals("noise-classification")) {
             GreedyNoiseSwarmAgent sa = null;
             if(Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("greedy")) {
-                sa = new GreedyNoiseSwarmAgent(app);
+                sa = new GreedyNoiseSwarmAgent(app, null);
             } else if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("forecast")){
-                sa = new ForecastBasedSwarmAgent(app);
+                sa = new ForecastBasedSwarmAgent(app, null);
             } else if (Config.NOISE_CLASS_CONFIGURATION.get("swarmAgentType").equals("scalable_greedy")) {
-                sa = new ScalableGreedySwarmAgent(app);
+                sa = new ScalableGreedySwarmAgent(app, null);
             } else {
                 SimLogger.logError("This type of SA is unfamiliar in the application");
             }
 
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 if (util.getRight().component.id.contains("noise-sensor")) {
-                    new NoiseSensor(sa, util.getRight(), util.getRight().component.properties.inside, util.getRight().component.properties.sun);
+                    new NoiseSensor(sa, util.getRight(), util.getRight().component.properties.inside, util.getRight().component.properties.sun, null);
                 } else if (util.getRight().component.id.contains("remote-server")){
                     new RemoteServer(sa, util.getRight());
                 }

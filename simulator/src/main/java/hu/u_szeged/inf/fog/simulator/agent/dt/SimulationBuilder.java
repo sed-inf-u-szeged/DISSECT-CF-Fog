@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.dt;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
@@ -13,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.ResourceNode;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Component;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import java.util.HashMap;
@@ -49,15 +51,31 @@ public class SimulationBuilder {
 
         AgentApplication app = new AgentApplication();
         app.name = request.application.applicationId;
-        GreedyNoiseSwarmAgent sa = new GreedyNoiseSwarmAgent(app);
+
+        Config.NOISE_CLASS_CONFIGURATION.put("soundThreshold", request.metadata.soundLevelThreshold);
+        Config.NOISE_CLASS_CONFIGURATION.put("cpuTempTreshold", request.metadata.cpuTemperatureThreshold);
+        Config.NOISE_CLASS_CONFIGURATION.put("minCpuTemp", request.metadata.minCpuTemperature);
+        Config.NOISE_CLASS_CONFIGURATION.put("maxCpuTemp", request.metadata.maxCpuTemperature);
+        Config.NOISE_CLASS_CONFIGURATION.put("minContainerCount", request.metadata.minContainerCount);
+
+        Config.NOISE_CLASS_CONFIGURATION.put("cpuTimeWindow", request.metadata.scalingCooldown);
+        Config.NOISE_CLASS_CONFIGURATION.put("cpuLoadScaleDown", request.metadata.cpuLoadScaleDown);
+        Config.NOISE_CLASS_CONFIGURATION.put("cpuLoadScaleUp", request.metadata.cpuLoadScaleUp);
+
+        GreedyNoiseSwarmAgent sa = new GreedyNoiseSwarmAgent(app, (long) Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow"));
         for (Component component : request.application.components) {
             Utilisation util = new Utilisation();
             util.vm = componentVmMap.get(component);
             util.component = new AgentApplication.Component();
             util.component.id = component.componentId;
 
+
             if (component.componentId.contains("sensor")){
-                new NoiseSensor(sa, util, component.properties.inside, component.properties.sun);
+                NoiseSensor ns = new NoiseSensor(sa, util, component.properties.inside, component.properties.sun, noiseData);
+                ns.cpuTemperature = component.properties.cpuTemperature;
+                if (component.properties.classifier == true) {
+                    sa.noiseSensorsWithClassifier.add(ns);
+                }
             } else {
                 new RemoteServer(sa, util);
             }

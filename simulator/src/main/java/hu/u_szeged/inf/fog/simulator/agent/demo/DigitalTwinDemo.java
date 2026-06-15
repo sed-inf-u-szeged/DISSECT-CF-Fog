@@ -13,6 +13,8 @@ import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.common.util.CsvVisualiser;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static hu.u_szeged.inf.fog.simulator.agent.demo.NoiseClassDemo.calculateTimeBelowThrottling;
+import static hu.u_szeged.inf.fog.simulator.agent.demo.NoiseClassDemo.exportCdfToCsv;
 
 public class DigitalTwinDemo {
 
@@ -43,25 +46,29 @@ public class DigitalTwinDemo {
 
         //JsonNode input = mapper.readTree(new File(args[0]));
         //Path csvPath = Path.of(args[1]);
-        Path csvPath = Path.of("D:\\Documents\\git-projects\\digital-twin\\examples\\noise-data.csv");
+        //Path csvPath = Path.of("D:\\Documents\\git-projects\\digital-twin\\examples\\noise-data.csv");
+        Path csvPath = Path.of("/Users/markusa/Documents/git-repos/digital-twin/examples/noise-data.csv");
         NoiseCsvData noiseData = NoiseCsvData.load(csvPath);
 
         DigitalTwinRequest request =
                 //mapper.readValue(Path.of(args[0]).toFile(), DigitalTwinRequest.class);
                 mapper.readValue(
-                        new File("D:\\Documents\\git-projects\\digital-twin\\examples\\candidate-1_input.json"),
+                        //new File("D:\\Documents\\git-projects\\digital-twin\\examples\\candidate-1_input.json"),
+                        new File("/Users/markusa/Documents/git-repos/digital-twin/examples/candidate-1_input.json"),
                         DigitalTwinRequest.class
                 );
 
         InputValidator.validate(request, noiseData);
 
-        long startOffsetMs =
-                noiseData.simulationStartTime.toLocalTime().toNanoOfDay() / 1_000_000L;
-        Sun.init(6, 20, 13, 1.5, startOffsetMs);
-
         switch (request.metadata.applicationType) {
             case "InnoRenew":
+                long startOffsetMs =
+                        noiseData.simulationStartTime.toLocalTime().toNanoOfDay() / 1_000_000L;
+                Sun.init(6, 20, 13, 1.5, startOffsetMs);
                 SimulationBuilder.build(request, noiseData);
+                for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances.values()) {
+                    new EnergyDataCollector(ca.name + "-energy", ca.iaas, true, true);
+                }
                 break;
             default:
                 System.err.println("Unknown digital twin type: " + request.metadata.applicationType);
@@ -73,31 +80,31 @@ public class DigitalTwinDemo {
         Timed.simulateUntil(noiseData.maxSimulationTimeMs);
         long stoptime = System.nanoTime();
 
+        Path energyValues = EnergyDataCollector.writeToFile(ScenarioBase.RESULT_DIRECTORY);
+        for (NoiseAppCsvExporter noiseAppCsvExporter : NoiseAppCsvExporter.allNoiseAppCsvExporters.values()){
+
+            CsvVisualiser.visualise(
+                    noiseAppCsvExporter.swarmAgent.app.name,
+                    noiseAppCsvExporter.soundValuesPath,
+                    noiseAppCsvExporter.noiseSensorTemperaturePath,
+                    noiseAppCsvExporter.noiseSensorCpuLoadPath,
+                    noiseAppCsvExporter.noiseSensorClassifierCountPath,
+                    noiseAppCsvExporter.processedFilePath,
+                    noiseAppCsvExporter.fileMigrationCountPath,
+                    noiseAppCsvExporter.sunIntensityPath,
+                    energyValues,
+                    exportCdfToCsv(ScenarioBase.RESULT_DIRECTORY, noiseAppCsvExporter.swarmAgent)
+            ).write();
+        }
+
         SimLogger.logEmptyLine();
 
         long soundFilesOnNoiseSensors = 0;
         long soundFilesOnRemoteServers = 0;
-        double avgDeploymentTime = 0.0;
-        double avgOffers = 0.0;
         long totalGeneratedFiles = 0;
 
         for (SwarmAgent sa : SwarmAgent.allSwarmAgents) {
-            SimLogger.logRes(sa.app.name + " deployment: ");
-            if (sa.app.deploymentTime != -1) {
-                avgDeploymentTime += sa.app.deploymentTime;
-                SimLogger.logRes("\tTime (min.): " + sa.app.deploymentTime / ScenarioBase.MINUTE_IN_MILLISECONDS);
-            } else {
-                SimLogger.logRes("\tTime (min.): -1");
-            }
-            SimLogger.logRes("\tAvailable offers: " + sa.app.offers.size());
-            avgOffers += sa.app.offers.size();
-            if (!sa.app.offers.isEmpty()) {
-                StringBuilder str = new StringBuilder();
-                for (ResourceAgent ra : sa.app.offers.get((sa.app.winningOffer)).agentComponentsMap.keySet()) {
-                    str.append(ra.name).append(" ");
-                }
-                SimLogger.logRes("\tWinning offer: " + sa.app.offers.get((sa.app.winningOffer)).id + " ( " + str.toString() + ")");
-            }
+            SimLogger.logRes(sa.app.name + ": ");
 
             StorageObject resFile = null;
             for (Object o : sa.observedAppComponents) {
@@ -131,7 +138,7 @@ public class DigitalTwinDemo {
                     SimLogger.logRes("\tp95: " + p95);
                     SimLogger.logRes("\tp99: " + p99);
                     SimLogger.logRes("\tMedian: " + median);
-                    SimLogger.logRes("\t<=10s: " + percentage + "%");
+                    SimLogger.logRes("\t<=10s: " + percentage + " (%)");
                 }
             }
             soundFilesOnRemoteServers += resFile.size / (long) Config.NOISE_CLASS_CONFIGURATION.get("resFileSize");
@@ -146,23 +153,16 @@ public class DigitalTwinDemo {
             if (sa instanceof ForecastBasedSwarmAgent fbsa){
                 SimLogger.logRes("\tNumber of forecasts: " + fbsa.forecastingTimes.size());
             }
-
-
         }
 
         double totalEnergy = 0;
         for (EnergyDataCollector ec : EnergyDataCollector.allEnergyCollectors.values()) {
             totalEnergy += ec.accumulatedEnergy / ScenarioBase.TO_KWH;
-            // TODO: calculate only for nodes used by the application
         }
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Simulated time (minutes): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
-
-        //SimLogger.logRes("Total price (EUR): " + df.format(totalCost));
-        SimLogger.logRes("Average deployment time (min.): " + avgDeploymentTime / SwarmAgent.allSwarmAgents.size() / ScenarioBase.MINUTE_IN_MILLISECONDS);
-        SimLogger.logRes("Average number of offers (pc.): " + avgOffers / SwarmAgent.allSwarmAgents.size());
 
         SimLogger.logRes("Total energy (kWh): " + totalEnergy);
 
@@ -183,6 +183,19 @@ public class DigitalTwinDemo {
         }
         SimLogger.logRes("Time below the temperature threshold (%):" + avgTimeBelowThrottling / NoiseAppCsvExporter.allNoiseAppCsvExporters.size());
 
+        SimLogger.logEmptyLine();
+
+        SimLogger.logRes("Config parameters:");
+        SimLogger.logRes("\tSound level threshold: " + Config.NOISE_CLASS_CONFIGURATION.get("soundThreshold") + " (dB)");
+        SimLogger.logRes("\tMin. CPU temperature: " + Config.NOISE_CLASS_CONFIGURATION.get("minCpuTemp") + " (℃)");
+        SimLogger.logRes("\tMax. CPU temperature: " + Config.NOISE_CLASS_CONFIGURATION.get("maxCpuTemp") + " (℃)");
+        SimLogger.logRes("\tCPU temperature threshold: " + Config.NOISE_CLASS_CONFIGURATION.get("cpuTempTreshold") + " (℃)");
+        SimLogger.logRes("\tMin. container count: " + Config.NOISE_CLASS_CONFIGURATION.get("minContainerCount") + " (pc.)");
+        SimLogger.logRes("\tScaling cooldown: " + Config.NOISE_CLASS_CONFIGURATION.get("cpuTimeWindow") + " (ms.)");
+        SimLogger.logRes("\tCPU load scale up: " + Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleUp") + " (%)");
+        SimLogger.logRes("\tCPU load scale down: " + Config.NOISE_CLASS_CONFIGURATION.get("cpuLoadScaleDown") + " (%)");
+        SimLogger.logRes("\tMax. simulation time according to data: " + noiseData.maxSimulationTimeMs / ScenarioBase.MINUTE_IN_MILLISECONDS + " (min.)");
+        SimLogger.logRes("\tRequested prediction horizon: " + request.metadata.predictionHorizonMin  + " (min.)");
         /*
         System.out.println("Simulation start: "
                 + noiseData.simulationStartTime);

@@ -28,6 +28,30 @@ public class DigitalTwinRequest {
 
         @JsonProperty("prediction_horizon_min")
         public int predictionHorizonMin;
+
+        @JsonProperty("sound_level_threshold")
+        public int soundLevelThreshold;
+
+        @JsonProperty("cpu_temperature_threshold")
+        public double cpuTemperatureThreshold;
+
+        @JsonProperty("min_cpu_temperature")
+        public double minCpuTemperature;
+
+        @JsonProperty("max_cpu_temperature")
+        public double maxCpuTemperature;
+
+        @JsonProperty("min_container_count")
+        public int minContainerCount;
+
+        @JsonProperty("cpu_load_scale_up")
+        public double cpuLoadScaleUp;
+
+        @JsonProperty("cpu_load_scale_down")
+        public double cpuLoadScaleDown;
+
+        @JsonProperty("scaling_cooldown_ms")
+        public long scalingCooldown;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -103,6 +127,11 @@ public class DigitalTwinRequest {
 
         @JsonProperty("image_size_bytes")
         public long imageSizeBytes;
+
+        public Boolean classifier;
+
+        @JsonProperty("cpu_temperature")
+        public double cpuTemperature;
 
         public Boolean inside;
 
