@@ -2,9 +2,11 @@ package hu.u_szeged.inf.fog.simulator.agent.dt;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
+import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
@@ -12,9 +14,9 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.ResourceNode;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Component;
+import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Operation;
 import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import java.util.HashMap;
@@ -73,11 +75,38 @@ public class SimulationBuilder {
             if (component.componentId.contains("sensor")){
                 NoiseSensor ns = new NoiseSensor(sa, util, component.properties.inside, component.properties.sun, noiseData);
                 ns.cpuTemperature = component.properties.cpuTemperature;
+
                 if (component.properties.classifier == true) {
                     sa.noiseSensorsWithClassifier.add(ns);
                 }
+
+                for (int i = 0; i < component.properties.queueLength; i++) {
+                    String filename = Timed.getFireCount() + "-" + util.component.id + "-" + i;
+                    long fileSize = (long) Config.NOISE_CLASS_CONFIGURATION.get("soundFileSize");
+                    StorageObject so = new StorageObject(filename, fileSize, false);
+                    RemoteServer.networkTimePerFile.put(filename, Timed.getFireCount());
+
+                    PhysicalMachine pm = util.vm.getResourceAllocation().getHost();
+                    pm.localDisk.registerObject(so);
+                    ns.filesToProcess.add(so);
+                    NoiseSensor.totalSoundEventsToProcess++;
+                    sa.totalGeneratedFiles++;
+                }
             } else {
                 new RemoteServer(sa, util);
+            }
+        }
+
+        if (!request.operations.isEmpty()) {
+            sa.noiseSensorsWithClassifier.clear();
+            for (Operation operation : request.operations) {
+                if (operation.classifier == true) {
+                    for (Object o : sa.observedAppComponents){
+                        if (o instanceof NoiseSensor ns && ns.util.component.id.equals(operation.componentId)) {
+                            sa.noiseSensorsWithClassifier.add(ns);
+                        }
+                    }
+                }
             }
         }
 

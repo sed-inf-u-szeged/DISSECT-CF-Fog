@@ -12,7 +12,7 @@ public class DigitalTwinRequest {
     public Metadata metadata;
     public List<ResourceNode> resources;
     public Application application;
-    public List<Action> actions;
+    public List<Operation> operations;
 
     @JsonProperty("scenario_id")
     public String scenarioId;
@@ -130,6 +130,9 @@ public class DigitalTwinRequest {
 
         public Boolean classifier;
 
+        @JsonProperty("queue_length")
+        public int queueLength;
+
         @JsonProperty("cpu_temperature")
         public double cpuTemperature;
 
@@ -141,17 +144,16 @@ public class DigitalTwinRequest {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Action {
-        @JsonProperty("action_type")
-        public String actionType;
+    public static class Operation {
+
+        public String type;
 
         @JsonProperty("component_id")
         public String componentId;
 
-        @JsonProperty("component_type")
-        public String componentType;
-
         @JsonProperty("target_node")
         public String targetNode;
+
+        public Boolean classifier;
     }
 }
