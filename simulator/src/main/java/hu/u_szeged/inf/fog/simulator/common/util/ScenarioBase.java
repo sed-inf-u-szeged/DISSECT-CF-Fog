@@ -37,7 +37,7 @@ public class ScenarioBase {
                     .toString();
 
     static {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS");
         String timestamp = formatter.format(new Date());
 
         RESULT_DIRECTORY = new StringBuilder(System.getProperty("user.dir"))

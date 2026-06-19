@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent.dt;
 
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+
 import java.util.Deque;
 
 public class InputValidator {
@@ -78,7 +80,7 @@ public class InputValidator {
                 );
             }
 
-            System.out.println(
+            SimLogger.logRun(
                     "Validated sensor component "
                             + component.componentId
                             + " with "

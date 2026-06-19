@@ -19,6 +19,8 @@ import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -110,6 +112,12 @@ public class SimulationBuilder {
             }
         }
 
+        for (NoiseSensor ns : sa.noiseSensorsWithClassifier) {
+            SimLogger.logRun(
+                    ns.util.component.id + "'s classifier was started to meet the required service count at: "
+                            + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min."
+            );
+        }
 
 
         /*

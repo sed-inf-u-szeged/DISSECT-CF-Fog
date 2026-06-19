@@ -35,28 +35,26 @@ public class DigitalTwinDemo {
 
     public static void main(String[] args) throws Exception {
 
-        if (args.length != 2) {
-            System.err.println("Usage: DigitalTwinDemo <input-json> <noise-csv>");
-            //System.exit(1);
-        }
-
         SimLogger.setLogging(1, true);
 
         ObjectMapper mapper = new ObjectMapper();
+        Path csvPath;
+        DigitalTwinRequest request = null;
+        if (args.length != 2) {
+            System.err.println("Usage: DigitalTwinDemo <input-json> <noise-csv>");
 
-        //JsonNode input = mapper.readTree(new File(args[0]));
-        //Path csvPath = Path.of(args[1]);
-        //Path csvPath = Path.of("D:\\Documents\\git-projects\\digital-twin\\examples\\noise-data.csv");
-        Path csvPath = Path.of("/Users/markusa/Documents/git-repos/digital-twin/examples/noise-data.csv");
+            request = mapper.readValue(
+                    //new File("D:\\Documents\\git-projects\\digital-twin\\examples\\candidate-1_input.json"),
+                    new File("/Users/markusa/Documents/git-repos/digital-twin/examples/candidate-1_input.json"),
+                    DigitalTwinRequest.class
+            );
+            csvPath = Path.of("/Users/markusa/Documents/git-repos/digital-twin/examples/noise-data.csv");
+        } else {
+            request = mapper.readValue(Path.of(args[0]).toFile(), DigitalTwinRequest.class);
+            csvPath = Path.of(args[1]);
+        }
+
         NoiseCsvData noiseData = NoiseCsvData.load(csvPath);
-
-        DigitalTwinRequest request =
-                //mapper.readValue(Path.of(args[0]).toFile(), DigitalTwinRequest.class);
-                mapper.readValue(
-                        //new File("D:\\Documents\\git-projects\\digital-twin\\examples\\candidate-1_input.json"),
-                        new File("/Users/markusa/Documents/git-repos/digital-twin/examples/candidate-1_input.json"),
-                        DigitalTwinRequest.class
-                );
 
         InputValidator.validate(request, noiseData);
 
