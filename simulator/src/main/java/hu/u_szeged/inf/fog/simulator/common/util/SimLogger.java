@@ -1,10 +1,15 @@
 package hu.u_szeged.inf.fog.simulator.common.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.Supplier;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -19,6 +24,10 @@ import java.util.logging.SimpleFormatter;
 public final class SimLogger {
 
     private static final Logger logger = Logger.getLogger("DISSECT-CF-Fog-SimLogger");
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final Map<String, Object> results = new LinkedHashMap<>();
 
     private SimLogger() {}
 
@@ -41,6 +50,67 @@ public final class SimLogger {
     public static void logRes(Object message) {
         if (logger.isLoggable(Level.WARNING)) {
             logger.log(Level.WARNING, "[RES] " + message);
+        }
+    }
+
+    /**
+     * Logs a named simulation result and stores it for JSON serialization.
+     *
+     * @param key the result name
+     * @param value the result value
+     */
+    public static void logRes(String key, Object value) {
+        results.put(normalizeKey(key), value);
+
+        if (!logger.isLoggable(Level.WARNING)) {
+            return;
+        }
+
+        if (value instanceof Map<?, ?> map) {
+            logger.log(Level.WARNING, "[RES] " + key + ":");
+            map.forEach((k, v) ->
+                    logger.log(Level.WARNING, "[RES] \t" + k + ": " + v)
+            );
+        } else {
+            logger.log(Level.WARNING, "[RES] " + key + ": " + value);
+        }
+    }
+
+    /**
+     * Logs a grouped simulation result and stores it for JSON serialization.
+     * The supplied builder populates a nested JSON object associated with the
+     * specified key.
+     *
+     * @param key the group name
+     * @param builder consumer used to populate the nested result object
+     */
+    public static void logRes(String key, Consumer<Map<String, Object>> builder) {
+        Map<String, Object> group = new LinkedHashMap<>();
+        builder.accept(group);
+
+        Map<String, Object> normalized = new LinkedHashMap<>();
+        group.forEach((k, v) -> normalized.put(normalizeKey(k), v));
+
+        results.put(normalizeKey(key), normalized);
+
+        if (logger.isLoggable(Level.WARNING)) {
+            logger.log(Level.WARNING, "[RES] " + key + ":");
+
+            group.forEach((k, v) ->
+                    logger.log(Level.WARNING, "[RES] \t" + k + ": " + v)
+            );
+        }
+    }
+
+    private static String normalizeKey(String key) {
+        return key.replace("\t", "").trim();
+    }
+
+    public static String getResultsAsJson() {
+        try {
+            return objectMapper.writeValueAsString(results);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
