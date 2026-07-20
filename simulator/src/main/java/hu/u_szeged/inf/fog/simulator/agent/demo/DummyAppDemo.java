@@ -123,7 +123,8 @@ public class DummyAppDemo {
         }
 
         final long starttime = System.nanoTime();       
-        Timed.simulateUntil((long) Config.DUMMY_CONFIGURATION.get("simLength"));
+        //Timed.simulateUntil((long) Config.DUMMY_CONFIGURATION.get("simLength"));
+        Timed.simulateUntilLastEvent();
         final long stoptime = System.nanoTime();
         EnergyDataCollector.writeToFile(ScenarioBase.RESULT_DIRECTORY);
     
@@ -158,7 +159,7 @@ public class DummyAppDemo {
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
-        SimLogger.logRes("Size of generated files (MB): " + DummyServer.totalGeneratedFileSize / 1_048_576);
+        SimLogger.logRes("Size of generated files (MB): " + (double) DummyServer.totalGeneratedFileSize / 1_048_576);
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }
 }

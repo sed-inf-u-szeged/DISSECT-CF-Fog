@@ -137,7 +137,7 @@ public class NoiseSensor extends Timed {
             int limit = 0;
             if (swarmAgent.noiseSensorsWithClassifier.size() < 2) {
                 limit = (int) (filesToProcess.size() * (double) Config.NOISE_CLASS_CONFIGURATION.get("offloadLimitPerIteration"));
-            } else{
+            } else {
                 limit = filesToProcess.size();
             }
             offload(limit);

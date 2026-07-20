@@ -21,7 +21,7 @@ public class DummyServer extends Timed  {
 
     private SwarmAgent swarmAgent;
 
-    Utilisation util;
+    public Utilisation util;
 
     public DummyServer(SwarmAgent swarmAgent, Utilisation util) {
         this.swarmAgent = swarmAgent;
@@ -34,8 +34,10 @@ public class DummyServer extends Timed  {
                 subscribe((long) Config.DUMMY_CONFIGURATION.get("samplingFreq")+ SeedSyncer.centralRnd.nextInt(-5,11));
             }
         };
+    }
 
-        // TODO: SETTING UP UNSUBSCRIBE!!
+    public void stop() {
+        unsubscribe();
     }
     
     @Override
@@ -51,33 +53,38 @@ public class DummyServer extends Timed  {
             Repository targetRepo = server.util.vm.getResourceAllocation().getHost().localDisk;
             sourceRepo.registerObject(dummyData);
             try {
-                util.vm.getResourceAllocation().getHost().localDisk.requestContentDelivery(
-                        name, targetRepo, new ConsumptionEventAdapter() {
+                if (sourceRepo == targetRepo) {
+                    sourceRepo.deregisterObject(name);
+                    RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
+                } else {
+                    util.vm.getResourceAllocation().getHost().localDisk.requestContentDelivery(
+                            name, targetRepo, new ConsumptionEventAdapter() {
 
-                            @Override
-                            public void conComplete() {
-                                sourceRepo.deregisterObject(name);
-                                RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
+                                @Override
+                                public void conComplete() {
+                                    sourceRepo.deregisterObject(name);
+                                    RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
 
-                                try {
+                                    try {
 
-                                    server.util.vm.newComputeTask(8_000 * ((dummyData.size / 500.0) + 1),
-                                            ResourceConsumption.unlimitedProcessing,
-                                            new ConsumptionEventAdapter() {
+                                        server.util.vm.newComputeTask(8_000 * ((dummyData.size / 500.0) + 1),
+                                                ResourceConsumption.unlimitedProcessing,
+                                                new ConsumptionEventAdapter() {
 
-                                                @Override
-                                                public void conComplete() {
-                                                    SimLogger.logRun(server.util.component.id + " processed a file (" + dummyData.size + " bytes, "
-                                                            + (Timed.getFireCount() - fires) / 1_000D + " sec.) sent by "
-                                                            + util.component.id + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                                                            + " min.");
-                                                }
-                                            });
-                                } catch (NetworkNode.NetworkException e) {
-                                    throw new RuntimeException(e);
+                                                    @Override
+                                                    public void conComplete() {
+                                                        SimLogger.logRun(server.util.component.id + " processed a file (" + dummyData.size + " bytes, "
+                                                                + (Timed.getFireCount() - fires) / 1_000D + " sec.) sent by "
+                                                                + util.component.id + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                                                                + " min.");
+                                                    }
+                                                });
+                                    } catch (NetworkNode.NetworkException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                }
             } catch (NetworkNode.NetworkException e) {
                 SimLogger.logError("DummyServer data transfer failed: " + e);
             }

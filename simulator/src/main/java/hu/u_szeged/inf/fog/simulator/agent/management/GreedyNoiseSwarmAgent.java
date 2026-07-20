@@ -18,8 +18,6 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
 
     public List<NoiseSensor> noiseSensorsWithClassifier = new ArrayList<>();
 
-    public static int shutdownCounter;
-
     public long filesSentToDatabase;
 
     private int currentClassifierIndex;
@@ -56,6 +54,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
         }
     }
 
+    @Override
     public void shutdown(long fires) {
         if ((app.submissionTime + (long) Config.NOISE_CLASS_CONFIGURATION.get("simLength")) < fires) {
             if(totalGeneratedFiles == this.filesSentToDatabase){
@@ -68,11 +67,11 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 app.terminationTime = fires;
                 SimLogger.logRun(app.name + " application finished at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
-                shutdownCounter++;
+                applicationShutdownCounter++;
                 // TODO: release capacities
             }
 
-            if (shutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
+            if (applicationShutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
                 for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                     edc.stop();
                 }

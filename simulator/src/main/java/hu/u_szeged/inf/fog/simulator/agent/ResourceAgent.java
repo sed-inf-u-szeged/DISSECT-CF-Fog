@@ -37,7 +37,7 @@ public class ResourceAgent {
 
     public VirtualMachine raService;
 
-    private double hourlyPrice;
+    public double hourlyPrice;
 
     public Map<String, Capacity> capacities = new LinkedHashMap<>();
 
@@ -543,5 +543,94 @@ public class ResourceAgent {
 
         resource.getRight().leadResource = true;
         return resource;
+    }
+
+    public double calculateDemandShare(double requestedCpu, long requestedMemory, long requestedStorage) {
+        // TODO: decide how to handle requests for resource dimensions that the RA does not provide.
+
+        double totalCpu = capacities.values()
+                .stream()
+                .mapToDouble(capacity -> capacity.totalCpu)
+                .sum();
+
+        long totalMemory = capacities.values()
+                .stream()
+                .mapToLong(capacity -> capacity.totalMemory)
+                .sum();
+
+        long totalStorage = capacities.values()
+                .stream()
+                .mapToLong(capacity -> capacity.totalStorage)
+                .sum();
+
+        double demandShareSum = 0.0;
+        int dimensions = 0;
+
+        if (totalCpu > 0.0) {
+            demandShareSum += requestedCpu / totalCpu;
+            dimensions++;
+        }
+
+        if (totalMemory > 0L) {
+            demandShareSum += requestedMemory / (double) totalMemory;
+            dimensions++;
+        }
+
+        if (totalStorage > 0L) {
+            demandShareSum += requestedStorage / (double) totalStorage;
+            dimensions++;
+        }
+
+        if (dimensions == 0) {
+            return 0.0;
+        }
+
+        return demandShareSum / dimensions;
+    }
+
+    public double getCurrentUtilisation() {
+
+        double totalCpu = 0.0;
+        double allocatedCpu = 0.0;
+
+        long totalMemory = 0;
+        long allocatedMemory = 0;
+
+        long totalStorage = 0;
+        long allocatedStorage = 0;
+
+        for (Capacity capacity : capacities.values()) {
+
+            totalCpu += capacity.totalCpu;
+            allocatedCpu += capacity.totalCpu - capacity.cpu;
+
+            totalMemory += capacity.totalMemory;
+            allocatedMemory += capacity.totalMemory - capacity.memory;
+
+            totalStorage += capacity.totalStorage;
+            allocatedStorage += capacity.totalStorage - capacity.storage;
+        }
+
+        double utilisationSum = 0.0;
+        int dimensions = 0;
+
+        if (totalCpu > 0) {
+            utilisationSum += allocatedCpu / totalCpu;
+            dimensions++;
+        }
+
+        if (totalMemory > 0) {
+            utilisationSum += allocatedMemory / (double) totalMemory;
+            dimensions++;
+        }
+
+        if (totalStorage > 0) {
+            utilisationSum += allocatedStorage / (double) totalStorage;
+            dimensions++;
+        }
+
+        return dimensions == 0
+                ? 0.0
+                : utilisationSum / dimensions;
     }
 }

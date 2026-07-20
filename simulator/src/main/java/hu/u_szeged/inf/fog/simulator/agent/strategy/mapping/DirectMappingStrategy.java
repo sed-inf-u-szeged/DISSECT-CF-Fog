@@ -31,7 +31,7 @@ public class DirectMappingStrategy extends MappingStrategy {
                         for (Capacity c : agent.capacities.values()) {
                             if (c.cpu >= component.requirements.cpu) {
                                 agentResourcePair.add(Pair.of(agent, component));
-                                c.reserveCapacity(component);
+                                c.reserveCapacity(component, agent);
                                 break;
                             }
                         }  

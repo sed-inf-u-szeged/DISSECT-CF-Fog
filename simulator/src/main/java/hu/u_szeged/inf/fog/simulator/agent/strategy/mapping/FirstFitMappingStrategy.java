@@ -32,7 +32,7 @@ public class FirstFitMappingStrategy extends MappingStrategy {
                 if (isMatchingPreferences(component, capacity) && requiredCpu <= capacity.cpu
                             && requiredMemory <= capacity.memory && requiredStorage <= capacity.storage) {
 
-                    capacity.reserveCapacity(component);
+                    capacity.reserveCapacity(component, agent);
                     agentResourcePairs.add(Pair.of(agent, component));
                 }
             }

@@ -18,6 +18,8 @@ public class SwarmAgent extends Timed {
 
     public long totalGeneratedFiles;
 
+    public static int applicationShutdownCounter;
+
     public SwarmAgent(AgentApplication app) {
         this.app = app;
         allSwarmAgents.add(this);
@@ -25,6 +27,10 @@ public class SwarmAgent extends Timed {
 
     @Override
     public void tick(long fires) {
+
+    }
+
+    public void shutdown(long fires) {
 
     }
 }

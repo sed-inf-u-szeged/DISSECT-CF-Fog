@@ -13,10 +13,7 @@ import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
-import hu.u_szeged.inf.fog.simulator.agent.management.ForecastBasedSwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.management.ScalableGreedySwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.*;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -105,7 +102,8 @@ public class Deployment extends Timed {
 
     private void deployActaulApplication() {
         if (app.type.equals("dummy")) {
-            SwarmAgent sa = new SwarmAgent(app);
+            //SwarmAgent sa = new SwarmAgent(app);
+            DummySwarmAgent sa = new DummySwarmAgent(app, (long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6);
             for (Pair<ComputingAppliance, Utilisation> util : this.offer.utilisations) {
                 if (util.getRight().component.id.contains("server")) {
                     new DummyServer(sa, util.getRight());
