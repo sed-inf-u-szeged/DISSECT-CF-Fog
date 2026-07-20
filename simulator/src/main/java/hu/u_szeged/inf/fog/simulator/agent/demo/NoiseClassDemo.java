@@ -30,7 +30,6 @@ import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +41,7 @@ public class NoiseClassDemo {
     public static void main(String[] args) throws Exception {
 
         SimLogger.setLogging(1, true);
-        SeedSyncer.modifySeed(987654321);
+        SeedSyncer.sedSeed(987654321);
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 

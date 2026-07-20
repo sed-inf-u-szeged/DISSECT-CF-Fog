@@ -46,7 +46,7 @@ public class SeedSyncer {
 	 * "hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer.seed" before running
 	 * any simulations.
 	 */
-	public static int seed;
+	private static int seed;
 
 	static {
 		String seedText = System.getProperty("hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer.seed");
@@ -68,8 +68,12 @@ public class SeedSyncer {
 	/**
      * Modify the simulator's random number generator based on the specified seed value
      */
-    public static void modifySeed(int seed) {
+    public static void sedSeed(int seed) {
         SeedSyncer.seed = seed;
         centralRnd.setSeed(seed);
     }
+
+	public static int getSeed() {
+		return seed;
+	}
 }
