@@ -8,6 +8,8 @@ import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
+import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -23,16 +25,19 @@ public class DummySwarmAgent extends SwarmAgent {
 
     @Override
     public void tick(long fires) {
+
+        if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
+            ResourceAgentCsvExporter.getInstance().log();
+        }
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             agent.updateHourlyPrice();
         }
-
         shutdown(fires);
     }
 
     @Override
     public void shutdown(long fires) {
-        if ((app.submissionTime + (long) Config.NOISE_CLASS_CONFIGURATION.get("simLength")) < fires) {
+        if ((app.submissionTime + (long) Config.DUMMY_CONFIGURATION.get("simLength")) < fires) {
 
             for(Object component : this.observedAppComponents){
                 if(component instanceof DummyServer ds){

@@ -17,11 +17,10 @@ import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
-import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
-import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.common.util.*;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -127,6 +126,13 @@ public class DummyAppDemo {
         Timed.simulateUntilLastEvent();
         final long stoptime = System.nanoTime();
         EnergyDataCollector.writeToFile(ScenarioBase.RESULT_DIRECTORY);
+
+        if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
+            CsvVisualiser.visualise(
+                    "RA-metrics",
+                    ResourceAgentCsvExporter.getInstance().hourlyPricePath
+            ).write();
+        }
     
         /* results */
         SimLogger.logEmptyLine();

@@ -25,7 +25,8 @@ public class Config {
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
-                    Map.entry("rankingMethod", "random")
+                    Map.entry("rankingMethod", "random"),
+                    Map.entry("csvLogging", true)
             );
 
     public static final Map<String, Object> NOISE_CLASS_CONFIGURATION =
