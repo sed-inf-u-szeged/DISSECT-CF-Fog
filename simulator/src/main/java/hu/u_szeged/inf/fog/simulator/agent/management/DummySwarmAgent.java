@@ -23,6 +23,10 @@ public class DummySwarmAgent extends SwarmAgent {
 
     @Override
     public void tick(long fires) {
+        for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
+            agent.updateHourlyPrice();
+        }
+
         shutdown(fires);
     }
 

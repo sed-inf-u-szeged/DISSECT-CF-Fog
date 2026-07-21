@@ -84,22 +84,22 @@ public class DummyAppDemo {
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
                 
         ResourceAgent ra1 =
-                new ResourceAgent("Agent1", 0.00013889, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent1", 0.5, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node1, 52, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra2 = 
-                new ResourceAgent("Agent2", 0.00277778, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent2", 5.0, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra2.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node2, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra3 = 
-                new ResourceAgent("Agent3", 0.00041667, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent3", 1.5, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra3.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node3, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra4 = 
-                new ResourceAgent("Agent4", 0.00000278, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent4", 3.0, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         ra4.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node4, 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
                 new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
@@ -148,13 +148,40 @@ public class DummyAppDemo {
         }
 
         SimLogger.logEmptyLine();
+
+        Map<String, Double> applicationCosts = new HashMap<>();
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             for (Capacity cap : agent.capacities.values()) {
                 SimLogger.logRes("\t(" + agent.name + ") " + cap);
+
                 for (Utilisation util : cap.utilisations) {
                     SimLogger.logRes("\t\t" + util);
+
+                    if (util.state != Utilisation.State.RELEASED) {
+                        continue;
+                    }
+
+                    double durationHours = (util.endTime - util.initTime) / 3_600_000.0;
+
+                    double totalCost = util.actualCost * durationHours;
+
+                    String[] resourceNameParts =
+                            util.component.id.split("-");
+
+                    String applicationName =
+                            resourceNameParts[0] + "-" + resourceNameParts[1];
+
+                    applicationCosts.merge(
+                            applicationName,
+                            totalCost,
+                            Double::sum);
                 }
             }
+        }
+
+        SimLogger.logEmptyLine();
+        for (Map.Entry<String, Double> entry : applicationCosts.entrySet()) {
+            SimLogger.logRes(entry.getKey() + " total cost: " + entry.getValue());
         }
 
         SimLogger.logEmptyLine();

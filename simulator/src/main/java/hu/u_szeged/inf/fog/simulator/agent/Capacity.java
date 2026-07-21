@@ -14,7 +14,7 @@ public class Capacity {
 
     public static class Utilisation {
 
-        enum State {
+        public enum State {
             RESERVED,
 
             ASSIGNED,
@@ -24,7 +24,7 @@ public class Capacity {
             RELEASED
         }
 
-        State state;
+        public State state;
 
         public Component component;
 
@@ -63,11 +63,7 @@ public class Capacity {
 
             double demandShare = resourceAgent.calculateDemandShare(utilisedCpu, utilisedMemory, utilisedStorage);
 
-            double utilisation = resourceAgent.getCurrentUtilisation();
-
-            double utilisationMultiplier = 0.85 + 0.30 * utilisation; // TODO: check alternative multiplier strategies (linear, exp., stepwise, etc.)
-
-            this.actualCost = resourceAgent.hourlyPrice * demandShare * utilisationMultiplier;
+            this.actualCost = resourceAgent.hourlyPrice * demandShare;
         }
 
         @Override

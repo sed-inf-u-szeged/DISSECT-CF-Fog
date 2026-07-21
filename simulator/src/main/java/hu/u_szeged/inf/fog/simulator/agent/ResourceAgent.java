@@ -39,6 +39,8 @@ public class ResourceAgent {
 
     public double hourlyPrice;
 
+    public final double baseHourlyPrice;
+
     public Map<String, Capacity> capacities = new LinkedHashMap<>();
 
     MappingStrategy agentStrategy;
@@ -59,6 +61,7 @@ public class ResourceAgent {
     public ResourceAgent(String name, double hourlyPrice, MappingStrategy agentStrategy, MessagingStrategy messagingStrategy) {
         this.name = name;
         this.hourlyPrice = hourlyPrice;
+        this.baseHourlyPrice = hourlyPrice;
         this.agentStrategy = agentStrategy;
         this.messagingStrategy = messagingStrategy;
         
@@ -193,44 +196,6 @@ public class ResourceAgent {
                 }
             };
         }
-    }
-
-    public double getPrice() {
-        double totalCpu = 0.0;
-        double totalStorage = 0.0;
-        double allocatedCpu = 0.0;
-        double allocatedStorage = 0.0;
-
-        for (final Capacity capacity : capacities.values()) {
-            totalCpu += capacity.cpu;
-            totalStorage += capacity.storage;
-
-            for (final Utilisation utilisation : capacity.utilisations) {
-                if (utilisation.state == Utilisation.State.ALLOCATED) {
-                    allocatedCpu += utilisation.utilisedCpu;
-                    allocatedStorage += utilisation.utilisedStorage;
-                }
-            }
-        }
-
-        double cpuUtilisation = 0.0;
-        if (totalCpu > 0.0) {
-            cpuUtilisation = allocatedCpu / totalCpu;
-        }
-        cpuUtilisation = Math.max(0.0, Math.min(1.0, cpuUtilisation));
-
-        double storageUtilisation = 0.0;
-        if (totalStorage > 0.0) {
-            storageUtilisation = allocatedStorage / totalStorage;
-        }
-        storageUtilisation = Math.max(0.0, Math.min(1.0, storageUtilisation));
-
-        final double overallUtilisation = (cpuUtilisation + storageUtilisation) / 2.0;
-
-        final double minMultiplier = 0.6;
-        final double multiplier = 1.0 - (overallUtilisation * (1.0 - minMultiplier));
-
-        return hourlyPrice * multiplier;
     }
 
     /*
@@ -429,6 +394,7 @@ public class ResourceAgent {
             double averageEnergy = 0;
             double averagePrice = 0;
 
+            // TODO: these calculations should be reconsidered!
             for (ResourceAgent agent : offer.agentComponentsMap.keySet()) {
 
                 averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
@@ -441,8 +407,13 @@ public class ResourceAgent {
                 for (Component component : offer.agentComponentsMap.get(agent)) {
                     averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange()
                             * (component.requirements.cpu > 0 ? component.requirements.cpu / 100 : 1);
-                    // TODO: fix this price calculation
-                    averagePrice += getPrice() * (component.requirements.cpu > 0 ? component.requirements.cpu / 100 : 1);
+
+                    double demandShare = agent.calculateDemandShare(
+                            component.requirements.cpu,
+                            component.requirements.memory,
+                            component.requirements.storage
+                    );
+                    averagePrice += agent.hourlyPrice * demandShare;
                 }
             }
 
@@ -466,7 +437,7 @@ public class ResourceAgent {
                 + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
             */
         }
-        // TODO: ??
+
         QosPriority qosPriority = new QosPriority(app.energy, app.bandwidth, app.latency, app.price);
         JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
         return AgentOfferWriter.writeOffers(jsonData, app.name);
@@ -546,8 +517,6 @@ public class ResourceAgent {
     }
 
     public double calculateDemandShare(double requestedCpu, long requestedMemory, long requestedStorage) {
-        // TODO: decide how to handle requests for resource dimensions that the RA does not provide.
-
         double totalCpu = capacities.values()
                 .stream()
                 .mapToDouble(capacity -> capacity.totalCpu)
@@ -562,6 +531,18 @@ public class ResourceAgent {
                 .stream()
                 .mapToLong(capacity -> capacity.totalStorage)
                 .sum();
+
+        if (totalCpu == 0.0 && requestedCpu > 0.0) {
+            throw new IllegalStateException(this.name + " has no CPU capacity but CPU was requested.");
+        }
+
+        if (totalMemory == 0L && requestedMemory > 0L) {
+            throw new IllegalStateException(this.name + " has no memory capacity but memory was requested.");
+        }
+
+        if (totalStorage == 0L && requestedStorage > 0L) {
+            throw new IllegalStateException(this.name + " has no storage capacity but storage was requested.");
+        }
 
         double demandShareSum = 0.0;
         int dimensions = 0;
@@ -632,5 +613,10 @@ public class ResourceAgent {
         return dimensions == 0
                 ? 0.0
                 : utilisationSum / dimensions;
+    }
+
+    public void updateHourlyPrice() {
+        double utilisationMultiplier = 0.85 + 0.30 * getCurrentUtilisation();
+        this.hourlyPrice = this.baseHourlyPrice * utilisationMultiplier;
     }
 }
