@@ -1,14 +1,12 @@
-package hu.u_szeged.inf.fog.simulator.agent.management;
+package hu.u_szeged.inf.fog.simulator.agent.management.dummy;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
-import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
-import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
-import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;

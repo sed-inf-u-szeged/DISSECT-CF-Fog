@@ -2,7 +2,7 @@ package hu.u_szeged.inf.fog.simulator.agent.application.noise;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.noise.GreedyNoiseSwarmAgent;
 
 import java.util.ArrayList;
 import java.util.HashMap;

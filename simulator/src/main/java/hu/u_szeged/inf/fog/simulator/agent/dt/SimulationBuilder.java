@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.agent.dt;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager;
@@ -15,7 +14,7 @@ import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.ResourceNode;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Component;
 import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Operation;
-import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.noise.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;

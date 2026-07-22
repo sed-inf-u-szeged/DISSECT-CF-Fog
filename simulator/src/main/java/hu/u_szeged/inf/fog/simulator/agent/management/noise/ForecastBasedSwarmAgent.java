@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.agent.management;
+package hu.u_szeged.inf.fog.simulator.agent.management.noise;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;

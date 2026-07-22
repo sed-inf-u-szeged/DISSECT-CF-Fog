@@ -7,7 +7,7 @@ import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.Sun;
 import hu.u_szeged.inf.fog.simulator.agent.dt.*;
-import hu.u_szeged.inf.fog.simulator.agent.management.GreedyNoiseSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.noise.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
