@@ -20,8 +20,7 @@ public class Config {
 
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
-                    //Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
-                    Map.entry("simLength",5 * 365 * 24 * 60 * 60 * 1000L), // 5 years
+                    Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)), // 1 app
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
@@ -33,9 +32,13 @@ public class Config {
     public static final Map<String, Object> PARKING_CONFIGURATION =
             Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
+                    //Map.entry("simLength",5 * 365 * 24 * 60 * 60 * 1000L), // 5 years
+
                     Map.entry("submissionDelay", List.of(0)), // 1 app
 
                     Map.entry("batteryCapacity", 600_000), // unit
+
+                    Map.entry("cooldownFreq", 60_000L), // 1 min.
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true)

@@ -44,6 +44,9 @@ public class ParkingSensor extends Timed {
     private final Repository nbiotRepository;
     private final Repository bleRepository;
 
+    public boolean isTaken = false;
+    public int eventCount = 0;
+
     private final PlatformService platformService;
 
     public int batteryLevel;
@@ -66,6 +69,9 @@ public class ParkingSensor extends Timed {
 
     @Override
     public void tick(long fires) {
+        this.isTaken = !this.isTaken;
+        eventCount++;
+
         StorageObject so = new StorageObject(id + "-" + fires, 50, false);
 
         if (this.mode == ParkingMode.NBIOT_PUSH) {
@@ -85,7 +91,6 @@ public class ParkingSensor extends Timed {
                 throw new RuntimeException(e);
             }
 
-
             updateFrequency(sampleNextEventDelay(this.profile.meanInterval));
         } else {
             throw new UnsupportedOperationException("BLT_POLL mode is not implemented yet.");
@@ -99,4 +104,7 @@ public class ParkingSensor extends Timed {
         );
     }
 
+    public void stop(){
+        unsubscribe();
+    }
 }

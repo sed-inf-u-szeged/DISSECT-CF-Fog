@@ -6,8 +6,14 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.application.parking.ParkingSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.parking.PlatformService;
+import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.management.parking.ParkingSwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.util.NoiseAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.agent.util.ParkingAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.common.util.CsvVisualiser;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 import java.util.EnumMap;
@@ -47,19 +53,35 @@ public class ParkingAppDemo {
                     ParkingSensor.ParkingMode.NBIOT_PUSH,ParkingSensor.ParkingProfile.NORMAL);
         }
 
+        // swarm agent
+        AgentApplication app = new AgentApplication();
+        ParkingSwarmAgent sa = new ParkingSwarmAgent(app);
+        app.name = "parking-app";
+        sa.observedAppComponents.addAll(ParkingSensor.allParkingSensors);
+        sa.start((long) Config.PARKING_CONFIGURATION.get("cooldownFreq"));
+
         final long starttime = System.nanoTime();
-        Timed.simulateUntil((long) Config.DUMMY_CONFIGURATION.get("simLength"));
+        Timed.simulateUntil((long) Config.PARKING_CONFIGURATION.get("simLength"));
         final long stoptime = System.nanoTime();
+
+        // CSV visualisation
+        for (ParkingAppCsvExporter parkingAppCsvExporter : ParkingAppCsvExporter.allParkingAppCsvExporters.values()){
+            CsvVisualiser.visualise(
+                    parkingAppCsvExporter.swarmAgent.app.name,
+                    parkingAppCsvExporter.parkingSpotStatusPath,
+                    parkingAppCsvExporter.batteryStatusPath
+            ).write();
+        }
 
         /* results */
         SimLogger.logEmptyLine();
         SimLogger.logRes("Simulated time (minutes): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator runtime (seconds): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
-        SimLogger.logRes("Received data size on the platform: " + platformService.receivedDataSize);
-        SimLogger.logRes("Received event count on the platform: " + platformService.receivedEventCount);
+        SimLogger.logRes("Total data received by the platform: " + platformService.receivedDataSize);
+        SimLogger.logRes("Total events received by the platform: " + platformService.receivedEventCount);
         for (ParkingSensor sensor : ParkingSensor.allParkingSensors) {
-            SimLogger.logRes("\tSensor ID: " + sensor.id + ", Battery Level: " + sensor.batteryLevel);
+            SimLogger.logRes("\tSensor ID: " + sensor.id + ", Battery Level: " + sensor.batteryLevel + ", Event Count: " + sensor.eventCount);
         }
 
     }

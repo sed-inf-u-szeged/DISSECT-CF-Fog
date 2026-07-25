@@ -118,6 +118,7 @@ public class NoiseAppCsvExporter implements Closeable {
         }
     }
 
+    // TODO: SA parameter is not needed, as the exporter is already linked to a specific SwarmAgent
     private String generateHeader(SwarmAgent swarmAgent) {
         List<String> names = new ArrayList<>();
         for (Object o : swarmAgent.observedAppComponents) {
@@ -140,6 +141,7 @@ public class NoiseAppCsvExporter implements Closeable {
         noiseSensorCpuLoadWriter.close();
     }
 
+    // TODO: SA parameter is not needed, as the exporter is already linked to a specific SwarmAgent
     public void log(SwarmAgent swarmAgent, Pair<Map<NoiseSensor, Double>, Double> noiseSensorCpuLoads) {
         double time = Timed.getFireCount() / (double) ScenarioBase.HOUR_IN_MILLISECONDS;
 
@@ -211,9 +213,6 @@ public class NoiseAppCsvExporter implements Closeable {
                 rowForCpuLoads.append(String.format(Locale.ROOT, "%.3f", loadsMap.get(ns)));
             }
         }
-
-
-
 
         GreedyNoiseSwarmAgent gsa = (GreedyNoiseSwarmAgent) swarmAgent;
         rowForClassifierCount.append(",");
