@@ -25,9 +25,11 @@ public class ParkingAppCsvExporter implements Closeable {
 
     public final Path parkingSpotStatusPath;
     public final Path batteryStatusPath;
+    public final Path zoneStatusPath;
 
     public final PrintWriter parkingSpotStatusWriter;
     public final PrintWriter batteryStatusWriter;
+    public final PrintWriter zoneStatusWriter;
 
     public ParkingAppCsvExporter(SwarmAgent swarmAgent) {
         this.swarmAgent = swarmAgent;
@@ -42,6 +44,10 @@ public class ParkingAppCsvExporter implements Closeable {
                     ScenarioBase.RESULT_DIRECTORY,
                     this.swarmAgent.app.name + "-battery-status.csv"
             );
+            zoneStatusPath = Paths.get(
+                    ScenarioBase.RESULT_DIRECTORY,
+                    this.swarmAgent.app.name + "-zone-status.csv"
+            );
 
             parkingSpotStatusWriter = new PrintWriter(
                     Files.newBufferedWriter(parkingSpotStatusPath, StandardCharsets.UTF_8,
@@ -50,6 +56,11 @@ public class ParkingAppCsvExporter implements Closeable {
             );
             batteryStatusWriter = new PrintWriter(
                     Files.newBufferedWriter(batteryStatusPath, StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE, StandardOpenOption.APPEND),
+                    true
+            );
+            zoneStatusWriter = new PrintWriter(
+                    Files.newBufferedWriter(zoneStatusPath, StandardCharsets.UTF_8,
                             StandardOpenOption.CREATE, StandardOpenOption.APPEND),
                     true
             );
@@ -73,6 +84,7 @@ public class ParkingAppCsvExporter implements Closeable {
     public void close() throws IOException {
         parkingSpotStatusWriter.close();
         batteryStatusWriter.close();
+        zoneStatusWriter.close();
     }
 
     public void log() {
@@ -82,14 +94,17 @@ public class ParkingAppCsvExporter implements Closeable {
             String header = generateHeader();
             parkingSpotStatusWriter.println(header);
             batteryStatusWriter.println(header);
+            zoneStatusWriter.println(header);
             headerWritten = true;
         }
 
         StringBuilder rowForParkingSpotStatus = new StringBuilder();
         StringBuilder rowForBatteryStatus = new StringBuilder();
+        StringBuilder rowForZoneStatus = new StringBuilder();
 
         rowForParkingSpotStatus.append(String.format(Locale.ROOT, "%.3f", time));
         rowForBatteryStatus.append(String.format(Locale.ROOT, "%.3f", time));
+        rowForZoneStatus.append(String.format(Locale.ROOT, "%.3f", time));
 
         for (Object o : swarmAgent.observedAppComponents) {
             if (o instanceof ParkingSensor ps) {
@@ -98,10 +113,14 @@ public class ParkingAppCsvExporter implements Closeable {
 
                 rowForBatteryStatus.append(",");
                 rowForBatteryStatus.append(ps.batteryLevel);
+
+                rowForZoneStatus.append(",");
+                rowForZoneStatus.append(ps.getCurrentProfile().ordinal());
             }
         }
 
         parkingSpotStatusWriter.println(rowForParkingSpotStatus);
         batteryStatusWriter.println(rowForBatteryStatus);
+        zoneStatusWriter.println(rowForZoneStatus);
     }
 }

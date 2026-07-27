@@ -49,33 +49,16 @@ public class ParkingSensor extends Timed {
     }
 
     public enum TimePeriod {
-
-        NIGHT(0, 6),
-        MORNING_PEAK(6, 9),
-        DAYTIME(9, 16),
-        EVENING_PEAK(16, 19),
-        LATE_EVENING(19, 24);
-
-        private final int startHour;
-        private final int endHour;
-
-        TimePeriod(int startHour, int endHour) {
-            this.startHour = startHour;
-            this.endHour = endHour;
-        }
-
-        public int getStartHour() {
-            return startHour;
-        }
-
-        public int getEndHour() {
-            return endHour;
-        }
+        NIGHT,
+        MORNING_PEAK,
+        DAYTIME,
+        EVENING_PEAK,
+        LATE_EVENING
     }
 
     public String id;
+
     ParkingMode mode;
-    private ParkingProfile profile;
     private final ParkingZone zone;
 
     public final Repository nbiotRepository;
@@ -90,20 +73,17 @@ public class ParkingSensor extends Timed {
 
     public long stopTime;
 
-    private double eventRate;
-
     public ParkingSensor(String id, PlatformService platformService, Repository nbiotRepository, Repository bleRepository, int batteryLevel,
-                         ParkingMode mode, ParkingProfile profile, ParkingZone zone) {
+                         ParkingMode mode, ParkingZone zone) {
         this.id = id;
         this.nbiotRepository = nbiotRepository;
         this.bleRepository = bleRepository;
         this.mode = mode;
         this.batteryLevel = batteryLevel;
-        this.profile = profile;
         this.zone = zone;
         this.platformService = platformService;
         this.stopTime = 0;
-        subscribe(sampleNextEventDelay(profile.meanInterval));
+        subscribe(sampleNextEventDelay(getCurrentProfile().meanInterval));
         allParkingSensors.add(this);
         //this.batteryLevel = Config.PARKING_CONFIGURATION.get("batteryCapacity") instanceof Long capacity ? capacity : 0L; TODO:!!
     }
@@ -144,7 +124,7 @@ public class ParkingSensor extends Timed {
             bleRepository.registerObject(so);
         }
 
-        updateFrequency(sampleNextEventDelay(this.profile.meanInterval));
+        updateFrequency(sampleNextEventDelay(getCurrentProfile().meanInterval));
 
         if (this.batteryLevel <= 0) {
             unsubscribe();
@@ -156,7 +136,7 @@ public class ParkingSensor extends Timed {
     private long sampleNextEventDelay(double meanIntervalMs) {
         double randomValue = Math.max(1.0 - SeedSyncer.centralRnd.nextDouble(), 1e-12);
 
-        return Math.max(1L, Math.round(-Math.log(randomValue) * meanIntervalMs)
+        return Math.max(ScenarioBase.MINUTE_IN_MILLISECONDS, Math.round(-Math.log(randomValue) * meanIntervalMs)
         );
     }
 
@@ -185,5 +165,36 @@ public class ParkingSensor extends Timed {
         }
 
         return TimePeriod.LATE_EVENING;
+    }
+
+    public static ParkingProfile resolveParkingProfile(
+            ParkingZone zone,
+            TimePeriod period) {
+
+        return switch (zone) {
+            case COMMERCIAL -> switch (period) {
+                case MORNING_PEAK, DAYTIME, EVENING_PEAK -> ParkingProfile.BUSY;
+
+                case NIGHT, LATE_EVENING -> ParkingProfile.NORMAL;
+            };
+
+            case LOADING -> switch (period) {
+                case MORNING_PEAK -> ParkingProfile.BUSY;
+
+                case NIGHT, DAYTIME, EVENING_PEAK, LATE_EVENING -> ParkingProfile.NORMAL;
+            };
+
+            case RESIDENTIAL -> switch (period) {
+                case MORNING_PEAK, EVENING_PEAK -> ParkingProfile.BUSY;
+
+                case NIGHT, DAYTIME, LATE_EVENING -> ParkingProfile.NORMAL;
+            };
+        };
+    }
+
+    public ParkingProfile getCurrentProfile() {
+        return resolveParkingProfile(
+                zone,
+                resolveTimePeriod(Timed.getFireCount()));
     }
 }

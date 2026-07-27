@@ -19,7 +19,7 @@ public class ParkingGateway extends Timed {
 
     PlatformService platformService;
 
-    ArrayList<ParkingSensor> observedSensors;
+    public ArrayList<ParkingSensor> observedSensors;
 
     public String id;
 
