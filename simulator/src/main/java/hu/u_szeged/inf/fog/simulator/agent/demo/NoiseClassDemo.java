@@ -41,7 +41,7 @@ public class NoiseClassDemo {
     public static void main(String[] args) throws Exception {
 
         SimLogger.setLogging(1, true);
-        SeedSyncer.sedSeed(987654321);
+        SeedSyncer.setSeed(987654321);
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 

@@ -21,7 +21,7 @@ class SimRandomTest {
 
     @AfterEach
     void restoreSeed() {
-        SeedSyncer.sedSeed(originalSeed);
+        SeedSyncer.setSeed(originalSeed);
     }
 
     @Test
@@ -44,7 +44,7 @@ class SimRandomTest {
         
         assertArrayEquals(array1, array2);
         
-        SeedSyncer.sedSeed(123456789);
+        SeedSyncer.setSeed(123456789);
         assertEquals(123456789, SeedSyncer.getSeed());
         
         for (int i = 0; i < size; i++) {

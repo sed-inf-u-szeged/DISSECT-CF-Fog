@@ -39,6 +39,7 @@ public class Config {
                     Map.entry("batteryCapacity", 600_000), // unit
 
                     Map.entry("cooldownFreq", 60_000L), // 1 min.
+                    Map.entry("gatewayFreq", 60_000L), // 1 min.
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true)
