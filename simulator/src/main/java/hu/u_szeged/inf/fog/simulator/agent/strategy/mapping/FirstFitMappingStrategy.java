@@ -5,6 +5,8 @@ import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
 import java.util.List;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class FirstFitMappingStrategy extends MappingStrategy {
@@ -15,10 +17,9 @@ public class FirstFitMappingStrategy extends MappingStrategy {
         this.descending = descending;
     }
 
-    public List<Pair<ResourceAgent, Component>> canFulfill(ResourceAgent agent, List<Component> components) {
-
+    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
         List<Component> sortedComponent = sortResourcesByCpuElseStorage(components);
-        List<Pair<ResourceAgent, Component>> agentResourcePairs = new ArrayList<>();
+        List<ComponentPlacement> placements = new ArrayList<>();
 
         for (Component component : sortedComponent) {
             double requiredCpu = 
@@ -33,12 +34,16 @@ public class FirstFitMappingStrategy extends MappingStrategy {
                             && requiredMemory <= capacity.memory && requiredStorage <= capacity.storage) {
 
                     capacity.reserveCapacity(component, agent);
-                    agentResourcePairs.add(Pair.of(agent, component));
+                    placements.add(new ComponentPlacement(component, capacity));
+                    break;
                 }
             }
         }
-
-        return agentResourcePairs;
+        
+        if (placements.isEmpty()) {
+            return List.of();
+        }
+        return List.of(new LocalOffer(agent, placements, null));
     }
 
     public List<Component> sortResourcesByCpuElseStorage(List<Component> originalComponents) {

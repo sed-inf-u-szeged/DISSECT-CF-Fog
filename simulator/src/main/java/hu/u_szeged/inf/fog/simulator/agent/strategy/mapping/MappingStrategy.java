@@ -4,6 +4,8 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.List;
+
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -12,15 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public abstract class MappingStrategy {
 
-    /**
-     * Determines if the given agent can fulfill the requested resources.
-     * Implementing classes define the specific allocation strategy.
-     *
-     * @param agent the resource agent attempting to fulfill the request
-     * @param components the list of resources requested by an application
-     * @return a list of pairs mapping the agent to resources it can provide
-     */
-    public abstract List<Pair<ResourceAgent, Component>> canFulfill(ResourceAgent agent, List<Component> components);
+    public abstract List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components);
 
     /**
      * Checks if a resource's preferences match a capacity's characteristics.

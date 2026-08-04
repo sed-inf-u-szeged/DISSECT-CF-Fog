@@ -6,6 +6,8 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class DirectMappingStrategy extends MappingStrategy {
@@ -17,9 +19,8 @@ public class DirectMappingStrategy extends MappingStrategy {
     }
     
     @Override
-    public List<Pair<ResourceAgent, Component>> canFulfill(ResourceAgent agent, List<Component> components) {
-        
-        List<Pair<ResourceAgent, Component>> agentResourcePair = new ArrayList<>();
+    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
+        List<LocalOffer.ComponentPlacement> placements = new ArrayList<>();
         
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
             String componentName = entry.getKey();
@@ -30,7 +31,7 @@ public class DirectMappingStrategy extends MappingStrategy {
                     if (component.id.equals(componentName)) {
                         for (Capacity c : agent.capacities.values()) {
                             if (c.cpu >= component.requirements.cpu) {
-                                agentResourcePair.add(Pair.of(agent, component));
+                                placements.add(new LocalOffer.ComponentPlacement(component, c));
                                 c.reserveCapacity(component, agent);
                                 break;
                             }
@@ -39,6 +40,9 @@ public class DirectMappingStrategy extends MappingStrategy {
                 }
             }
         }
-        return agentResourcePair;
+        if (placements.isEmpty()) {
+            return List.of();
+        }
+        return List.of(new LocalOffer(agent, placements, null));
     }
 }

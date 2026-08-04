@@ -10,6 +10,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.MessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter;
@@ -160,6 +161,9 @@ public class ResourceAgent {
         if (!app.offers.isEmpty()) {
             if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
                 app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
+                SimLogger.logRun(app.offers.size() + " offers were generated for "
+                        + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                        + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
                 app.winningOffer = callRankingScript(app);
             }
@@ -235,10 +239,11 @@ public class ResourceAgent {
     
     private void generateOffers(AgentApplication app) {
         List<Pair<ResourceAgent, Component>> agentResourcePairs = new ArrayList<>();
-        
+        List<LocalOffer> localOffers = new ArrayList<>();
+
         app.offerGeneratingAgents.add(this);
         for (ResourceAgent agent : app.offerGeneratingAgents) {
-            agentResourcePairs.addAll(agent.agentStrategy.canFulfill(agent, app.components));
+            localOffers.addAll(agent.agentStrategy.generateLocalOffers(agent, app.components));
         }
 
         //agentResourcePairs.forEach(p ->
@@ -247,8 +252,18 @@ public class ResourceAgent {
         //                        " | Resource: " + p.getRight().id
         //        )
         //);
+        List<Pair<ResourceAgent, Component>> agentComponentPairs =
+                localOffers.stream()
+                        .flatMap(localOffer ->
+                                localOffer.placements.stream()
+                                        .map(placement ->
+                                                Pair.of(
+                                                        localOffer.agent,
+                                                        placement.component)))
+                        .toList();
 
-        generateUniqueOfferCombinations(agentResourcePairs, app);
+
+        generateUniqueOfferCombinations(agentComponentPairs, app);
 
         // System.out.println("Offers for: " + app.name);
         // for (Offer o : app.offers) {
@@ -295,10 +310,14 @@ public class ResourceAgent {
             return;
         }
 
-        String stateKey = includedComponents.stream()
-                .map(r -> r.id)
+        String stateKey = currentCombination.stream()
+                .map(pair ->
+                        pair.getLeft().name
+                                + "->"
+                                + pair.getRight().id)
                 .sorted()
                 .collect(Collectors.joining(","));
+
         if (!seenStates.add(stateKey)) {
             return;
         }

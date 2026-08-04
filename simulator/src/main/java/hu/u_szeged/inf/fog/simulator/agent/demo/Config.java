@@ -26,6 +26,7 @@ public class Config {
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("rankingMethod", "random"),
+                    Map.entry("onlyFirstOffer", "false"),
                     Map.entry("csvLogging", true)
             );
 
@@ -92,8 +93,8 @@ public class Config {
                     */
             ));
 
-    //public static final Map<String, Object> APP_TYPE = DUMMY_CONFIGURATION;
-    public static final Map<String, Object> APP_TYPE = NOISE_CLASS_CONFIGURATION;
+    public static final Map<String, Object> APP_TYPE = DUMMY_CONFIGURATION;
+    //public static final Map<String, Object> APP_TYPE = NOISE_CLASS_CONFIGURATION;
     
     public static IaaSService createNode(String name, double cpu, long memory, long storage,
                                          double minpower, double idlepower, double maxpower,

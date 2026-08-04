@@ -22,6 +22,18 @@ public class AgentApplication {
     public double latency;
     
     public double bandwidth;
+
+    public Integer minProviderCount;
+
+    public Integer maxProviderCount;
+
+    public Double maxCost;
+
+    public Double maxLatency;
+
+    public Double minBandwidth;
+
+    public Double maxEnergyConsumption;
         
     public List<Component> components;
     
