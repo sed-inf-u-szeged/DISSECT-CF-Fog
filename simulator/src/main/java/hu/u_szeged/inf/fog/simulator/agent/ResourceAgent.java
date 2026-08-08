@@ -237,23 +237,31 @@ public class ResourceAgent {
         }
     }
     */
-    
+
     private void generateOffers(AgentApplication app) {
-        List<Pair<ResourceAgent, Component>> agentResourcePairs = new ArrayList<>();
         List<LocalOffer> localOffers = new ArrayList<>();
 
         app.offerGeneratingAgents.add(this);
+
         for (ResourceAgent agent : app.offerGeneratingAgents) {
             localOffers.addAll(agent.agentStrategy.generateLocalOffers(agent, app.components));
         }
 
-        boolean atomicOffers =
-                (boolean) Config.APP_TYPE.get("atomicOffers");
+        boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
 
         if (atomicOffers) {
             generateAtomicOfferCombinations(localOffers, app);
         } else {
+            reserveLocalOffers(localOffers);
             generateNonAtomicOfferCombinations(localOffers, app);
+        }
+    }
+
+    private void reserveLocalOffers(List<LocalOffer> localOffers) {
+        for (LocalOffer localOffer : localOffers) {
+            for (ComponentPlacement placement : localOffer.placements) {
+                placement.capacity.reserveCapacity(placement.component, localOffer.agent);
+            }
         }
     }
 

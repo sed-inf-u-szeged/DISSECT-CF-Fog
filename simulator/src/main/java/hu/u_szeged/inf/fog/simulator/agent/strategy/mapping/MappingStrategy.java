@@ -14,6 +14,60 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public abstract class MappingStrategy {
 
+    protected static class AvailableCapacity {
+
+        private double cpu;
+
+        private long memory;
+
+        private long storage;
+
+        AvailableCapacity(Capacity capacity) {
+            this.cpu = capacity.cpu;
+            this.memory = capacity.memory;
+            this.storage = capacity.storage;
+        }
+
+        boolean canHost(Component component) {
+            return requiredCpu(component) <= cpu
+                    && requiredMemory(component) <= memory
+                    && requiredStorage(component) <= storage;
+        }
+
+        void consume(Component component) {
+            cpu -= requiredCpu(component);
+            memory -= requiredMemory(component);
+            storage -= requiredStorage(component);
+        }
+
+        void restore(Component component) {
+            cpu += requiredCpu(component);
+            memory += requiredMemory(component);
+            storage += requiredStorage(component);
+        }
+
+        private static double requiredCpu(Component component) {
+            return component.requirements.cpu != null
+                    && component.requirements.cpu > 0
+                    ? component.requirements.cpu
+                    : 0.0;
+        }
+
+        private static long requiredMemory(Component component) {
+            return component.requirements.memory != null
+                    && component.requirements.memory > 0
+                    ? component.requirements.memory
+                    : 0L;
+        }
+
+        private static long requiredStorage(Component component) {
+            return component.requirements.storage != null
+                    && component.requirements.storage > 0
+                    ? component.requirements.storage
+                    : 0L;
+        }
+    }
+
     public abstract List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components);
 
     /**
@@ -30,29 +84,5 @@ public abstract class MappingStrategy {
         boolean edgeMatch = (component.requirements.edge == null || component.requirements.edge == capacity.node.edge);
 
         return providerMatch && locationMatch && edgeMatch;
-    }
-
-    protected boolean hasSufficientCapacity(Component component, Capacity capacity) {
-        double requiredCpu =
-                component.requirements.cpu != null
-                        && component.requirements.cpu > 0
-                        ? component.requirements.cpu
-                        : 0.0;
-
-        long requiredMemory =
-                component.requirements.memory != null
-                        && component.requirements.memory > 0
-                        ? component.requirements.memory
-                        : 0L;
-
-        long requiredStorage =
-                component.requirements.storage != null
-                        && component.requirements.storage > 0
-                        ? component.requirements.storage
-                        : 0L;
-
-        return requiredCpu <= capacity.cpu
-                && requiredMemory <= capacity.memory
-                && requiredStorage <= capacity.storage;
     }
 }

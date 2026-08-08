@@ -4,10 +4,11 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class FirstFitMappingStrategy extends MappingStrategy {
     
@@ -17,26 +18,35 @@ public class FirstFitMappingStrategy extends MappingStrategy {
         this.descending = descending;
     }
 
+    @Override
     public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
-        List<Component> sortedComponent = sortResourcesByCpuElseStorage(components);
+        List<Component> sortedComponents = sortResourcesByCpuElseStorage(components);
         List<ComponentPlacement> placements = new ArrayList<>();
 
-        for (Component component : sortedComponent) {
-            for (Capacity capacity : agent.capacities.values()) {
-                if (isMatchingPreferences(component, capacity)
-                        && hasSufficientCapacity(component, capacity)) {
+        Map<Capacity, AvailableCapacity> availableCapacities = new LinkedHashMap<>();
 
-                    capacity.reserveCapacity(component, agent);
+        for (Capacity capacity : agent.capacities.values()) {
+            availableCapacities.put(capacity, new AvailableCapacity(capacity));
+        }
+
+        for (Component component : sortedComponents) {
+            for (Capacity capacity : agent.capacities.values()) {
+                AvailableCapacity availableCapacity = availableCapacities.get(capacity);
+
+                if (isMatchingPreferences(component, capacity) && availableCapacity.canHost(component)) {
+                    availableCapacity.consume(component);
                     placements.add(new ComponentPlacement(component, capacity));
+
                     break;
                 }
             }
         }
-        
+
         if (placements.isEmpty()) {
             return List.of();
         }
-        return List.of(new LocalOffer(agent, placements, null));
+
+        return List.of(new LocalOffer(agent, placements,null));
     }
 
     public List<Component> sortResourcesByCpuElseStorage(List<Component> originalComponents) {
