@@ -1,0 +1,180 @@
+package hu.u_szeged.inf.fog.simulator.agent.offer;
+
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.LocalMetrics;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class LocalMetricsCalculator {
+
+    public LocalMetrics calculate(ResourceAgent agent, List<ComponentPlacement> placements) {
+
+        double utilisation = calculateUtilisation(agent, placements);
+        double balance = calculateBalance(agent, placements);
+        double fragmentation = calculateFragmentation(agent, placements);
+        double compactness = calculateCompactness(agent, placements);
+
+        return new LocalMetrics(balance, utilisation,fragmentation,compactness);
+    }
+
+    private double calculateUtilisation(ResourceAgent agent, List<ComponentPlacement> placements) {
+        double totalCpu = 0.0;
+        long totalMemory = 0L;
+        long totalStorage = 0L;
+
+        double remainingCpu = 0.0;
+        long remainingMemory = 0L;
+        long remainingStorage = 0L;
+
+        for (Capacity capacity : agent.capacities.values()) {
+            totalCpu += capacity.totalCpu;
+            totalMemory += capacity.totalMemory;
+            totalStorage += capacity.totalStorage;
+
+            remainingCpu += capacity.cpu;
+            remainingMemory += capacity.memory;
+            remainingStorage += capacity.storage;
+        }
+
+        for (ComponentPlacement placement : placements) {
+            Component component = placement.component;
+
+            remainingCpu -= MappingStrategy.requiredCpu(component);
+            remainingMemory -= MappingStrategy.requiredMemory(component);
+            remainingStorage -= MappingStrategy.requiredStorage(component);
+        }
+
+        double utilisationSum = 0.0;
+        int dimensionCount = 0;
+
+        if (totalCpu > 0) {
+            utilisationSum += 1.0 - remainingCpu / totalCpu;
+            dimensionCount++;
+        }
+
+        if (totalMemory > 0) {
+            utilisationSum += 1.0 - (double) remainingMemory / totalMemory;
+            dimensionCount++;
+        }
+
+        if (totalStorage > 0) {
+            utilisationSum += 1.0 - (double) remainingStorage / totalStorage;
+            dimensionCount++;
+        }
+
+        if (dimensionCount == 0) {
+            return 0.0;
+        }
+
+        return utilisationSum / dimensionCount;
+    }
+
+    private double calculateBalance(ResourceAgent agent, List<ComponentPlacement> placements) {
+        double balanceSum = 0.0;
+        int evaluatedCapacityCount = 0;
+
+        for (Capacity capacity : agent.capacities.values()) {
+            List<Double> remainingRatios = calculateRemainingRatios(capacity, placements);
+
+            if (remainingRatios.isEmpty()) {
+                continue;
+            }
+
+            double minimumRemainingRatio =
+                    remainingRatios.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .min()
+                            .orElse(0.0);
+
+            double maximumRemainingRatio =
+                    remainingRatios.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .max()
+                            .orElse(0.0);
+
+            double capacityBalance = 1.0 - (maximumRemainingRatio - minimumRemainingRatio);
+            balanceSum += capacityBalance;
+            evaluatedCapacityCount++;
+        }
+
+        if (evaluatedCapacityCount == 0) {
+            return 0.0;
+        }
+
+        return balanceSum / evaluatedCapacityCount;
+    }
+
+    private double calculateFragmentation(ResourceAgent agent, List<ComponentPlacement> placements) {
+
+        if (agent.capacities.isEmpty()) {
+            return 0.0;
+        }
+
+        long usedCapacityCount =
+                placements.stream()
+                        .map(placement -> placement.capacity)
+                        .distinct()
+                        .count();
+
+        return (double) usedCapacityCount / agent.capacities.size();
+    }
+
+    private double calculateCompactness(ResourceAgent agent, List<ComponentPlacement> placements) {
+        double maximumFreeCapacityRatio = 0.0;
+
+        for (Capacity capacity : agent.capacities.values()) {
+            List<Double> remainingRatios = calculateRemainingRatios(capacity, placements);
+
+            if (remainingRatios.isEmpty()) {
+                continue;
+            }
+
+            double averageFreeCapacityRatio =
+                    remainingRatios.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .average()
+                            .orElse(0.0);
+
+            maximumFreeCapacityRatio = Math.max(maximumFreeCapacityRatio, averageFreeCapacityRatio);
+        }
+
+        return maximumFreeCapacityRatio;
+    }
+
+    private List<Double> calculateRemainingRatios(Capacity capacity, List<ComponentPlacement> placements) {
+        double remainingCpu = capacity.cpu;
+        long remainingMemory = capacity.memory;
+        long remainingStorage = capacity.storage;
+
+        for (ComponentPlacement placement : placements) {
+            if (placement.capacity == capacity) {
+                Component component = placement.component;
+
+                remainingCpu -=MappingStrategy.requiredCpu(component);
+                remainingMemory -= MappingStrategy.requiredMemory(component);
+                remainingStorage -= MappingStrategy.requiredStorage(component);
+            }
+        }
+
+        List<Double> remainingRatios = new ArrayList<>();
+
+        if (capacity.totalCpu > 0) {
+            remainingRatios.add(remainingCpu / capacity.totalCpu);
+        }
+
+        if (capacity.totalMemory > 0) {
+            remainingRatios.add((double) remainingMemory / capacity.totalMemory);
+        }
+
+        if (capacity.totalStorage > 0) {
+            remainingRatios.add((double) remainingStorage / capacity.totalStorage);
+        }
+
+        return remainingRatios;
+    }
+}

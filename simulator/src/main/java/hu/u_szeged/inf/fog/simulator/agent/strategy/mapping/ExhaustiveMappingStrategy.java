@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalMetricsCalculator;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import java.util.ArrayList;
@@ -11,6 +12,12 @@ import java.util.List;
 import java.util.Map;
 
 public class ExhaustiveMappingStrategy extends MappingStrategy {
+
+    private final LocalMetricsCalculator metricsCalculator;
+
+    public ExhaustiveMappingStrategy() {
+        this.metricsCalculator =  new LocalMetricsCalculator();
+    }
 
     @Override
     public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
@@ -39,7 +46,8 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
 
         if (componentIndex == components.size()) {
             if (!currentPlacements.isEmpty()) {
-                localOffers.add(new LocalOffer(agent, List.copyOf(currentPlacements),null));
+                List<ComponentPlacement> placements = List.copyOf(currentPlacements);
+                localOffers.add(new LocalOffer(agent, placements, metricsCalculator.calculate( agent, placements)));
             }
 
             return;

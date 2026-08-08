@@ -45,27 +45,6 @@ public abstract class MappingStrategy {
             memory += requiredMemory(component);
             storage += requiredStorage(component);
         }
-
-        private static double requiredCpu(Component component) {
-            return component.requirements.cpu != null
-                    && component.requirements.cpu > 0
-                    ? component.requirements.cpu
-                    : 0.0;
-        }
-
-        private static long requiredMemory(Component component) {
-            return component.requirements.memory != null
-                    && component.requirements.memory > 0
-                    ? component.requirements.memory
-                    : 0L;
-        }
-
-        private static long requiredStorage(Component component) {
-            return component.requirements.storage != null
-                    && component.requirements.storage > 0
-                    ? component.requirements.storage
-                    : 0L;
-        }
     }
 
     public abstract List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components);
@@ -84,5 +63,26 @@ public abstract class MappingStrategy {
         boolean edgeMatch = (component.requirements.edge == null || component.requirements.edge == capacity.node.edge);
 
         return providerMatch && locationMatch && edgeMatch;
+    }
+
+    public static double requiredCpu(Component component) {
+        return component.requirements.cpu != null
+                && component.requirements.cpu > 0
+                ? component.requirements.cpu
+                : 0.0;
+    }
+
+    public static long requiredMemory(Component component) {
+        return component.requirements.memory != null
+                && component.requirements.memory > 0
+                ? component.requirements.memory
+                : 0L;
+    }
+
+    public static long requiredStorage(Component component) {
+        return component.requirements.storage != null
+                && component.requirements.storage > 0
+                ? component.requirements.storage
+                : 0L;
     }
 }

@@ -16,13 +16,13 @@ public class LocalOffer {
 
         public final double fragmentation;
 
-        public final double consolidation;
+        public final double compactness;
 
-        public LocalMetrics(double balance, double utilisation, double fragmentation, double consolidation) {
+        public LocalMetrics(double balance, double utilisation, double fragmentation, double compactness) {
             this.balance = balance;
             this.utilisation = utilisation;
             this.fragmentation = fragmentation;
-            this.consolidation = consolidation;
+            this.compactness = compactness;
         }
     }
 

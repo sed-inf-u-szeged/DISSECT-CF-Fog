@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class DummyAppDemo {
+public class    DummyAppDemo {
     
     public static void main(String[] args) throws IOException {
 
