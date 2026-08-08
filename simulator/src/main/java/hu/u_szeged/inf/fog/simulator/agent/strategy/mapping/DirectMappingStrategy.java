@@ -17,32 +17,40 @@ public class DirectMappingStrategy extends MappingStrategy {
     public DirectMappingStrategy(Map<String, String> mapping) {
         this.mapping = mapping;
     }
-    
+
     @Override
-    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
+    public List<LocalOffer> generateLocalOffers(
+            ResourceAgent agent,
+            List<Component> components) {
+
         List<LocalOffer.ComponentPlacement> placements = new ArrayList<>();
-        
+
         for (Map.Entry<String, String> entry : mapping.entrySet()) {
             String componentName = entry.getKey();
-            String ra = entry.getValue();
+            String resourceAgentName = entry.getValue();
 
-            if (agent.name.equals(ra)) {
+            if (agent.name.equals(resourceAgentName)) {
                 for (Component component : components) {
                     if (component.id.equals(componentName)) {
-                        for (Capacity c : agent.capacities.values()) {
-                            if (c.cpu >= component.requirements.cpu) {
-                                placements.add(new LocalOffer.ComponentPlacement(component, c));
-                                c.reserveCapacity(component, agent);
+                        for (Capacity capacity : agent.capacities.values()) {
+                            if (isMatchingPreferences(component, capacity)
+                                    && hasSufficientCapacity(component, capacity)) {
+
+                                placements.add(new LocalOffer.ComponentPlacement(component,capacity));
+
+                                capacity.reserveCapacity(component, agent);
                                 break;
                             }
-                        }  
+                        }
                     }
                 }
             }
         }
+
         if (placements.isEmpty()) {
             return List.of();
         }
+
         return List.of(new LocalOffer(agent, placements, null));
     }
 }

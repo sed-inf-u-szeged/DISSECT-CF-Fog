@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import org.apache.commons.lang3.tuple.Pair;
@@ -37,13 +38,16 @@ public class ResourceAgentCombinationGenerationTest {
         Component c3 = createComponent("C3");
         List<Component> orderedComponents = List.of(c1, c2, c3);
 
-        List<Pair<ResourceAgent, Component>> pairs = List.of(
-                Pair.of(agentA, c1), Pair.of(agentB, c1),
-                Pair.of(agentA, c2), Pair.of(agentB, c2),
-                Pair.of(agentA, c3), Pair.of(agentB, c3)
+        Capacity capacityA = new Capacity(null, 10, 10, 10);
+        Capacity capacityB = new Capacity(null, 10, 10, 10);
+
+        List<Pair<ResourceAgent, ComponentPlacement>> pairs = List.of(
+                Pair.of(agentA, createPlacement(c1, capacityA)), Pair.of(agentB, createPlacement(c1, capacityB)),
+                Pair.of(agentA, createPlacement(c2, capacityA)), Pair.of(agentB, createPlacement(c2, capacityB)),
+                Pair.of(agentA, createPlacement(c3, capacityA)), Pair.of(agentB, createPlacement(c3, capacityB))
         );
 
-        Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations = new LinkedHashSet<>();
+        Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations = new LinkedHashSet<>();
         invokeGenerateCombinations(agentA, pairs, orderedComponents.size(), uniqueCombinations);
 
         assertEquals(8, uniqueCombinations.size());
@@ -65,10 +69,13 @@ public class ResourceAgentCombinationGenerationTest {
         Component c3 = createComponent("C3");
         List<Component> orderedComponents = List.of(c1, c2, c3);
 
-        List<Pair<ResourceAgent, Component>> pairs = List.of(
-                Pair.of(agentA, c1), Pair.of(agentB, c1),
-                Pair.of(agentA, c2), Pair.of(agentB, c2),
-                Pair.of(agentA, c3), Pair.of(agentB, c3)
+        Capacity capacityA = new Capacity(null, 10, 10, 10);
+        Capacity capacityB = new Capacity(null, 10, 10, 10);
+
+        List<Pair<ResourceAgent, ComponentPlacement>> pairs = List.of(
+                Pair.of(agentA, createPlacement(c1, capacityA)), Pair.of(agentB, createPlacement(c1, capacityB)),
+                Pair.of(agentA, createPlacement(c2, capacityA)), Pair.of(agentB, createPlacement(c2, capacityB)),
+                Pair.of(agentA, createPlacement(c3, capacityA)), Pair.of(agentB, createPlacement(c3, capacityB))
         );
 
         AgentApplication app = new AgentApplication();
@@ -87,6 +94,25 @@ public class ResourceAgentCombinationGenerationTest {
                 .collect(Collectors.toSet());
 
         assertEquals(expectedSignatures(orderedComponents, List.of(agentA, agentB)), actualSignatures);
+
+        assertTrue(app.offers.stream().allMatch(offer ->
+                offer.selectedPlacements.size() == orderedComponents.size()));
+
+        assertTrue(app.offers.stream().allMatch(offer ->
+                offer.selectedPlacements.stream()
+                        .map(placement -> placement.component)
+                        .collect(Collectors.toSet())
+                        .equals(new LinkedHashSet<>(orderedComponents))));
+
+        assertTrue(app.offers.stream().allMatch(offer ->
+                offer.selectedPlacements.stream().allMatch(placement -> {
+                    ResourceAgent agent = offer.agentComponentsMap.entrySet().stream()
+                            .filter(e -> e.getValue().contains(placement.component))
+                            .map(Map.Entry::getKey)
+                            .findFirst().orElseThrow();
+                    Capacity expectedCapacity = agent == agentA ? capacityA : capacityB;
+                    return placement.capacity == expectedCapacity;
+                })));
     }
 
     private static ResourceAgent createAgent(String name) {
@@ -99,8 +125,12 @@ public class ResourceAgentCombinationGenerationTest {
         return component;
     }
 
+    private static ComponentPlacement createPlacement(Component component, Capacity capacity) {
+        return new ComponentPlacement(component, capacity);
+    }
+
     private static void invokeGenerateUniqueOfferCombinations(ResourceAgent owner,
-                                                              List<Pair<ResourceAgent, Component>> pairs,
+                                                              List<Pair<ResourceAgent, ComponentPlacement>> pairs,
                                                               AgentApplication app)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = ResourceAgent.class.getDeclaredMethod("generateUniqueOfferCombinations", List.class, AgentApplication.class);
@@ -109,9 +139,9 @@ public class ResourceAgentCombinationGenerationTest {
     }
 
     private static void invokeGenerateCombinations(ResourceAgent owner,
-                                                   List<Pair<ResourceAgent, Component>> pairs,
+                                                   List<Pair<ResourceAgent, ComponentPlacement>> pairs,
                                                    int componentCount,
-                                                   Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations)
+                                                   Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = ResourceAgent.class.getDeclaredMethod(
                 "generateCombinations",
@@ -129,7 +159,7 @@ public class ResourceAgentCombinationGenerationTest {
                 pairs,
                 componentCount,
                 uniqueCombinations,
-                new LinkedHashSet<Pair<ResourceAgent, Component>>(),
+                new LinkedHashSet<Pair<ResourceAgent, ComponentPlacement>>(),
                 new LinkedHashSet<Component>(),
                 new LinkedHashSet<String>(),
                 new AtomicBoolean(false)
@@ -158,10 +188,10 @@ public class ResourceAgentCombinationGenerationTest {
         return signatures;
     }
 
-    private static String combinationSignature(Set<Pair<ResourceAgent, Component>> combination,
+    private static String combinationSignature(Set<Pair<ResourceAgent, ComponentPlacement>> combination,
                                                List<Component> orderedComponents) {
         Map<Component, ResourceAgent> assignment = combination.stream()
-                .collect(Collectors.toMap(Pair::getRight, Pair::getLeft));
+                .collect(Collectors.toMap(pair -> pair.getRight().component, Pair::getLeft));
         return orderedComponents.stream()
                 .map(component -> component.id + "=" + assignment.get(component).name)
                 .collect(Collectors.joining("|"));

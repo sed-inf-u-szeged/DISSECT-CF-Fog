@@ -22,16 +22,9 @@ public class FirstFitMappingStrategy extends MappingStrategy {
         List<ComponentPlacement> placements = new ArrayList<>();
 
         for (Component component : sortedComponent) {
-            double requiredCpu = 
-                    (component.requirements.cpu != null && component.requirements.cpu > 0) ? component.requirements.cpu : 0;
-            long requiredMemory = 
-                    (component.requirements.memory != null && component.requirements.memory > 0) ? component.requirements.memory : 0;
-            long requiredStorage = 
-                    (component.requirements.storage != null && component.requirements.storage > 0) ? component.requirements.storage : 0;
-
             for (Capacity capacity : agent.capacities.values()) {
-                if (isMatchingPreferences(component, capacity) && requiredCpu <= capacity.cpu
-                            && requiredMemory <= capacity.memory && requiredStorage <= capacity.storage) {
+                if (isMatchingPreferences(component, capacity)
+                        && hasSufficientCapacity(component, capacity)) {
 
                     capacity.reserveCapacity(component, agent);
                     placements.add(new ComponentPlacement(component, capacity));

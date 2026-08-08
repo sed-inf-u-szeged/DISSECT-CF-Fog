@@ -6,7 +6,7 @@ import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -109,17 +109,18 @@ public class Capacity {
         this.storage -= safe(component.requirements.storage, 0L);
     }
 
-    public void releaseCapacity(Component component) {
-        List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
-        for (Utilisation utilisation : utilisations) {
-            if (utilisation.component == component && utilisation.state.equals(Utilisation.State.RESERVED)) {
-                this.cpu += utilisation.utilisedCpu;
-                this.memory += utilisation.utilisedMemory;
-                this.storage += utilisation.utilisedStorage;
-                utilisationsToBeRemoved.add(utilisation);
-            }
+    public void releaseReservation(Utilisation utilisation) {
+        if (utilisation.state != Utilisation.State.RESERVED) {
+            return;
         }
-        utilisations.removeAll(utilisationsToBeRemoved);
+
+        if (!utilisations.remove(utilisation)) {
+            return;
+        }
+
+        cpu += utilisation.utilisedCpu;
+        memory += utilisation.utilisedMemory;
+        storage += utilisation.utilisedStorage;
     }
 
     public void releaseAllocatedCapacityForShutdown(Component component) {
@@ -143,15 +144,29 @@ public class Capacity {
         //utilisations.removeAll(utilisationsToBeRemoved);
     }
 
-    public void assignCapacity(Set<Component> components, Offer offer) {
-        for (Component component : components) {
-            for (Utilisation util : utilisations) {
-                if (util.component == component) {
-                    util.state = Utilisation.State.ASSIGNED;
-                    offer.utilisations.add(Pair.of(this.node, util));
-                }
+    public void assignPlacement(ComponentPlacement placement, Offer offer) {
+
+        if (placement.capacity != this) {
+            throw new IllegalArgumentException(
+                    "The placement belongs to a different capacity.");
+        }
+
+        for (Utilisation utilisation : utilisations) {
+            if (utilisation.component == placement.component
+                    && utilisation.state == Utilisation.State.RESERVED) {
+
+                utilisation.state = Utilisation.State.ASSIGNED;
+
+                offer.utilisations.add(
+                        Pair.of(this.node, utilisation));
+
+                return;
             }
         }
+
+        throw new IllegalStateException(
+                "No reserved utilisation was found for component: "
+                        + placement.component.id);
     }
 
     @Override

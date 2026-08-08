@@ -18,6 +18,7 @@ import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.QosPriority;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -246,57 +247,81 @@ public class ResourceAgent {
             localOffers.addAll(agent.agentStrategy.generateLocalOffers(agent, app.components));
         }
 
-        //agentResourcePairs.forEach(p ->
-        //        System.out.println(
-        //                "Agent: " + p.getLeft().name +
-        //                        " | Resource: " + p.getRight().id
-        //        )
-        //);
-        List<Pair<ResourceAgent, Component>> agentComponentPairs =
+        boolean atomicOffers =
+                (boolean) Config.APP_TYPE.get("atomicOffers");
+
+        if (atomicOffers) {
+            generateAtomicOfferCombinations(localOffers, app);
+        } else {
+            generateNonAtomicOfferCombinations(localOffers, app);
+        }
+    }
+
+    private void generateAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
+        throw new UnsupportedOperationException("Atomic offer combination is not implemented yet.");
+    }
+
+    private void generateNonAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
+        List<Pair<ResourceAgent, ComponentPlacement>>
+                agentPlacementPairs =
                 localOffers.stream()
                         .flatMap(localOffer ->
                                 localOffer.placements.stream()
                                         .map(placement ->
                                                 Pair.of(
                                                         localOffer.agent,
-                                                        placement.component)))
+                                                        placement)))
                         .toList();
 
-
-        generateUniqueOfferCombinations(agentComponentPairs, app);
-
-        // System.out.println("Offers for: " + app.name);
-        // for (Offer o : app.offers) {
-        //     System.out.println(o);
-        // }
+        generateUniqueOfferCombinations(agentPlacementPairs, app);
     }
 
-    private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, Component>> pairs, AgentApplication app) {
-        Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations = new LinkedHashSet<>();
+    private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, ComponentPlacement>> pairs, AgentApplication app) {
+        Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations = new LinkedHashSet<>();
         AtomicBoolean found = new AtomicBoolean(false);
+
         generateCombinations(pairs, app.components.size(), uniqueCombinations,
                 new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), found);
 
-        for (Set<Pair<ResourceAgent, Component>> combination : uniqueCombinations) {
-            Map<ResourceAgent, Set<Component>> agentResourcesMap = new HashMap<>();
+        for (Set<Pair<ResourceAgent, ComponentPlacement>> combination
+                : uniqueCombinations) {
 
-            for (Pair<ResourceAgent, Component> pair : combination) {
+            Map<ResourceAgent, Set<Component>> agentComponentsMap =
+                    new HashMap<>();
+
+            for (Pair<ResourceAgent, ComponentPlacement> pair : combination) {
                 ResourceAgent agent = pair.getLeft();
-                Component component = pair.getRight();
+                ComponentPlacement placement = pair.getRight();
+                Component component = placement.component;
 
-                agentResourcesMap.putIfAbsent(agent, new LinkedHashSet<>());
-                agentResourcesMap.get(agent).add(component);
+                agentComponentsMap.putIfAbsent(
+                        agent,
+                        new LinkedHashSet<>());
+
+                agentComponentsMap.get(agent).add(component);
             }
 
-            app.offers.add(new Offer(agentResourcesMap, app.offers.size()));
+            Offer offer = new Offer(
+                    agentComponentsMap,
+                    app.offers.size());
+
+            offer.selectedPlacements.addAll(
+                    combination.stream()
+                            .map(Pair::getRight)
+                            .toList());
+
+            app.offers.add(offer);
         }
     }
 
-    private void generateCombinations(List<Pair<ResourceAgent, Component>> pairs, int componentCount,
-                                      Set<Set<Pair<ResourceAgent, Component>>> uniqueCombinations,
-                                      Set<Pair<ResourceAgent, Component>> currentCombination,
-                                      Set<Component> includedComponents,
-                                      Set<String> seenStates, AtomicBoolean found) {
+    private void generateCombinations(
+            List<Pair<ResourceAgent, ComponentPlacement>> pairs,
+            int componentCount,
+            Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations,
+            Set<Pair<ResourceAgent, ComponentPlacement>> currentCombination,
+            Set<Component> includedComponents,
+            Set<String> seenStates,
+            AtomicBoolean found) {
 
         if (found.get()) {
             return;
@@ -314,7 +339,7 @@ public class ResourceAgent {
                 .map(pair ->
                         pair.getLeft().name
                                 + "->"
-                                + pair.getRight().id)
+                                + pair.getRight().component.id)
                 .sorted()
                 .collect(Collectors.joining(","));
 
@@ -322,18 +347,30 @@ public class ResourceAgent {
             return;
         }
 
-        for (Pair<ResourceAgent, Component> pair : pairs) {
-            if (!currentCombination.contains(pair) && !includedComponents.contains(pair.getRight())) {
-                currentCombination.add(pair);
-                includedComponents.add(pair.getRight());
+        for (Pair<ResourceAgent, ComponentPlacement> pair : pairs) {
+            Component component = pair.getRight().component;
 
-                generateCombinations(pairs, componentCount, uniqueCombinations, currentCombination, includedComponents, seenStates, found);
+            if (!currentCombination.contains(pair)
+                    && !includedComponents.contains(component)) {
+
+                currentCombination.add(pair);
+                includedComponents.add(component);
+
+                generateCombinations(
+                        pairs,
+                        componentCount,
+                        uniqueCombinations,
+                        currentCombination,
+                        includedComponents,
+                        seenStates,
+                        found);
+
                 if (found.get()) {
                     return;
                 }
 
                 currentCombination.remove(pair);
-                includedComponents.remove(pair.getRight());
+                includedComponents.remove(component);
             }
         }
     }
@@ -485,15 +522,16 @@ public class ResourceAgent {
                 }
                 return;
             }
+            for (ComponentPlacement placement : offer.selectedPlacements) {
+                placement.capacity.assignPlacement(placement, offer);
+            }
+
             for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
                 for (Capacity capacity : agent.capacities.values()) {
-                    if (offer.agentComponentsMap.containsKey(agent)) {
-                        capacity.assignCapacity(offer.agentComponentsMap.get(agent), offer);
-                    }
-
-                    freeReservedResources(app.name, capacity);
+                    freeReservedResources(app, capacity);
                 }
             }
+
             Pair<ComputingAppliance, Utilisation> leadResource = setLeadResource(offer.utilisations);
             new Deployment(leadResource, offer, app);
         });
@@ -502,21 +540,34 @@ public class ResourceAgent {
     private void releaseResourcesDueToNoOffers(AgentApplication app) {
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             for (Capacity capacity : agent.capacities.values()) {
-                freeReservedResources(app.name, capacity);
+                freeReservedResources(app, capacity);
             }
         }
     }
 
-    private void freeReservedResources(final String appName, final Capacity capacity) {
-        List<Component> resourcesToBeRemoved = new ArrayList<>();
+    private void freeReservedResources(
+            AgentApplication app,
+            Capacity capacity) {
 
-        for (Utilisation util : capacity.utilisations) {
-            if (util.component.id.contains(appName) && util.state.equals(Utilisation.State.RESERVED)) {
-                resourcesToBeRemoved.add(util.component);
+        List<Utilisation> reservationsToBeReleased =
+                new ArrayList<>();
+
+        for (Utilisation utilisation : capacity.utilisations) {
+            boolean belongsToApplication =
+                    app.components.stream()
+                            .anyMatch(component ->
+                                    component == utilisation.component);
+
+            if (belongsToApplication
+                    && utilisation.state
+                    == Utilisation.State.RESERVED) {
+
+                reservationsToBeReleased.add(utilisation);
             }
         }
-        for (Component component : resourcesToBeRemoved) {
-            capacity.releaseCapacity(component);
+
+        for (Utilisation utilisation : reservationsToBeReleased) {
+            capacity.releaseReservation(utilisation);
         }
     }
 

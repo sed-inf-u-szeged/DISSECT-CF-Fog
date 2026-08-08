@@ -25,6 +25,7 @@ public class Config {
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
+                    Map.entry("atomicOffers", false),
                     Map.entry("rankingMethod", "random"),
                     Map.entry("onlyFirstOffer", "false"),
                     Map.entry("csvLogging", true)

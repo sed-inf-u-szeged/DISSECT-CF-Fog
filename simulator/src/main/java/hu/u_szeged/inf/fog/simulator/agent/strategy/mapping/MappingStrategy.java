@@ -31,4 +31,28 @@ public abstract class MappingStrategy {
 
         return providerMatch && locationMatch && edgeMatch;
     }
+
+    protected boolean hasSufficientCapacity(Component component, Capacity capacity) {
+        double requiredCpu =
+                component.requirements.cpu != null
+                        && component.requirements.cpu > 0
+                        ? component.requirements.cpu
+                        : 0.0;
+
+        long requiredMemory =
+                component.requirements.memory != null
+                        && component.requirements.memory > 0
+                        ? component.requirements.memory
+                        : 0L;
+
+        long requiredStorage =
+                component.requirements.storage != null
+                        && component.requirements.storage > 0
+                        ? component.requirements.storage
+                        : 0L;
+
+        return requiredCpu <= capacity.cpu
+                && requiredMemory <= capacity.memory
+                && requiredStorage <= capacity.storage;
+    }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,10 @@ public class Offer {
     public Map<ResourceAgent, Set<Component>> agentComponentsMap;
     
     List<Pair<ComputingAppliance, Utilisation>> utilisations;
-    
+
+    @JsonIgnore
+    public List<ComponentPlacement> selectedPlacements;
+
     @JsonIgnore
     public int id;
     
@@ -26,6 +30,7 @@ public class Offer {
         this.id = id;
         this.agentComponentsMap = agentResourcesMap;
         this.utilisations = new ArrayList<>();
+        this.selectedPlacements = new ArrayList<>();
     }
     
     @Override
