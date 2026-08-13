@@ -60,10 +60,6 @@ public class Capacity {
 
         public void setToAllocated() {
             this.state = Utilisation.State.ALLOCATED;
-
-            double demandShare = resourceAgent.calculateDemandShare(utilisedCpu, utilisedMemory, utilisedStorage);
-
-            this.actualCost = resourceAgent.hourlyPrice * demandShare;
         }
 
         @Override
@@ -101,8 +97,16 @@ public class Capacity {
         this.utilisations = new ArrayList<>();
     }
 
-    public void reserveCapacity(Component component, ResourceAgent ra) {
+    public void reserveCapacity(Component component, ResourceAgent ra, double offeredHourlyPrice) {
         Utilisation utilisation = new Utilisation(component, Utilisation.State.RESERVED, ra);
+
+        double demandShare = ra.calculateDemandShare(
+                        utilisation.utilisedCpu,
+                        utilisation.utilisedMemory,
+                        utilisation.utilisedStorage);
+
+        utilisation.actualCost = offeredHourlyPrice * demandShare;
+
         this.utilisations.add(utilisation);
         this.cpu -= safe(component.requirements.cpu, 0.0);
         this.memory -= safe(component.requirements.memory, 0L);

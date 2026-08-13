@@ -18,11 +18,23 @@ public class LocalOffer {
 
         public final double compactness;
 
-        public LocalMetrics(double balance, double utilisation, double fragmentation, double compactness) {
+        public final double cost;
+
+        public final double energy;
+
+        public final double latency;
+
+        public final double bandwidth;
+
+        public LocalMetrics(double balance, double utilisation, double fragmentation, double compactness, double cost, double energy, double latency, double bandwidth) {
             this.balance = balance;
             this.utilisation = utilisation;
             this.fragmentation = fragmentation;
             this.compactness = compactness;
+            this.cost = cost;
+            this.energy = energy;
+            this.latency = latency;
+            this.bandwidth = bandwidth;
         }
     }
 
@@ -43,10 +55,13 @@ public class LocalOffer {
 
     public final LocalMetrics metrics;
 
+    public final double offeredHourlyPrice;
+
     public LocalOffer(ResourceAgent agent, List<ComponentPlacement> placements, LocalMetrics metrics) {
         this.agent = agent;
         this.placements = placements;
         this.metrics = metrics;
+        this.offeredHourlyPrice = agent.hourlyPrice;
     }
 }
 

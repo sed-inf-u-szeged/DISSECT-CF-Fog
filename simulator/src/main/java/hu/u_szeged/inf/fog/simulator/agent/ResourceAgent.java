@@ -260,7 +260,7 @@ public class ResourceAgent {
     private void reserveLocalOffers(List<LocalOffer> localOffers) {
         for (LocalOffer localOffer : localOffers) {
             for (ComponentPlacement placement : localOffer.placements) {
-                placement.capacity.reserveCapacity(placement.component, localOffer.agent);
+                placement.capacity.reserveCapacity(placement.component, localOffer.agent,  localOffer.offeredHourlyPrice);
             }
         }
     }

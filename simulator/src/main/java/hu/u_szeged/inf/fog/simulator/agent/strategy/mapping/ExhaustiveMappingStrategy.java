@@ -6,6 +6,8 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalMetricsCalculator;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOfferParetoFilter;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,8 +17,11 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
 
     private final LocalMetricsCalculator metricsCalculator;
 
+    private final LocalOfferParetoFilter paretoFilter;
+
     public ExhaustiveMappingStrategy() {
         this.metricsCalculator =  new LocalMetricsCalculator();
+        this.paretoFilter = new LocalOfferParetoFilter();
     }
 
     @Override
@@ -33,7 +38,7 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
 
         generateCombinations(agent, components, 0, availableCapacities, currentPlacements, localOffers);
 
-        return localOffers;
+        return paretoFilter.filter(localOffers);
     }
 
     private void generateCombinations(

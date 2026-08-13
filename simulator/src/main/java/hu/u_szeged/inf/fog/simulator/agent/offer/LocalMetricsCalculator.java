@@ -1,25 +1,119 @@
 package hu.u_szeged.inf.fog.simulator.agent.offer;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.LocalMetrics;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LocalMetricsCalculator {
 
     public LocalMetrics calculate(ResourceAgent agent, List<ComponentPlacement> placements) {
+        if (placements.isEmpty()) {
+            throw new IllegalArgumentException("LocalOffer metrics cannot be calculated for empty placements.");
+        }
 
         double utilisation = calculateUtilisation(agent, placements);
         double balance = calculateBalance(agent, placements);
         double fragmentation = calculateFragmentation(agent, placements);
         double compactness = calculateCompactness(agent, placements);
+        double cost = calculateCost(agent, placements);
+        double energy = calculateEnergy(placements);
+        double latency = calculateLatency(placements);
+        double bandwidth = calculateBandwidth(placements);
 
-        return new LocalMetrics(balance, utilisation,fragmentation,compactness);
+        return new LocalMetrics(balance, utilisation,fragmentation,compactness, cost, energy, latency, bandwidth);
+    }
+
+    private double calculateBandwidth(List<ComponentPlacement> placements) {
+        double totalBandwidth = 0.0;
+
+        for (ComponentPlacement placement : placements) {
+            Repository repository =placement.capacity.node.iaas.repositories.get(0);
+
+            double inputBandwidth = repository.getInputbw();
+            double outputBandwidth =repository.getOutputbw();
+            double averageBandwidth = (inputBandwidth + outputBandwidth) / 2.0;
+            totalBandwidth += averageBandwidth;
+        }
+
+        return totalBandwidth / placements.size();
+    }
+
+    private double calculateLatency(List<ComponentPlacement> placements) {
+        double totalLatency = 0.0;
+
+        for (ComponentPlacement placement : placements) {
+            Repository repository = placement.capacity.node.iaas.repositories.get(0);
+            Integer inputLatency =repository.getLatencies().get(repository.getName());
+
+            if (inputLatency == null) {
+                throw new IllegalStateException("No input latency is configured for repository: " + repository.getName());
+            }
+
+            totalLatency += inputLatency;
+        }
+
+        return totalLatency / placements.size();
+    }
+
+    private double calculateEnergy(List<ComponentPlacement> placements) {
+        Set<ComputingAppliance> affectedNodes = new LinkedHashSet<>();
+        for (ComponentPlacement placement : placements) {
+            affectedNodes.add(placement.capacity.node);
+        }
+
+        double totalProjectedPower = 0.0;
+
+        for (ComputingAppliance node : affectedNodes) {
+            PhysicalMachine machine = node.iaas.machines.get(0);
+
+            double totalCpu = machine.getCapacities().getTotalProcessingPower();
+            double currentlyFreeCpu = machine.freeCapacities.getTotalProcessingPower();
+
+            double offerCpuDemand = 0.0;
+            for (ComponentPlacement placement : placements) {
+                if (placement.capacity.node == node) {
+                    offerCpuDemand += MappingStrategy.requiredCpu(placement.component);
+                }
+            }
+
+            double projectedCpuUtilisation =1.0 - (currentlyFreeCpu - offerCpuDemand) / totalCpu;
+
+            double projectedPower = machine.getCurrentPowerBehavior().getMinConsumption()
+                            + machine.getCurrentPowerBehavior().getConsumptionRange()
+                            * projectedCpuUtilisation;
+
+            totalProjectedPower += projectedPower;
+        }
+
+        return totalProjectedPower;
+    }
+
+    private double calculateCost(ResourceAgent agent, List<ComponentPlacement> placements) {
+        double cost = 0.0;
+
+        for (ComponentPlacement placement : placements) {
+            Component component = placement.component;
+
+            double demandShare = agent.calculateDemandShare(
+                            MappingStrategy.requiredCpu(component),
+                            MappingStrategy.requiredMemory(component),
+                            MappingStrategy.requiredStorage(component));
+
+            cost += agent.hourlyPrice * demandShare;
+        }
+
+        return cost;
     }
 
     private double calculateUtilisation(ResourceAgent agent, List<ComponentPlacement> placements) {

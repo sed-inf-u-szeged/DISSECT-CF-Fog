@@ -34,7 +34,7 @@ public class ExhaustiveMappingStrategyTest {
     @Test
     void emptyComponents_returnsEmptyList() {
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 10.0, 10L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
                 .generateLocalOffers(agent, Collections.emptyList());
@@ -45,7 +45,7 @@ public class ExhaustiveMappingStrategyTest {
     @Test
     void singleComponent_singleCapacity_fits_returnsOneOffer() {
         ResourceAgent agent = createAgent("Agent1");
-        Capacity cap = new Capacity(null, 10.0, 10L, 10L);
+        Capacity cap = capacity("Node1", 10.0, 10L, 10L);
         agent.capacities.put("cap1", cap);
 
         Component c = component("C1", 5.0, null, null);
@@ -63,7 +63,7 @@ public class ExhaustiveMappingStrategyTest {
     void singleComponent_singleCapacity_doesNotFit_returnsEmptyList() {
         ResourceAgent agent = createAgent("Agent1");
         // capacity has only 3 CPU, component needs 5
-        agent.capacities.put("cap1", new Capacity(null, 3.0, 10L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 3.0, 10L, 10L));
 
         Component c = component("C1", 5.0, null, null);
 
@@ -77,7 +77,7 @@ public class ExhaustiveMappingStrategyTest {
     void twoComponents_singleCapacity_bothFit_returnsThreeOffers() {
         // C1 alone, C2 alone, C1+C2 — three non-empty placements
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 10.0, 10L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
         Component c1 = component("C1", 3.0, null, null);
         Component c2 = component("C2", 3.0, null, null);
@@ -92,7 +92,7 @@ public class ExhaustiveMappingStrategyTest {
     void twoComponents_singleCapacity_cannotHostBothSimultaneously_returnsTwoOffers() {
         // Each component needs 8 CPU, capacity has 10 — they cannot be co-located
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 10.0, 10L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
         Component c1 = component("C1", 8.0, null, null);
         Component c2 = component("C2", 8.0, null, null);
@@ -105,10 +105,10 @@ public class ExhaustiveMappingStrategyTest {
     }
 
     @Test
-    void twoComponents_twoCapacities_allFit_returnsEightDistinctOffers() {
+    void twoComponents_twoCapacities_allFit_returnsSixNonDominatedOffers() {
         ResourceAgent agent = createAgent("Agent1");
-        Capacity cap1 = new Capacity(null, 10.0, 10L, 10L);
-        Capacity cap2 = new Capacity(null, 10.0, 10L, 10L);
+        Capacity cap1 = capacity("Node1", 10.0, 10L, 10L);
+        Capacity cap2 = capacity("Node2", 10.0, 10L, 10L);
         agent.capacities.put("cap1", cap1);
         agent.capacities.put("cap2", cap2);
 
@@ -120,7 +120,7 @@ public class ExhaustiveMappingStrategyTest {
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
                 .generateLocalOffers(agent, List.of(c1, c2));
 
-        assertEquals(8, offers.size());
+        assertEquals(6, offers.size());
 
         // Build a signature for each offer, e.g. "C1->cap1,C2->cap2"
         Set<String> signatures = offers.stream()
@@ -130,8 +130,7 @@ public class ExhaustiveMappingStrategyTest {
                         .collect(Collectors.joining(",")))
                 .collect(Collectors.toSet());
 
-        // All 8 offers must be structurally distinct
-        assertEquals(8, signatures.size(), "Duplicate offers detected");
+        assertEquals(6, signatures.size(), "Duplicate offers detected");
 
         // The exact set of expected placement combinations
         Set<String> expected = Set.of(
@@ -139,9 +138,7 @@ public class ExhaustiveMappingStrategyTest {
                 "C2->cap2",
                 "C1->cap1",
                 "C1->cap1,C2->cap1",
-                "C1->cap1,C2->cap2",
                 "C1->cap2",
-                "C1->cap2,C2->cap1",
                 "C1->cap2,C2->cap2"
         );
         assertEquals(expected, signatures);
@@ -150,7 +147,7 @@ public class ExhaustiveMappingStrategyTest {
     @Test
     void allOffersReferenceCorrectAgent() {
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 10.0, 10L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
         List<Component> components = List.of(
                 component("C1", 3.0, null, null),
@@ -166,7 +163,7 @@ public class ExhaustiveMappingStrategyTest {
     void capacityIsNotMutatedByStrategy() {
         // The strategy uses shadow AvailableCapacity objects; the real Capacity must stay unchanged
         ResourceAgent agent = createAgent("Agent1");
-        Capacity cap = new Capacity(null, 10.0, 100L, 200L);
+        Capacity cap = capacity("Node1", 10.0, 100L, 200L);
         agent.capacities.put("cap1", cap);
 
         Component c1 = component("C1", 4.0, 30L, 50L);
@@ -184,7 +181,7 @@ public class ExhaustiveMappingStrategyTest {
     void memoryConstraint_preventsCoPlacement() {
         // Both components need 6 memory units, capacity has 10 — combined (12) exceeds limit
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 100.0, 10L, 100L));
+        agent.capacities.put("cap1", capacity("Node1", 100.0, 10L, 100L));
 
         Component c1 = component("C1", 1.0, 6L, null);
         Component c2 = component("C2", 1.0, 6L, null);
@@ -200,7 +197,7 @@ public class ExhaustiveMappingStrategyTest {
     @Test
     void storageConstraint_preventsCoPlacement() {
         ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("cap1", new Capacity(null, 100.0, 100L, 10L));
+        agent.capacities.put("cap1", capacity("Node1", 100.0, 100L, 10L));
 
         Component c1 = component("C1", null, null, 8L);
         Component c2 = component("C2", null, null, 8L);
@@ -305,6 +302,10 @@ public class ExhaustiveMappingStrategyTest {
 
     private static ResourceAgent createAgent(String name) {
         return new ResourceAgent(name, 1, new ExhaustiveMappingStrategy(), new FloodingMessagingStrategy());
+    }
+
+    private static Capacity capacity(String nodeName, double cpu, long memory, long storage) {
+        return new Capacity(createNode(nodeName, "X", "X", false), cpu, memory, storage);
     }
 
     private static Component component(String id, Double cpu, Long memory, Long storage) {
