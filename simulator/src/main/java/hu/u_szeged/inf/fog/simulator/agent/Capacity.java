@@ -2,10 +2,12 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
+
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,12 +23,10 @@ public class Capacity {
 
             ALLOCATED,
 
-            RELEASED
+            TERMINATED
         }
 
         public State state;
-
-        public Component component;
 
         public double utilisedCpu;
 
@@ -46,16 +46,65 @@ public class Capacity {
 
         public ResourceAgent resourceAgent;
 
-        public Utilisation() {
+        public Component component;
+
+        public boolean envelopeReservation;
+
+        public List<LocalOffer> coveredOffers;
+
+        public static Utilisation createNonAtomicReservation(
+                LocalOffer localOffer,
+                Component component,
+                ResourceAgent resourceAgent) {
+
+            Utilisation utilisation = new Utilisation();
+
+            utilisation.state = State.RESERVED;
+            utilisation.envelopeReservation  = false;
+            utilisation.coveredOffers = List.of(localOffer);
+            utilisation.component = component;
+            utilisation.utilisedCpu = safe(component.requirements.cpu, 0.0);
+            utilisation.utilisedMemory = safe(component.requirements.memory, 0L);
+            utilisation.utilisedStorage = safe(component.requirements.storage, 0L);
+            utilisation.resourceAgent = resourceAgent;
+
+            double demandShare =
+                    resourceAgent.calculateDemandShare(
+                            utilisation.utilisedCpu,
+                            utilisation.utilisedMemory,
+                            utilisation.utilisedStorage);
+
+            utilisation.actualCost =
+                    localOffer.offeredHourlyPrice * demandShare;
+
+            return utilisation;
         }
 
-        public Utilisation(Component component, State state, ResourceAgent ra) {
-            this.component = component;
-            this.utilisedCpu = safe(component.requirements.cpu, 0.0);
-            this.utilisedMemory = safe(component.requirements.memory, 0L);
-            this.utilisedStorage = safe(component.requirements.storage, 0L);
-            this.state = state;
-            this.resourceAgent = ra;
+        public static Utilisation createAtomicReservation(
+                List<LocalOffer> coveredOffers,
+                double reservedCpu,
+                long reservedMemory,
+                long reservedStorage,
+                ResourceAgent resourceAgent) {
+
+            if (coveredOffers.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Atomic reservation must cover at least one LocalOffer.");
+            }
+
+            Utilisation utilisation = new Utilisation();
+
+            utilisation.state = State.RESERVED;
+            utilisation.envelopeReservation  = true;
+            utilisation.coveredOffers = List.copyOf(coveredOffers);
+            utilisation.component = null;
+            utilisation.utilisedCpu = reservedCpu;
+            utilisation.utilisedMemory = reservedMemory;
+            utilisation.utilisedStorage = reservedStorage;
+            utilisation.resourceAgent = resourceAgent;
+            utilisation.actualCost = 0.0;
+
+            return utilisation;
         }
 
         public void setToAllocated() {
@@ -64,9 +113,28 @@ public class Capacity {
 
         @Override
         public String toString() {
-            return "Utilisation [state=" + state + ", resource=" + component.id + ", utilisedCpu=" + utilisedCpu
-                    + ", utilisedMemory=" + utilisedMemory + ", utilisedStorage=" + utilisedStorage
-                    + ", leadResource=" + leadResource + ", initTime=" + initTime + ", endTime=" + endTime  + ", actualCost=" + actualCost + ", vm=" + vm + "]";
+            String coveredOfferComponents = coveredOffers == null
+                            ? "[]" : coveredOffers.stream()
+                            .map(localOffer -> localOffer.placements.stream()
+                                    .map(placement -> placement.component.id)
+                                    .sorted()
+                                    .collect(Collectors.joining(",","{","}")))
+                    .collect(Collectors.joining(",","[","]"));
+
+            return "Utilisation [state=" + state
+                    + ", envelopeReservation=" + envelopeReservation
+                    + ", component="
+                    + (component == null ? null : component.id)
+                    + ", coveredOffers=" + coveredOfferComponents
+                    + ", utilisedCpu=" + utilisedCpu
+                    + ", utilisedMemory=" + utilisedMemory
+                    + ", utilisedStorage=" + utilisedStorage
+                    + ", leadResource=" + leadResource
+                    + ", initTime=" + initTime
+                    + ", endTime=" + endTime
+                    + ", actualCost=" + actualCost
+                    + ", vm=" + vm
+                    + "]";
         }
     }
 
@@ -97,20 +165,35 @@ public class Capacity {
         this.utilisations = new ArrayList<>();
     }
 
-    public void reserveCapacity(Component component, ResourceAgent ra, double offeredHourlyPrice) {
-        Utilisation utilisation = new Utilisation(component, Utilisation.State.RESERVED, ra);
+    public void reserveCapacity(Component component, ResourceAgent ra, LocalOffer localOffer) {
+        Utilisation utilisation = Utilisation.createNonAtomicReservation(localOffer, component, ra);
+        this.utilisations.add(utilisation);
 
-        double demandShare = ra.calculateDemandShare(
-                        utilisation.utilisedCpu,
-                        utilisation.utilisedMemory,
-                        utilisation.utilisedStorage);
+        this.cpu -= utilisation.utilisedCpu;
+        this.memory -= utilisation.utilisedMemory;
+        this.storage -= utilisation.utilisedStorage;
+    }
 
-        utilisation.actualCost = offeredHourlyPrice * demandShare;
+    public void reserveAtomicOffers(List<LocalOffer> coveredOffers, ResourceAgent resourceAgent, double reservedCpu, long reservedMemory, long reservedStorage) {
+        if (coveredOffers.isEmpty()) {
+            throw new IllegalArgumentException( "Atomic reservation must cover at least one LocalOffer.");
+        }
+
+        if (reservedCpu < 0.0 || reservedMemory < 0L || reservedStorage < 0L) {
+            throw new IllegalArgumentException("Reserved resources cannot be negative.");
+        }
+
+        if (reservedCpu > this.cpu || reservedMemory > this.memory || reservedStorage > this.storage) {
+            throw new IllegalStateException( "Atomic reservation exceeds the currently available capacity.");
+        }
+
+        Utilisation utilisation = Utilisation.createAtomicReservation(coveredOffers, reservedCpu, reservedMemory, reservedStorage, resourceAgent);
 
         this.utilisations.add(utilisation);
-        this.cpu -= safe(component.requirements.cpu, 0.0);
-        this.memory -= safe(component.requirements.memory, 0L);
-        this.storage -= safe(component.requirements.storage, 0L);
+
+        this.cpu -= reservedCpu;
+        this.memory -= reservedMemory;
+        this.storage -= reservedStorage;
     }
 
     public void releaseReservation(Utilisation utilisation) {
@@ -141,7 +224,7 @@ public class Capacity {
                 } catch (Exception e) {
                     SimLogger.logError("Exception occurred while destroying VM: " + e.getMessage());
                 }
-                utilisation.state = Utilisation.State.RELEASED;
+                utilisation.state = Utilisation.State.TERMINATED;
                 //utilisationsToBeRemoved.add(utilisation);
             }
         }

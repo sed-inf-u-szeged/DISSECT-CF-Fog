@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 public class ResourceAgent {
 
@@ -243,26 +244,97 @@ public class ResourceAgent {
 
         app.offerGeneratingAgents.add(this);
 
-        for (ResourceAgent agent : app.offerGeneratingAgents) {
-            localOffers.addAll(agent.agentStrategy.generateLocalOffers(agent, app.components));
-        }
-
         boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
+
+        for (ResourceAgent agent : app.offerGeneratingAgents) {
+            List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app.components);
+
+            if (atomicOffers) {
+                agent.reserveAtomicLocalOffers(agentLocalOffers);
+            } else {
+                agent.reserveLocalOffers(agentLocalOffers);
+            }
+            localOffers.addAll(agentLocalOffers);
+        }
 
         if (atomicOffers) {
             generateAtomicOfferCombinations(localOffers, app);
         } else {
-            reserveLocalOffers(localOffers);
             generateNonAtomicOfferCombinations(localOffers, app);
+        }
+    }
+
+    private void reserveAtomicLocalOffers(List<LocalOffer> localOffers) {
+        if (localOffers.isEmpty()) {
+            return;
+        }
+
+        for (LocalOffer localOffer : localOffers) {
+            if (localOffer.agent != this) {
+                throw new IllegalArgumentException("Atomic reservation contains an offer from another ResourceAgent.");
+            }
+        }
+
+        Map<Capacity, Triple<Double, Long, Long>> reservationEnvelope = calculateAtomicReservationEnvelope(localOffers);
+
+        for (Map.Entry<Capacity, Triple<Double, Long, Long>> entry : reservationEnvelope.entrySet()) {
+            Capacity capacity = entry.getKey();
+            Triple<Double, Long, Long> reservedResources = entry.getValue();
+
+            List<LocalOffer> coveredOffers =
+                    localOffers.stream()
+                            .filter(localOffer -> localOffer.placements.stream()
+                                    .anyMatch(placement -> placement.capacity== capacity))
+                            .toList();
+
+            double reservedCpu = reservedResources.getLeft();
+            long reservedMemory = reservedResources.getMiddle();
+            long reservedStorage = reservedResources.getRight();
+
+            capacity.reserveAtomicOffers(coveredOffers,this, reservedCpu, reservedMemory, reservedStorage);
         }
     }
 
     private void reserveLocalOffers(List<LocalOffer> localOffers) {
         for (LocalOffer localOffer : localOffers) {
             for (ComponentPlacement placement : localOffer.placements) {
-                placement.capacity.reserveCapacity(placement.component, localOffer.agent,  localOffer.offeredHourlyPrice);
+                placement.capacity.reserveCapacity(placement.component, localOffer.agent,  localOffer);
             }
         }
+    }
+
+    private Map<Capacity, Triple<Double, Long, Long>> calculateAtomicReservationEnvelope(List<LocalOffer> localOffers) {
+        Map<Capacity, Triple<Double, Long, Long>> reservationEnvelope = new LinkedHashMap<>();
+
+        for (LocalOffer localOffer : localOffers) {
+            Map<Capacity, Triple<Double, Long, Long>> offerDemandByCapacity = new LinkedHashMap<>();
+
+            for (ComponentPlacement placement : localOffer.placements) {
+                Triple<Double, Long, Long> currentDemand = offerDemandByCapacity.getOrDefault(placement.capacity, Triple.of(0.0, 0L, 0L));
+
+                Triple<Double, Long, Long> updatedDemand = Triple.of(
+                        currentDemand.getLeft() + MappingStrategy.requiredCpu( placement.component),
+                        currentDemand.getMiddle() + MappingStrategy.requiredMemory(placement.component),
+                        currentDemand.getRight()+ MappingStrategy.requiredStorage(placement.component));
+
+                offerDemandByCapacity.put(placement.capacity,updatedDemand);
+            }
+
+            for (Map.Entry<Capacity, Triple<Double, Long, Long>> entry :offerDemandByCapacity.entrySet()) {
+                Triple<Double, Long, Long> currentEnvelope = reservationEnvelope.getOrDefault(entry.getKey(), Triple.of(0.0, 0L, 0L));
+
+                Triple<Double, Long, Long> offerDemand = entry.getValue();
+
+                Triple<Double, Long, Long> updatedEnvelope = Triple.of(
+                                Math.max(currentEnvelope.getLeft(), offerDemand.getLeft()),
+                                Math.max(currentEnvelope.getMiddle(), offerDemand.getMiddle()),
+                                Math.max(currentEnvelope.getRight(), offerDemand.getRight()));
+
+                reservationEnvelope.put(entry.getKey(), updatedEnvelope);
+            }
+        }
+
+        return reservationEnvelope;
     }
 
     private void generateAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
@@ -553,29 +625,36 @@ public class ResourceAgent {
         }
     }
 
-    private void freeReservedResources(
-            AgentApplication app,
-            Capacity capacity) {
-
-        List<Utilisation> reservationsToBeReleased =
-                new ArrayList<>();
+    private void freeReservedResources(AgentApplication app, Capacity capacity) {
+        List<Utilisation> reservationsToRelease = new ArrayList<>();
 
         for (Utilisation utilisation : capacity.utilisations) {
-            boolean belongsToApplication =
-                    app.components.stream()
-                            .anyMatch(component ->
-                                    component == utilisation.component);
+            if (utilisation.state != Utilisation.State.RESERVED) {
+                continue;
+            }
 
-            if (belongsToApplication
-                    && utilisation.state
-                    == Utilisation.State.RESERVED) {
+            boolean belongsToApplication;
 
-                reservationsToBeReleased.add(utilisation);
+            if (utilisation.envelopeReservation) {
+                belongsToApplication = utilisation.coveredOffers.stream()
+                                .flatMap(localOffer ->
+                                        localOffer.placements.stream())
+                                .map(placement ->
+                                        placement.component)
+                                .anyMatch(component ->
+                                        app.components.contains(
+                                                component));
+            } else {
+                belongsToApplication = app.components.contains(utilisation.component);
+            }
+
+            if (belongsToApplication) {
+                reservationsToRelease.add(utilisation);
             }
         }
 
-        for (Utilisation utilisation : reservationsToBeReleased) {
-            capacity.releaseReservation(utilisation);
+        for (Utilisation utilisation : reservationsToRelease) {
+            capacity.releaseReservation( utilisation);
         }
     }
 

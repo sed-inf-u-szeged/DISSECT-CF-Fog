@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class    DummyAppDemo {
     
@@ -163,7 +162,7 @@ public class    DummyAppDemo {
                 for (Utilisation util : cap.utilisations) {
                     SimLogger.logRes("\t\t" + util);
 
-                    if (util.state != Utilisation.State.RELEASED) {
+                    if (util.state != Utilisation.State.TERMINATED) {
                         continue;
                     }
 
