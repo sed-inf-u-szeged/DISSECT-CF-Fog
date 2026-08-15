@@ -4,14 +4,14 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+
+import java.util.*;
 
 public class AtomicCoverageSimulatedAnnealing {
 
+    // TODO: magic numbers
     private static final double EPSILON = 1e-9;
+    private static final double ADDITIONAL_REMOVAL_PROBABILITY = 0.25;
     private final Random random = SeedSyncer.centralRnd;
 
     private static class GlobalMetrics {
@@ -252,7 +252,7 @@ public class AtomicCoverageSimulatedAnnealing {
     }
 
     private AtomicCoverageState generateNeighbor(AgentApplication application, AtomicCoverageState currentState, List<LocalOffer> availableOffers,
-                                                    AtomicCoverageConstructor constructor, int repairRestarts, int maxNeighborAttempts) {
+            AtomicCoverageConstructor constructor, int repairRestarts, int maxNeighborAttempts) {
 
         if (!currentState.isStructurallyValid()) {
             throw new IllegalArgumentException("The current SA state must be structurally valid.");
@@ -263,18 +263,25 @@ public class AtomicCoverageSimulatedAnnealing {
         }
 
         for (int attempt = 0; attempt < maxNeighborAttempts; attempt++) {
+            List<LocalOffer> retainedOffers = new ArrayList<>( currentState.selectedOffers);
 
-            List<LocalOffer> retainedOffers = new ArrayList<>(currentState.selectedOffers);
+            Collections.shuffle(retainedOffers, random);
 
-            int removedIndex = random.nextInt(retainedOffers.size());
+            int removalCount = 1;
 
-            LocalOffer removedOffer = retainedOffers.remove(removedIndex);
+            while (removalCount < retainedOffers.size() && random.nextDouble() < ADDITIONAL_REMOVAL_PROBABILITY) {
+                removalCount++;
+            }
+
+            List<LocalOffer> removedOffers = new ArrayList<>(retainedOffers.subList( 0, removalCount));
+
+            retainedOffers.subList(0, removalCount).clear();
 
             List<LocalOffer> alternativeOffers = new ArrayList<>(availableOffers);
 
-            alternativeOffers.remove(removedOffer);
+            alternativeOffers.removeAll(removedOffers);
 
-            AtomicCoverageState repairedState =constructor.repairCoverage(application, alternativeOffers, retainedOffers, repairRestarts);
+            AtomicCoverageState repairedState = constructor.repairCoverage(application, alternativeOffers, retainedOffers, repairRestarts);
 
             if (repairedState == null) {
                 continue;

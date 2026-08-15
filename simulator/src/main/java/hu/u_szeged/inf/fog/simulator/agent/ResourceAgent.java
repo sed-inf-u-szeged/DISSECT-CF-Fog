@@ -13,6 +13,7 @@ import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.AtomicCoverageSimulatedAnnealing;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.MessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter;
@@ -163,11 +164,17 @@ public class ResourceAgent {
         this.generateOffers(app);
         
         if (!app.offers.isEmpty()) {
-            if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
-                app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
-                SimLogger.logRun(app.offers.size() + " offers were generated for "
-                        + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min., randomly selected offer index is: " + app.winningOffer);
+            boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
+
+            if (atomicOffers) {
+                app.winningOffer = 0;
+                SimLogger.logRun("The simulated annealing selected an offer for " + app.name + " at: "
+                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+            } else if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
+                app.winningOffer =SeedSyncer.centralRnd.nextInt(app.offers.size());
+                SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: "
+                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                                + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
                 app.winningOffer = callRankingScript(app);
             }
@@ -249,6 +256,10 @@ public class ResourceAgent {
         boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
 
         for (ResourceAgent agent : app.offerGeneratingAgents) {
+            if (atomicOffers && !(agent.agentStrategy instanceof ExhaustiveMappingStrategy)) {
+                throw new IllegalStateException( "Atomic offer generation requires ExhaustiveMappingStrategy");
+            }
+
             List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app.components);
 
             if (atomicOffers) {
@@ -365,6 +376,8 @@ public class ResourceAgent {
         if (winningState == null) {
             return;
         }
+
+        materializeWinningAtomicReservations(app, winningState);
 
         Map<ResourceAgent, Set<Component>> agentComponentsMap = new LinkedHashMap<>();
 
@@ -643,7 +656,7 @@ public class ResourceAgent {
                 failedDeployments++;
                 List<Integer> submissionCounts = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
                 if (failedDeployments == submissionCounts.size()) {
-                    SimLogger.logError("All deployment attempts have failed.");
+                    SimLogger.logError("All deployment attempts (" + failedDeployments + ") for " + app.name + " have failed.");
                 }
                 return;
             }
@@ -700,6 +713,47 @@ public class ResourceAgent {
 
         for (Utilisation utilisation : reservationsToRelease) {
             capacity.releaseReservation( utilisation);
+        }
+    }
+
+    private void materializeWinningAtomicReservations(AgentApplication app, AtomicCoverageState winningState) {
+        for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
+            for (Capacity capacity : agent.capacities.values()) {
+                releaseAtomicEnvelopeReservations(app, capacity);
+            }
+        }
+
+        for (LocalOffer localOffer : winningState.selectedOffers) {
+            for (ComponentPlacement placement : localOffer.placements) {
+                placement.capacity.reserveCapacity(placement.component, localOffer.agent, localOffer);
+            }
+        }
+    }
+
+    private void releaseAtomicEnvelopeReservations(AgentApplication app, Capacity capacity) {
+        List<Utilisation> envelopesToRelease = new ArrayList<>();
+
+        for (Utilisation utilisation : capacity.utilisations) {
+
+            if (utilisation.state != Utilisation.State.RESERVED || !utilisation.envelopeReservation) {
+                continue;
+            }
+
+            boolean belongsToApplication = utilisation.coveredOffers.stream()
+                            .flatMap(localOffer ->
+                                    localOffer.placements.stream())
+                            .map(placement ->
+                                    placement.component)
+                            .anyMatch(component ->
+                                    app.components.contains(component));
+
+            if (belongsToApplication) {
+                envelopesToRelease.add(utilisation);
+            }
+        }
+
+        for (Utilisation utilisation : envelopesToRelease) {
+            capacity.releaseReservation(utilisation);
         }
     }
 

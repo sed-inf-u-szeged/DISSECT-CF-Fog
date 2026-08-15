@@ -7,6 +7,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
@@ -25,11 +27,14 @@ public class Config {
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
-                    Map.entry("atomicOffers", false),
                     Map.entry("rankingMethod", "random"),
                     Map.entry("onlyFirstOffer", "false"),
                     Map.entry("csvLogging", true),
 
+                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    Map.entry("atomicOffers", true),
+                    //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                    //Map.entry("atomicOffers", false),
                     Map.entry("atomicConstructionRestarts", 100),
                     Map.entry("atomicRepairRestarts", 20),
                     Map.entry("atomicNeighborAttempts", 20),

@@ -16,6 +16,7 @@ import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
@@ -82,22 +83,22 @@ public class    DummyAppDemo {
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
                 
         ResourceAgent ra1 =
-                new ResourceAgent("Agent1", 0.5, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent1", 0.5, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
         ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node1, 52, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra2 = 
-                new ResourceAgent("Agent2", 5.0, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent2", 5.0, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
         ra2.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node2, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra3 = 
-                new ResourceAgent("Agent3", 1.5, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent3", 1.5, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
         ra3.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node3, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgent ra4 = 
-                new ResourceAgent("Agent4", 3.0, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+                new ResourceAgent("Agent4", 3.0, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
         ra4.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node4, 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
                 new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
