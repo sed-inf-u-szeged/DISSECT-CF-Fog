@@ -28,7 +28,17 @@ public class Config {
                     Map.entry("atomicOffers", false),
                     Map.entry("rankingMethod", "random"),
                     Map.entry("onlyFirstOffer", "false"),
-                    Map.entry("csvLogging", true)
+                    Map.entry("csvLogging", true),
+
+                    Map.entry("atomicConstructionRestarts", 100),
+                    Map.entry("atomicRepairRestarts", 20),
+                    Map.entry("atomicNeighborAttempts", 20),
+                    Map.entry("atomicSaMaxIterations", 10_000),
+                    Map.entry("atomicSaInitialTemperature", 1.0),
+                    Map.entry("atomicSaMinimumTemperature", 0.0001),
+                    Map.entry("atomicSaCoolingRate", 0.999),
+                    Map.entry("atomicSaInitialHardPenaltyWeight", 1.0),
+                    Map.entry("atomicSaFinalHardPenaltyWeight", 100.0)
             );
 
     public static final Map<String, Object> PARKING_CONFIGURATION =

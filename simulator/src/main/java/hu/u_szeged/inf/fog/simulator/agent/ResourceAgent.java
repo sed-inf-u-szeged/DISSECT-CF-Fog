@@ -10,7 +10,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
+import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.AtomicCoverageSimulatedAnnealing;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.MessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter;
@@ -338,7 +340,50 @@ public class ResourceAgent {
     }
 
     private void generateAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
-        throw new UnsupportedOperationException("Atomic offer combination is not implemented yet.");
+        AtomicCoverageSimulatedAnnealing simulatedAnnealing = new AtomicCoverageSimulatedAnnealing();
+
+        AtomicCoverageState winningState = simulatedAnnealing.optimize(app, localOffers,
+                        (int) Config.APP_TYPE.get(
+                                "atomicConstructionRestarts"),
+                        (int) Config.APP_TYPE.get(
+                                "atomicRepairRestarts"),
+                        (int) Config.APP_TYPE.get(
+                                "atomicNeighborAttempts"),
+                        (int) Config.APP_TYPE.get(
+                                "atomicSaMaxIterations"),
+                        (double) Config.APP_TYPE.get(
+                                "atomicSaInitialTemperature"),
+                        (double) Config.APP_TYPE.get(
+                                "atomicSaMinimumTemperature"),
+                        (double) Config.APP_TYPE.get(
+                                "atomicSaCoolingRate"),
+                        (double) Config.APP_TYPE.get(
+                                "atomicSaInitialHardPenaltyWeight"),
+                        (double) Config.APP_TYPE.get(
+                                "atomicSaFinalHardPenaltyWeight"));
+
+        if (winningState == null) {
+            return;
+        }
+
+        Map<ResourceAgent, Set<Component>> agentComponentsMap = new LinkedHashMap<>();
+
+        List<ComponentPlacement> selectedPlacements = new ArrayList<>();
+
+        for (LocalOffer localOffer : winningState.selectedOffers) {
+            Set<Component> selectedComponents = agentComponentsMap.computeIfAbsent(localOffer.agent,ignored -> new LinkedHashSet<>());
+
+            for (ComponentPlacement placement : localOffer.placements) {
+                selectedComponents.add(placement.component);
+                selectedPlacements.add(placement);
+            }
+        }
+
+        Offer winningOffer = new Offer(agentComponentsMap, app.offers.size());
+
+        winningOffer.selectedPlacements.addAll(selectedPlacements);
+
+        app.offers.add(winningOffer);
     }
 
     private void generateNonAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {

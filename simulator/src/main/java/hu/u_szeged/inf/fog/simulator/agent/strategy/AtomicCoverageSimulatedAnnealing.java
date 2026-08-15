@@ -4,144 +4,291 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
 public class AtomicCoverageSimulatedAnnealing {
 
-    private final Random random;
+    private static final double EPSILON = 1e-9;
+    private final Random random = SeedSyncer.centralRnd;
 
-    public AtomicCoverageSimulatedAnnealing() {
-        this.random = SeedSyncer.centralRnd;
+    private static class GlobalMetrics {
+
+        private final int providerCount;
+        private final double cost;
+        private final double energy;
+        private final double latency;
+        private final double bandwidth;
+
+        private GlobalMetrics(int providerCount, double cost, double energy, double latency, double bandwidth) {
+            this.providerCount = providerCount;
+            this.cost = cost;
+            this.energy = energy;
+            this.latency = latency;
+            this.bandwidth = bandwidth;
+        }
     }
 
-    public AtomicCoverageState createInitialState(AgentApplication application, List<LocalOffer> availableOffers) {
-        List<LocalOffer> shuffledOffers = new ArrayList<>(availableOffers);
+    public AtomicCoverageState optimize(AgentApplication application, List<LocalOffer> availableOffers, int maxConstructionRestarts,
+                        int repairRestarts, int maxNeighborAttempts, int maxIterations, double initialTemperature, double minimumTemperature,
+                        double coolingRate, double initialHardPenaltyWeight, double finalHardPenaltyWeight) {
 
-        Collections.shuffle(shuffledOffers, random);
+        AtomicCoverageConstructor constructor = new AtomicCoverageConstructor();
 
-        int maximumInitialOfferCount = Math.min(application.components.size(), shuffledOffers.size());
+        AtomicCoverageState currentState = constructor.constructCoverage(application, availableOffers, maxConstructionRestarts);
 
-        int selectedOfferCount = maximumInitialOfferCount == 0 ? 0 : random.nextInt(maximumInitialOfferCount + 1);
-
-        List<LocalOffer> selectedOffers = new ArrayList<>(shuffledOffers.subList(0, selectedOfferCount));
-
-        return new AtomicCoverageState(application.components, selectedOffers);
-    }
-
-    private AtomicCoverageState addOffer(AtomicCoverageState currentState, List<LocalOffer> availableOffers) {
-        List<LocalOffer> unselectedOffers =
-                availableOffers.stream()
-                        .filter(localOffer -> !currentState.selectedOffers.contains(localOffer))
-                        .toList();
-
-        if (unselectedOffers.isEmpty()) {
-            return currentState;
+        if (currentState == null) {
+            return null;
         }
 
-        List<LocalOffer> offersCoveringMissingComponents =
-                unselectedOffers.stream()
-                        .filter(localOffer -> localOffer.placements.stream()
-                                .anyMatch(placement -> currentState.coverageCounts.get(placement.component)== 0))
-                        .toList();
+        AtomicCoverageState bestFeasibleState = null;
+        double bestFeasibleQosUtility = Double.POSITIVE_INFINITY;
 
-        List<LocalOffer> candidateOffers;
+        GlobalMetrics initialMetrics = calculateGlobalMetrics(currentState);
 
-        // TODO: the hardcoded 80% should be outsourced to the config file
-        if (!offersCoveringMissingComponents.isEmpty() && random.nextDouble() < 0.8) {
-            candidateOffers = offersCoveringMissingComponents;
-        } else {
-            candidateOffers = unselectedOffers;
+        if (calculateHardRequirementViolation(application, initialMetrics) <= EPSILON) {
+            bestFeasibleState = currentState;
+
+            bestFeasibleQosUtility = calculateQosUtility(application, initialMetrics);
         }
 
-        LocalOffer selectedOffer =candidateOffers.get(random.nextInt(candidateOffers.size()));
+        double currentTemperature = initialTemperature;
 
-        List<LocalOffer> neighborOffers = new ArrayList<>(currentState.selectedOffers);
+        for (int iteration = 0; iteration < maxIterations && currentTemperature > minimumTemperature; iteration++) {
+            AtomicCoverageState neighborState =
+                    generateNeighbor(application, currentState, availableOffers, constructor, repairRestarts, maxNeighborAttempts);
 
-        neighborOffers.add(selectedOffer);
+            double currentEnergy =
+                    calculateEnergy( application, currentState, currentTemperature, initialTemperature, minimumTemperature, initialHardPenaltyWeight, finalHardPenaltyWeight);
 
-        return new AtomicCoverageState(currentState.applicationComponents, neighborOffers);
+            double neighborEnergy =
+                    calculateEnergy(application, neighborState, currentTemperature, initialTemperature, minimumTemperature, initialHardPenaltyWeight, finalHardPenaltyWeight);
+
+            double energyDifference = neighborEnergy - currentEnergy;
+
+            boolean acceptNeighbor;
+
+            if (energyDifference <= 0.0) {
+                acceptNeighbor = true;
+            } else {
+                double acceptanceProbability = Math.exp(-energyDifference / currentTemperature);
+
+                acceptNeighbor = random.nextDouble() < acceptanceProbability;
+            }
+
+            if (acceptNeighbor) {
+                currentState = neighborState;
+            }
+
+            GlobalMetrics neighborMetrics = calculateGlobalMetrics(neighborState);
+
+            double neighborHardViolation = calculateHardRequirementViolation(application, neighborMetrics);
+
+            if (neighborHardViolation <= EPSILON) {
+                double neighborQosUtility = calculateQosUtility(application, neighborMetrics);
+
+                if (bestFeasibleState == null || neighborQosUtility < bestFeasibleQosUtility) {
+
+                    bestFeasibleState = neighborState;
+                    bestFeasibleQosUtility = neighborQosUtility;
+                }
+            }
+
+            currentTemperature *= coolingRate;
+        }
+
+        return bestFeasibleState;
     }
 
-    private AtomicCoverageState removeOffer(AtomicCoverageState currentState) {
+    private GlobalMetrics calculateGlobalMetrics(AtomicCoverageState state) {
+        int providerCount = state.selectedOfferCountsByAgent.size();
+
+        double totalCost = 0.0;
+        double totalEnergy = 0.0;
+
+        double weightedLatencySum = 0.0;
+        double weightedBandwidthSum = 0.0;
+        int totalPlacementCount = 0;
+
+        for (LocalOffer offer : state.selectedOffers) {
+            totalCost += offer.metrics.cost;
+            totalEnergy += offer.metrics.energy;
+
+            int placementCount = offer.placements.size();
+            weightedLatencySum += offer.metrics.latency * placementCount;
+            weightedBandwidthSum += offer.metrics.bandwidth * placementCount;
+            totalPlacementCount += placementCount;
+        }
+
+        double averageLatency = totalPlacementCount == 0 ? 0.0 : weightedLatencySum / totalPlacementCount;
+
+        double averageBandwidth = totalPlacementCount == 0 ? 0.0 : weightedBandwidthSum / totalPlacementCount;
+
+        return new GlobalMetrics( providerCount, totalCost, totalEnergy, averageLatency, averageBandwidth);
+    }
+
+    private double calculateHardRequirementViolation(AgentApplication application, GlobalMetrics metrics) {
+        double violation = 0.0;
+
+        if (application.minProviderCount != null) {
+            violation += calculateMinimumViolation(metrics.providerCount, application.minProviderCount);
+        }
+
+        if (application.maxProviderCount != null) {
+            violation += calculateMaximumViolation(metrics.providerCount, application.maxProviderCount);
+        }
+
+        if (application.maxCost != null) {
+            violation += calculateMaximumViolation(metrics.cost, application.maxCost);
+        }
+
+        if (application.maxLatency != null) {
+            violation += calculateMaximumViolation(metrics.latency, application.maxLatency);
+        }
+
+        if (application.minBandwidth != null) {
+            violation += calculateMinimumViolation(metrics.bandwidth, application.minBandwidth);
+        }
+
+        if (application.maxEnergyConsumption != null) {
+            violation += calculateMaximumViolation(metrics.energy, application.maxEnergyConsumption);
+        }
+
+        return violation;
+    }
+
+    double calculateMaximumViolation(double actualValue, double maximumValue) {
+        if (actualValue <= maximumValue) {
+            return 0.0;
+        }
+
+        double denominator = Math.max(Math.abs(maximumValue), EPSILON);
+
+        return (actualValue - maximumValue) / denominator;
+    }
+
+    private double calculateMinimumViolation(double actualValue, double minimumValue) {
+        if (actualValue >= minimumValue) {
+            return 0.0;
+        }
+
+        double denominator = Math.max(Math.abs(minimumValue), EPSILON);
+
+        return (minimumValue - actualValue) / denominator;
+    }
+
+    private double calculateQosUtility(AgentApplication application, GlobalMetrics metrics) {
+        double totalWeight = application.price + application.energy + application.latency + application.bandwidth;
+
+        double weightedScore = 0.0;
+
+        if (application.price > EPSILON) {
+            weightedScore += application.price * normalizeMinimizedMetric(metrics.cost, application.maxCost,"maxCost");
+        }
+
+        if (application.energy > EPSILON) {
+            weightedScore += application.energy * normalizeMinimizedMetric(metrics.energy, application.maxEnergyConsumption,"maxEnergyConsumption");
+        }
+
+        if (application.latency > EPSILON) {
+            weightedScore += application.latency * normalizeMinimizedMetric(metrics.latency, application.maxLatency,"maxLatency");
+        }
+
+        if (application.bandwidth > EPSILON) {
+            weightedScore += application.bandwidth * normalizeMaximizedMetric(metrics.bandwidth, application.minBandwidth,"minBandwidth");
+        }
+
+        return weightedScore / totalWeight;
+    }
+
+    private double normalizeMinimizedMetric(double actualValue, Double referenceValue, String requirementName) {
+        if (referenceValue == null || referenceValue <= EPSILON) {
+            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
+        }
+
+        return actualValue / referenceValue;
+    }
+
+    private double normalizeMaximizedMetric(double actualValue, Double referenceValue, String requirementName) {
+        if (referenceValue == null || referenceValue <= EPSILON) {
+            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
+        }
+
+        return referenceValue / Math.max(actualValue, EPSILON);
+    }
+
+    private double calculateEnergy(AgentApplication application, AtomicCoverageState state, double currentTemperature, double initialTemperature,
+            double minimumTemperature, double initialHardPenaltyWeight, double finalHardPenaltyWeight) {
+
+        if (!state.isStructurallyValid()) {
+            throw new IllegalArgumentException("The SA can only evaluate structurally valid coverage states.");
+        }
+
+        GlobalMetrics metrics = calculateGlobalMetrics(state);
+
+        double hardViolation = calculateHardRequirementViolation(application, metrics);
+        double qosUtility = calculateQosUtility(application, metrics);
+
+        double hardPenaltyWeight = calculateHardPenaltyWeight(currentTemperature, initialTemperature, minimumTemperature,
+                                             initialHardPenaltyWeight, finalHardPenaltyWeight);
+
+        return qosUtility + hardPenaltyWeight * hardViolation;
+    }
+
+    private double calculateHardPenaltyWeight(double currentTemperature, double initialTemperature, double minimumTemperature,
+                                                double initialHardPenaltyWeight, double finalHardPenaltyWeight) {
+
+        if (initialTemperature <= minimumTemperature) {
+            throw new IllegalArgumentException("Initial temperature must be greater than minimum temperature.");
+        }
+
+        double progress = (initialTemperature - currentTemperature) / (initialTemperature - minimumTemperature);
+
+        progress = Math.max(0.0, Math.min(1.0, progress));
+
+        return initialHardPenaltyWeight + progress * (finalHardPenaltyWeight - initialHardPenaltyWeight);
+    }
+
+    private AtomicCoverageState generateNeighbor(AgentApplication application, AtomicCoverageState currentState, List<LocalOffer> availableOffers,
+                                                    AtomicCoverageConstructor constructor, int repairRestarts, int maxNeighborAttempts) {
+
+        if (!currentState.isStructurallyValid()) {
+            throw new IllegalArgumentException("The current SA state must be structurally valid.");
+        }
+
         if (currentState.selectedOffers.isEmpty()) {
             return currentState;
         }
 
-        List<LocalOffer> conflictingOffers =
-                currentState.selectedOffers.stream()
-                        .filter(localOffer -> {
+        for (int attempt = 0; attempt < maxNeighborAttempts; attempt++) {
 
-                            boolean agentConflict = currentState.selectedOfferCountsByAgent.get(localOffer.agent) > 1;
+            List<LocalOffer> retainedOffers = new ArrayList<>(currentState.selectedOffers);
 
-                            boolean coverageConflict = localOffer.placements.stream()
-                                            .anyMatch(placement -> currentState.coverageCounts.get(placement.component) > 1);
+            int removedIndex = random.nextInt(retainedOffers.size());
 
-                            return agentConflict || coverageConflict;
-                        })
-                        .toList();
+            LocalOffer removedOffer = retainedOffers.remove(removedIndex);
 
-        List<LocalOffer> candidateOffers;
+            List<LocalOffer> alternativeOffers = new ArrayList<>(availableOffers);
 
-        if (!conflictingOffers.isEmpty() && random.nextDouble() < 0.8) {
-            candidateOffers = conflictingOffers;
-        } else {
-            candidateOffers = currentState.selectedOffers;
+            alternativeOffers.remove(removedOffer);
+
+            AtomicCoverageState repairedState =constructor.repairCoverage(application, alternativeOffers, retainedOffers, repairRestarts);
+
+            if (repairedState == null) {
+                continue;
+            }
+
+            if (!haveSameSelectedOffers(currentState, repairedState)) {
+                return repairedState;
+            }
         }
 
-        LocalOffer offerToRemove = candidateOffers.get(random.nextInt(candidateOffers.size()));
-
-        List<LocalOffer> neighborOffers = new ArrayList<>(currentState.selectedOffers);
-
-        neighborOffers.remove(offerToRemove);
-
-        return new AtomicCoverageState(currentState.applicationComponents, neighborOffers);
+        return currentState;
     }
 
-    private AtomicCoverageState replaceOffer(AtomicCoverageState currentState, List<LocalOffer> availableOffers) {
-
-        if (currentState.selectedOffers.isEmpty()) {
-            return addOffer( currentState, availableOffers);
-        }
-
-        List<LocalOffer> originallyUnselectedOffers =availableOffers.stream()
-                        .filter(localOffer -> !currentState.selectedOffers.contains(localOffer))
-                        .toList();
-
-        if (originallyUnselectedOffers.isEmpty()) {
-            return currentState;
-        }
-
-        AtomicCoverageState stateAfterRemoval = removeOffer(currentState);
-
-        return addOffer(stateAfterRemoval, originallyUnselectedOffers);
-    }
-
-    private AtomicCoverageState generateNeighbor(AtomicCoverageState currentState, List<LocalOffer> availableOffers) {
-
-        if (currentState.selectedOffers.isEmpty()) {
-            return addOffer(currentState, availableOffers);
-        }
-
-        int moveType = random.nextInt(3);
-
-        return switch (moveType) {
-            case 0 -> addOffer(currentState,availableOffers);
-            case 1 -> removeOffer(currentState);
-            default -> replaceOffer(currentState, availableOffers);
-        };
-    }
-
-    private double calculateStructuralPenalty(AtomicCoverageState state) {
-        double missingComponentPenalty = state.getMissingComponentCount();
-
-        double duplicateCoveragePenalty = state.getDuplicateCoverageCount();
-
-        double agentConflictPenalty = state.getAgentConflictCount();
-
-        return missingComponentPenalty + duplicateCoveragePenalty + agentConflictPenalty;
+    private boolean haveSameSelectedOffers(AtomicCoverageState first,AtomicCoverageState second) {
+        return new HashSet<>(first.selectedOffers).equals(new HashSet<>(second.selectedOffers));
     }
 }
