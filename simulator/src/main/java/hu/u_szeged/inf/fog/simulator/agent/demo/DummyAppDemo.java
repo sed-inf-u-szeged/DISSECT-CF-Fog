@@ -187,7 +187,7 @@ public class    DummyAppDemo {
 
         SimLogger.logEmptyLine();
         for (Map.Entry<String, Double> entry : applicationCosts.entrySet()) {
-            SimLogger.logRes(entry.getKey() + " total cost: " + entry.getValue());
+            SimLogger.logRes(entry.getKey() + " total cost (unit): " + entry.getValue());
         }
 
         double applicationEnergyKwh = 0.0;

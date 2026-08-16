@@ -72,7 +72,6 @@ public class GlobalOfferEvaluator {
         int providerCount = offer.agentComponentsMap.size();
 
         double totalCost = 0.0;
-        double totalEnergy = 0.0;
         double weightedLatencySum = 0.0;
         double weightedBandwidthSum = 0.0;
         int totalPlacementCount = 0;
@@ -95,41 +94,43 @@ public class GlobalOfferEvaluator {
             int placementCount = agentPlacements.size();
 
             totalCost += localMetrics.cost;
-            totalEnergy += localMetrics.energy;
             weightedLatencySum += localMetrics.latency * placementCount;
             weightedBandwidthSum += localMetrics.bandwidth * placementCount;
             totalPlacementCount += placementCount;
         }
 
+        double totalProjectedPower = localMetricsCalculator.calculateProjectedPower(offer.selectedPlacements);
         double averageLatency = totalPlacementCount == 0 ? 0.0 : weightedLatencySum / totalPlacementCount;
         double averageBandwidth = totalPlacementCount == 0 ? 0.0 : weightedBandwidthSum / totalPlacementCount;
 
-        return new GlobalOfferMetrics(providerCount, totalCost, totalEnergy, averageLatency, averageBandwidth);
+        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth);
     }
 
     public GlobalOfferMetrics evaluate(AtomicCoverageState state) {
         int providerCount = state.selectedOfferCountsByAgent.size();
 
         double totalCost = 0.0;
-        double totalEnergy = 0.0;
         double weightedLatencySum = 0.0;
         double weightedBandwidthSum = 0.0;
         int totalPlacementCount = 0;
+
+        List<ComponentPlacement> selectedPlacements = new ArrayList<>();
 
         for (LocalOffer offer : state.selectedOffers) {
             int placementCount = offer.placements.size();
 
             totalCost += offer.metrics.cost;
-            totalEnergy += offer.metrics.energy;
             weightedLatencySum += offer.metrics.latency * placementCount;
             weightedBandwidthSum += offer.metrics.bandwidth * placementCount;
             totalPlacementCount += placementCount;
+            selectedPlacements.addAll(offer.placements);
         }
 
+        double totalProjectedPower = localMetricsCalculator.calculateProjectedPower(selectedPlacements);
         double averageLatency = totalPlacementCount == 0 ? 0.0 : weightedLatencySum / totalPlacementCount;
         double averageBandwidth = totalPlacementCount == 0 ? 0.0 : weightedBandwidthSum / totalPlacementCount;
 
-        return new GlobalOfferMetrics(providerCount, totalCost, totalEnergy, averageLatency, averageBandwidth);
+        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth);
     }
 
     public double calculateQosUtility(AgentApplication application, GlobalOfferMetrics metrics) {

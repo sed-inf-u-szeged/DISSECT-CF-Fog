@@ -27,6 +27,8 @@ public class Config {
                     Map.entry("submissionDelay", List.of(0)), // 1 app
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
+                    Map.entry("computeTaskBase", 8_000.0), // fixed CPU work for processing one received file (no. instructions)
+                    Map.entry("computeTaskPerByte", 16.0), // additional CPU work per received byte (no. instructions)
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true),
 
@@ -51,6 +53,23 @@ public class Config {
 
                     Map.entry("atomicSaInitialHardPenaltyWeight", 1.0),
                     Map.entry("atomicSaFinalHardPenaltyWeight", 100.0)
+
+                    // latency heavy
+                    //Map.entry("samplingFreq", 1_000L),
+                    //Map.entry("resFileSize", 1_024L),
+                    //Map.entry("computeTaskBase", 1_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0),
+                    // bandwidth heavy
+                    //Map.entry("samplingFreq", 60_000L),
+                    //Map.entry("resFileSize", 100L * ScenarioBase.MB_IN_BYTE),
+                    //Map.entry("computeTaskBase", 1_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0,
+                    // compute heavy
+                    //Map.entry("samplingFreq", 10_000L),
+                    //Map.entry("resFileSize", 1_024L),
+                    //Map.entry("computeTaskBase", 10_000_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0),
+
             );
 
     public static final Map<String, Object> PARKING_CONFIGURATION =

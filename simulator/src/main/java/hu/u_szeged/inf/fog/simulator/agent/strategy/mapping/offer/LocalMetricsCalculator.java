@@ -27,7 +27,7 @@ public class LocalMetricsCalculator {
         double fragmentation = calculateFragmentation(agent, placements);
         double compactness = calculateCompactness(agent, placements);
         double cost = calculateCost(agent, placements);
-        double energy = calculateEnergy(placements);
+        double energy = calculateProjectedPower(placements);
         double latency = calculateLatency(placements);
         double bandwidth = calculateBandwidth(placements);
 
@@ -66,8 +66,13 @@ public class LocalMetricsCalculator {
         return totalLatency / placements.size();
     }
 
-    private double calculateEnergy(List<ComponentPlacement> placements) {
+    public double calculateProjectedPower(List<ComponentPlacement> placements) {
+        if (placements.isEmpty()) {
+            return 0.0;
+        }
+
         Set<ComputingAppliance> affectedNodes = new LinkedHashSet<>();
+
         for (ComponentPlacement placement : placements) {
             affectedNodes.add(placement.capacity.node);
         }
@@ -79,19 +84,17 @@ public class LocalMetricsCalculator {
 
             double totalCpu = machine.getCapacities().getTotalProcessingPower();
             double currentlyFreeCpu = machine.freeCapacities.getTotalProcessingPower();
-
             double offerCpuDemand = 0.0;
+
             for (ComponentPlacement placement : placements) {
                 if (placement.capacity.node == node) {
                     offerCpuDemand += MappingStrategy.requiredCpu(placement.component);
                 }
             }
 
-            double projectedCpuUtilisation =1.0 - (currentlyFreeCpu - offerCpuDemand) / totalCpu;
-
+            double projectedCpuUtilisation = 1.0 - (currentlyFreeCpu - offerCpuDemand) / totalCpu;
             double projectedPower = machine.getCurrentPowerBehavior().getMinConsumption()
-                            + machine.getCurrentPowerBehavior().getConsumptionRange()
-                            * projectedCpuUtilisation;
+                    + machine.getCurrentPowerBehavior().getConsumptionRange() * projectedCpuUtilisation;
 
             totalProjectedPower += projectedPower;
         }

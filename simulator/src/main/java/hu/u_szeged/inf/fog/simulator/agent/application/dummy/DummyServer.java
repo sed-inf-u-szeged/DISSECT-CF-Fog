@@ -54,40 +54,49 @@ public class DummyServer extends Timed  {
             sourceRepo.registerObject(dummyData);
             try {
                 if (sourceRepo == targetRepo) {
-                    sourceRepo.deregisterObject(name);
-                    RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
+                    processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
                 } else {
-                    util.vm.getResourceAllocation().getHost().localDisk.requestContentDelivery(
-                            name, targetRepo, new ConsumptionEventAdapter() {
+                    sourceRepo.requestContentDelivery(
+                            name,
+                            targetRepo,
+                            new ConsumptionEventAdapter() {
 
                                 @Override
                                 public void conComplete() {
-                                    sourceRepo.deregisterObject(name);
-                                    RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
-
-                                    try {
-
-                                        server.util.vm.newComputeTask(8_000 * ((dummyData.size / 500.0) + 1),
-                                                ResourceConsumption.unlimitedProcessing,
-                                                new ConsumptionEventAdapter() {
-
-                                                    @Override
-                                                    public void conComplete() {
-                                                        SimLogger.logRun(server.util.component.id + " processed a file (" + dummyData.size + " bytes, "
-                                                                + (Timed.getFireCount() - fires) / 1_000D + " sec.) sent by "
-                                                                + util.component.id + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                                                                + " min.");
-                                                    }
-                                                });
-                                    } catch (NetworkNode.NetworkException e) {
-                                        throw new RuntimeException(e);
-                                    }
+                                    processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
                                 }
                             });
                 }
             } catch (NetworkNode.NetworkException e) {
                 SimLogger.logError("DummyServer data transfer failed: " + e);
             }
+        }
+    }
+
+    private void processReceivedFile(DummyServer server, Repository sourceRepo, Repository targetRepo, StorageObject dummyData, long creationTime) {
+        sourceRepo.deregisterObject(dummyData.id);
+        RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
+
+        double computeTaskBase = (double) Config.DUMMY_CONFIGURATION.get("computeTaskBase");
+        double computeTaskPerByte = (double) Config.DUMMY_CONFIGURATION.get("computeTaskPerByte");
+        double computeTaskLength = computeTaskBase + computeTaskPerByte * dummyData.size;
+
+        try {
+            server.util.vm.newComputeTask(
+                    computeTaskLength,
+                    ResourceConsumption.unlimitedProcessing,
+                    new ConsumptionEventAdapter() {
+
+                        @Override
+                        public void conComplete() {
+                            SimLogger.logRun(server.util.component.id + " processed a file (" + dummyData.size
+                                    + " bytes, " + (Timed.getFireCount() - creationTime) / 1_000D
+                                    + " sec.) sent by " + util.component.id + " at: "
+                                    + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                        }
+                    });
+        } catch (NetworkNode.NetworkException exception) {
+            SimLogger.logError("DummyServer compute task failed: " + exception);
         }
     }
 }

@@ -6,81 +6,117 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 
 public class AppDescriptionGenerator {
 
     private static final String[] PROVIDERS = {"AWS", "Azure"};
     private static final String[] LOCATIONS = {"EU", "US"};
-    private static final String[] KINDS = {"server"};
-    private static final Random random = new Random();
-    
+
     public static void main(String[] args) throws IOException {
-        String appName = "App-" + random.nextInt(10_000);
-        generate(appName, 3, ScenarioBase.RESOURCE_PATH + "AGENT_examples");
-    }
-    
-    public static void generate(String appName, int componentCount, String outputDir) throws IOException {
+        // global settings
+        String applicationNamePrefix = "App";
+        int applicationCount = 1;
+        int componentCount = 3;
+        long randomSeed = 1L;
+        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples";
+
+        // QoS weights [0..1]
+        double energyWeight = 0.5;
+        double priceWeight = 0.4;
+        double latencyWeight = 0.7;
+        double bandwidthWeight = 0.7;
+
+        // hard requirements
+        int minProviderCount = 1;
+        int maxProviderCount = 3;
+        double maxCost = 100.0;
+        double maxLatency = 50.0;
+        double minBandwidth = 100.0;
+        double maxEnergyConsumption = 2_000.0;
+
+        // max. resource requirement per component
+        int maximumCpu = 8;
+        int maximumMemoryGb = 8;
+        int maximumStorageGb = 8;
+        int maximumImageSizeGb = 2;
+        //Boolean edgeRequirement = true;  // only edge
+        //Boolean edgeRequirement = false; // only non-edge
+        Boolean edgeRequirement = null;  // any node
 
         ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
+        Random random = new Random(randomSeed);
 
-        root.put("name", appName);
-        root.put("type", "dummy");
-        root.put("energy", random.nextInt(11) / 10.0);
-        root.put("price", random.nextInt(11) / 10.0);
-        root.put("latency", random.nextInt(11) / 10.0);
-        root.put("bandwidth", random.nextInt(11) / 10.0);
+        Files.createDirectories(Path.of(outputDirectory));
 
-        ArrayNode components = mapper.createArrayNode();
+        for (int applicationIndex = 1; applicationIndex <= applicationCount; applicationIndex++) {
+            String applicationName = applicationNamePrefix + "-" + applicationIndex;
 
-        for (int i = 1; i <= componentCount; i++) {
-            ObjectNode component = mapper.createObjectNode();
-            component.put("id", String.valueOf(i));
+            ObjectNode root = mapper.createObjectNode();
 
-            // requirements 
-            ObjectNode requirements = mapper.createObjectNode();
+            root.put("name", applicationName);
+            root.put("type", "dummy");
 
-            boolean includeCpu = random.nextBoolean();
-            boolean includeStorage = random.nextBoolean();
+            root.put("energy", energyWeight);
+            root.put("price", priceWeight);
+            root.put("latency", latencyWeight);
+            root.put("bandwidth", bandwidthWeight);
 
-            if (!includeCpu && !includeStorage) {
-                includeCpu = true;
+            root.put("minProviderCount", minProviderCount);
+            root.put("maxProviderCount", maxProviderCount);
+            root.put("maxCost", maxCost);
+            root.put("maxLatency", maxLatency);
+            root.put("minBandwidth", minBandwidth);
+            root.put("maxEnergyConsumption", maxEnergyConsumption);
+
+            ArrayNode components = mapper.createArrayNode();
+
+            for (int componentIndex = 1; componentIndex <= componentCount; componentIndex++) {
+                ObjectNode component = mapper.createObjectNode();
+                component.put("id", String.valueOf(componentIndex));
+
+                ObjectNode requirements = mapper.createObjectNode();
+
+                requirements.put("cpu", random.nextInt(maximumCpu) + 1);
+                requirements.put("memory", (random.nextInt(maximumMemoryGb) + 1L) * ScenarioBase.GB_IN_BYTE);
+
+                if (random.nextBoolean()) {
+                    requirements.put("storage", (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
+                }
+
+                if (random.nextBoolean()) {
+                    requirements.put("location", LOCATIONS[random.nextInt(LOCATIONS.length)]);
+                }
+
+                if (random.nextBoolean()) {
+                    requirements.put("provider", PROVIDERS[random.nextInt(PROVIDERS.length)]);
+                }
+
+                if (edgeRequirement != null) {
+                    requirements.put("edge", edgeRequirement);
+                }
+
+                ObjectNode properties = mapper.createObjectNode();
+
+                properties.put("kind", "server");
+
+                long imageSizeStep = ScenarioBase.GB_IN_BYTE / 2;
+                int maximumImageSteps = maximumImageSizeGb * 2;
+                long imageSize = (random.nextInt(maximumImageSteps) + 1L) * imageSizeStep;
+
+                properties.put("image", imageSize);
+
+                component.set("requirements", requirements);
+                component.set("properties", properties);
+                components.add(component);
             }
 
-            if (includeCpu) {
-                requirements.put("cpu", random.nextInt(8) + 1);
-                requirements.put("memory", (random.nextInt(8) + 1) * ScenarioBase.GB_IN_BYTE);
-            }
+            root.set("components", components);
 
-            if (includeStorage) {
-                requirements.put("storage", (random.nextInt(8) + 1) * ScenarioBase.GB_IN_BYTE); 
-            }
-
-            if (random.nextBoolean()) {
-                requirements.put("location", LOCATIONS[random.nextInt(LOCATIONS.length)]);
-            }
-
-            if (random.nextBoolean()) {
-                requirements.put("provider", PROVIDERS[random.nextInt(PROVIDERS.length)]);
-            }
-
-            requirements.put("edge", random.nextBoolean());
-
-            component.set("requirements", requirements);
-
-            // properties
-            ObjectNode properties = mapper.createObjectNode();
-            properties.put("kind", KINDS[random.nextInt(KINDS.length)]);
-            properties.put("image", (long) ((random.nextInt(4) + 1) * 0.5 * ScenarioBase.GB_IN_BYTE));
-
-            component.set("properties", properties);
-
-            components.add(component);
+            File outputFile = Path.of(outputDirectory, applicationName + ".json").toFile();
+            mapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, root);
         }
-
-        root.set("components", components);
-        
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File(outputDir + File.separator + appName + ".json"), root);
     }
 }
