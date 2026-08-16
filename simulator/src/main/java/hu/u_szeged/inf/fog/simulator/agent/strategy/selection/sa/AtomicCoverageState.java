@@ -1,7 +1,8 @@
-package hu.u_szeged.inf.fog.simulator.agent.offer;
+package hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

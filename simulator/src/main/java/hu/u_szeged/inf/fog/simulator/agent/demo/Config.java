@@ -7,8 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
@@ -18,30 +17,38 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class Config {
 
+    // TODO: create a common config map for shared parameters
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
-                    Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
+                    Map.entry("simLength", 24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)), // 1 app
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
-                    Map.entry("rankingMethod", "random"),
-                    Map.entry("onlyFirstOffer", "false"),
                     Map.entry("csvLogging", true),
 
+                    Map.entry("rankingMethod", "random"),
+                    //Map.entry("rankingMethod", "rank_no_re"),
+                    Map.entry("onlyFirstOffer", false),
                     Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
                     Map.entry("atomicOffers", true),
+                    //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
                     //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
                     //Map.entry("atomicOffers", false),
+
+
                     Map.entry("atomicConstructionRestarts", 100),
                     Map.entry("atomicRepairRestarts", 20),
-                    Map.entry("atomicNeighborAttempts", 20),
-                    Map.entry("atomicSaMaxIterations", 10_000),
-                    Map.entry("atomicSaInitialTemperature", 1.0),
-                    Map.entry("atomicSaMinimumTemperature", 0.0001),
-                    Map.entry("atomicSaCoolingRate", 0.999),
+
+                    Map.entry("saNeighborAttempts", 20),
+                    Map.entry("saMaxIterations", 10_000),
+                    Map.entry("saInitialTemperature", 1.0),
+                    Map.entry("saMinimumTemperature", 0.0001),
+                    Map.entry("saCoolingRate", 0.999),
+
                     Map.entry("atomicSaInitialHardPenaltyWeight", 1.0),
                     Map.entry("atomicSaFinalHardPenaltyWeight", 100.0)
             );

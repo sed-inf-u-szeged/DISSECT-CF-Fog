@@ -1,12 +1,12 @@
 package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping;
 
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import java.util.List;
 
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import org.apache.commons.lang3.tuple.Pair;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 
 /**
  * Base class for resource allocation strategies used by resource agents.
@@ -22,32 +22,32 @@ public abstract class MappingStrategy {
 
         private long storage;
 
-        AvailableCapacity(Capacity capacity) {
+        public AvailableCapacity(Capacity capacity) {
             this.cpu = capacity.cpu;
             this.memory = capacity.memory;
             this.storage = capacity.storage;
         }
 
-        boolean canHost(Component component) {
+        public boolean canHost(Component component) {
             return requiredCpu(component) <= cpu
                     && requiredMemory(component) <= memory
                     && requiredStorage(component) <= storage;
         }
 
-        void consume(Component component) {
+        public void consume(Component component) {
             cpu -= requiredCpu(component);
             memory -= requiredMemory(component);
             storage -= requiredStorage(component);
         }
 
-        void restore(Component component) {
+        public void restore(Component component) {
             cpu += requiredCpu(component);
             memory += requiredMemory(component);
             storage += requiredStorage(component);
         }
     }
 
-    public abstract List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components);
+    public abstract List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application);
 
     /**
      * Checks if a resource's preferences match a capacity's characteristics.

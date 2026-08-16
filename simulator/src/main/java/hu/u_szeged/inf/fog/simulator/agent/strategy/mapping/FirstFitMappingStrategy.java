@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping;
 
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
@@ -7,8 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 
 public class FirstFitMappingStrategy extends MappingStrategy {
     
@@ -19,8 +20,8 @@ public class FirstFitMappingStrategy extends MappingStrategy {
     }
 
     @Override
-    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
-        List<Component> sortedComponents = sortResourcesByCpuElseStorage(components);
+    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application) {
+        List<Component> sortedComponents = sortResourcesByCpuElseStorage(application.components);
         List<ComponentPlacement> placements = new ArrayList<>();
 
         Map<Capacity, AvailableCapacity> availableCapacities = new LinkedHashMap<>();

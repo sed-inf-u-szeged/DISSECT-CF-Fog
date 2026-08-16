@@ -1,12 +1,13 @@
-package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping;
+package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto;
 
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalMetricsCalculator;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOfferParetoFilter;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalMetricsCalculator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -25,7 +26,7 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
     }
 
     @Override
-    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
+    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application) {
 
         Map<Capacity, AvailableCapacity> availableCapacities = new LinkedHashMap<>();
 
@@ -36,7 +37,7 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
         List<LocalOffer> localOffers = new ArrayList<>();
         List<ComponentPlacement> currentPlacements = new ArrayList<>();
 
-        generateCombinations(agent, components, 0, availableCapacities, currentPlacements, localOffers);
+        generateCombinations(agent, application.components, 0, availableCapacities, currentPlacements, localOffers);
 
         return paretoFilter.filter(localOffers);
     }

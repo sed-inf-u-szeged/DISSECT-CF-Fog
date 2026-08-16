@@ -1,11 +1,11 @@
-package hu.u_szeged.inf.fog.simulator.agent.strategy;
+package hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;

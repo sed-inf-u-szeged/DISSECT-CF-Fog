@@ -10,25 +10,24 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
-import hu.u_szeged.inf.fog.simulator.agent.offer.AtomicCoverageState;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.AtomicCoverageSimulatedAnnealing;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageState;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageSimulatedAnnealing;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.MessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.BacktrackingOfferSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.QosPriority;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -165,16 +164,24 @@ public class ResourceAgent {
         
         if (!app.offers.isEmpty()) {
             boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
+            boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
 
             if (atomicOffers) {
                 app.winningOffer = 0;
+
                 SimLogger.logRun("The simulated annealing selected an offer for " + app.name + " at: "
-                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+            } else if (onlyFirstOffer) {
+                app.winningOffer = 0;
+
+                SimLogger.logRun("The first hard-valid offer was selected for " + app.name + " at: "
+                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
-                app.winningOffer =SeedSyncer.centralRnd.nextInt(app.offers.size());
+                app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
+
                 SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: "
-                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                                + " min., randomly selected offer index is: " + app.winningOffer);
+                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                        + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
                 app.winningOffer = callRankingScript(app);
             }
@@ -260,7 +267,7 @@ public class ResourceAgent {
                 throw new IllegalStateException( "Atomic offer generation requires ExhaustiveMappingStrategy");
             }
 
-            List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app.components);
+            List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app);
 
             if (atomicOffers) {
                 agent.reserveAtomicLocalOffers(agentLocalOffers);
@@ -353,25 +360,18 @@ public class ResourceAgent {
     private void generateAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
         AtomicCoverageSimulatedAnnealing simulatedAnnealing = new AtomicCoverageSimulatedAnnealing();
 
-        AtomicCoverageState winningState = simulatedAnnealing.optimize(app, localOffers,
-                        (int) Config.APP_TYPE.get(
-                                "atomicConstructionRestarts"),
-                        (int) Config.APP_TYPE.get(
-                                "atomicRepairRestarts"),
-                        (int) Config.APP_TYPE.get(
-                                "atomicNeighborAttempts"),
-                        (int) Config.APP_TYPE.get(
-                                "atomicSaMaxIterations"),
-                        (double) Config.APP_TYPE.get(
-                                "atomicSaInitialTemperature"),
-                        (double) Config.APP_TYPE.get(
-                                "atomicSaMinimumTemperature"),
-                        (double) Config.APP_TYPE.get(
-                                "atomicSaCoolingRate"),
-                        (double) Config.APP_TYPE.get(
-                                "atomicSaInitialHardPenaltyWeight"),
-                        (double) Config.APP_TYPE.get(
-                                "atomicSaFinalHardPenaltyWeight"));
+        AtomicCoverageState winningState = simulatedAnnealing.optimize(
+                app,
+                localOffers,
+                (int) Config.APP_TYPE.get("atomicConstructionRestarts"),
+                (int) Config.APP_TYPE.get("atomicRepairRestarts"),
+                (int) Config.APP_TYPE.get("saNeighborAttempts"),
+                (int) Config.APP_TYPE.get("saMaxIterations"),
+                (double) Config.APP_TYPE.get("saInitialTemperature"),
+                (double) Config.APP_TYPE.get("saMinimumTemperature"),
+                (double) Config.APP_TYPE.get("saCoolingRate"),
+                (double) Config.APP_TYPE.get("atomicSaInitialHardPenaltyWeight"),
+                (double) Config.APP_TYPE.get("atomicSaFinalHardPenaltyWeight"));
 
         if (winningState == null) {
             return;
@@ -400,117 +400,11 @@ public class ResourceAgent {
     }
 
     private void generateNonAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
-        List<Pair<ResourceAgent, ComponentPlacement>>
-                agentPlacementPairs =
-                localOffers.stream()
-                        .flatMap(localOffer ->
-                                localOffer.placements.stream()
-                                        .map(placement ->
-                                                Pair.of(
-                                                        localOffer.agent,
-                                                        placement)))
-                        .toList();
+        boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
 
-        generateUniqueOfferCombinations(agentPlacementPairs, app);
-    }
+        BacktrackingOfferSelectionStrategy selectionStrategy = new BacktrackingOfferSelectionStrategy(onlyFirstOffer);
 
-    private void generateUniqueOfferCombinations(List<Pair<ResourceAgent, ComponentPlacement>> pairs, AgentApplication app) {
-        Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations = new LinkedHashSet<>();
-        AtomicBoolean found = new AtomicBoolean(false);
-
-        generateCombinations(pairs, app.components.size(), uniqueCombinations,
-                new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), found);
-
-        for (Set<Pair<ResourceAgent, ComponentPlacement>> combination
-                : uniqueCombinations) {
-
-            Map<ResourceAgent, Set<Component>> agentComponentsMap =
-                    new HashMap<>();
-
-            for (Pair<ResourceAgent, ComponentPlacement> pair : combination) {
-                ResourceAgent agent = pair.getLeft();
-                ComponentPlacement placement = pair.getRight();
-                Component component = placement.component;
-
-                agentComponentsMap.putIfAbsent(
-                        agent,
-                        new LinkedHashSet<>());
-
-                agentComponentsMap.get(agent).add(component);
-            }
-
-            Offer offer = new Offer(
-                    agentComponentsMap,
-                    app.offers.size());
-
-            offer.selectedPlacements.addAll(
-                    combination.stream()
-                            .map(Pair::getRight)
-                            .toList());
-
-            app.offers.add(offer);
-        }
-    }
-
-    private void generateCombinations(
-            List<Pair<ResourceAgent, ComponentPlacement>> pairs,
-            int componentCount,
-            Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations,
-            Set<Pair<ResourceAgent, ComponentPlacement>> currentCombination,
-            Set<Component> includedComponents,
-            Set<String> seenStates,
-            AtomicBoolean found) {
-
-        if (found.get()) {
-            return;
-        }
-
-        if (includedComponents.size() == componentCount) {
-            uniqueCombinations.add(new LinkedHashSet<>(currentCombination));
-            if (Config.APP_TYPE.get("onlyFirstOffer").equals("true")) {
-                found.set(true);
-            }
-            return;
-        }
-
-        String stateKey = currentCombination.stream()
-                .map(pair ->
-                        pair.getLeft().name
-                                + "->"
-                                + pair.getRight().component.id)
-                .sorted()
-                .collect(Collectors.joining(","));
-
-        if (!seenStates.add(stateKey)) {
-            return;
-        }
-
-        for (Pair<ResourceAgent, ComponentPlacement> pair : pairs) {
-            Component component = pair.getRight().component;
-
-            if (!currentCombination.contains(pair)
-                    && !includedComponents.contains(component)) {
-
-                currentCombination.add(pair);
-                includedComponents.add(component);
-
-                generateCombinations(
-                        pairs,
-                        componentCount,
-                        uniqueCombinations,
-                        currentCombination,
-                        includedComponents,
-                        seenStates,
-                        found);
-
-                if (found.get()) {
-                    return;
-                }
-
-                currentCombination.remove(pair);
-                includedComponents.remove(component);
-            }
-        }
+        app.offers.addAll(selectionStrategy.selectOffers(localOffers, app));
     }
 
     private int callRankingScript(AgentApplication app) {
@@ -583,62 +477,25 @@ public class ResourceAgent {
         List<Double> priceList = new ArrayList<>();
 
         for (Offer offer : app.offers) {
-            double averageLatency = 0;
-            double averageBandwidth = 0;
-            double averageEnergy = 0;
-            double averagePrice = 0;
-
-            // TODO: these calculations should be reconsidered!
-            for (ResourceAgent agent : offer.agentComponentsMap.keySet()) {
-
-                averageLatency += agent.hostNode.iaas.repositories.get(0).getLatencies().get(
-                        agent.hostNode.iaas.repositories.get(0).getName());
-
-                averageBandwidth += agent.hostNode.iaas.repositories.get(0).inbws.getPerTickProcessingPower();
-
-                averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getMinConsumption();
-
-                for (Component component : offer.agentComponentsMap.get(agent)) {
-                    averageEnergy += agent.hostNode.iaas.machines.get(0).getCurrentPowerBehavior().getConsumptionRange()
-                            * (component.requirements.cpu > 0 ? component.requirements.cpu / 100 : 1);
-
-                    double demandShare = agent.calculateDemandShare(
-                            component.requirements.cpu,
-                            component.requirements.memory,
-                            component.requirements.storage
-                    );
-                    averagePrice += agent.hourlyPrice * demandShare;
-                }
+            if (offer.metrics == null) {
+                throw new IllegalStateException("Global metrics are missing from offer: " + offer.id);
             }
 
-            /*
-            averageLatency /= offer.agentResourcesMap.keySet().size();
-            averageBandwidth /= offer.agentResourcesMap.keySet().size();
-            averageEnergy /= offer.agentResourcesMap.keySet().size();
-            averagePrice /= offer.agentResourcesMap.keySet().size();
-            */
-
             reliabilityList.add(1.0);
-
-            //double epsilon = averageEnergy * 1e-10 * r.nextDouble();
-            energyList.add(averageEnergy);
-            bandwidthList.add(averageBandwidth);
-            latencyList.add(averageLatency);
-            priceList.add(averagePrice);
-
-            /*
-            System.out.println("avg. latency: " + averageLatency + " avg. bandwidth: "
-                + averageBandwidth + " avg. energy: " + averageEnergy +  " avg. price: " + averagePrice);
-            */
+            energyList.add(offer.metrics.energy);
+            bandwidthList.add(offer.metrics.bandwidth);
+            latencyList.add(offer.metrics.latency);
+            priceList.add(offer.metrics.cost);
         }
 
         QosPriority qosPriority = new QosPriority(app.energy, app.bandwidth, app.latency, app.price);
+
         JsonOfferData jsonData = new JsonOfferData(qosPriority, reliabilityList, energyList, bandwidthList, latencyList, priceList);
+
         return AgentOfferWriter.writeOffers(jsonData, app.name);
     }
 
     private void acknowledgeAndInitSwarmAgent(AgentApplication app, Offer offer, int bcastMessageSize) {
-        
         /*
         if (messagingStrategy instanceof GuidedSearchMessagingStrategy) {
             ((GuidedSearchMessagingStrategy) messagingStrategy).setWinningOffer(offer);

@@ -2,13 +2,13 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import org.apache.commons.lang3.tuple.Pair;
 

@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping;
 
+import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
@@ -8,8 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import org.apache.commons.lang3.tuple.Pair;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 
 public class DirectMappingStrategy extends MappingStrategy {
 
@@ -20,7 +20,7 @@ public class DirectMappingStrategy extends MappingStrategy {
     }
 
     @Override
-    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, List<Component> components) {
+    public List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application) {
 
         List<LocalOffer.ComponentPlacement> placements = new ArrayList<>();
 
@@ -38,7 +38,7 @@ public class DirectMappingStrategy extends MappingStrategy {
                 continue;
             }
 
-            for (Component component : components) {
+            for (Component component : application.components) {
                 if (!component.id.equals(componentName)) {
                     continue;
                 }

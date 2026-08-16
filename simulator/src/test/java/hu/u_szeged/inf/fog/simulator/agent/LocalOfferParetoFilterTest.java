@@ -1,11 +1,11 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.LocalMetrics;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOfferParetoFilter;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.LocalMetrics;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.LocalOfferParetoFilter;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -72,11 +72,11 @@ public class    DummyAppDemo {
                     40, 200, 506, 150_000, 60, sharedLatencyMap),
             new GeoLocation(29.7604, -95.3698), "US", "Azure", false); // Houston
 
-        new EnergyDataCollector("Node1-energy", node1.iaas,true, true);
-        new EnergyDataCollector("Node2-energy", node2.iaas,true,true);
-        new EnergyDataCollector("Node3-energy", node3.iaas,true,true);
-        new EnergyDataCollector("Node4-energy", node4.iaas,true, true);
-        new EnergyDataCollector("Node5-energy", node5.iaas,true,true);
+        new EnergyDataCollector("Node1-energy", node1.iaas, true, true, () -> hasRunningApplication(node1));
+        new EnergyDataCollector("Node2-energy", node2.iaas, true, true, () -> hasRunningApplication(node2));
+        new EnergyDataCollector("Node3-energy", node3.iaas, true, true, () -> hasRunningApplication(node3));
+        new EnergyDataCollector("Node4-energy", node4.iaas, true, true, () -> hasRunningApplication(node4));
+        new EnergyDataCollector("Node5-energy", node5.iaas, true, true, () -> hasRunningApplication(node5));
         
         /* agent config */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L);
@@ -190,9 +190,26 @@ public class    DummyAppDemo {
             SimLogger.logRes(entry.getKey() + " total cost: " + entry.getValue());
         }
 
+        double applicationEnergyKwh = 0.0;
+
+        for (EnergyDataCollector energyCollector : EnergyDataCollector.allEnergyCollectors.values()) {
+            applicationEnergyKwh += energyCollector.accumulatedEnergy / ScenarioBase.TO_KWH;
+        }
+
+        SimLogger.logRes("Energy consumption nodes that hosted app components (kWh): " + applicationEnergyKwh);
+
         SimLogger.logEmptyLine();
         SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Size of generated files (MB): " + (double) DummyServer.totalGeneratedFileSize / 1_048_576);
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
+    }
+
+    private static boolean hasRunningApplication(ComputingAppliance node) {
+        return ResourceAgent.allResourceAgents.values().stream()
+                .flatMap(agent -> agent.capacities.values().stream())
+                .filter(capacity -> capacity.node == node)
+                .flatMap(capacity -> capacity.utilisations.stream())
+                .anyMatch(utilisation -> utilisation.component != null
+                        && utilisation.state == Utilisation.State.ALLOCATED);
     }
 }

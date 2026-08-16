@@ -1,11 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
-import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.ComponentRequirements;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;

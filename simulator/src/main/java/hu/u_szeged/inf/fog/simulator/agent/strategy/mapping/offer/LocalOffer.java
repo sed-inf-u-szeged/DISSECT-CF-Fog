@@ -1,4 +1,4 @@
-package hu.u_szeged.inf.fog.simulator.agent.offer;
+package hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;

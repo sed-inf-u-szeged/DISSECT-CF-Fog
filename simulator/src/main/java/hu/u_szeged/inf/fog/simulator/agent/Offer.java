@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferMetrics;
 
 public class Offer {
 
@@ -20,6 +21,9 @@ public class Offer {
 
     @JsonIgnore
     public List<ComponentPlacement> selectedPlacements;
+
+    @JsonIgnore
+    public GlobalOfferMetrics metrics;
 
     @JsonIgnore
     public int id;

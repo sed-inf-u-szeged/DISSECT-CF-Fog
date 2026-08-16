@@ -1,7 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
-import hu.u_szeged.inf.fog.simulator.agent.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import org.apache.commons.lang3.tuple.Pair;
