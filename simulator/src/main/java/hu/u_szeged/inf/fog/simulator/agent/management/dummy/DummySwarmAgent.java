@@ -57,7 +57,7 @@ public class DummySwarmAgent extends SwarmAgent {
                 }
             }
 
-            if (applicationShutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
+            if (applicationShutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.DUMMY_CONFIGURATION.get("submissionDelay")).size()) {
                 for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                     edc.stop();
                 }

@@ -66,23 +66,23 @@ public abstract class MappingStrategy {
     }
 
     public static double requiredCpu(Component component) {
-        return component.requirements.cpu != null
-                && component.requirements.cpu > 0
-                ? component.requirements.cpu
-                : 0.0;
+        if (component.requirements == null || component.requirements.cpu == null || component.requirements.cpu <= 0.0) {
+            throw new IllegalArgumentException("Component '" + component.id + "' must define a positive CPU requirement.");
+        }
+        return component.requirements.cpu;
     }
 
     public static long requiredMemory(Component component) {
-        return component.requirements.memory != null
-                && component.requirements.memory > 0
-                ? component.requirements.memory
-                : 0L;
+        if (component.requirements == null || component.requirements.memory == null || component.requirements.memory <= 0L) {
+            throw new IllegalArgumentException("Component '" + component.id + "' must define a positive memory requirement.");
+        }
+        return component.requirements.memory;
     }
 
     public static long requiredStorage(Component component) {
-        return component.requirements.storage != null
-                && component.requirements.storage > 0
-                ? component.requirements.storage
-                : 0L;
+        if (component.requirements == null || component.requirements.storage == null || component.requirements.storage <= 0L) {
+            throw new IllegalArgumentException("Component '" + component.id + "' must define a positive storage requirement.");
+        }
+        return component.requirements.storage;
     }
 }

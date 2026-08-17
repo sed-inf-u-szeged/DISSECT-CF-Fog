@@ -18,6 +18,10 @@ public class SwarmAgent extends Timed {
 
     public long totalGeneratedFiles;
 
+    public long totalGeneratedDataSize;
+
+    public long totalFileDeliveryTime;
+
     public static int applicationShutdownCounter;
 
     public SwarmAgent(AgentApplication app) {

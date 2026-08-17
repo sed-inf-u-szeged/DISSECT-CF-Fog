@@ -61,29 +61,9 @@ public class AtomicCoverageState {
         return Collections.unmodifiableMap(counts);
     }
 
-    public long getAgentConflictCount() {
-        return selectedOfferCountsByAgent.values().stream()
-                .mapToLong(count ->
-                        Math.max(0, count - 1))
-                .sum();
-    }
-
     public boolean hasAtMostOneOfferPerAgent() {
         return selectedOfferCountsByAgent.values().stream()
                 .allMatch(count -> count <= 1);
-    }
-
-    public long getMissingComponentCount() {
-        return coverageCounts.values().stream()
-                .filter(count -> count == 0)
-                .count();
-    }
-
-    public long getDuplicateCoverageCount() {
-        return coverageCounts.values().stream()
-                .mapToLong(count ->
-                        Math.max(0, count - 1))
-                .sum();
     }
 
     public boolean isCompleteAndUnique() {

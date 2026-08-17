@@ -220,41 +220,6 @@ public class ResourceAgent {
         }
     }
 
-    /*
-    public Triple<Double, Long, Long> getAllFreeResources() {
-        double totalFreeCpu = capacities.stream().mapToDouble(cap -> cap.cpu).sum();
-        long totalFreeMemory = capacities.stream().mapToLong(cap -> cap.memory).sum();
-        long totalFreeStorage = capacities.stream().mapToLong(cap -> cap.storage).sum();
-
-        return Triple.of(totalFreeCpu, totalFreeMemory, totalFreeStorage);
-    }
-    */
-
-    /*
-    private void freeReservedResourcesExceptWinningOffer(final String appName, final Capacity capacity, final Offer winningOffer) {
-        List<Resource> resourcesToBeRemoved = new ArrayList<>();
-
-        Set<Resource> winningResources = new HashSet<>();
-        for (Map.Entry<ResourceAgent, Set<Resource>> entry : winningOffer.agentComponentsMap.entrySet()) {
-            if (entry.getKey().capacities.contains(capacity)) {
-                winningResources.addAll(entry.getValue());
-            }
-        }
-
-        for (Utilisation util : capacity.utilisations) {
-            if (util.resource.name.contains(appName)
-                    && util.state.equals(Utilisation.State.RESERVED)
-                    && !winningResources.contains(util.resource)) {
-                resourcesToBeRemoved.add(util.resource);
-            }
-        }
-
-        for (Resource resource : resourcesToBeRemoved) {
-            capacity.releaseCapacity(resource);
-        }
-    }
-    */
-
     private void generateOffers(AgentApplication app) {
         List<LocalOffer> localOffers = new ArrayList<>();
 
@@ -511,7 +476,7 @@ public class ResourceAgent {
                 releaseResourcesDueToNoOffers(app);
 
                 failedDeployments++;
-                List<Integer> submissionCounts = (List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay");
+                List<Integer> submissionCounts = (List<Integer>) Config.APP_TYPE.get("submissionDelay");
                 if (failedDeployments == submissionCounts.size()) {
                     SimLogger.logError("All deployment attempts (" + failedDeployments + ") for " + app.name + " have failed.");
                 }

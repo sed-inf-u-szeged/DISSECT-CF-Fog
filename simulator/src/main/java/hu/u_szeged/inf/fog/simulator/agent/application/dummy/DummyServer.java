@@ -17,8 +17,6 @@ import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 public class DummyServer extends Timed  {
 
-    public static long totalGeneratedFileSize = 0;
-
     private SwarmAgent swarmAgent;
 
     public Utilisation util;
@@ -47,14 +45,33 @@ public class DummyServer extends Timed  {
             String name = util.component.id + "-" + fires;
             StorageObject dummyData = new StorageObject(name,
                     (long) Config.DUMMY_CONFIGURATION.get("resFileSize"), true);
-            totalGeneratedFileSize += dummyData.size;
+            swarmAgent.totalGeneratedFiles++;
+            swarmAgent.totalGeneratedDataSize += dummyData.size;
 
             Repository sourceRepo = util.vm.getResourceAllocation().getHost().localDisk;
             Repository targetRepo = server.util.vm.getResourceAllocation().getHost().localDisk;
             sourceRepo.registerObject(dummyData);
             try {
                 if (sourceRepo == targetRepo) {
-                    processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
+                    Integer intraNodeLatency = sourceRepo.getLatencies().get(targetRepo.getName());
+
+                    if (intraNodeLatency == null) {
+                        throw new IllegalStateException("No latency is configured for repository: " + targetRepo.getName());
+                    }
+
+                    long intraNodeBandwidth = Math.min(sourceRepo.getOutputbw(), targetRepo.getInputbw());
+
+                    long transmissionTime = (long) Math.ceil((double) dummyData.size / intraNodeBandwidth);
+
+                    long transferTime = intraNodeLatency + transmissionTime;
+
+                    new DeferredEvent(transferTime) {
+
+                        @Override
+                        protected void eventAction() {
+                            processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
+                        }
+                    };
                 } else {
                     sourceRepo.requestContentDelivery(
                             name,
@@ -74,6 +91,9 @@ public class DummyServer extends Timed  {
     }
 
     private void processReceivedFile(DummyServer server, Repository sourceRepo, Repository targetRepo, StorageObject dummyData, long creationTime) {
+        long deliveryTime = Timed.getFireCount() - creationTime;
+        swarmAgent.totalFileDeliveryTime += deliveryTime;
+
         sourceRepo.deregisterObject(dummyData.id);
         RepoFileManager.mergeFiles(targetRepo, dummyData, "DummyApp-files");
 

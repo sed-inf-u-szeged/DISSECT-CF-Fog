@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import java.util.ArrayList;
@@ -52,30 +53,21 @@ public class Capacity {
 
         public List<LocalOffer> coveredOffers;
 
-        public static Utilisation createNonAtomicReservation(
-                LocalOffer localOffer,
-                Component component,
-                ResourceAgent resourceAgent) {
-
+        public static Utilisation createNonAtomicReservation(LocalOffer localOffer, Component component, ResourceAgent resourceAgent) {
             Utilisation utilisation = new Utilisation();
 
             utilisation.state = State.RESERVED;
-            utilisation.envelopeReservation  = false;
+            utilisation.envelopeReservation = false;
             utilisation.coveredOffers = List.of(localOffer);
             utilisation.component = component;
-            utilisation.utilisedCpu = safe(component.requirements.cpu, 0.0);
-            utilisation.utilisedMemory = safe(component.requirements.memory, 0L);
-            utilisation.utilisedStorage = safe(component.requirements.storage, 0L);
+            utilisation.utilisedCpu = MappingStrategy.requiredCpu(component);
+            utilisation.utilisedMemory = MappingStrategy.requiredMemory(component);
+            utilisation.utilisedStorage = MappingStrategy.requiredStorage(component);
             utilisation.resourceAgent = resourceAgent;
 
-            double demandShare =
-                    resourceAgent.calculateDemandShare(
-                            utilisation.utilisedCpu,
-                            utilisation.utilisedMemory,
-                            utilisation.utilisedStorage);
+            double demandShare = resourceAgent.calculateDemandShare(utilisation.utilisedCpu, utilisation.utilisedMemory, utilisation.utilisedStorage);
 
-            utilisation.actualCost =
-                    localOffer.offeredHourlyPrice * demandShare;
+            utilisation.actualCost = localOffer.offeredHourlyPrice * demandShare;
 
             return utilisation;
         }
@@ -261,17 +253,4 @@ public class Capacity {
         return "Capacity [node=" + node.name + ", cpu=" + cpu + ", totalCpu=" + totalCpu + ", memory=" + memory + ", totalMemory=" + totalMemory
                 + ", storage=" + storage + ", totalStorage=" + totalStorage + "]";
     }
-
-    /**
-     * Returns the given value if it is not null; otherwise, returns the default value.
-     *
-     * @param <T>           The type of the number (e.g., Integer, Double, Long).
-     * @param value         The value to check.
-     * @param defaultValue  The default value to return if {@code value} is null.
-     * @return The value if it is not null; otherwise, the default value.
-     */
-    private static <T extends Number> T safe(T value, T defaultValue) {
-        return value != null ? value : defaultValue;
-    }
-
 }

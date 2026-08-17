@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.agent.Deployment;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
+import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
@@ -141,6 +142,7 @@ public class    DummyAppDemo {
         }
 
         SimLogger.logEmptyLine();
+        long totalReceivedDataSize = 0L;
         for (ComputingAppliance ca : ComputingAppliance.allComputingAppliances.values()) {
             for (VirtualMachine vm : ca.iaas.listVMs()) {
                 SimLogger.logRes("\t(" + ca.name + ") " + vm);
@@ -150,6 +152,11 @@ public class    DummyAppDemo {
             }
             for (StorageObject so : ca.iaas.repositories.get(0).contents()) {
                 SimLogger.logRes("\t\t (Repo content) " + so);
+            }
+
+            StorageObject receivedData = ca.iaas.machines.get(0).localDisk.lookup("DummyApp-files");
+            if (receivedData != null) {
+                totalReceivedDataSize += receivedData.size;
             }
         }
 
@@ -196,11 +203,34 @@ public class    DummyAppDemo {
             applicationEnergyKwh += energyCollector.accumulatedEnergy / ScenarioBase.TO_KWH;
         }
 
-        SimLogger.logRes("Energy consumption nodes that hosted app components (kWh): " + applicationEnergyKwh);
+
+        long totalGeneratedFiles = 0L;
+        long totalGeneratedDataSize = 0L;
+        long totalFileDeliveryTime = 0L;
+
+        for (SwarmAgent swarmAgent : SwarmAgent.allSwarmAgents) {
+            if (!swarmAgent.app.type.equals("dummy")) {
+                continue;
+            }
+
+            totalGeneratedFiles += swarmAgent.totalGeneratedFiles;
+            totalGeneratedDataSize += swarmAgent.totalGeneratedDataSize;
+            totalFileDeliveryTime += swarmAgent.totalFileDeliveryTime;
+        }
+
+        double averageFileDeliveryLatency = totalGeneratedFiles == 0L ? 0.0 : (double) totalFileDeliveryTime / totalGeneratedFiles;
+
+        double effectiveApplicationThroughput =
+                totalFileDeliveryTime == 0L ? 0.0 : totalGeneratedDataSize * 1_000.0  / ScenarioBase.MB_IN_BYTE / totalFileDeliveryTime;
 
         SimLogger.logEmptyLine();
+        SimLogger.logRes("Generated files: " + totalGeneratedFiles);
+        SimLogger.logRes("Generated data / received data (MB) (MB): "
+                + (double) totalGeneratedDataSize / ScenarioBase.MB_IN_BYTE + " / " + (double) totalReceivedDataSize / ScenarioBase.MB_IN_BYTE);
+        SimLogger.logRes("Average file delivery latency (ms): " + averageFileDeliveryLatency);
+        SimLogger.logRes("Average file throughput (MB/s): " + effectiveApplicationThroughput);
+        SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh);
         SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
-        SimLogger.logRes("Size of generated files (MB): " + (double) DummyServer.totalGeneratedFileSize / 1_048_576);
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
     }
 

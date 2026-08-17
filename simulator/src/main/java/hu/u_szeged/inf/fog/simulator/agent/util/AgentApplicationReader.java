@@ -23,6 +23,8 @@ public class AgentApplicationReader {
     public static AgentApplication readJson(Path filepath) {
         try {
             AgentApplication agentApplication = objectMapper.readValue(filepath.toFile(), AgentApplication.class);
+            validateComponentRequirements(agentApplication);
+
             String nameWithoutExtension = filepath.getFileName().toString().replaceFirst("\\.[^.]+$", "");
             reName(agentApplication, nameWithoutExtension);
             return agentApplication;
@@ -31,6 +33,28 @@ public class AgentApplicationReader {
         }        
     }
 
+    private static void validateComponentRequirements(AgentApplication application) {
+        for (AgentApplication.Component component : application.components) {
+            if (component.requirements == null) {
+                throw new IllegalArgumentException("Component '" + component.id + "' has no requirements.");
+            }
+
+            if (component.requirements.cpu == null || component.requirements.cpu <= 0.0) {
+                throw new IllegalArgumentException(
+                        "Component '" + component.id + "' must define a positive CPU requirement.");
+            }
+
+            if (component.requirements.memory == null || component.requirements.memory <= 0L) {
+                throw new IllegalArgumentException(
+                        "Component '" + component.id + "' must define a positive memory requirement.");
+            }
+
+            if (component.requirements.storage == null || component.requirements.storage <= 0L) {
+                throw new IllegalArgumentException(
+                        "Component '" + component.id + "' must define a positive storage requirement.");
+            }
+        }
+    }
 
     /**
      * Prefixes component ids with the application name to ensure uniqueness.

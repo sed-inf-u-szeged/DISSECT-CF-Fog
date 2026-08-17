@@ -38,10 +38,6 @@ public class LocalMappingState {
         this.assignments = Collections.unmodifiableMap(copiedAssignments);
     }
 
-    public int getPlacedComponentCount() {
-        return assignments.size();
-    }
-
     public int getMissingComponentCount() {
         return applicationComponents.size() - assignments.size();
     }
