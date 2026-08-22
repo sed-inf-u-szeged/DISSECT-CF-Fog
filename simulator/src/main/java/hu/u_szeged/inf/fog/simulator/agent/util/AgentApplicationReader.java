@@ -10,29 +10,69 @@ import java.nio.file.Path;
  * Utility class for reading an {@link AgentApplication} from a JSON file.
  */
 public class AgentApplicationReader {
-    
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    
+
+    private static final String APPLICATION_NAME_PATTERN = "[A-Za-z][A-Za-z0-9_]*-[1-9][0-9]*";
+
+    private static final String COMPONENT_KIND_PATTERN = "[A-Za-z][A-Za-z0-9_]*";
+
+    private static final String COMPONENT_ID_PATTERN = "[1-9][0-9]*";
+
     private AgentApplicationReader() {}
-    
+
     /**
-     * Reads an {@link AgentApplication} from the given JSON file path.
+     * Reads and validates an {@link AgentApplication} from the given JSON file.
      *
      * @param filepath path to the JSON application description file
+     * @return the validated application with globally unique component ids
      */
     public static AgentApplication readJson(Path filepath) {
         try {
-            AgentApplication agentApplication = objectMapper.readValue(filepath.toFile(), AgentApplication.class);
-            validateComponentRequirements(agentApplication);
+            AgentApplication application = objectMapper.readValue(filepath.toFile(), AgentApplication.class);
 
-            String nameWithoutExtension = filepath.getFileName().toString().replaceFirst("\\.[^.]+$", "");
-            reName(agentApplication, nameWithoutExtension);
-            return agentApplication;
+            validateApplicationName(application.name);
+            validateComponentNames(application);
+            validateComponentRequirements(application);
+            assignApplicationAndComponentNames(application);
+
+            return application;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read application description from " + filepath, e);
-        }        
+        }
     }
 
+    /**
+     * Validates the application name read from the JSON file.
+     */
+    private static void validateApplicationName(String applicationName) {
+        if (applicationName == null || !applicationName.matches(APPLICATION_NAME_PATTERN)) {
+            throw new IllegalArgumentException(
+                    "Application name must follow the '<text>-<positive number>' format: " + applicationName);
+        }
+    }
+
+    /**
+     * Validates the kind and original id of every component.
+     */
+    private static void validateComponentNames(AgentApplication application) {
+        for (AgentApplication.Component component : application.components) {
+            if (component.properties == null || component.properties.kind == null
+                    || !component.properties.kind.matches(COMPONENT_KIND_PATTERN)) {
+                throw new IllegalArgumentException(
+                        "Component kind must start with a letter and contain only letters, digits, or underscores.");
+            }
+
+            if (component.id == null || !component.id.matches(COMPONENT_ID_PATTERN)) {
+                throw new IllegalArgumentException(
+                        "Component id must be a positive integer: " + component.id);
+            }
+        }
+    }
+
+    /**
+     * Validates the resource requirements of every component.
+     */
     private static void validateComponentRequirements(AgentApplication application) {
         for (AgentApplication.Component component : application.components) {
             if (component.requirements == null) {
@@ -57,12 +97,11 @@ public class AgentApplicationReader {
     }
 
     /**
-     * Prefixes component ids with the application name to ensure uniqueness.
+     * Creates globally unique component ids by prefixing them with the application name and component kind.
      */
-    public static void reName(AgentApplication agentApplication, String fileName) {
-        agentApplication.name = fileName;
-        for (AgentApplication.Component component : agentApplication.components) {
-            component.id = agentApplication.name + "-" + component.properties.kind + "-" + component.id;
+    private static void assignApplicationAndComponentNames(AgentApplication application) {
+        for (AgentApplication.Component component : application.components) {
+            component.id = application.name + "-" + component.properties.kind + "-" + component.id;
         }
     }
 }

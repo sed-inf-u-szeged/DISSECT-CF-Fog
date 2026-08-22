@@ -25,6 +25,7 @@ public class Config {
             Map.ofEntries(
                     Map.entry("simLength", 24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)), // 1 app
+                    Map.entry("maxRebroadCast", 2),
                     Map.entry("samplingFreq", 10_000L), // 10 sec.
                     Map.entry("resFileSize", 1_024L), // 1 kB
                     Map.entry("computeTaskBase", 8_000.0), // fixed CPU work for processing one received file (no. instructions)
@@ -52,7 +53,8 @@ public class Config {
                     Map.entry("saCoolingRate", 0.999),
 
                     Map.entry("atomicSaInitialHardPenaltyWeight", 1.0),
-                    Map.entry("atomicSaFinalHardPenaltyWeight", 100.0)
+                    Map.entry("atomicSaFinalHardPenaltyWeight", 100.0),
+                    Map.entry("atomicSaAdditionalRemovalProbability", 0.25)
 
                     // latency heavy
                     //Map.entry("samplingFreq", 1_000L),

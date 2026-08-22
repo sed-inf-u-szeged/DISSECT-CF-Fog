@@ -21,6 +21,7 @@ import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.JsonOfferData;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentOfferWriter.QosPriority;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.common.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -53,10 +54,8 @@ public class ResourceAgent {
     MessagingStrategy messagingStrategy;
     
     private boolean isTurnedOn;
-    
-    public static int maxRebroadcast = 2;
 
-    public static int failedDeployments = 0;
+    public static int failedApplicationCount = 0;
 
     //public int servedAsGatewayCount = 0;
     //public int winningOfferSelectionCount = 0;
@@ -168,41 +167,28 @@ public class ResourceAgent {
 
             if (atomicOffers) {
                 app.winningOffer = 0;
-
                 SimLogger.logRun("The simulated annealing selected an offer for " + app.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (onlyFirstOffer) {
                 app.winningOffer = 0;
-
                 SimLogger.logRun("The first hard-valid offer was selected for " + app.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
                 app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
-
                 SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
                 app.winningOffer = callRankingScript(app);
             }
-
-            /*
-            Offer winningOffer = ;
-            for (ResourceAgent agent : ResourceAgent.resourceAgents) {
-                for (Capacity capacity : agent.capacities) {
-                    freeReservedResourcesExceptWinningOffer(app.name, capacity, winningOffer);
-                }
-            }
-            */
-
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
-            releaseResourcesDueToNoOffers(app);
             new DeferredEvent(10 * 1_000L) {
 
                 @Override
                 protected void eventAction() {
-                    if (app.broadcastCount <= maxRebroadcast) {
+                    if (app.broadcastCount <= (int) Config.APP_TYPE.get("maxRebroadcast")) {
+                        releaseResourcesDueToNoOffers(app);
                         SimLogger.logRun("Rebroadcast " + (app.broadcastCount) + " for " + app.name + " at: "
                                 + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
                         broadcast(app, bcastMessageSize);
@@ -221,6 +207,9 @@ public class ResourceAgent {
     }
 
     private void generateOffers(AgentApplication app) {
+        app.generatedLocalOfferCount = 0L;
+        app.forwardedLocalOfferCount = 0L;
+
         List<LocalOffer> localOffers = new ArrayList<>();
 
         app.offerGeneratingAgents.add(this);
@@ -233,6 +222,7 @@ public class ResourceAgent {
             }
 
             List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app);
+            app.forwardedLocalOfferCount += agentLocalOffers.size();
 
             if (atomicOffers) {
                 agent.reserveAtomicLocalOffers(agentLocalOffers);
@@ -331,6 +321,7 @@ public class ResourceAgent {
                 (int) Config.APP_TYPE.get("atomicConstructionRestarts"),
                 (int) Config.APP_TYPE.get("atomicRepairRestarts"),
                 (int) Config.APP_TYPE.get("saNeighborAttempts"),
+                (double) Config.APP_TYPE.get("atomicSaAdditionalRemovalProbability"),
                 (int) Config.APP_TYPE.get("saMaxIterations"),
                 (double) Config.APP_TYPE.get("saInitialTemperature"),
                 (double) Config.APP_TYPE.get("saMinimumTemperature"),
@@ -475,10 +466,13 @@ public class ResourceAgent {
                 SimLogger.logRun(app.name + "'s requirements cannot be fulfilled!");
                 releaseResourcesDueToNoOffers(app);
 
-                failedDeployments++;
+                failedApplicationCount++;
                 List<Integer> submissionCounts = (List<Integer>) Config.APP_TYPE.get("submissionDelay");
-                if (failedDeployments == submissionCounts.size()) {
-                    SimLogger.logError("All deployment attempts (" + failedDeployments + ") for " + app.name + " have failed.");
+                if (failedApplicationCount == submissionCounts.size()) {
+                    SimLogger.logError("All " + failedApplicationCount + " submitted applications failed to deploy.");
+                    for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
+                        edc.stop();
+                    }
                 }
                 return;
             }

@@ -37,7 +37,7 @@ public class DummyServer extends Timed  {
     public void stop() {
         unsubscribe();
     }
-    
+
     @Override
     public void tick(long fires) {
         DummyServer server = (DummyServer) swarmAgent.observedAppComponents.get(SeedSyncer.centralRnd.nextInt(swarmAgent.observedAppComponents.size()));
@@ -53,30 +53,18 @@ public class DummyServer extends Timed  {
             sourceRepo.registerObject(dummyData);
             try {
                 if (sourceRepo == targetRepo) {
-                    Integer intraNodeLatency = sourceRepo.getLatencies().get(targetRepo.getName());
+                    String deliveredFileName = name + "-delivered";
 
-                    if (intraNodeLatency == null) {
-                        throw new IllegalStateException("No latency is configured for repository: " + targetRepo.getName());
-                    }
+                    sourceRepo.requestContentDelivery(name, deliveredFileName, targetRepo, new ConsumptionEventAdapter() {
 
-                    long intraNodeBandwidth = Math.min(sourceRepo.getOutputbw(), targetRepo.getInputbw());
-
-                    long transmissionTime = (long) Math.ceil((double) dummyData.size / intraNodeBandwidth);
-
-                    long transferTime = intraNodeLatency + transmissionTime;
-
-                    new DeferredEvent(transferTime) {
-
-                        @Override
-                        protected void eventAction() {
-                            processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
-                        }
-                    };
+                                @Override
+                                public void conComplete() {
+                                    targetRepo.deregisterObject(deliveredFileName);
+                                    processReceivedFile(server, sourceRepo, targetRepo, dummyData, fires);
+                                }
+                            });
                 } else {
-                    sourceRepo.requestContentDelivery(
-                            name,
-                            targetRepo,
-                            new ConsumptionEventAdapter() {
+                    sourceRepo.requestContentDelivery(name, targetRepo, new ConsumptionEventAdapter() {
 
                                 @Override
                                 public void conComplete() {

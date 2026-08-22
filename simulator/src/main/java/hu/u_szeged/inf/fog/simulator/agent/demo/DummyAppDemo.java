@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.Deployment;
@@ -37,6 +38,7 @@ public class    DummyAppDemo {
     public static void main(String[] args) throws IOException {
 
         SimLogger.setLogging(1, true);
+        SeedSyncer.setSeed(987654321);
         
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
         
@@ -220,15 +222,15 @@ public class    DummyAppDemo {
 
         double averageFileDeliveryLatency = totalGeneratedFiles == 0L ? 0.0 : (double) totalFileDeliveryTime / totalGeneratedFiles;
 
-        double effectiveApplicationThroughput =
+        double averageFileThroughput =
                 totalFileDeliveryTime == 0L ? 0.0 : totalGeneratedDataSize * 1_000.0  / ScenarioBase.MB_IN_BYTE / totalFileDeliveryTime;
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Generated files: " + totalGeneratedFiles);
-        SimLogger.logRes("Generated data / received data (MB) (MB): "
+        SimLogger.logRes("Generated data / received data (MB): "
                 + (double) totalGeneratedDataSize / ScenarioBase.MB_IN_BYTE + " / " + (double) totalReceivedDataSize / ScenarioBase.MB_IN_BYTE);
         SimLogger.logRes("Average file delivery latency (ms): " + averageFileDeliveryLatency);
-        SimLogger.logRes("Average file throughput (MB/s): " + effectiveApplicationThroughput);
+        SimLogger.logRes("Average file throughput (MB/s): " + averageFileThroughput);
         SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh);
         SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));

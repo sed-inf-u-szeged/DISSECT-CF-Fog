@@ -72,7 +72,7 @@ public class GreedyNoiseSwarmAgent extends SwarmAgent {
                 // TODO: release capacities
             }
 
-            if (applicationShutdownCounter + ResourceAgent.failedDeployments == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
+            if (applicationShutdownCounter + ResourceAgent.failedApplicationCount == ((List<Integer>) Config.NOISE_CLASS_CONFIGURATION.get("submissionDelay")).size()) {
                 for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                     edc.stop();
                 }

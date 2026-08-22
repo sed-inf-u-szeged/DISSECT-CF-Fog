@@ -47,6 +47,7 @@ public class FirstFitMappingStrategy extends MappingStrategy {
             return List.of();
         }
 
+        application.generatedLocalOfferCount++;
         return List.of(new LocalOffer(agent, placements,null));
     }
 

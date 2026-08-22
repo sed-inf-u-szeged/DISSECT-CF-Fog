@@ -44,7 +44,8 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         List<ComponentPlacement> placements = bestState.toPlacements();
         LocalMetrics metrics = metricsCalculator.calculate(agent, placements);
         LocalOffer localOffer = new LocalOffer(agent, placements, metrics);
-
+        
+        application.generatedLocalOfferCount++;
         return List.of(localOffer);
     }
 

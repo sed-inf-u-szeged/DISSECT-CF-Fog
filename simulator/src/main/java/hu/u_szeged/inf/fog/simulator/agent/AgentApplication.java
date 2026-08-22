@@ -44,6 +44,10 @@ public class AgentApplication {
     public long submissionTime;
 
     public int broadcastCount;
+
+    public long generatedLocalOfferCount;
+
+    public long forwardedLocalOfferCount;
     
     public Set<ResourceAgent> offerGeneratingAgents;
     

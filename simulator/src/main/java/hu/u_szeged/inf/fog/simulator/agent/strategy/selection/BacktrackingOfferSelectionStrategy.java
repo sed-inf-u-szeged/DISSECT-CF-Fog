@@ -13,7 +13,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class BacktrackingOfferSelectionStrategy {
@@ -35,25 +34,18 @@ public class BacktrackingOfferSelectionStrategy {
                 .toList();
 
         List<Offer> offers = new ArrayList<>();
-        AtomicBoolean found = new AtomicBoolean(false);
 
-        generateCombinations(pairs, application, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), found, offers);
-
+        generateCombinations(pairs, application, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), offers);
         return offers;
     }
 
-    private void generateCombinations(
+    private boolean generateCombinations(
             List<Pair<ResourceAgent, ComponentPlacement>> pairs,
             AgentApplication application,
             Set<Pair<ResourceAgent, ComponentPlacement>> currentCombination,
             Set<Component> includedComponents,
             Set<String> seenStates,
-            AtomicBoolean found, // TODO: why atomic?
             List<Offer> offers) {
-
-        if (found.get()) {
-            return;
-        }
 
         if (includedComponents.size() == application.components.size()) {
             Offer offer = createOffer(currentCombination, offers.size());
@@ -63,13 +55,10 @@ public class BacktrackingOfferSelectionStrategy {
 
             if (hardViolation <= EPSILON) {
                 offers.add(offer);
-
-                if (onlyFirstOffer) {
-                    found.set(true);
-                }
+                return onlyFirstOffer;
             }
 
-            return;
+            return false;
         }
 
         String stateKey = currentCombination.stream()
@@ -80,7 +69,7 @@ public class BacktrackingOfferSelectionStrategy {
                 .collect(Collectors.joining(","));
 
         if (!seenStates.add(stateKey)) {
-            return;
+            return false;
         }
 
         for (Pair<ResourceAgent, ComponentPlacement> pair : pairs) {
@@ -93,18 +82,24 @@ public class BacktrackingOfferSelectionStrategy {
             currentCombination.add(pair);
             includedComponents.add(component);
 
-            generateCombinations(
+            boolean found = generateCombinations(
                     pairs,
                     application,
                     currentCombination,
                     includedComponents,
                     seenStates,
-                    found,
                     offers);
 
             currentCombination.remove(pair);
             includedComponents.remove(component);
+
+            if (found) {
+                return true;
+            }
+
         }
+
+        return false;
     }
 
     private Offer createOffer(Set<Pair<ResourceAgent, ComponentPlacement>> combination, int offerId) {

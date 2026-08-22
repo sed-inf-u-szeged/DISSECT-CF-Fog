@@ -12,13 +12,14 @@ public class AtomicCoverageSimulatedAnnealing {
 
     // TODO: magic numbers
     private static final double EPSILON = 1e-9;
-    private static final double ADDITIONAL_REMOVAL_PROBABILITY = 0.25;
+
     private final Random random = SeedSyncer.centralRnd;
+
     private final GlobalOfferEvaluator globalOfferEvaluator = new GlobalOfferEvaluator();
 
     public AtomicCoverageState optimize(AgentApplication application, List<LocalOffer> availableOffers, int maxConstructionRestarts,
-                                        int repairRestarts, int maxNeighborAttempts, int maxIterations, double initialTemperature, double minimumTemperature,
-                                        double coolingRate, double initialHardPenaltyWeight, double finalHardPenaltyWeight) {
+                                        int repairRestarts, int maxNeighborAttempts, double additionalRemovalProbability, int maxIterations, double initialTemperature,
+                                        double minimumTemperature, double coolingRate, double initialHardPenaltyWeight, double finalHardPenaltyWeight) {
 
         AtomicCoverageConstructor constructor = new AtomicCoverageConstructor();
 
@@ -43,7 +44,7 @@ public class AtomicCoverageSimulatedAnnealing {
 
         for (int iteration = 0; iteration < maxIterations && currentTemperature > minimumTemperature; iteration++) {
             AtomicCoverageState neighborState =
-                    generateNeighbor(application, currentState, availableOffers, constructor, repairRestarts, maxNeighborAttempts);
+                    generateNeighbor(application, currentState, availableOffers, constructor, repairRestarts, maxNeighborAttempts, additionalRemovalProbability);
 
             double currentEnergy =
                     calculateEnergy( application, currentState, currentTemperature, initialTemperature, minimumTemperature, initialHardPenaltyWeight, finalHardPenaltyWeight);
@@ -120,7 +121,7 @@ public class AtomicCoverageSimulatedAnnealing {
     }
 
     private AtomicCoverageState generateNeighbor(AgentApplication application, AtomicCoverageState currentState, List<LocalOffer> availableOffers,
-            AtomicCoverageConstructor constructor, int repairRestarts, int maxNeighborAttempts) {
+            AtomicCoverageConstructor constructor, int repairRestarts, int maxNeighborAttempts, double additionalRemovalProbability) {
 
         if (!currentState.isStructurallyValid()) {
             throw new IllegalArgumentException("The current SA state must be structurally valid.");
@@ -137,7 +138,7 @@ public class AtomicCoverageSimulatedAnnealing {
 
             int removalCount = 1;
 
-            while (removalCount < retainedOffers.size() && random.nextDouble() < ADDITIONAL_REMOVAL_PROBABILITY) {
+            while (removalCount < retainedOffers.size() && random.nextDouble() < additionalRemovalProbability) {
                 removalCount++;
             }
 
