@@ -39,9 +39,14 @@ public class ExhaustiveMappingStrategy extends MappingStrategy {
 
         generateCombinations(agent, application.components, 0, availableCapacities, currentPlacements, localOffers);
 
-        application.generatedLocalOfferCount += localOffers.size();
+        application.localCandidateEvaluationCount += localOffers.size();
+        application.localOffersBeforePareto += localOffers.size();
 
-        return paretoFilter.filter(localOffers);
+        List<LocalOffer> filteredOffers = paretoFilter.filter(localOffers);
+
+        application.localOffersAfterPareto += filteredOffers.size();
+
+        return filteredOffers;
     }
 
     private void generateCombinations(

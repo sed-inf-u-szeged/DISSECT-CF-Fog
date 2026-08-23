@@ -174,12 +174,17 @@ public class ResourceAgent {
                 SimLogger.logRun("The first hard-valid offer was selected for " + app.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
+                long rankingStart = System.nanoTime();
                 app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
+                app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
+
                 SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
                         + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
+                long rankingStart = System.nanoTime();
                 app.winningOffer = callRankingScript(app);
+                app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
             }
             acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
         } else {
@@ -207,8 +212,12 @@ public class ResourceAgent {
     }
 
     private void generateOffers(AgentApplication app) {
-        app.generatedLocalOfferCount = 0L;
-        app.forwardedLocalOfferCount = 0L;
+        app.localCandidateEvaluationCount = 0L;
+        app.localGenerationRuntimeNanos = 0L;
+        app.globalCoverageEvaluationCount = 0L;
+        app.globalSelectionRuntimeNanos = 0L;
+        app.localOffersBeforePareto = 0L;
+        app.localOffersAfterPareto = 0L;
 
         List<LocalOffer> localOffers = new ArrayList<>();
 
@@ -221,8 +230,9 @@ public class ResourceAgent {
                 throw new IllegalStateException( "Atomic offer generation requires ExhaustiveMappingStrategy");
             }
 
+            long localGenerationStart = System.nanoTime();
             List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app);
-            app.forwardedLocalOfferCount += agentLocalOffers.size();
+            app.localGenerationRuntimeNanos += System.nanoTime() - localGenerationStart;
 
             if (atomicOffers) {
                 agent.reserveAtomicLocalOffers(agentLocalOffers);
@@ -315,6 +325,7 @@ public class ResourceAgent {
     private void generateAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
         AtomicCoverageSimulatedAnnealing simulatedAnnealing = new AtomicCoverageSimulatedAnnealing();
 
+        long globalSelectionStart = System.nanoTime();
         AtomicCoverageState winningState = simulatedAnnealing.optimize(
                 app,
                 localOffers,
@@ -328,6 +339,7 @@ public class ResourceAgent {
                 (double) Config.APP_TYPE.get("saCoolingRate"),
                 (double) Config.APP_TYPE.get("atomicSaInitialHardPenaltyWeight"),
                 (double) Config.APP_TYPE.get("atomicSaFinalHardPenaltyWeight"));
+        app.globalSelectionRuntimeNanos += System.nanoTime() - globalSelectionStart;
 
         if (winningState == null) {
             return;
@@ -360,7 +372,9 @@ public class ResourceAgent {
 
         BacktrackingOfferSelectionStrategy selectionStrategy = new BacktrackingOfferSelectionStrategy(onlyFirstOffer);
 
+        long globalSelectionStart = System.nanoTime();
         app.offers.addAll(selectionStrategy.selectOffers(localOffers, app));
+        app.globalSelectionRuntimeNanos += System.nanoTime() - globalSelectionStart;
     }
 
     private int callRankingScript(AgentApplication app) {

@@ -48,6 +48,8 @@ public class BacktrackingOfferSelectionStrategy {
             List<Offer> offers) {
 
         if (includedComponents.size() == application.components.size()) {
+            application.globalCoverageEvaluationCount++;
+
             Offer offer = createOffer(currentCombination, offers.size());
             offer.metrics = globalOfferEvaluator.evaluate(offer);
 

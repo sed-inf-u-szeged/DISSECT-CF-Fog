@@ -11,6 +11,8 @@ import java.util.Set;
  */
 public class AgentApplication {
 
+    public static final List<AgentApplication> allAgentApplications = new ArrayList<>();
+
     public String name; 
 
     public String type;
@@ -45,9 +47,17 @@ public class AgentApplication {
 
     public int broadcastCount;
 
-    public long generatedLocalOfferCount;
+    public long localCandidateEvaluationCount;
 
-    public long forwardedLocalOfferCount;
+    public long localGenerationRuntimeNanos;
+
+    public long globalCoverageEvaluationCount;
+
+    public long globalSelectionRuntimeNanos;
+
+    public long localOffersBeforePareto;
+
+    public long localOffersAfterPareto;
     
     public Set<ResourceAgent> offerGeneratingAgents;
     

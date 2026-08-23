@@ -28,6 +28,7 @@ public class AtomicCoverageSimulatedAnnealing {
         if (currentState == null) {
             return null;
         }
+        application.globalCoverageEvaluationCount++;
 
         AtomicCoverageState bestFeasibleState = null;
         double bestFeasibleQosUtility = Double.POSITIVE_INFINITY;
@@ -45,6 +46,7 @@ public class AtomicCoverageSimulatedAnnealing {
         for (int iteration = 0; iteration < maxIterations && currentTemperature > minimumTemperature; iteration++) {
             AtomicCoverageState neighborState =
                     generateNeighbor(application, currentState, availableOffers, constructor, repairRestarts, maxNeighborAttempts, additionalRemovalProbability);
+            application.globalCoverageEvaluationCount++;
 
             double currentEnergy =
                     calculateEnergy( application, currentState, currentTemperature, initialTemperature, minimumTemperature, initialHardPenaltyWeight, finalHardPenaltyWeight);

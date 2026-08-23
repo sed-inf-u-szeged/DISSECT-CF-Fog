@@ -33,6 +33,7 @@ public class Submission extends Timed {
         }
         
         this.app = AgentApplicationReader.readJson(filepath);
+        AgentApplication.allAgentApplications.add(this.app);
         this.app.submissionTime = Timed.getFireCount();
         this.bcastMessageSize = bcastMessageSize;
         List<ResourceAgent> agents = new ArrayList<>(ResourceAgent.allResourceAgents.values());

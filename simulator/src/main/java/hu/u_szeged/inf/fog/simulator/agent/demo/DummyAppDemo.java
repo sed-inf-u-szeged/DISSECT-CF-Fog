@@ -10,11 +10,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
-import hu.u_szeged.inf.fog.simulator.agent.Capacity;
+import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.Deployment;
-import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
-import hu.u_szeged.inf.fog.simulator.agent.Submission;
 import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
@@ -133,7 +130,8 @@ public class    DummyAppDemo {
         if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
             CsvVisualiser.visualise(
                     "RA-metrics",
-                    ResourceAgentCsvExporter.getInstance().hourlyPricePath
+                    ResourceAgentCsvExporter.getInstance().hourlyPricePath,
+                    ResourceAgentCsvExporter.getInstance().resourceMetricsPath
             ).write();
         }
     
@@ -195,8 +193,89 @@ public class    DummyAppDemo {
         }
 
         SimLogger.logEmptyLine();
-        for (Map.Entry<String, Double> entry : applicationCosts.entrySet()) {
-            SimLogger.logRes(entry.getKey() + " total cost (unit): " + entry.getValue());
+        SimLogger.logRes("Application results:");
+
+        int applicationCount = AgentApplication.allAgentApplications.size();
+        int successfulApplicationCount = 0;
+
+        long totalLocalCandidateEvaluations = 0L;
+        long totalLocalGenerationRuntimeNanos = 0L;
+        long totalGlobalCoverageEvaluations = 0L;
+        long totalGlobalSelectionRuntimeNanos = 0L;
+        long totalOffersBeforePareto = 0L;
+        long totalOffersAfterPareto = 0L;
+
+        double totalSuccessfulDeploymentTime = 0.0;
+
+        for (AgentApplication application : AgentApplication.allAgentApplications) {
+            boolean successful = application.deploymentTime != -1;
+
+            if (successful) {
+                successfulApplicationCount++;
+                totalSuccessfulDeploymentTime += application.deploymentTime;
+            }
+
+            totalLocalCandidateEvaluations += application.localCandidateEvaluationCount;
+            totalLocalGenerationRuntimeNanos += application.localGenerationRuntimeNanos;
+            totalGlobalCoverageEvaluations += application.globalCoverageEvaluationCount;
+            totalGlobalSelectionRuntimeNanos += application.globalSelectionRuntimeNanos;
+            totalOffersBeforePareto += application.localOffersBeforePareto;
+            totalOffersAfterPareto += application.localOffersAfterPareto;
+
+            SimLogger.logRes("\t" + application.name + ":");
+            SimLogger.logRes("\t\tDeployment successful: " + successful);
+            SimLogger.logRes("\t\tDeployment time (ms): " + application.deploymentTime);
+            SimLogger.logRes("\t\tBroadcast rounds: " + application.broadcastCount);
+            SimLogger.logRes("\t\tTotal cost (unit): " + applicationCosts.getOrDefault(application.name, 0.0));
+            SimLogger.logRes("\t\tLocal candidate evaluations: " + application.localCandidateEvaluationCount);
+            SimLogger.logRes("\t\tLocal generation runtime (ms): " + application.localGenerationRuntimeNanos / 1_000_000.0);
+            SimLogger.logRes("\t\tGlobal coverage evaluations: " + application.globalCoverageEvaluationCount);
+            SimLogger.logRes("\t\tGlobal selection runtime (ms): " + application.globalSelectionRuntimeNanos / 1_000_000.0);
+
+            if (application.localOffersBeforePareto > 0L) {
+                double paretoReduction =
+                        1.0 - (double) application.localOffersAfterPareto / application.localOffersBeforePareto;
+
+                SimLogger.logRes("\t\tLocalOffers before Pareto: " + application.localOffersBeforePareto);
+                SimLogger.logRes("\t\tLocalOffers after Pareto: " + application.localOffersAfterPareto);
+                SimLogger.logRes("\t\tPareto reduction (%): " + paretoReduction * 100.0);
+            }
+        }
+
+        double deploymentSuccessRate =
+                applicationCount == 0 ? 0.0 : (double) successfulApplicationCount / applicationCount;
+
+        double averageDeploymentTime =
+                successfulApplicationCount == 0 ? 0.0 : totalSuccessfulDeploymentTime / successfulApplicationCount;
+
+        double averageLocalCandidateEvaluations =
+                applicationCount == 0 ? 0.0 : (double) totalLocalCandidateEvaluations / applicationCount;
+
+        double averageLocalGenerationRuntimeMillis =
+                applicationCount == 0 ? 0.0 : totalLocalGenerationRuntimeNanos / 1_000_000.0 / applicationCount;
+
+        double averageGlobalCoverageEvaluations =
+                applicationCount == 0 ? 0.0 : (double) totalGlobalCoverageEvaluations / applicationCount;
+
+        double averageGlobalSelectionRuntimeMillis =
+                applicationCount == 0 ? 0.0 : totalGlobalSelectionRuntimeNanos / 1_000_000.0 / applicationCount;
+
+        SimLogger.logEmptyLine();
+        SimLogger.logRes("Aggregated application results:");
+        SimLogger.logRes("\tSubmitted applications: " + applicationCount);
+        SimLogger.logRes("\tSuccessful deployments: " + successfulApplicationCount);
+        SimLogger.logRes("\tDeployment success rate (%): " + deploymentSuccessRate * 100.0);
+        SimLogger.logRes("\tAverage successful deployment time (ms): " + averageDeploymentTime);
+        SimLogger.logRes("\tAverage local candidate evaluations: " + averageLocalCandidateEvaluations);
+        SimLogger.logRes("\tAverage local generation runtime (ms): " + averageLocalGenerationRuntimeMillis);
+        SimLogger.logRes("\tAverage global coverage evaluations: " + averageGlobalCoverageEvaluations);
+        SimLogger.logRes("\tAverage global selection runtime (ms): " + averageGlobalSelectionRuntimeMillis);
+        if (totalOffersBeforePareto > 0L) {
+            double overallParetoReduction = 1.0 - (double) totalOffersAfterPareto / totalOffersBeforePareto;
+
+            SimLogger.logRes("\tTotal local offers before Pareto: " + totalOffersBeforePareto);
+            SimLogger.logRes("\tTotal local offers after Pareto: " + totalOffersAfterPareto);
+            SimLogger.logRes("\tPareto reduction (%): " + overallParetoReduction * 100.0);
         }
 
         double applicationEnergyKwh = 0.0;
@@ -234,6 +313,27 @@ public class    DummyAppDemo {
         SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh);
         SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
+
+        SimLogger.logEmptyLine();
+        MappingStrategy mappingStrategy = (MappingStrategy) Config.APP_TYPE.get("mappingStrategy");
+        boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
+        boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
+
+        String globalSelectionMethod;
+
+        if (atomicOffers) {
+            globalSelectionMethod = "Global SA";
+        } else if (onlyFirstOffer) {
+            globalSelectionMethod = "First hard-valid coverage";
+        } else {
+            globalSelectionMethod = "All hard-valid coverages + " + Config.APP_TYPE.get("rankingMethod") + " ranking";
+        }
+
+        SimLogger.logEmptyLine();
+        SimLogger.logRes("Algorithm configuration:");
+        SimLogger.logRes("\tLocal mapping strategy: " + mappingStrategy.getClass().getSimpleName());
+        SimLogger.logRes("\tGlobal selection method: " + globalSelectionMethod);
+        SimLogger.logRes("\tAtomic LocalOffers: " + atomicOffers);
     }
 
     private static boolean hasRunningApplication(ComputingAppliance node) {

@@ -274,4 +274,37 @@ public class LocalMetricsCalculator {
 
         return remainingRatios;
     }
+
+    public double calculateCurrentUtilisation(ResourceAgent agent) {
+        return calculateUtilisation(agent, List.of());
+    }
+
+    public double calculateCurrentBalance(ResourceAgent agent) {
+        return calculateBalance(agent, List.of());
+    }
+
+    public double calculateCurrentCompactness(ResourceAgent agent) {
+        return calculateCompactness(agent, List.of());
+    }
+
+    public double calculateCurrentCapacityFragmentation(ResourceAgent agent) {
+        if (agent.capacities.isEmpty()) {
+            return 0.0;
+        }
+
+        int partiallyUsedCapacityCount = 0;
+
+        for (Capacity capacity : agent.capacities.values()) {
+            List<Double> remainingRatios = calculateRemainingRatios(capacity, List.of());
+
+            boolean alreadyUsed = remainingRatios.stream().anyMatch(ratio -> ratio < 1.0);
+            boolean stillUsable = remainingRatios.stream().allMatch(ratio -> ratio > 0.0);
+
+            if (alreadyUsed && stillUsable) {
+                partiallyUsedCapacityCount++;
+            }
+        }
+
+        return (double) partiallyUsedCapacityCount / agent.capacities.size();
+    }
 }

@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.agent.util;
 
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalMetricsCalculator;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 
 import java.io.Closeable;
@@ -30,21 +31,28 @@ public class ResourceAgentCsvExporter implements Closeable {
     private boolean headerWritten;
 
     public final Path hourlyPricePath;
+    public final Path resourceMetricsPath;
 
     public final PrintWriter hourlyPriceWriter;
+    public final PrintWriter resourceUtilityWriter;
+
+    private final LocalMetricsCalculator localMetricsCalculator = new LocalMetricsCalculator();
 
     private ResourceAgentCsvExporter() {
         // TODO: check if NoiseAppCsvExporter also needs this fix!
         this.resourceAgents = new ArrayList<>(ResourceAgent.allResourceAgents.values());
 
         try {
-            hourlyPricePath = Paths.get(
-                    ScenarioBase.RESULT_DIRECTORY,
-                     "ra-hourly-price.csv"
-            );
+            hourlyPricePath = Paths.get(ScenarioBase.RESULT_DIRECTORY,"ra-hourly-price.csv");
+            resourceMetricsPath = Paths.get(ScenarioBase.RESULT_DIRECTORY, "ra-resource-metrics.csv");
 
             hourlyPriceWriter = new PrintWriter(
                     Files.newBufferedWriter(hourlyPricePath, StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE, StandardOpenOption.APPEND),
+                    true
+            );
+            resourceUtilityWriter = new PrintWriter(
+                    Files.newBufferedWriter(resourceMetricsPath, StandardCharsets.UTF_8,
                             StandardOpenOption.CREATE, StandardOpenOption.APPEND),
                     true
             );
@@ -65,6 +73,7 @@ public class ResourceAgentCsvExporter implements Closeable {
     @Override
     public void close() throws IOException {
         hourlyPriceWriter.close();
+        resourceUtilityWriter.close();
     }
 
     public void log() {
@@ -73,17 +82,31 @@ public class ResourceAgentCsvExporter implements Closeable {
         if (!headerWritten) {
             String header = generateHeader();
             hourlyPriceWriter.println(header);
+            resourceUtilityWriter.println(header);
             headerWritten = true;
         }
 
         StringBuilder rowForHourlyPrice = new StringBuilder();
+        StringBuilder rowForResourceUtility = new StringBuilder();
+
         rowForHourlyPrice.append(String.format(Locale.ROOT, "%.3f", time));
+        rowForResourceUtility.append(String.format(Locale.ROOT, "%.3f", time));
 
         for (ResourceAgent ra : resourceAgents) {
             rowForHourlyPrice.append(",");
             rowForHourlyPrice.append(ra.hourlyPrice);
+
+            double balance = localMetricsCalculator.calculateCurrentBalance(ra);
+            double utilisation = localMetricsCalculator.calculateCurrentUtilisation(ra);
+            double fragmentation = localMetricsCalculator.calculateCurrentCapacityFragmentation(ra);
+            double compactness = localMetricsCalculator.calculateCurrentCompactness(ra);
+            double resourceUtility = (balance + utilisation + (1.0 - fragmentation) + compactness) / 4.0;
+
+            rowForResourceUtility.append(",");
+            rowForResourceUtility.append(resourceUtility);
         }
 
         hourlyPriceWriter.println(rowForHourlyPrice);
+        resourceUtilityWriter.println(rowForResourceUtility);
     }
 }
