@@ -203,24 +203,27 @@ public class Capacity {
     }
 
     public void releaseAllocatedCapacityForShutdown(Component component) {
-        //List<Utilisation> utilisationsToBeRemoved = new ArrayList<>();
         for (Utilisation utilisation : utilisations) {
-            if (utilisation.component == component && utilisation.state.equals(Utilisation.State.ALLOCATED)) {
-                this.cpu += utilisation.utilisedCpu;
-                this.memory += utilisation.utilisedMemory;
-                this.storage += utilisation.utilisedStorage;
-
-                // we have to destroy the VM too, otherwise VM request could fail when trying to deploy new application
-                try {
-                    utilisation.vm.destroy(true);
-                } catch (Exception e) {
-                    SimLogger.logError("Exception occurred while destroying VM: " + e.getMessage());
-                }
-                utilisation.state = Utilisation.State.TERMINATED;
-                //utilisationsToBeRemoved.add(utilisation);
+            if (utilisation.component != component || utilisation.state != Utilisation.State.ALLOCATED) {
+                continue;
             }
+
+            if (utilisation.vm == null) {
+                SimLogger.logError("Allocated utilisation has no VM for component: " + component.id);
+            }
+
+            try {
+                utilisation.vm.destroy(true);
+            } catch (Exception exception) {
+                SimLogger.logError("Exception occurred while destroying VM: " + exception.getMessage());
+                return;
+            }
+
+            cpu += utilisation.utilisedCpu;
+            memory += utilisation.utilisedMemory;
+            storage += utilisation.utilisedStorage;
+            utilisation.state = Utilisation.State.TERMINATED;
         }
-        //utilisations.removeAll(utilisationsToBeRemoved);
     }
 
     public void assignPlacement(ComponentPlacement placement, Offer offer) {

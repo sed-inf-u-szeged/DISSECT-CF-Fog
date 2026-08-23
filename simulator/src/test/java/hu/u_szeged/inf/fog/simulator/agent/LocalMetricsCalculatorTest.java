@@ -23,6 +23,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocalMetricsCalculatorTest {
 
@@ -32,6 +33,7 @@ class LocalMetricsCalculatorTest {
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
+        AgentApplication.allAgentApplications.clear();
     }
 
     @Test
@@ -92,13 +94,60 @@ class LocalMetricsCalculatorTest {
         assertEquals(0.9, metrics.balance, EPSILON);
         assertEquals(0.25555555555555554, metrics.utilisation, EPSILON);
         assertEquals(1.0, metrics.fragmentation, EPSILON);
-        assertEquals(0.8, metrics.compactness, EPSILON);
+        assertEquals(0.19353820082958606, metrics.compactness, EPSILON);
         assertEquals(25.555555555555554, metrics.cost, EPSILON);
         assertEquals(20.0, metrics.latency, EPSILON);
         assertEquals(2000.0, metrics.bandwidth, EPSILON);
 
         double expectedEnergy = expectedProjectedEnergy(placements);
         assertEquals(expectedEnergy, metrics.energy, EPSILON);
+    }
+
+    @Test
+    void calculateProjectedPower_emptyPlacements_returnsZero() {
+        LocalMetricsCalculator calculator = new LocalMetricsCalculator();
+
+        assertEquals(0.0, calculator.calculateProjectedPower(List.of()), EPSILON);
+    }
+
+    @Test
+    void calculateCurrentMetrics_partiallyUsedCapacities_returnExpectedValues() {
+        ResourceAgent agent = createAgent("Agent1", 100.0);
+
+        Capacity capA = capacity("NodeA", 10.0, 100L, 100L, 1000L, 10);
+        Capacity capB = capacity("NodeB", 10.0, 100L, 100L, 1000L, 10);
+        agent.capacities.put("NodeA", capA);
+        agent.capacities.put("NodeB", capB);
+
+        capA.cpu = 5.0;
+        capA.memory = 50L;
+        capA.storage = 25L;
+
+        LocalMetricsCalculator calculator = new LocalMetricsCalculator();
+
+        assertEquals(0.2916666666666667, calculator.calculateCurrentUtilisation(agent), EPSILON);
+        assertEquals(0.875, calculator.calculateCurrentBalance(agent), EPSILON);
+        assertEquals(0.1940740740740742, calculator.calculateCurrentCompactness(agent), EPSILON);
+        assertEquals(0.5, calculator.calculateCurrentCapacityFragmentation(agent), EPSILON);
+    }
+
+    @Test
+    void calculateCurrentCapacityFragmentation_fullyUsedCapacityIsNotCountedAsPartiallyUsed() {
+        ResourceAgent agent = createAgent("Agent1", 100.0);
+
+        Capacity capA = capacity("NodeA", 10.0, 100L, 100L, 1000L, 10);
+        Capacity capB = capacity("NodeB", 10.0, 100L, 100L, 1000L, 10);
+        agent.capacities.put("NodeA", capA);
+        agent.capacities.put("NodeB", capB);
+
+        capA.cpu = 0.0;
+        capA.memory = 0L;
+        capA.storage = 0L;
+
+        LocalMetricsCalculator calculator = new LocalMetricsCalculator();
+
+        assertEquals(0.0, calculator.calculateCurrentCapacityFragmentation(agent), EPSILON);
+        assertTrue(calculator.calculateCurrentUtilisation(agent) > 0.0);
     }
 
     private static double expectedProjectedEnergy(List<ComponentPlacement> placements) {

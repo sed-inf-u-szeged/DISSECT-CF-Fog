@@ -222,25 +222,86 @@ public class LocalMetricsCalculator {
     }
 
     private double calculateCompactness(ResourceAgent agent, List<ComponentPlacement> placements) {
-        double maximumFreeCapacityRatio = 0.0;
-
-        for (Capacity capacity : agent.capacities.values()) {
-            List<Double> remainingRatios = calculateRemainingRatios(capacity, placements);
-
-            if (remainingRatios.isEmpty()) {
-                continue;
-            }
-
-            double averageFreeCapacityRatio =
-                    remainingRatios.stream()
-                            .mapToDouble(Double::doubleValue)
-                            .average()
-                            .orElse(0.0);
-
-            maximumFreeCapacityRatio = Math.max(maximumFreeCapacityRatio, averageFreeCapacityRatio);
+        if (agent.capacities.isEmpty()) {
+            return 0.0;
         }
 
-        return maximumFreeCapacityRatio;
+        List<Double> remainingCpuValues = new ArrayList<>();
+        List<Double> remainingMemoryValues = new ArrayList<>();
+        List<Double> remainingStorageValues = new ArrayList<>();
+
+        for (Capacity capacity : agent.capacities.values()) {
+            remainingCpuValues.add(calculateRemainingCpu(capacity, placements));
+            remainingMemoryValues.add(calculateRemainingMemory(capacity, placements));
+            remainingStorageValues.add(calculateRemainingStorage(capacity, placements));
+        }
+
+        double cpuConcentration = calculateNormalizedConcentration(remainingCpuValues);
+        double memoryConcentration = calculateNormalizedConcentration(remainingMemoryValues);
+        double storageConcentration = calculateNormalizedConcentration(remainingStorageValues);
+
+        return (cpuConcentration + memoryConcentration + storageConcentration) / 3.0;
+    }
+
+    private double calculateRemainingCpu(Capacity capacity, List<ComponentPlacement> placements) {
+        double remainingCpu = capacity.cpu;
+
+        for (ComponentPlacement placement : placements) {
+            if (placement.capacity == capacity) {
+                remainingCpu -= MappingStrategy.requiredCpu(placement.component);
+            }
+        }
+
+        return Math.max(0.0, remainingCpu);
+    }
+
+    private double calculateRemainingMemory(Capacity capacity, List<ComponentPlacement> placements) {
+        long remainingMemory = capacity.memory;
+
+        for (ComponentPlacement placement : placements) {
+            if (placement.capacity == capacity) {
+                remainingMemory -= MappingStrategy.requiredMemory(placement.component);
+            }
+        }
+
+        return Math.max(0L, remainingMemory);
+    }
+
+    private double calculateRemainingStorage(Capacity capacity, List<ComponentPlacement> placements) {
+        long remainingStorage = capacity.storage;
+
+        for (ComponentPlacement placement : placements) {
+            if (placement.capacity == capacity) {
+                remainingStorage -= MappingStrategy.requiredStorage(placement.component);
+            }
+        }
+
+        return Math.max(0L, remainingStorage);
+    }
+
+    private double calculateNormalizedConcentration(List<Double> remainingValues) {
+        double totalRemaining = remainingValues.stream()
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
+        if (totalRemaining <= 0.0) {
+            return 0.0;
+        }
+
+        if (remainingValues.size() == 1) {
+            return 1.0;
+        }
+
+        double concentration = remainingValues.stream()
+                .mapToDouble(value -> {
+                    double share = value / totalRemaining;
+                    return share * share;
+                })
+                .sum();
+
+        double minimumConcentration = 1.0 / remainingValues.size();
+
+        return (concentration - minimumConcentration) / (1.0 - minimumConcentration);
     }
 
     private List<Double> calculateRemainingRatios(Capacity capacity, List<ComponentPlacement> placements) {

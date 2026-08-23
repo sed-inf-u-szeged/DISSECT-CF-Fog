@@ -32,6 +32,7 @@ public class AgentApplicationReader {
             AgentApplication application = objectMapper.readValue(filepath.toFile(), AgentApplication.class);
 
             validateApplicationName(application.name);
+            validateComponents(application);
             validateComponentNames(application);
             validateComponentRequirements(application);
             assignApplicationAndComponentNames(application);
@@ -49,6 +50,12 @@ public class AgentApplicationReader {
         if (applicationName == null || !applicationName.matches(APPLICATION_NAME_PATTERN)) {
             throw new IllegalArgumentException(
                     "Application name must follow the '<text>-<positive number>' format: " + applicationName);
+        }
+    }
+
+    private static void validateComponents(AgentApplication application) {
+        if (application.components == null || application.components.isEmpty()) {
+            throw new IllegalArgumentException("Application must define at least one component.");
         }
     }
 

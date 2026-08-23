@@ -40,7 +40,9 @@ public class ResourceAgentCsvExporter implements Closeable {
 
     private ResourceAgentCsvExporter() {
         // TODO: check if NoiseAppCsvExporter also needs this fix!
-        this.resourceAgents = new ArrayList<>(ResourceAgent.allResourceAgents.values());
+        this.resourceAgents = ResourceAgent.allResourceAgents.values().stream()
+                .sorted(Comparator.comparing(resourceAgent -> resourceAgent.name))
+                .toList();
 
         try {
             hourlyPricePath = Paths.get(ScenarioBase.RESULT_DIRECTORY,"ra-hourly-price.csv");

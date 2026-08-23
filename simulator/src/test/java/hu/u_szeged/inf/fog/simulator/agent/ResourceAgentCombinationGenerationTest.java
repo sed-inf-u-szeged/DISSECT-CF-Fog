@@ -1,21 +1,25 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
+import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.LocalMetrics;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
-import org.apache.commons.lang3.tuple.Pair;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageState;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,183 +30,155 @@ public class ResourceAgentCombinationGenerationTest {
     @BeforeEach
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
+        ComputingAppliance.allComputingAppliances.clear();
+        AgentApplication.allAgentApplications.clear();
     }
 
     @Test
-    void generateCombinationsFindsAllPossibleAssignments() throws Exception {
+    void generateNonAtomicOfferCombinations_buildsValidAssignmentsAndReservesResources() throws Exception {
+        Component c1 = component("C1");
+        Component c2 = component("C2");
+        AgentApplication app = application(c1, c2);
+
         ResourceAgent agentA = createAgent("AgentA");
         ResourceAgent agentB = createAgent("AgentB");
+        Capacity capA = capacity("NodeA", 10.0, 100L, 100L);
+        Capacity capB = capacity("NodeB", 10.0, 100L, 100L);
+        agentA.capacities.put(capA.node.name, capA);
+        agentB.capacities.put(capB.node.name, capB);
 
-        Component c1 = createComponent("C1");
-        Component c2 = createComponent("C2");
-        Component c3 = createComponent("C3");
-        List<Component> orderedComponents = List.of(c1, c2, c3);
+        LocalOffer offerA = localOffer(agentA, capA, c1, c2);
+        LocalOffer offerB = localOffer(agentB, capB, c1, c2);
 
-        Capacity capacityA = new Capacity(null, 10, 10, 10);
-        Capacity capacityB = new Capacity(null, 10, 10, 10);
+        invokeReserveLocalOffers(agentA, List.of(offerA));
+        invokeReserveLocalOffers(agentB, List.of(offerB));
+        invokeGenerateNonAtomicOfferCombinations(agentA, List.of(offerA, offerB), app);
 
-        List<Pair<ResourceAgent, ComponentPlacement>> pairs = List.of(
-                Pair.of(agentA, createPlacement(c1, capacityA)), Pair.of(agentB, createPlacement(c1, capacityB)),
-                Pair.of(agentA, createPlacement(c2, capacityA)), Pair.of(agentB, createPlacement(c2, capacityB)),
-                Pair.of(agentA, createPlacement(c3, capacityA)), Pair.of(agentB, createPlacement(c3, capacityB))
-        );
-
-        Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations = new LinkedHashSet<>();
-        invokeGenerateCombinations(agentA, pairs, orderedComponents.size(), uniqueCombinations);
-
-        assertEquals(8, uniqueCombinations.size());
-
-        Set<String> actualSignatures = uniqueCombinations.stream()
-                .map(combination -> combinationSignature(combination, orderedComponents))
-                .collect(Collectors.toSet());
-
-        assertEquals(expectedSignatures(orderedComponents, List.of(agentA, agentB)), actualSignatures);
+        assertTrue(app.offers.size() >= 1);
+        assertTrue(app.offers.stream().allMatch(offer -> !offer.selectedPlacements.isEmpty()));
+        assertTrue(capA.utilisations.stream().anyMatch(utilisation -> utilisation.state == Utilisation.State.RESERVED));
+        assertTrue(capB.utilisations.stream().anyMatch(utilisation -> utilisation.state == Utilisation.State.RESERVED));
     }
 
     @Test
-    void generateUniqueOfferCombinationsCreatesAnOfferForEachPossibleAssignment() throws Exception {
-        ResourceAgent agentA = createAgent("AgentA");
-        ResourceAgent agentB = createAgent("AgentB");
+    void materializeWinningAtomicReservations_releasesEnvelopeReservationBeforeAssigningSelection() throws Exception {
+        Component c1 = component("C1");
+        Component c2 = component("C2");
+        AgentApplication app = application(c1, c2);
 
-        Component c1 = createComponent("C1");
-        Component c2 = createComponent("C2");
-        Component c3 = createComponent("C3");
-        List<Component> orderedComponents = List.of(c1, c2, c3);
+        ResourceAgent agent = createAgent("AgentA");
+        Capacity cap = capacity("NodeA", 10.0, 100L, 100L);
+        agent.capacities.put(cap.node.name, cap);
 
-        Capacity capacityA = new Capacity(null, 10, 10, 10);
-        Capacity capacityB = new Capacity(null, 10, 10, 10);
+        LocalOffer offerA = localOffer(agent, cap, c1);
+        LocalOffer offerB = localOffer(agent, cap, c2);
+        cap.reserveAtomicOffers(List.of(offerA, offerB), agent, 2.0, 2L, 2L);
 
-        List<Pair<ResourceAgent, ComponentPlacement>> pairs = List.of(
-                Pair.of(agentA, createPlacement(c1, capacityA)), Pair.of(agentB, createPlacement(c1, capacityB)),
-                Pair.of(agentA, createPlacement(c2, capacityA)), Pair.of(agentB, createPlacement(c2, capacityB)),
-                Pair.of(agentA, createPlacement(c3, capacityA)), Pair.of(agentB, createPlacement(c3, capacityB))
-        );
+        AtomicCoverageState winningState = new AtomicCoverageState(app.components, List.of(offerA, offerB));
+        invokeMaterializeWinningAtomicReservations(agent, app, winningState);
 
-        AgentApplication app = new AgentApplication();
-        app.components = new ArrayList<>(orderedComponents);
+        assertEquals(2, cap.utilisations.stream()
+                .filter(utilisation -> utilisation.state == Utilisation.State.RESERVED && !utilisation.envelopeReservation)
+                .count());
+        assertTrue(cap.utilisations.stream().noneMatch(utilisation -> utilisation.state == Utilisation.State.RESERVED && utilisation.envelopeReservation));
+    }
 
-        invokeGenerateUniqueOfferCombinations(agentA, pairs, app);
+    @Test
+    void freeReservedResources_onlyReleasesReservationsForTargetApplication() throws Exception {
+        Component c1 = component("C1");
+        Component c2 = component("C2");
+        Component c3 = component("C3");
+        AgentApplication app = application(c1, c2);
 
-        assertEquals(8, app.offers.size());
-        assertTrue(app.offers.stream().allMatch(offer -> offer.agentComponentsMap.values().stream()
-                .flatMap(Set::stream)
-                .collect(Collectors.toSet())
-                .equals(new LinkedHashSet<>(orderedComponents))));
+        ResourceAgent agent = createAgent("AgentA");
+        Capacity cap = capacity("NodeA", 10.0, 100L, 100L);
+        agent.capacities.put(cap.node.name, cap);
 
-        Set<String> actualSignatures = app.offers.stream()
-                .map(offer -> offerSignature(offer, orderedComponents))
-                .collect(Collectors.toSet());
+        LocalOffer appOffer1 = localOffer(agent, cap, c1);
+        LocalOffer appOffer2 = localOffer(agent, cap, c2);
+        LocalOffer unrelatedOffer = localOffer(agent, cap, c3);
 
-        assertEquals(expectedSignatures(orderedComponents, List.of(agentA, agentB)), actualSignatures);
+        cap.reserveCapacity(c1, agent, appOffer1);
+        cap.reserveCapacity(c2, agent, appOffer2);
+        cap.reserveCapacity(c3, agent, unrelatedOffer);
 
-        assertTrue(app.offers.stream().allMatch(offer ->
-                offer.selectedPlacements.size() == orderedComponents.size()));
+        invokeFreeReservedResources(agent, app, cap);
 
-        assertTrue(app.offers.stream().allMatch(offer ->
-                offer.selectedPlacements.stream()
-                        .map(placement -> placement.component)
-                        .collect(Collectors.toSet())
-                        .equals(new LinkedHashSet<>(orderedComponents))));
-
-        assertTrue(app.offers.stream().allMatch(offer ->
-                offer.selectedPlacements.stream().allMatch(placement -> {
-                    ResourceAgent agent = offer.agentComponentsMap.entrySet().stream()
-                            .filter(e -> e.getValue().contains(placement.component))
-                            .map(Map.Entry::getKey)
-                            .findFirst().orElseThrow();
-                    Capacity expectedCapacity = agent == agentA ? capacityA : capacityB;
-                    return placement.capacity == expectedCapacity;
-                })));
+        assertEquals(1, cap.utilisations.size());
+        assertEquals(Set.of(c3.id), cap.utilisations.stream()
+                .map(utilisation -> utilisation.component.id)
+                .collect(Collectors.toSet()));
     }
 
     private static ResourceAgent createAgent(String name) {
-        return new ResourceAgent(name, 1, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
+        return new ResourceAgent(name, 1.0, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
     }
 
-    private static Component createComponent(String id) {
+    private static AgentApplication application(Component... components) {
+        AgentApplication app = new AgentApplication();
+        app.name = "App-1";
+        app.components = new ArrayList<>(List.of(components));
+        return app;
+    }
+
+    private static Component component(String id) {
         Component component = new Component();
         component.id = id;
+        component.requirements = new AgentApplication.ComponentRequirements();
+        component.requirements.cpu = 1.0;
+        component.requirements.memory = 1L;
+        component.requirements.storage = 1L;
         return component;
     }
 
-    private static ComponentPlacement createPlacement(Component component, Capacity capacity) {
-        return new ComponentPlacement(component, capacity);
+    private static Capacity capacity(String nodeName, double cpu, long memory, long storage) {
+        return new Capacity(createNode(nodeName), cpu, memory, storage);
     }
 
-    private static void invokeGenerateUniqueOfferCombinations(ResourceAgent owner,
-                                                              List<Pair<ResourceAgent, ComponentPlacement>> pairs,
-                                                              AgentApplication app)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method method = ResourceAgent.class.getDeclaredMethod("generateUniqueOfferCombinations", List.class, AgentApplication.class);
+    private static ComputingAppliance createNode(String name) {
+        return new ComputingAppliance(
+                Config.createNode(name, 10.0, 10 * ScenarioBase.GB_IN_BYTE, 10 * ScenarioBase.GB_IN_BYTE,
+                        1, 1, 1, 1, 1, new HashMap<>()),
+                new GeoLocation(0, 0), "loc", "provider", false);
+    }
+
+    private static LocalOffer localOffer(ResourceAgent agent, Capacity capacity, Component... components) {
+        List<ComponentPlacement> placements = List.of(components).stream()
+                .map(component -> new ComponentPlacement(component, capacity))
+                .toList();
+        return new LocalOffer(agent, placements, new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+    }
+
+    private static void invokeReserveLocalOffers(ResourceAgent owner, List<LocalOffer> localOffers) throws Exception {
+        Method method = ResourceAgent.class.getDeclaredMethod("reserveLocalOffers", List.class);
         method.setAccessible(true);
-        method.invoke(owner, pairs, app);
+        method.invoke(owner, localOffers);
     }
 
-    private static void invokeGenerateCombinations(ResourceAgent owner,
-                                                   List<Pair<ResourceAgent, ComponentPlacement>> pairs,
-                                                   int componentCount,
-                                                   Set<Set<Pair<ResourceAgent, ComponentPlacement>>> uniqueCombinations)
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method method = ResourceAgent.class.getDeclaredMethod(
-                "generateCombinations",
-                List.class,
-                int.class,
-                Set.class,
-                Set.class,
-                Set.class,
-                Set.class,
-                AtomicBoolean.class
-        );
+    private static void invokeGenerateNonAtomicOfferCombinations(ResourceAgent owner,
+                                                                List<LocalOffer> localOffers,
+                                                                AgentApplication app)
+            throws Exception {
+        Method method = ResourceAgent.class.getDeclaredMethod("generateNonAtomicOfferCombinations", List.class, AgentApplication.class);
         method.setAccessible(true);
-        method.invoke(
-                owner,
-                pairs,
-                componentCount,
-                uniqueCombinations,
-                new LinkedHashSet<Pair<ResourceAgent, ComponentPlacement>>(),
-                new LinkedHashSet<Component>(),
-                new LinkedHashSet<String>(),
-                new AtomicBoolean(false)
-        );
+        method.invoke(owner, localOffers, app);
     }
 
-    private static Set<String> expectedSignatures(List<Component> orderedComponents, List<ResourceAgent> agents) {
-        int possibleCombinationCount = (int) Math.pow(agents.size(), orderedComponents.size());
-        Set<String> signatures = new LinkedHashSet<>();
-
-        for (int i = 0; i < possibleCombinationCount; i++) {
-            int value = i;
-            StringBuilder sb = new StringBuilder();
-            for (int componentIndex = 0; componentIndex < orderedComponents.size(); componentIndex++) {
-                Component component = orderedComponents.get(componentIndex);
-                ResourceAgent selectedAgent = agents.get(value % agents.size());
-                value = value / agents.size();
-                if (componentIndex > 0) {
-                    sb.append("|");
-                }
-                sb.append(component.id).append("=").append(selectedAgent.name);
-            }
-            signatures.add(sb.toString());
-        }
-
-        return signatures;
+    private static void invokeMaterializeWinningAtomicReservations(ResourceAgent owner,
+                                                                 AgentApplication app,
+                                                                 AtomicCoverageState winningState)
+            throws Exception {
+        Method method = ResourceAgent.class.getDeclaredMethod("materializeWinningAtomicReservations", AgentApplication.class, AtomicCoverageState.class);
+        method.setAccessible(true);
+        method.invoke(owner, app, winningState);
     }
 
-    private static String combinationSignature(Set<Pair<ResourceAgent, ComponentPlacement>> combination,
-                                               List<Component> orderedComponents) {
-        Map<Component, ResourceAgent> assignment = combination.stream()
-                .collect(Collectors.toMap(pair -> pair.getRight().component, Pair::getLeft));
-        return orderedComponents.stream()
-                .map(component -> component.id + "=" + assignment.get(component).name)
-                .collect(Collectors.joining("|"));
-    }
-
-    private static String offerSignature(Offer offer, List<Component> orderedComponents) {
-        Map<Component, ResourceAgent> assignment = offer.agentComponentsMap.entrySet().stream()
-                .flatMap(entry -> entry.getValue().stream().map(component -> Map.entry(component, entry.getKey())))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return orderedComponents.stream()
-                .map(component -> component.id + "=" + assignment.get(component).name)
-                .collect(Collectors.joining("|"));
+    private static void invokeFreeReservedResources(ResourceAgent owner,
+                                                   AgentApplication app,
+                                                   Capacity capacity)
+            throws Exception {
+        Method method = ResourceAgent.class.getDeclaredMethod("freeReservedResources", AgentApplication.class, Capacity.class);
+        method.setAccessible(true);
+        method.invoke(owner, app, capacity);
     }
 }

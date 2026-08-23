@@ -7,6 +7,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.Loc
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.LocalOfferParetoFilter;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
+import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +21,8 @@ class LocalOfferParetoFilterTest {
     @BeforeEach
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
+        ComputingAppliance.allComputingAppliances.clear();
+        AgentApplication.allAgentApplications.clear();
     }
 
     @Test
@@ -94,6 +97,34 @@ class LocalOfferParetoFilterTest {
         assertEquals(2, result.size());
         assertTrue(result.contains(base));
         assertTrue(result.contains(almostSame));
+    }
+
+    @Test
+    void filter_sameComponentSet_strictlyBetterOnlyInMaximizedMetric_dominates() {
+        ResourceAgent agent = createAgent("Agent1");
+        Component c1 = component("C1");
+
+        LocalOffer base = offer(agent, List.of(c1), metrics(0.8, 0.8, 0.3, 0.8, 10, 20, 30, 100));
+        LocalOffer betterBandwidth = offer(agent, List.of(c1), metrics(0.8, 0.8, 0.3, 0.8, 10, 20, 30, 120));
+
+        List<LocalOffer> result = new LocalOfferParetoFilter().filter(List.of(base, betterBandwidth));
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(betterBandwidth));
+    }
+
+    @Test
+    void filter_sameComponentSet_strictlyBetterOnlyInMinimizedMetric_dominates() {
+        ResourceAgent agent = createAgent("Agent1");
+        Component c1 = component("C1");
+
+        LocalOffer base = offer(agent, List.of(c1), metrics(0.8, 0.8, 0.3, 0.8, 10, 20, 30, 100));
+        LocalOffer lowerLatency = offer(agent, List.of(c1), metrics(0.8, 0.8, 0.3, 0.8, 10, 20, 25, 100));
+
+        List<LocalOffer> result = new LocalOfferParetoFilter().filter(List.of(base, lowerLatency));
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(lowerLatency));
     }
 
     private static ResourceAgent createAgent(String name) {

@@ -12,7 +12,6 @@ import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -28,17 +27,22 @@ public class ExhaustiveMappingStrategyTest {
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
+        AgentApplication.allAgentApplications.clear();
     }
 
     @Test
-    void emptyComponents_returnsEmptyList() {
+    void emptyComponents_returnsEmptyListAndKeepsCountersAtZero() {
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
+        AgentApplication app = application();
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, Collections.emptyList());
+                .generateLocalOffers(agent, app);
 
         assertTrue(offers.isEmpty());
+        assertEquals(0L, app.localCandidateEvaluationCount);
+        assertEquals(0L, app.localOffersBeforePareto);
+        assertEquals(0L, app.localOffersAfterPareto);
     }
 
     @Test
@@ -47,91 +51,105 @@ public class ExhaustiveMappingStrategyTest {
         Capacity cap = capacity("Node1", 10.0, 10L, 10L);
         agent.capacities.put("cap1", cap);
 
-        Component c = component("C1", 5.0, null, null);
+        Component c = component("C1", 5.0, 1L, 1L);
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertEquals(1, offers.size());
         assertEquals(1, offers.get(0).placements.size());
         assertSame(c, offers.get(0).placements.get(0).component);
         assertSame(cap, offers.get(0).placements.get(0).capacity);
+        assertEquals(1L, app.localCandidateEvaluationCount);
+        assertEquals(1L, app.localOffersBeforePareto);
+        assertEquals(1L, app.localOffersAfterPareto);
     }
 
     @Test
     void singleComponent_singleCapacity_doesNotFit_returnsEmptyList() {
         ResourceAgent agent = createAgent("Agent1");
-        // capacity has only 3 CPU, component needs 5
         agent.capacities.put("cap1", capacity("Node1", 3.0, 10L, 10L));
 
-        Component c = component("C1", 5.0, null, null);
+        Component c = component("C1", 5.0, 1L, 1L);
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertTrue(offers.isEmpty());
+        assertEquals(0L, app.localCandidateEvaluationCount);
+        assertEquals(0L, app.localOffersBeforePareto);
+        assertEquals(0L, app.localOffersAfterPareto);
     }
 
     @Test
     void twoComponents_singleCapacity_bothFit_returnsThreeOffers() {
-        // C1 alone, C2 alone, C1+C2 — three non-empty placements
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
-        Component c1 = component("C1", 3.0, null, null);
-        Component c2 = component("C2", 3.0, null, null);
+        Component c1 = component("C1", 3.0, 1L, 1L);
+        Component c2 = component("C2", 3.0, 1L, 1L);
+        AgentApplication app = application(c1, c2);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c1, c2));
+                .generateLocalOffers(agent, app);
 
         assertEquals(3, offers.size());
+        assertEquals(3L, app.localCandidateEvaluationCount);
+        assertEquals(3L, app.localOffersBeforePareto);
+        assertEquals(3L, app.localOffersAfterPareto);
     }
 
     @Test
     void twoComponents_singleCapacity_cannotHostBothSimultaneously_returnsTwoOffers() {
-        // Each component needs 8 CPU, capacity has 10 — they cannot be co-located
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
-        Component c1 = component("C1", 8.0, null, null);
-        Component c2 = component("C2", 8.0, null, null);
+        Component c1 = component("C1", 8.0, 1L, 1L);
+        Component c2 = component("C2", 8.0, 1L, 1L);
+        AgentApplication app = application(c1, c2);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c1, c2));
+                .generateLocalOffers(agent, app);
 
-        // C1 alone or C2 alone — combined (8+8=16) exceeds capacity of 10
         assertEquals(2, offers.size());
+        assertEquals(2L, app.localCandidateEvaluationCount);
+        assertEquals(2L, app.localOffersBeforePareto);
+        assertEquals(2L, app.localOffersAfterPareto);
     }
 
     @Test
-    void twoComponents_twoCapacities_allFit_returnsSixNonDominatedOffers() {
+    void twoComponents_twoCapacities_allFit_tracksCountersAndReturnsExpectedParetoOffers() {
         ResourceAgent agent = createAgent("Agent1");
         Capacity cap1 = capacity("Node1", 10.0, 10L, 10L);
         Capacity cap2 = capacity("Node2", 10.0, 10L, 10L);
         agent.capacities.put("cap1", cap1);
         agent.capacities.put("cap2", cap2);
 
-        Component c1 = component("C1", 1.0, null, null);
-        Component c2 = component("C2", 1.0, null, null);
+        Component c1 = component("C1", 1.0, 1L, 1L);
+        Component c2 = component("C2", 1.0, 1L, 1L);
+        AgentApplication app = application(c1, c2);
 
         Map<Capacity, String> capLabels = Map.of(cap1, "cap1", cap2, "cap2");
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c1, c2));
+                .generateLocalOffers(agent, app);
 
         assertEquals(6, offers.size());
+        assertEquals(8L, app.localCandidateEvaluationCount);
+        assertEquals(8L, app.localOffersBeforePareto);
+        assertEquals(6L, app.localOffersAfterPareto);
 
-        // Build a signature for each offer, e.g. "C1->cap1,C2->cap2"
         Set<String> signatures = offers.stream()
                 .map(offer -> offer.placements.stream()
                         .sorted(Comparator.comparing(p -> p.component.id))
                         .map(p -> p.component.id + "->" + capLabels.get(p.capacity))
                         .collect(Collectors.joining(",")))
                 .collect(Collectors.toSet());
-
+        assertEquals(6, signatures.size(), "Duplicate offers detected");
         assertEquals(6, signatures.size(), "Duplicate offers detected");
 
-        // The exact set of expected placement combinations
         Set<String> expected = Set.of(
                 "C2->cap1",
                 "C2->cap2",
@@ -148,27 +166,27 @@ public class ExhaustiveMappingStrategyTest {
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 10.0, 10L, 10L));
 
-        List<Component> components = List.of(
-                component("C1", 3.0, null, null),
-                component("C2", 3.0, null, null));
+        Component c1 = component("C1", 3.0, 1L, 1L);
+        Component c2 = component("C2", 3.0, 1L, 1L);
+        AgentApplication app = application(c1, c2);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, components);
+                .generateLocalOffers(agent, app);
 
         assertTrue(offers.stream().allMatch(offer -> offer.agent == agent));
     }
 
     @Test
     void capacityIsNotMutatedByStrategy() {
-        // The strategy uses shadow AvailableCapacity objects; the real Capacity must stay unchanged
         ResourceAgent agent = createAgent("Agent1");
         Capacity cap = capacity("Node1", 10.0, 100L, 200L);
         agent.capacities.put("cap1", cap);
 
         Component c1 = component("C1", 4.0, 30L, 50L);
         Component c2 = component("C2", 4.0, 30L, 50L);
+        AgentApplication app = application(c1, c2);
 
-        new ExhaustiveMappingStrategy().generateLocalOffers(agent, List.of(c1, c2));
+        new ExhaustiveMappingStrategy().generateLocalOffers(agent, app);
 
         assertEquals(10.0, cap.cpu, "CPU must not be modified");
         assertEquals(100L, cap.memory, "Memory must not be modified");
@@ -178,15 +196,15 @@ public class ExhaustiveMappingStrategyTest {
 
     @Test
     void memoryConstraint_preventsCoPlacement() {
-        // Both components need 6 memory units, capacity has 10 — combined (12) exceeds limit
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 100.0, 10L, 100L));
 
-        Component c1 = component("C1", 1.0, 6L, null);
-        Component c2 = component("C2", 1.0, 6L, null);
+        Component c1 = component("C1", 1.0, 6L, 1L);
+        Component c2 = component("C2", 1.0, 6L, 1L);
+        AgentApplication app = application(c1, c2);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c1, c2));
+                .generateLocalOffers(agent, app);
 
         assertEquals(2, offers.size());
         assertTrue(offers.stream().allMatch(o -> o.placements.size() == 1),
@@ -198,11 +216,12 @@ public class ExhaustiveMappingStrategyTest {
         ResourceAgent agent = createAgent("Agent1");
         agent.capacities.put("cap1", capacity("Node1", 100.0, 100L, 10L));
 
-        Component c1 = component("C1", null, null, 8L);
-        Component c2 = component("C2", null, null, 8L);
+        Component c1 = component("C1", 1.0, 1L, 8L);
+        Component c2 = component("C2", 1.0, 1L, 8L);
+        AgentApplication app = application(c1, c2);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c1, c2));
+                .generateLocalOffers(agent, app);
 
         assertEquals(2, offers.size());
         assertTrue(offers.stream().allMatch(o -> o.placements.size() == 1),
@@ -215,11 +234,12 @@ public class ExhaustiveMappingStrategyTest {
         ComputingAppliance node = createNode("Node1", "AWS", "us-east", false);
         agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L));
 
-        Component c = component("C1", 1.0, null, null);
+        Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.provider = "AWS";
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertEquals(1, offers.size());
     }
@@ -230,11 +250,12 @@ public class ExhaustiveMappingStrategyTest {
         ComputingAppliance node = createNode("Node1", "Azure", "eu-west", false);
         agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L));
 
-        Component c = component("C1", 1.0, null, null);
+        Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.provider = "AWS";
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertTrue(offers.isEmpty());
     }
@@ -249,11 +270,12 @@ public class ExhaustiveMappingStrategyTest {
         agent.capacities.put("AwsNode", awsCap);
         agent.capacities.put("AzureNode", azureCap);
 
-        Component c = component("C1", 1.0, null, null);
+        Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.provider = "AWS";
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertEquals(1, offers.size());
         assertSame(awsCap, offers.get(0).placements.get(0).capacity);
@@ -269,11 +291,12 @@ public class ExhaustiveMappingStrategyTest {
         agent.capacities.put("EdgeNode", edgeCap);
         agent.capacities.put("CloudNode", cloudCap);
 
-        Component c = component("C1", 1.0, null, null);
+        Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.edge = true;
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertEquals(1, offers.size());
         assertSame(edgeCap, offers.get(0).placements.get(0).capacity);
@@ -289,11 +312,12 @@ public class ExhaustiveMappingStrategyTest {
         agent.capacities.put("EuNode", euCap);
         agent.capacities.put("UsNode", usCap);
 
-        Component c = component("C1", 1.0, null, null);
+        Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.location = "eu-west";
+        AgentApplication app = application(c);
 
         List<LocalOffer> offers = new ExhaustiveMappingStrategy()
-                .generateLocalOffers(agent, List.of(c));
+                .generateLocalOffers(agent, app);
 
         assertEquals(1, offers.size());
         assertSame(euCap, offers.get(0).placements.get(0).capacity);
@@ -305,6 +329,13 @@ public class ExhaustiveMappingStrategyTest {
 
     private static Capacity capacity(String nodeName, double cpu, long memory, long storage) {
         return new Capacity(createNode(nodeName, "X", "X", false), cpu, memory, storage);
+    }
+
+    private static AgentApplication application(Component... components) {
+        AgentApplication app = new AgentApplication();
+        app.name = "App-1";
+        app.components = List.of(components);
+        return app;
     }
 
     private static Component component(String id, Double cpu, Long memory, Long storage) {

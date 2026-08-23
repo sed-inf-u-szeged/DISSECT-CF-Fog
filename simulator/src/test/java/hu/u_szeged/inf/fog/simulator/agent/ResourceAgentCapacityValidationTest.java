@@ -88,7 +88,7 @@ public class ResourceAgentCapacityValidationTest {
     }
 
     @Test
-    void throwsIfCombinedExceedsTest() {
+    void throwsIfSameNodeIsDeclaredTwiceForAgent() {
         ComputingAppliance node1 = new ComputingAppliance(
                 Config.createNode("Node1", 10, 10 * ScenarioBase.GB_IN_BYTE, 10 * ScenarioBase.GB_IN_BYTE,
                         1, 1, 1, 1, 1, new HashMap<>()),

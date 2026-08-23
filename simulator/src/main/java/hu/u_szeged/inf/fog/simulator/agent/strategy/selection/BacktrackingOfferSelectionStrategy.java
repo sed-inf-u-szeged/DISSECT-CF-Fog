@@ -47,6 +47,17 @@ public class BacktrackingOfferSelectionStrategy {
             Set<String> seenStates,
             List<Offer> offers) {
 
+        String stateKey = currentCombination.stream()
+                .map(pair -> pair.getLeft().name
+                        + ":" + pair.getRight().component.id
+                        + "->" + pair.getRight().capacity.node.name)
+                .sorted()
+                .collect(Collectors.joining(","));
+
+        if (!seenStates.add(stateKey)) {
+            return false;
+        }
+
         if (includedComponents.size() == application.components.size()) {
             application.globalCoverageEvaluationCount++;
 
@@ -60,17 +71,6 @@ public class BacktrackingOfferSelectionStrategy {
                 return onlyFirstOffer;
             }
 
-            return false;
-        }
-
-        String stateKey = currentCombination.stream()
-                .map(pair -> pair.getLeft().name
-                        + ":" + pair.getRight().component.id
-                        + "->" + pair.getRight().capacity.node.name)
-                .sorted()
-                .collect(Collectors.joining(","));
-
-        if (!seenStates.add(stateKey)) {
             return false;
         }
 
