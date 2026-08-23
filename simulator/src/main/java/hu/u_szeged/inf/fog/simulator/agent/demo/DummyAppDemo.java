@@ -10,11 +10,10 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.agent.ResourceAgentManager;
 import hu.u_szeged.inf.fog.simulator.agent.*;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
-import hu.u_szeged.inf.fog.simulator.agent.application.dummy.DummyServer;
 import hu.u_szeged.inf.fog.simulator.agent.management.SwarmAgent;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
@@ -102,10 +101,13 @@ public class    DummyAppDemo {
         ra4.initResourceAgent(resourceAgentVa, resourceAgentArc, 
                 new Capacity(node4, 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
                 new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
-    
+
+        ResourceAgentManager.getInstance().start((long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6,(boolean) Config.DUMMY_CONFIGURATION.get("csvLogging"));
+
         /* app submission */
         List<Path> appDescriptionFiles = Files.list((Path) Config.DUMMY_CONFIGURATION.get("inputDir"))
                 .filter(f -> f.toString().endsWith(".json"))
+                .sorted()
                 .toList();
 
         int i = 0;

@@ -25,53 +25,64 @@ public class Config {
             Map.ofEntries(
                     Map.entry("simLength", 24 * 60 * 60 * 1000L), // 1 day
                     Map.entry("submissionDelay", List.of(0)), // 1 app
-                    Map.entry("maxRebroadCast", 2),
-                    Map.entry("samplingFreq", 10_000L), // 10 sec.
-                    Map.entry("resFileSize", 1_024L), // 1 kB
-                    Map.entry("computeTaskBase", 8_000.0), // fixed CPU work for processing one received file (no. instructions)
-                    Map.entry("computeTaskPerByte", 16.0), // additional CPU work per received byte (no. instructions)
+                    Map.entry("maxRebroadcast", 2),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true),
 
-                    Map.entry("rankingMethod", "random"),
-                    //Map.entry("rankingMethod", "rank_no_re"),
-                    Map.entry("onlyFirstOffer", false),
+                    // Application profile: default
+                    Map.entry("samplingFreq", 10_000L), // time between file generations (ms)
+                    Map.entry("resFileSize", 1_024L), // generated file size (bytes)
+                    Map.entry("computeTaskBase", 8_000.0), // fixed CPU work per received file (no. instructions)
+                    Map.entry("computeTaskPerByte", 16.0), // additional CPU work per received byte (no. instructions)
+
+                    // Application profile: latency-heavy
+                    // Map.entry("samplingFreq", 1_000L),
+                    // Map.entry("resFileSize", 1_024L),
+                    // Map.entry("computeTaskBase", 1_000.0),
+                    // Map.entry("computeTaskPerByte", 0.0),
+
+                    // Application profile: bandwidth-heavy
+                    // Map.entry("samplingFreq", 60_000L),
+                    // Map.entry("resFileSize", 100L * ScenarioBase.MB_IN_BYTE),
+                    // Map.entry("computeTaskBase", 1_000.0),
+                    // Map.entry("computeTaskPerByte", 0.0),
+
+                    // Application profile: compute-heavy
+                    // Map.entry("samplingFreq", 10_000L),
+                    // Map.entry("resFileSize", 1_024L),
+                    // Map.entry("computeTaskBase", 10_000_000.0),
+                    // Map.entry("computeTaskPerByte", 0.0),
+
+                    // Algorithm 1: First Fit + all hard-valid coverages + ranking
+                    // Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                    // Map.entry("atomicOffers", false),
+                    // Map.entry("onlyFirstOffer", false),
+                    // Map.entry("rankingMethod", "random"),
+                    // Map.entry("rankingMethod", "rank_no_re"),
+
+                    // Algorithm 2: Local SA + first hard-valid coverage
+                    // Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
+                    // Map.entry("atomicOffers", false),
+                    // Map.entry("onlyFirstOffer", true),
+
+                    // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
                     Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
                     Map.entry("atomicOffers", true),
-                    //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
-                    //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                    //Map.entry("atomicOffers", false),
+                    Map.entry("onlyFirstOffer", false),
 
+                    //Shared Local and Global SA parameters
+                    Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor
+                    Map.entry("saMaxIterations", 10_000), // maximum number of SA iterations
+                    Map.entry("saInitialTemperature", 1.0), // starting temperature
+                    Map.entry("saMinimumTemperature", 0.0001), // stopping temperature
+                    Map.entry("saCoolingRate", 0.999), // temperature multiplier after each iteration
 
-                    Map.entry("atomicConstructionRestarts", 100),
-                    Map.entry("atomicRepairRestarts", 20),
-
-                    Map.entry("saNeighborAttempts", 20),
-                    Map.entry("saMaxIterations", 10_000),
-                    Map.entry("saInitialTemperature", 1.0),
-                    Map.entry("saMinimumTemperature", 0.0001),
-                    Map.entry("saCoolingRate", 0.999),
-
-                    Map.entry("atomicSaInitialHardPenaltyWeight", 1.0),
-                    Map.entry("atomicSaFinalHardPenaltyWeight", 100.0),
-                    Map.entry("atomicSaAdditionalRemovalProbability", 0.25)
-
-                    // latency heavy
-                    //Map.entry("samplingFreq", 1_000L),
-                    //Map.entry("resFileSize", 1_024L),
-                    //Map.entry("computeTaskBase", 1_000.0),
-                    //Map.entry("computeTaskPerByte", 0.0),
-                    // bandwidth heavy
-                    //Map.entry("samplingFreq", 60_000L),
-                    //Map.entry("resFileSize", 100L * ScenarioBase.MB_IN_BYTE),
-                    //Map.entry("computeTaskBase", 1_000.0),
-                    //Map.entry("computeTaskPerByte", 0.0,
-                    // compute heavy
-                    //Map.entry("samplingFreq", 10_000L),
-                    //Map.entry("resFileSize", 1_024L),
-                    //Map.entry("computeTaskBase", 10_000_000.0),
-                    //Map.entry("computeTaskPerByte", 0.0),
-
+                    // Global SA construction and repair parameters
+                    Map.entry("atomicConstructionRestarts", 100), // randomized construction restart limit
+                    Map.entry("atomicRepairRestarts", 20), // randomized repair restart limit
+                    Map.entry("atomicSaInitialHardPenaltyWeight", 1.0), // initial hard-requirement penalty weight
+                    Map.entry("atomicSaFinalHardPenaltyWeight", 100.0), // final hard-requirement penalty weight
+                    Map.entry("atomicSaAdditionalRemovalProbability", 0.25) // probability of removing an additional LocalOffer
             );
 
     public static final Map<String, Object> PARKING_CONFIGURATION =
