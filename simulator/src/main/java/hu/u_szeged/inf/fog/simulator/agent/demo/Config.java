@@ -7,7 +7,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
@@ -16,17 +18,29 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 
 public class Config {
 
+    private static List<Integer> createSubmissionDelays(int applicationCount, int intervalMinutes) {
+        return IntStream.range(0, applicationCount)
+                .map(index -> index * intervalMinutes)
+                .boxed()
+                .toList();
+    }
+
     // TODO: create a common config map for shared parameters
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
-                    Map.entry("simLength", 24 * 60 * 60 * 1000L), // 1 day
-                    Map.entry("submissionDelay", List.of(0)), // 1 app
+                    // Scenario 1
+                    Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
+
+                    // Map.entry("submissionDelay", createSubmissionDelays(30, 6)), // One application every 6 minutes
+                    Map.entry("submissionDelay", createSubmissionDelays(30, 3)), // One application every 3 minutes
+                    // Map.entry("submissionDelay", createSubmissionDelays(30, 1)), // One application every minute.
+                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     Map.entry("maxRebroadcast", 2),
-                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true),
 
                     // Application profile: default
@@ -54,21 +68,23 @@ public class Config {
                     // Map.entry("computeTaskPerByte", 0.0),
 
                     // Algorithm 1: First Fit + all hard-valid coverages + ranking
-                    // Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                    // Map.entry("atomicOffers", false),
-                    // Map.entry("onlyFirstOffer", false),
+                     Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                     Map.entry("atomicOffers", false),
+                     Map.entry("onlyFirstOffer", false),
                     // Map.entry("rankingMethod", "random"),
-                    // Map.entry("rankingMethod", "rank_no_re"),
+                     Map.entry("rankingMethod", "rank_no_re"),
+                     Map.entry("rankingScript", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/for_simulator/call_ranking_func.py"),
+                     Map.entry("rankingPython", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/.venv/bin/python"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
-                    // Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
-                    // Map.entry("atomicOffers", false),
-                    // Map.entry("onlyFirstOffer", true),
+                    //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
+                    //Map.entry("atomicOffers", false),
+                    //Map.entry("onlyFirstOffer", true),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
-                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
-                    Map.entry("atomicOffers", true),
-                    Map.entry("onlyFirstOffer", false),
+                    //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    //Map.entry("atomicOffers", true),
+                    //Map.entry("onlyFirstOffer", false),
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor
@@ -143,7 +159,7 @@ public class Config {
                     Map.entry("predictorModelPath", "/home/markusa/Swarmchestrate-TSforecasting/checkpoints/" +
                             "simulator1__UNC-1-Noise-Sensor-6_1min_pl128")
                     /*
-                    public static final String RANKING_SCRIPT = "/home/markusa/Documents/SZTE/repos/swarm-deployment/for_simulator/call_ranking_func.py";
+
                     public static final String PREDICTOR_SCRIPT = "/;
                     */
             ));

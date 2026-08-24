@@ -378,65 +378,97 @@ public class ResourceAgent {
     }
 
     private int callRankingScript(AgentApplication app) {
-        String inputfile = this.writeFile(app);
+        String inputFile = this.writeFile(app);
+
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                String.valueOf(Config.APP_TYPE.get("rankingPython")),
+                String.valueOf(Config.APP_TYPE.get("rankingScript")),
+                "--method_name",
+                String.valueOf(Config.APP_TYPE.get("rankingMethod")),
+                "--offers_loc",
+                inputFile
+        );
+
+        processBuilder.redirectErrorStream(true);
 
         try {
-            String command;
-            ProcessBuilder processBuilder;
-
-            if (SystemUtils.IS_OS_LINUX) {
-                command = "python3 " + Config.APP_TYPE.get("rankingScript")
-                        + " --method_name " + Config.APP_TYPE.get("rankingMethod")
-                        + " --offers_loc \"" + inputfile + "\"";
-
-                processBuilder = new ProcessBuilder("bash", "-c", command);
-            } else {
-                SimLogger.logError("The ranking script cannot be called due to an unsupported operating system.");
-                throw new UnsupportedOperationException();
-                /*
-                command = "cd /d \"" + AgentNoiseSimDemo.RANKING_SCRIPT + "\""
-                        + " && conda activate swarmchestrate && python call_ranking_func.py --method_name " 
-                        + AgentNoiseSimDemo.RANKING_METHOD
-                        + " --offers_loc \"" + inputfile + "\"";
-                 */
-            }
-
-            processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-            process.waitFor();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+            StringBuilder outputBuilder = new StringBuilder();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+
                 String line;
-                StringBuilder arrayContent = new StringBuilder();
-
                 while ((line = reader.readLine()) != null) {
-                    // System.out.println(line);
-                    arrayContent.append(line).append(" ");
+                    //SimLogger.logRun("[ranking Python] " + line);
+                    Thread.sleep(300);
+                    outputBuilder.append(line).append(" ");
                 }
-
-                String content = arrayContent.toString();
-
-                content = content.replaceAll("[^0-9\\s]", "");
-
-                List<Integer> numberList = Arrays.stream(content.split("\\s+"))
-                        .filter(token -> !token.isEmpty())
-                        .map(Integer::parseInt)
-                        .toList();
-
-                int firstNumber = numberList.get(0);
-                //int lastNumber = numberList.get(numberList.size() - 1);
-
-                SimLogger.logRun(app.offers.size() + " offers were ranked for "
-                        + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min., the winning offer index is: " + firstNumber);
-
-                return firstNumber;
-                //return lastNumber;
             }
-        } catch (IOException | InterruptedException e) {
-            e.getStackTrace();
-        }
 
-        return -1;
+            int exitCode = process.waitFor();
+            String output = outputBuilder.toString().trim();
+
+            if (exitCode != 0) {
+                SimLogger.logError(
+                        "The ranking script failed with exit code "
+                                + exitCode + ". Output: " + output
+                );
+                return -1;
+            }
+
+            List<Integer> rankedOfferIndices = Arrays.stream(
+                            output.replaceAll("[^0-9\\s]", "")
+                                    .trim()
+                                    .split("\\s+")
+                    )
+                    .filter(token -> !token.isEmpty())
+                    .map(Integer::parseInt)
+                    .toList();
+
+            if (rankedOfferIndices.isEmpty()) {
+                SimLogger.logError(
+                        "The ranking script returned no offer indices. Output: "
+                                + output
+                );
+                return -1;
+            }
+
+            int winningOfferIndex = rankedOfferIndices.get(0);
+
+            SimLogger.logRun(
+                    app.offers.size() + " offers were ranked for "
+                            + app.name + " at: "
+                            + Timed.getFireCount()
+                            / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
+                            + " min., the winning offer index is: "
+                            + winningOfferIndex
+            );
+
+            return winningOfferIndex;
+
+        } catch (IOException e) {
+            SimLogger.logError(
+                    "Could not start the ranking script: " + e.getMessage()
+            );
+            return -1;
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            SimLogger.logError(
+                    "The ranking script execution was interrupted."
+            );
+            return -1;
+
+        } catch (NumberFormatException e) {
+            SimLogger.logError(
+                    "The ranking script returned an invalid ranking: "
+                            + e.getMessage()
+            );
+            return -1;
+        }
     }
 
     private String writeFile(AgentApplication app) {

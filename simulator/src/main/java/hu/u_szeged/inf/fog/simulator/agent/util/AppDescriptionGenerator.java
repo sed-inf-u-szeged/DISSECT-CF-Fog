@@ -18,28 +18,28 @@ public class AppDescriptionGenerator {
     public static void main(String[] args) throws IOException {
         // global settings
         String applicationNamePrefix = "App";
-        int applicationCount = 1;
-        int componentCount = 3;
+        int applicationCount = 30;
+        int componentCount = 4;
         long randomSeed = 1L;
-        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples";
+        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1";
 
         // QoS weights [0..1]
-        double energyWeight = 0.5;
-        double priceWeight = 0.4;
-        double latencyWeight = 0.7;
-        double bandwidthWeight = 0.7;
+        double energyWeight = 0.25;
+        double priceWeight = 0.25;
+        double latencyWeight = 0.25;
+        double bandwidthWeight = 0.25;
 
         // hard requirements
         int minProviderCount = 1;
-        int maxProviderCount = 3;
-        double maxCost = 100.0;
-        double maxLatency = 50.0;
-        double minBandwidth = 100.0;
+        int maxProviderCount = 2;
+        double maxCost = 1.0;
+        double maxLatency = 70.0;
+        double minBandwidth = 50_000.0;
         double maxEnergyConsumption = 2_000.0;
 
         // max. resource requirement per component
-        int maximumCpu = 8;
-        int maximumMemoryGb = 8;
+        int maximumCpu = 4;
+        int maximumMemoryGb = 4;
         int maximumStorageGb = 8;
         int maximumImageSizeGb = 2;
         //Boolean edgeRequirement = true;  // only edge
@@ -47,7 +47,7 @@ public class AppDescriptionGenerator {
         Boolean edgeRequirement = null;  // any node
 
         ObjectMapper mapper = new ObjectMapper();
-        Random random = new Random(randomSeed);
+        Random random = new Random();
 
         Files.createDirectories(Path.of(outputDirectory));
 
@@ -81,10 +81,7 @@ public class AppDescriptionGenerator {
 
                 requirements.put("cpu", random.nextInt(maximumCpu) + 1);
                 requirements.put("memory", (random.nextInt(maximumMemoryGb) + 1L) * ScenarioBase.GB_IN_BYTE);
-
-                if (random.nextBoolean()) {
-                    requirements.put("storage", (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
-                }
+                requirements.put("storage", (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
 
                 if (random.nextBoolean()) {
                     requirements.put("location", LOCATIONS[random.nextInt(LOCATIONS.length)]);

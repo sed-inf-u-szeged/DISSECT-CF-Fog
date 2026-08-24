@@ -36,6 +36,10 @@ public class ResourceAgentCsvExporter implements Closeable {
     public final PrintWriter hourlyPriceWriter;
     public final PrintWriter resourceUtilityWriter;
 
+    private double averageResourceUtilitySum;
+
+    private long resourceUtilitySampleCount;
+
     private final LocalMetricsCalculator localMetricsCalculator = new LocalMetricsCalculator();
 
     private ResourceAgentCsvExporter() {
@@ -72,6 +76,10 @@ public class ResourceAgentCsvExporter implements Closeable {
         return "time" + "," + String.join(",", names);
     }
 
+    private String generateResourceUtilityHeader() {
+        return generateHeader() + ",Average";
+    }
+
     @Override
     public void close() throws IOException {
         hourlyPriceWriter.close();
@@ -82,9 +90,8 @@ public class ResourceAgentCsvExporter implements Closeable {
         double time = Timed.getFireCount() / (double) ScenarioBase.HOUR_IN_MILLISECONDS;
 
         if (!headerWritten) {
-            String header = generateHeader();
-            hourlyPriceWriter.println(header);
-            resourceUtilityWriter.println(header);
+            hourlyPriceWriter.println(generateHeader());
+            resourceUtilityWriter.println(generateResourceUtilityHeader());
             headerWritten = true;
         }
 
@@ -94,6 +101,7 @@ public class ResourceAgentCsvExporter implements Closeable {
         rowForHourlyPrice.append(String.format(Locale.ROOT, "%.3f", time));
         rowForResourceUtility.append(String.format(Locale.ROOT, "%.3f", time));
 
+        double currentResourceUtilitySum = 0.0;
         for (ResourceAgent ra : resourceAgents) {
             rowForHourlyPrice.append(",");
             rowForHourlyPrice.append(ra.hourlyPrice);
@@ -103,12 +111,30 @@ public class ResourceAgentCsvExporter implements Closeable {
             double fragmentation = localMetricsCalculator.calculateCurrentCapacityFragmentation(ra);
             double compactness = localMetricsCalculator.calculateCurrentCompactness(ra);
             double resourceUtility = (balance + utilisation + (1.0 - fragmentation) + compactness) / 4.0;
+            currentResourceUtilitySum += resourceUtility;
 
             rowForResourceUtility.append(",");
             rowForResourceUtility.append(resourceUtility);
         }
 
+        double currentAverageResourceUtility =
+                resourceAgents.isEmpty() ? 0.0 : currentResourceUtilitySum / resourceAgents.size();
+
+        rowForResourceUtility.append(",");
+        rowForResourceUtility.append(currentAverageResourceUtility);
+
+        averageResourceUtilitySum += currentAverageResourceUtility;
+        resourceUtilitySampleCount++;
+
         hourlyPriceWriter.println(rowForHourlyPrice);
         resourceUtilityWriter.println(rowForResourceUtility);
+    }
+
+    public double getAverageResourceUtility() {
+        if (resourceUtilitySampleCount == 0L) {
+            return 0.0;
+        }
+
+        return averageResourceUtilitySum / resourceUtilitySampleCount;
     }
 }

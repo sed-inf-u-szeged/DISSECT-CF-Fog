@@ -44,63 +44,136 @@ public class    DummyAppDemo {
         Deployment.setImageRegistry(new Repository(Long.MAX_VALUE, "Image-service", 125_000, 125_000, 125_000, sharedLatencyMap,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)));
-        
-        /* node config */ 
+
+        /* node config */
         final ComputingAppliance node1 = new ComputingAppliance(
-            Config.createNode("Node1", 52, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                    35, 200, 535, 100_000, 70, sharedLatencyMap),
-            new GeoLocation(51.5074, -0.1278), "EU", "Azure", false); // London
-         
+                Config.createNode(
+                        "Node1",
+                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        30, 200, 500, // minimum, idle and maximum power
+                        100_000, // bandwidth
+                        20, sharedLatencyMap), // latency
+                new GeoLocation(51.5074, -0.1278), "EU", "Azure", false); // London
+
         final ComputingAppliance node2 = new ComputingAppliance(
-            Config.createNode("Node2", 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                    30, 296, 493, 37_500, 30, sharedLatencyMap),
-            new GeoLocation(48.8566, 2.3522), "EU", "AWS", false); // Paris
+                Config.createNode(
+                        "Node2",
+                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        20, 100, 250, // minimum, idle and maximum power
+                        50_000, // bandwidth
+                        35, sharedLatencyMap), // latency
+                new GeoLocation(52.5200, 13.4050), "EU", "Azure", false); // Berlin
 
         final ComputingAppliance node3 = new ComputingAppliance(
-            Config.createNode("Node3", 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                    40, 398, 533, 150_000, 60, sharedLatencyMap),
-            new GeoLocation(52.5200, 13.4050), "EU", "Azure", false); // Berlin
-        
+                Config.createNode(
+                        "Node3",
+                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        30, 200, 500, // minimum, idle and maximum power
+                        150_000, // bandwidth
+                        15, sharedLatencyMap), // latency
+                new GeoLocation(48.8566, 2.3522), "EU", "AWS", false); // Paris
+
         final ComputingAppliance node4 = new ComputingAppliance(
-            Config.createNode("Node4", 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                    30, 150, 535, 37_500, 70, sharedLatencyMap),
-            new GeoLocation(41.8781, -87.6298), "US", "AWS", false); // Chicago
+                Config.createNode(
+                        "Node4",
+                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        20, 100, 250, // minimum, idle and maximum power
+                        75_000, // bandwidth
+                        25, sharedLatencyMap), // latency
+                new GeoLocation(50.1109, 8.6821), "EU", "AWS", false); // Frankfurt
 
         final ComputingAppliance node5 = new ComputingAppliance(
-            Config.createNode("Node5", 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                    40, 200, 506, 150_000, 60, sharedLatencyMap),
-            new GeoLocation(29.7604, -95.3698), "US", "Azure", false); // Houston
+                Config.createNode(
+                        "Node5",
+                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        30, 200, 500, // minimum, idle and maximum power
+                        100_000, // bandwidth
+                        50, sharedLatencyMap), // latency
+                new GeoLocation(41.8781, -87.6298), "US", "Azure", false); // Chicago
+
+        final ComputingAppliance node6 = new ComputingAppliance(
+                Config.createNode(
+                        "Node6",
+                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        20, 100, 250, // minimum, idle and maximum power
+                        50_000, // bandwidth
+                        65, sharedLatencyMap), // latency
+                new GeoLocation(29.7604, -95.3698), "US", "Azure", false); // Houston
+
+        final ComputingAppliance node7 = new ComputingAppliance(
+                Config.createNode(
+                        "Node7",
+                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        30, 200, 500, // minimum, idle and maximum power
+                        150_000, // bandwidth
+                        40, sharedLatencyMap), // latency
+                new GeoLocation(39.0438, -77.4874), "US", "AWS", false); // Virginia
+
+        final ComputingAppliance node8 = new ComputingAppliance(
+                Config.createNode(
+                        "Node8",
+                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
+                        20, 100, 250, // minimum, idle and maximum power
+                        75_000, // bandwidth
+                        70, sharedLatencyMap), // latency
+                new GeoLocation(45.5152, -122.6784), "US", "AWS", false); // Oregon
 
         new EnergyDataCollector("Node1-energy", node1.iaas, true, true, () -> hasRunningApplication(node1));
         new EnergyDataCollector("Node2-energy", node2.iaas, true, true, () -> hasRunningApplication(node2));
         new EnergyDataCollector("Node3-energy", node3.iaas, true, true, () -> hasRunningApplication(node3));
         new EnergyDataCollector("Node4-energy", node4.iaas, true, true, () -> hasRunningApplication(node4));
         new EnergyDataCollector("Node5-energy", node5.iaas, true, true, () -> hasRunningApplication(node5));
+        new EnergyDataCollector("Node6-energy", node6.iaas, true, true, () -> hasRunningApplication(node6));
+        new EnergyDataCollector("Node7-energy", node7.iaas, true, true, () -> hasRunningApplication(node7));
+        new EnergyDataCollector("Node8-energy", node8.iaas, true, true, () -> hasRunningApplication(node8));
         
         /* agent config */
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L);
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
-                
-        ResourceAgent ra1 =
-                new ResourceAgent("Agent1", 0.5, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
-        ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, 
-                new Capacity(node1, 52, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
-        ResourceAgent ra2 = 
-                new ResourceAgent("Agent2", 5.0, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
-        ra2.initResourceAgent(resourceAgentVa, resourceAgentArc, 
-                new Capacity(node2, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        ResourceAgent ra1 = new ResourceAgent(
+                "Agent1", 1.00,
+                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                new FloodingMessagingStrategy());
 
-        ResourceAgent ra3 = 
-                new ResourceAgent("Agent3", 1.5, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
-        ra3.initResourceAgent(resourceAgentVa, resourceAgentArc, 
-                new Capacity(node3, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        ra1.initResourceAgent(
+                resourceAgentVa,
+                resourceAgentArc,
+                new Capacity(node1, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
+                new Capacity(node2, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
-        ResourceAgent ra4 = 
-                new ResourceAgent("Agent4", 3.0, (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"), new FloodingMessagingStrategy());
-        ra4.initResourceAgent(resourceAgentVa, resourceAgentArc, 
-                new Capacity(node4, 48, 48 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node5, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        ResourceAgent ra2 = new ResourceAgent(
+                "Agent2", 1.25,
+                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                new FloodingMessagingStrategy());
+
+        ra2.initResourceAgent(
+                resourceAgentVa,
+                resourceAgentArc,
+                new Capacity(node3, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
+                new Capacity(node4, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+
+        ResourceAgent ra3 = new ResourceAgent(
+                "Agent3", 1.50,
+                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                new FloodingMessagingStrategy());
+
+        ra3.initResourceAgent(
+                resourceAgentVa,
+                resourceAgentArc,
+                new Capacity(node5, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
+                new Capacity(node6, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+
+        ResourceAgent ra4 = new ResourceAgent(
+                "Agent4", 1.75,
+                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                new FloodingMessagingStrategy());
+
+        ra4.initResourceAgent(
+                resourceAgentVa,
+                resourceAgentArc,
+                new Capacity(node7, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
+                new Capacity(node8, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
 
         ResourceAgentManager.getInstance().start((long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6,(boolean) Config.DUMMY_CONFIGURATION.get("csvLogging"));
 
@@ -278,6 +351,12 @@ public class    DummyAppDemo {
             SimLogger.logRes("\tTotal local offers before Pareto: " + totalOffersBeforePareto);
             SimLogger.logRes("\tTotal local offers after Pareto: " + totalOffersAfterPareto);
             SimLogger.logRes("\tPareto reduction (%): " + overallParetoReduction * 100.0);
+        }
+        if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
+            SimLogger.logRes("\tAverage Resource Agent utility during simulation: "
+                    + ResourceAgentCsvExporter.getInstance().getAverageResourceUtility());
+        } else {
+            SimLogger.logRes("\tAverage Resource Agent utility during simulation: not available (CSV logging disabled)");
         }
 
         double applicationEnergyKwh = 0.0;
