@@ -45,7 +45,7 @@ public class    DummyAppDemo {
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)));
 
-        /* node config */
+        /* node config
         final ComputingAppliance node1 = new ComputingAppliance(
                 Config.createNode(
                         "Node1",
@@ -126,11 +126,13 @@ public class    DummyAppDemo {
         new EnergyDataCollector("Node6-energy", node6.iaas, true, true, () -> hasRunningApplication(node6));
         new EnergyDataCollector("Node7-energy", node7.iaas, true, true, () -> hasRunningApplication(node7));
         new EnergyDataCollector("Node8-energy", node8.iaas, true, true, () -> hasRunningApplication(node8));
-        
-        /* agent config */
+        */
+
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L);
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
+        createEvaluationInfrastructure(sharedLatencyMap, resourceAgentVa, resourceAgentArc);
 
+        /* agent config
         ResourceAgent ra1 = new ResourceAgent(
                 "Agent1", 1.00,
                 (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
@@ -174,6 +176,7 @@ public class    DummyAppDemo {
                 resourceAgentArc,
                 new Capacity(node7, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
                 new Capacity(node8, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        */
 
         ResourceAgentManager.getInstance().start((long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6,(boolean) Config.DUMMY_CONFIGURATION.get("csvLogging"));
 
@@ -424,5 +427,125 @@ public class    DummyAppDemo {
                 .flatMap(capacity -> capacity.utilisations.stream())
                 .anyMatch(utilisation -> utilisation.component != null
                         && utilisation.state == Utilisation.State.ALLOCATED);
+    }
+
+    private static void createEvaluationInfrastructure(
+            Map<String, Integer> sharedLatencyMap,
+            VirtualAppliance resourceAgentVa,
+            AlterableResourceConstraints resourceAgentArc) {
+
+        int raCount = (int) Config.DUMMY_CONFIGURATION.get("raCount");
+        long nodeStorage = 256 * ScenarioBase.GB_IN_BYTE;
+
+        for (int agentIndex = 0; agentIndex < raCount; agentIndex++) {
+            int firstNodeCpu = 48 + SeedSyncer.centralRnd.nextInt(17);
+            int secondNodeCpu = 96 - firstNodeCpu;
+
+            int firstNodeMemoryGb = 48 + SeedSyncer.centralRnd.nextInt(17);
+            int secondNodeMemoryGb = 96 - firstNodeMemoryGb;
+
+            long firstNodeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(100_001);
+            long secondNodeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(100_001);
+
+            int firstNodeLatency = 15 + SeedSyncer.centralRnd.nextInt(56);
+            int secondNodeLatency = 15 + SeedSyncer.centralRnd.nextInt(56);
+
+            boolean firstNodeInEu = SeedSyncer.centralRnd.nextBoolean();
+            boolean secondNodeInEu = SeedSyncer.centralRnd.nextBoolean();
+
+            String firstNodeRegion = firstNodeInEu ? "EU" : "US";
+            String secondNodeRegion = secondNodeInEu ? "EU" : "US";
+
+            double firstNodeLatitude = firstNodeInEu
+                    ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
+                    : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
+
+            double firstNodeLongitude = firstNodeInEu
+                    ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
+                    : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
+
+            double secondNodeLatitude = secondNodeInEu
+                    ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
+                    : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
+
+            double secondNodeLongitude = secondNodeInEu
+                    ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
+                    : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
+
+            String provider = agentIndex % 2 == 0 ? "Azure" : "AWS";
+
+            String firstNodeName = "Node" + (agentIndex * 2 + 1);
+            String secondNodeName = "Node" + (agentIndex * 2 + 2);
+
+            ComputingAppliance firstNode = new ComputingAppliance(
+                    Config.createNode(
+                            firstNodeName,
+                            firstNodeCpu,
+                            firstNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            nodeStorage,
+                            firstNodeCpu * 0.5, // Minimum power in watts.
+                            firstNodeCpu * 3.0, // Idle power in watts.
+                            firstNodeCpu * 7.5, // Maximum power in watts.
+                            firstNodeBandwidth, // Input, output and disk bandwidth in bytes/ms.
+                            firstNodeLatency, // Input latency in milliseconds.
+                            sharedLatencyMap),
+                    new GeoLocation(firstNodeLatitude, firstNodeLongitude),
+                    firstNodeRegion,
+                    provider,
+                    false);
+
+            ComputingAppliance secondNode = new ComputingAppliance(
+                    Config.createNode(
+                            secondNodeName,
+                            secondNodeCpu,
+                            secondNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            nodeStorage,
+                            secondNodeCpu * 0.5, // Minimum power in watts.
+                            secondNodeCpu * 3.0, // Idle power in watts.
+                            secondNodeCpu * 7.5, // Maximum power in watts.
+                            secondNodeBandwidth, // Input, output and disk bandwidth in bytes/ms.
+                            secondNodeLatency, // Input latency in milliseconds.
+                            sharedLatencyMap),
+                    new GeoLocation(secondNodeLatitude, secondNodeLongitude),
+                    secondNodeRegion,
+                    provider,
+                    false);
+
+            new EnergyDataCollector(
+                    firstNodeName + "-energy",
+                    firstNode.iaas,
+                    true,
+                    true,
+                    () -> hasRunningApplication(firstNode));
+
+            new EnergyDataCollector(
+                    secondNodeName + "-energy",
+                    secondNode.iaas,
+                    true,
+                    true,
+                    () -> hasRunningApplication(secondNode));
+
+            double initialHourlyPrice = 1.0 + agentIndex % 4 * 0.25;
+
+            ResourceAgent resourceAgent = new ResourceAgent(
+                    "Agent" + (agentIndex + 1),
+                    initialHourlyPrice,
+                    (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                    new FloodingMessagingStrategy());
+
+            resourceAgent.initResourceAgent(
+                    resourceAgentVa,
+                    resourceAgentArc,
+                    new Capacity(
+                            firstNode,
+                            firstNodeCpu,
+                            firstNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            nodeStorage),
+                    new Capacity(
+                            secondNode,
+                            secondNodeCpu,
+                            secondNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            nodeStorage));
+        }
     }
 }

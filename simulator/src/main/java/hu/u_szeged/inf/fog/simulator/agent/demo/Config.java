@@ -35,10 +35,8 @@ public class Config {
             Map.ofEntries(
                     // Scenario 1
                     Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
-
-                    // Map.entry("submissionDelay", createSubmissionDelays(30, 6)), // One application every 6 minutes
+                    Map.entry("raCount", 4),
                     Map.entry("submissionDelay", createSubmissionDelays(30, 3)), // One application every 3 minutes
-                    // Map.entry("submissionDelay", createSubmissionDelays(30, 1)), // One application every minute.
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     Map.entry("maxRebroadcast", 2),
                     Map.entry("csvLogging", true),
