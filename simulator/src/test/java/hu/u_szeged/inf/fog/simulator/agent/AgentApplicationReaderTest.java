@@ -150,6 +150,34 @@ class AgentApplicationReaderTest {
     }
 
     @Test
+    void readJson_duplicateComponentIdentifier_throwsIllegalArgumentException() throws IOException {
+        String json = """
+                {
+                  "name": "App-1",
+                  "components": [
+                    {
+                      "id": "1",
+                      "requirements": { "cpu": 1.0, "memory": 128, "storage": 128 },
+                      "properties": { "kind": "processor", "image": 1 }
+                    },
+                    {
+                      "id": "1",
+                      "requirements": { "cpu": 2.0, "memory": 256, "storage": 256 },
+                      "properties": { "kind": "processor", "image": 2 }
+                    }
+                  ]
+                }
+                """;
+        Path jsonFile = writeJson("duplicate-component-identifier.json", json);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> AgentApplicationReader.readJson(jsonFile));
+
+        assertTrue(exception.getMessage().contains("Duplicate component identifier is not allowed"));
+    }
+
+    @Test
     void readJson_missingRequirements_throwsIllegalArgumentException() throws IOException {
         String json = """
                 {
@@ -247,6 +275,17 @@ class AgentApplicationReaderTest {
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
                 () -> AgentApplicationReader.readJson(missingFile));
+
+        assertTrue(exception.getMessage().contains("Failed to read application description from"));
+    }
+
+    @Test
+    void readJson_malformedJson_throwsIllegalStateException() throws IOException {
+        Path malformedFile = writeJson("malformed.json", "{ \"name\": \"App-1\", \"components\": [ ");
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> AgentApplicationReader.readJson(malformedFile));
 
         assertTrue(exception.getMessage().contains("Failed to read application description from"));
     }

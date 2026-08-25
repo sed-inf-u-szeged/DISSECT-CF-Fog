@@ -140,42 +140,94 @@ public class GlobalOfferEvaluator {
             return 0.0;
         }
 
+        QoSNormalizationBounds bounds = application.qosNormalizationBounds;
+
+        if (bounds == null) {
+            validateWeightedRequirementReferences(application);
+            return calculateLegacyQosUtility(application, metrics, totalWeight);
+        }
+
         double weightedScore = 0.0;
 
         if (application.price > EPSILON) {
-            weightedScore += application.price * normalizeMinimizedMetric(metrics.cost, application.maxCost, "maxCost");
+            weightedScore += application.price
+                    * normalizeMinimizedMetric(metrics.cost, bounds.minimumCost, bounds.maximumCost);
         }
 
         if (application.energy > EPSILON) {
             weightedScore += application.energy
-                    * normalizeMinimizedMetric(metrics.energy, application.maxEnergyConsumption, "maxEnergyConsumption");
+                    * normalizeMinimizedMetric(metrics.energy, bounds.minimumEnergy, bounds.maximumEnergy);
         }
 
         if (application.latency > EPSILON) {
-            weightedScore += application.latency * normalizeMinimizedMetric(metrics.latency, application.maxLatency, "maxLatency");
+            weightedScore += application.latency
+                    * normalizeMinimizedMetric(metrics.latency, bounds.minimumLatency, bounds.maximumLatency);
         }
 
         if (application.bandwidth > EPSILON) {
             weightedScore += application.bandwidth
-                    * normalizeMaximizedMetric(metrics.bandwidth, application.minBandwidth, "minBandwidth");
+                    * normalizeMaximizedMetric(metrics.bandwidth, bounds.minimumBandwidth, bounds.maximumBandwidth);
         }
 
         return weightedScore / totalWeight;
     }
 
-    private double normalizeMinimizedMetric(double actualValue, Double referenceValue, String requirementName) {
-        if (referenceValue == null || referenceValue <= EPSILON) {
-            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
-        }
-
-        return actualValue / referenceValue;
+    private void validateWeightedRequirementReferences(AgentApplication application) {
+        validatePositiveWeightedReference(application.price, application.maxCost, "maxCost");
+        validatePositiveWeightedReference(application.energy, application.maxEnergyConsumption, "maxEnergyConsumption");
+        validatePositiveWeightedReference(application.latency, application.maxLatency, "maxLatency");
+        validatePositiveWeightedReference(application.bandwidth, application.minBandwidth, "minBandwidth");
     }
 
-    private double normalizeMaximizedMetric(double actualValue, Double referenceValue, String requirementName) {
-        if (referenceValue == null || referenceValue <= EPSILON) {
-            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
+    private void validatePositiveWeightedReference(double weight, Double reference, String referenceName) {
+        if (weight > EPSILON && (reference == null || reference <= EPSILON)) {
+            throw new IllegalArgumentException(referenceName + " must be positive");
+        }
+    }
+
+    private double calculateLegacyQosUtility(AgentApplication application, GlobalOfferMetrics metrics, double totalWeight) {
+        double weightedScore = 0.0;
+
+        if (application.price > EPSILON) {
+            weightedScore += application.price * (metrics.cost / application.maxCost);
         }
 
-        return referenceValue / Math.max(actualValue, EPSILON);
+        if (application.energy > EPSILON) {
+            weightedScore += application.energy * (metrics.energy / application.maxEnergyConsumption);
+        }
+
+        if (application.latency > EPSILON) {
+            weightedScore += application.latency * (metrics.latency / application.maxLatency);
+        }
+
+        if (application.bandwidth > EPSILON) {
+            weightedScore += application.bandwidth * (application.minBandwidth / Math.max(metrics.bandwidth, EPSILON));
+        }
+
+        return weightedScore / totalWeight;
+    }
+
+    private double normalizeMinimizedMetric(double actualValue, double minimumValue, double maximumValue) {
+        double range = maximumValue - minimumValue;
+
+        if (range <= EPSILON) {
+            return 0.0;
+        }
+
+        return clampToUnitRange((actualValue - minimumValue) / range);
+    }
+
+    private double normalizeMaximizedMetric(double actualValue, double minimumValue, double maximumValue) {
+        double range = maximumValue - minimumValue;
+
+        if (range <= EPSILON) {
+            return 0.0;
+        }
+
+        return clampToUnitRange((maximumValue - actualValue) / range);
+    }
+
+    private double clampToUnitRange(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
     }
 }

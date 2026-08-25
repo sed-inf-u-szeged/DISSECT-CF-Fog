@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.agent;
 
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.QoSNormalizationBounds;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -58,6 +60,8 @@ public class AgentApplication {
     public long localOffersBeforePareto;
 
     public long localOffersAfterPareto;
+
+    public Double winningGlobalQosScore;
     
     public Set<ResourceAgent> offerGeneratingAgents;
     
@@ -66,6 +70,8 @@ public class AgentApplication {
     public List<Offer> offers = new ArrayList<>();
     
     public int winningOffer;
+
+    public QoSNormalizationBounds qosNormalizationBounds;
 
     /**
      * Represents a single component of an application.

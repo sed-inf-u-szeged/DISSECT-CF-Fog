@@ -10,6 +10,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.Capacity.Utilisation;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferEvaluator;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageSimulatedAnnealing;
@@ -101,6 +102,8 @@ public class ResourceAgent {
 
                     hostCapacity.cpu -= resourceAgentArc.getRequiredCPUs();
                     hostCapacity.memory -= resourceAgentArc.getRequiredMemory();
+                    hostCapacity.totalCpu -= resourceAgentArc.getRequiredCPUs();
+                    hostCapacity.totalMemory -= resourceAgentArc.getRequiredMemory();
 
                 } catch (VMManager.VMManagementException e) {
                     SimLogger.logError(name + "(RA) service cannot be created: " + e);
@@ -203,7 +206,18 @@ public class ResourceAgent {
                 app.winningOffer = callRankingScript(app);
                 app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
             }
-            acknowledgeAndInitSwarmAgent(app, app.offers.get(app.winningOffer), bcastMessageSize);
+
+            Offer winningOffer = app.offers.get(app.winningOffer);
+            GlobalOfferEvaluator globalOfferEvaluator = new GlobalOfferEvaluator();
+
+            if (winningOffer.metrics == null) {
+                winningOffer.metrics = globalOfferEvaluator.evaluate(winningOffer);
+            }
+
+            double qosObjective = globalOfferEvaluator.calculateQosUtility(app, winningOffer.metrics);
+            app.winningGlobalQosScore = Math.max(0.0, Math.min(1.0, 1.0 - qosObjective));
+
+            acknowledgeAndInitSwarmAgent(app, winningOffer, bcastMessageSize);
         } else {
             new DeferredEvent(10 * 1_000L) {
 

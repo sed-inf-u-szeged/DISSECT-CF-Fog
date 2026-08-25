@@ -148,7 +148,6 @@ public class ExhaustiveMappingStrategyTest {
                         .collect(Collectors.joining(",")))
                 .collect(Collectors.toSet());
         assertEquals(6, signatures.size(), "Duplicate offers detected");
-        assertEquals(6, signatures.size(), "Duplicate offers detected");
 
         Set<String> expected = Set.of(
                 "C2->cap1",

@@ -30,14 +30,14 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class    DummyAppDemo {
-    
+
     public static void main(String[] args) throws IOException {
 
         SimLogger.setLogging(1, true);
         SeedSyncer.setSeed(987654321);
-        
+
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
-        
+
         /* image service config */
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(1, 1, 1, 1, 1);
@@ -77,7 +77,7 @@ public class    DummyAppDemo {
             };
         }
 
-        final long starttime = System.nanoTime();       
+        final long starttime = System.nanoTime();
         //Timed.simulateUntil((long) Config.DUMMY_CONFIGURATION.get("simLength"));
         Timed.simulateUntilLastEvent();
         final long stoptime = System.nanoTime();
@@ -90,7 +90,7 @@ public class    DummyAppDemo {
                     ResourceAgentCsvExporter.getInstance().resourceMetricsPath
             ).write();
         }
-    
+
         /* results */
         SimLogger.logEmptyLine();
         for (StorageObject so : Deployment.registryService.contents()){
@@ -163,6 +163,8 @@ public class    DummyAppDemo {
 
         double totalSuccessfulDeploymentTime = 0.0;
         double totalCosts = 0.0;
+        double totalGlobalQosScore = 0.0;
+        int globalQosScoreCount = 0;
 
         for (AgentApplication application : AgentApplication.allAgentApplications) {
             boolean successful = application.deploymentTime != -1;
@@ -170,6 +172,11 @@ public class    DummyAppDemo {
             if (successful) {
                 successfulApplicationCount++;
                 totalSuccessfulDeploymentTime += application.deploymentTime;
+
+                if (application.winningGlobalQosScore != null) {
+                    totalGlobalQosScore += application.winningGlobalQosScore;
+                    globalQosScoreCount++;
+                }
             }
 
             totalLocalCandidateEvaluations += application.localCandidateEvaluationCount;
@@ -182,6 +189,7 @@ public class    DummyAppDemo {
             SimLogger.logRes("\t" + application.name + ":");
             SimLogger.logRes("\t\tDeployment successful: " + successful);
             SimLogger.logRes("\t\tDeployment time (ms): " + application.deploymentTime);
+            SimLogger.logRes("\t\tWinning global QoS score: " + (application.winningGlobalQosScore == null ? "not available" : application.winningGlobalQosScore));
             SimLogger.logRes("\t\tBroadcast rounds: " + application.broadcastCount);
             double cost = applicationCosts.getOrDefault(application.name, 0.0);
             totalCosts += cost;
@@ -219,11 +227,15 @@ public class    DummyAppDemo {
         double averageGlobalSelectionRuntimeMillis =
                 applicationCount == 0 ? 0.0 : totalGlobalSelectionRuntimeNanos / 1_000_000.0 / applicationCount;
 
+        double averageGlobalQosScore =
+                globalQosScoreCount == 0 ? 0.0 : totalGlobalQosScore / globalQosScoreCount;
+
         SimLogger.logEmptyLine();
         SimLogger.logRes("Aggregated application results:");
         SimLogger.logRes("\tSubmitted applications: " + applicationCount);
         SimLogger.logRes("\tSuccessful deployments: " + successfulApplicationCount);
         SimLogger.logRes("\tDeployment success rate (%): " + deploymentSuccessRate * 100.0);
+        SimLogger.logRes("\tAverage global QoS score of successful deployments: " + averageGlobalQosScore);
         SimLogger.logRes("\tAverage successful deployment time (sec.): " + averageDeploymentTime / 1000.0);
         SimLogger.logRes("\tAverage local candidate evaluations: " + averageLocalCandidateEvaluations);
         SimLogger.logRes("\tAverage local generation runtime (ms): " + averageLocalGenerationRuntimeMillis);
@@ -320,10 +332,11 @@ public class    DummyAppDemo {
 
         for (int agentIndex = 0; agentIndex < raCount; agentIndex++) {
             String cloudNodeName = "CloudNode" + (agentIndex + 1);
-            String edgeNodeName = "EdgeNode" + (agentIndex + 1);
+            String laptopNodeName = "LaptopNode" + (agentIndex + 1);
+            String raspberryPiNodeName = "RaspberryPiNode" + (agentIndex + 1);
 
-            String cloudProvider = agentIndex % 2 == 0 ? "Azure" : "AWS";
             String region = SeedSyncer.centralRnd.nextBoolean() ? "EU" : "US";
+            String cloudProvider = agentIndex % 2 == 0 ? "Azure" : "AWS";
 
             double cloudLatitude = region.equals("EU")
                     ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
@@ -333,13 +346,14 @@ public class    DummyAppDemo {
                     ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
                     : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
 
-            double edgeLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
-            double edgeLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            double laptopLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            double laptopLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            double raspberryPiLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            double raspberryPiLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            int cloudCpu = 48 + SeedSyncer.centralRnd.nextInt(25); // 48-72 CPU.
-            int cloudMemoryGb = 64 + SeedSyncer.centralRnd.nextInt(65); // 64-128 GB.
+            int cloudCpu = 24 + SeedSyncer.centralRnd.nextInt(17); // 32-49 CPU.
+            int cloudMemoryGb = 64 + SeedSyncer.centralRnd.nextInt(33); // 64-96 GB.
             int cloudStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 512 : 1_024;
-
             long cloudBandwidth = 250_000L + SeedSyncer.centralRnd.nextInt(1_000_001); // 2-10 Gbit/s.
             int cloudLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
 
@@ -364,54 +378,58 @@ public class    DummyAppDemo {
                     cloudProvider,
                     false);
 
-            boolean raspberryPi = agentIndex % 2 == 0;
+            int laptopCpu = 12 + SeedSyncer.centralRnd.nextInt(13); // 12-24 CPU.
+            int laptopMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 16 : 32;
+            int laptopStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 256 : 512;
+            long laptopBandwidth = 75_000L + SeedSyncer.centralRnd.nextInt(175_001); // 0.6-2 Gbit/s.
+            int laptopLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
 
-            int edgeCpu;
-            int edgeMemoryGb;
-            int edgeStorageGb;
-            long edgeBandwidth;
-            double edgeMinimumPower;
-            double edgeIdlePower;
-            double edgeMaximumPower;
-            String edgeProvider;
+            double laptopMinimumPower = 3.0;
+            double laptopIdlePower = 8.0 + laptopCpu * 0.4;
+            double laptopMaximumPower = 30.0 + laptopCpu * 3.0;
 
-            if (raspberryPi) {
-                edgeCpu = 4 + SeedSyncer.centralRnd.nextInt(5); // 4-8 CPU.
-                edgeMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 4 : 8;
-                edgeStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 64 : 128;
-                edgeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(75_001); // 0.4-1 Gbit/s.
-                edgeMinimumPower = 1.5;
-                edgeIdlePower = 3.0;
-                edgeMaximumPower = 15.0;
-                edgeProvider = "RaspberryPi";
-            } else {
-                edgeCpu = 12 + SeedSyncer.centralRnd.nextInt(13); // 12-24 CPU.
-                edgeMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 16 : 32;
-                edgeStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 256 : 512;
-                edgeBandwidth = 75_000L + SeedSyncer.centralRnd.nextInt(175_001); // 0.6-2 Gbit/s.
-                edgeMinimumPower = 3.0;
-                edgeIdlePower = 8.0 + edgeCpu * 0.4;
-                edgeMaximumPower = 30.0 + edgeCpu * 3.0;
-                edgeProvider = "Laptop";
-            }
-
-            int edgeLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
-
-            ComputingAppliance edgeNode = new ComputingAppliance(
+            ComputingAppliance laptopNode = new ComputingAppliance(
                     Config.createNode(
-                            edgeNodeName,
-                            edgeCpu,
-                            edgeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            edgeStorageGb * ScenarioBase.GB_IN_BYTE,
-                            edgeMinimumPower,
-                            edgeIdlePower,
-                            edgeMaximumPower,
-                            edgeBandwidth,
-                            edgeLatency,
+                            laptopNodeName,
+                            laptopCpu,
+                            laptopMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            laptopStorageGb * ScenarioBase.GB_IN_BYTE,
+                            laptopMinimumPower,
+                            laptopIdlePower,
+                            laptopMaximumPower,
+                            laptopBandwidth,
+                            laptopLatency,
                             sharedLatencyMap),
-                    new GeoLocation(edgeLatitude, edgeLongitude),
+                    new GeoLocation(laptopLatitude, laptopLongitude),
                     region,
-                    edgeProvider,
+                    "Laptop",
+                    true);
+
+            int raspberryPiCpu = 4 + SeedSyncer.centralRnd.nextInt(5); // 4-8 CPU.
+            int raspberryPiMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 4 : 8;
+            int raspberryPiStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 64 : 128;
+            long raspberryPiBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(75_001); // 0.4-1 Gbit/s.
+            int raspberryPiLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
+
+            double raspberryPiMinimumPower = 1.5;
+            double raspberryPiIdlePower = 3.0;
+            double raspberryPiMaximumPower = 15.0;
+
+            ComputingAppliance raspberryPiNode = new ComputingAppliance(
+                    Config.createNode(
+                            raspberryPiNodeName,
+                            raspberryPiCpu,
+                            raspberryPiMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            raspberryPiStorageGb * ScenarioBase.GB_IN_BYTE,
+                            raspberryPiMinimumPower,
+                            raspberryPiIdlePower,
+                            raspberryPiMaximumPower,
+                            raspberryPiBandwidth,
+                            raspberryPiLatency,
+                            sharedLatencyMap),
+                    new GeoLocation(raspberryPiLatitude, raspberryPiLongitude),
+                    region,
+                    "RaspberryPi",
                     true);
 
             new EnergyDataCollector(
@@ -422,11 +440,18 @@ public class    DummyAppDemo {
                     () -> hasRunningApplication(cloudNode));
 
             new EnergyDataCollector(
-                    edgeNodeName + "-energy",
-                    edgeNode.iaas,
+                    laptopNodeName + "-energy",
+                    laptopNode.iaas,
                     true,
                     true,
-                    () -> hasRunningApplication(edgeNode));
+                    () -> hasRunningApplication(laptopNode));
+
+            new EnergyDataCollector(
+                    raspberryPiNodeName + "-energy",
+                    raspberryPiNode.iaas,
+                    true,
+                    true,
+                    () -> hasRunningApplication(raspberryPiNode));
 
             double initialHourlyPrice = 1.0 + agentIndex % 4 * 0.25;
 
@@ -445,10 +470,15 @@ public class    DummyAppDemo {
                             cloudMemoryGb * ScenarioBase.GB_IN_BYTE,
                             cloudStorageGb * ScenarioBase.GB_IN_BYTE),
                     new Capacity(
-                            edgeNode,
-                            edgeCpu,
-                            edgeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            edgeStorageGb * ScenarioBase.GB_IN_BYTE));
+                            laptopNode,
+                            laptopCpu,
+                            laptopMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            laptopStorageGb * ScenarioBase.GB_IN_BYTE),
+                    new Capacity(
+                            raspberryPiNode,
+                            raspberryPiCpu,
+                            raspberryPiMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            raspberryPiStorageGb * ScenarioBase.GB_IN_BYTE));
         }
     }
 

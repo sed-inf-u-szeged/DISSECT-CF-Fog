@@ -5,6 +5,8 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Utility class for reading an {@link AgentApplication} from a JSON file.
@@ -63,6 +65,8 @@ public class AgentApplicationReader {
      * Validates the kind and original id of every component.
      */
     private static void validateComponentNames(AgentApplication application) {
+        Set<String> seenComponentIdentifiers = new HashSet<>();
+
         for (AgentApplication.Component component : application.components) {
             if (component.properties == null || component.properties.kind == null
                     || !component.properties.kind.matches(COMPONENT_KIND_PATTERN)) {
@@ -73,6 +77,12 @@ public class AgentApplicationReader {
             if (component.id == null || !component.id.matches(COMPONENT_ID_PATTERN)) {
                 throw new IllegalArgumentException(
                         "Component id must be a positive integer: " + component.id);
+            }
+
+            String componentIdentifier = component.properties.kind + "-" + component.id;
+            if (!seenComponentIdentifiers.add(componentIdentifier)) {
+                throw new IllegalArgumentException(
+                        "Duplicate component identifier is not allowed within an application: " + componentIdentifier);
             }
         }
     }

@@ -6,14 +6,18 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.ComponentRequirements;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalMetricsCalculator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.LocalMetrics;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferEvaluator;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferMetrics;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.QoSNormalizationBounds;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageState;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +37,15 @@ class GlobalOfferEvaluatorTest {
 
     @BeforeEach
     void resetGlobalState() {
+        clearGlobalState();
+    }
+
+    @AfterEach
+    void cleanupGlobalState() {
+        clearGlobalState();
+    }
+
+    private static void clearGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
         AgentApplication.allAgentApplications.clear();
@@ -157,6 +170,58 @@ class GlobalOfferEvaluatorTest {
     }
 
     @Test
+    void calculateQosUtility_withNormalizationBounds_usesClampedNormalizedValues() {
+        AgentApplication app = new AgentApplication();
+        app.price = 1.0;
+        app.energy = 1.0;
+        app.latency = 1.0;
+        app.bandwidth = 1.0;
+        app.qosNormalizationBounds = new QoSNormalizationBounds(
+                10.0, 20.0,
+                30.0, 50.0,
+                100.0, 200.0,
+                1000.0, 2000.0);
+
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(2, 5.0, 40.0, 250.0, 2500.0);
+
+        double expected = (0.0 + 0.5 + 1.0 + 0.0) / 4.0;
+
+        assertEquals(expected, new GlobalOfferEvaluator().calculateQosUtility(app, metrics), EPSILON);
+    }
+
+    @Test
+    void calculateQosUtility_withNormalizationBounds_whenRangeIsZero_returnsZeroContribution() {
+        AgentApplication app = new AgentApplication();
+        app.price = 1.0;
+        app.energy = 0.0;
+        app.latency = 0.0;
+        app.bandwidth = 0.0;
+        app.qosNormalizationBounds = new QoSNormalizationBounds(
+                10.0, 10.0,
+                0.0, 1.0,
+                0.0, 1.0,
+                0.0, 1.0);
+
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 15.0, 0.0, 0.0, 0.0);
+
+        assertEquals(0.0, new GlobalOfferEvaluator().calculateQosUtility(app, metrics), EPSILON);
+    }
+
+    @Test
+    void calculateQosUtility_whenTotalWeightIsZero_returnsZero() {
+        AgentApplication app = new AgentApplication();
+        app.price = 0.0;
+        app.energy = 0.0;
+        app.latency = 0.0;
+        app.bandwidth = 0.0;
+        app.qosNormalizationBounds = new QoSNormalizationBounds(0, 1, 0, 1, 0, 1, 0, 1);
+
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 5.0, 5.0, 5.0, 5.0);
+
+        assertEquals(0.0, new GlobalOfferEvaluator().calculateQosUtility(app, metrics), EPSILON);
+    }
+
+    @Test
     void evaluateOffer_whenAgentHasNoSelectedPlacements_throwsException() {
         ResourceAgent agent = createAgent("AgentA", 10.0);
         Capacity capacity = capacity("NodeA", 10.0, 100L, 1000L, 1000L, 10);
@@ -171,6 +236,50 @@ class GlobalOfferEvaluatorTest {
                 () -> new GlobalOfferEvaluator().evaluate(offer));
 
         assertTrue(exception.getMessage().contains("Offer contains an agent without selected placements: AgentA"));
+    }
+
+    @Test
+    void evaluateAtomicCoverageState_aggregatesOfferMetricsAndPlacements() {
+        ResourceAgent agentA = createAgent("AgentA", 10.0);
+        ResourceAgent agentB = createAgent("AgentB", 20.0);
+
+        Capacity capA = capacity("NodeA", 10.0, 100L, 1000L, 1000L, 10);
+        Capacity capB = capacity("NodeB", 20.0, 200L, 2000L, 2000L, 30);
+        agentA.capacities.put(capA.node.name, capA);
+        agentB.capacities.put(capB.node.name, capB);
+
+        Component c1 = component("C1", 2.0, 10L, 100L);
+        Component c2 = component("C2", 3.0, 20L, 200L);
+        Component c3 = component("C3", 4.0, 40L, 400L);
+
+        LocalOffer offerA = new LocalOffer(
+                agentA,
+                List.of(
+                        new ComponentPlacement(c1, capA),
+                        new ComponentPlacement(c2, capA)),
+                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 6.0, 11.0, 12.0, 900.0));
+        LocalOffer offerB = new LocalOffer(
+                agentB,
+                List.of(new ComponentPlacement(c3, capB)),
+                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 4.0, 9.0, 30.0, 1500.0));
+
+        AtomicCoverageState state = new AtomicCoverageState(List.of(c1, c2, c3), List.of(offerA, offerB));
+        GlobalOfferMetrics metrics = new GlobalOfferEvaluator().evaluate(state);
+
+        double expectedCost = 10.0;
+        double expectedLatency = (12.0 * 2 + 30.0 * 1) / 3.0;
+        double expectedBandwidth = (900.0 * 2 + 1500.0 * 1) / 3.0;
+        double expectedEnergy = new LocalMetricsCalculator().calculateProjectedPower(
+                List.of(
+                        new ComponentPlacement(c1, capA),
+                        new ComponentPlacement(c2, capA),
+                        new ComponentPlacement(c3, capB)));
+
+        assertEquals(2, metrics.providerCount);
+        assertEquals(expectedCost, metrics.cost, EPSILON);
+        assertEquals(expectedLatency, metrics.latency, EPSILON);
+        assertEquals(expectedBandwidth, metrics.bandwidth, EPSILON);
+        assertEquals(expectedEnergy, metrics.energy, EPSILON);
     }
 
     private static ResourceAgent createAgent(String name, double hourlyPrice) {

@@ -106,11 +106,7 @@ public class ResourceAgentCsvExporter implements Closeable {
             rowForHourlyPrice.append(",");
             rowForHourlyPrice.append(ra.hourlyPrice);
 
-            double balance = localMetricsCalculator.calculateCurrentBalance(ra);
-            double utilisation = localMetricsCalculator.calculateCurrentUtilisation(ra);
-            double fragmentation = localMetricsCalculator.calculateCurrentCapacityFragmentation(ra);
-            double compactness = localMetricsCalculator.calculateCurrentCompactness(ra);
-            double resourceUtility = (balance + utilisation + (1.0 - fragmentation) + compactness) / 4.0;
+            double resourceUtility = localMetricsCalculator.calculateCurrentResourceUtility(ra);
             currentResourceUtilitySum += resourceUtility;
 
             rowForResourceUtility.append(",");

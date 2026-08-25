@@ -11,12 +11,16 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalMetricsCa
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.LocalMetrics;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.QoSNormalizationBounds;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public class SimulatedAnnealingStrategy extends MappingStrategy {
 
@@ -35,7 +39,7 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         double coolingRate = (double) Config.APP_TYPE.get("saCoolingRate");
 
         LocalMappingState bestState = optimize(agent, application, maxIterations, maxNeighborAttempts,
-                        initialTemperature, minimumTemperature, coolingRate);
+                initialTemperature, minimumTemperature, coolingRate);
 
         if (bestState.isEmpty()) {
             return List.of();
@@ -60,13 +64,15 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         LocalMappingState currentState = createInitialState(agent, application);
         LocalMappingState bestState = currentState;
 
-        double currentEnergy = calculateEnergy(agent, application, currentState);
+        Map<Set<Component>, QoSNormalizationBounds> normalizationBoundsCache = new HashMap<>();
+
+        double currentEnergy = calculateEnergy(agent, application, currentState, normalizationBoundsCache);
         double bestEnergy = currentEnergy;
         double temperature = initialTemperature;
 
         for (int iteration = 0; iteration < maxIterations && temperature > minimumTemperature; iteration++) {
             LocalMappingState neighborState = generateNeighbor(agent, currentState, maxNeighborAttempts);
-            double neighborEnergy = calculateEnergy(agent, application, neighborState);
+            double neighborEnergy = calculateEnergy(agent, application, neighborState, normalizationBoundsCache);
             double energyDifference = neighborEnergy - currentEnergy;
 
             boolean acceptNeighbor = energyDifference <= 0.0
@@ -88,7 +94,12 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         return bestState;
     }
 
-    private double calculateEnergy(ResourceAgent agent, AgentApplication application, LocalMappingState state) {
+    private double calculateEnergy(
+            ResourceAgent agent,
+            AgentApplication application,
+            LocalMappingState state,
+            Map<Set<Component>, QoSNormalizationBounds> normalizationBoundsCache) {
+
         application.localCandidateEvaluationCount++;
 
         double coveragePenalty = calculateCoveragePenalty(state);
@@ -97,11 +108,17 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
             return coveragePenalty * 2.0;
         }
 
+        Set<Component> coveredComponents = Set.copyOf(state.assignments.keySet());
+
+        QoSNormalizationBounds bounds = normalizationBoundsCache.computeIfAbsent(
+                coveredComponents,
+                QoSNormalizationBounds::calculateForComponents);
+
         LocalMetrics metrics = metricsCalculator.calculate(agent, state.toPlacements());
-        double qosScore = calculateQosScore(application, metrics);
+        double qosScore = calculateQosScore(application, metrics, bounds);
         double resourceScore = calculateResourceScore(metrics);
 
-        double boundedQosScore = qosScore / (1.0 + qosScore);
+        double boundedQosScore = clampToUnitRange(qosScore);
         double boundedResourceScore = Math.max(0.0, Math.min(1.0, resourceScore));
         double secondaryScore = (boundedQosScore + boundedResourceScore) / 2.0;
 
@@ -320,7 +337,11 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         return currentState;
     }
 
-    private double calculateQosScore(AgentApplication application, LocalMetrics metrics) {
+    private double calculateQosScore(
+            AgentApplication application,
+            LocalMetrics metrics,
+            QoSNormalizationBounds bounds) {
+
         double totalWeight = application.price + application.energy + application.latency + application.bandwidth;
 
         if (totalWeight <= EPSILON) {
@@ -330,39 +351,50 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
         double weightedScore = 0.0;
 
         if (application.price > EPSILON) {
-            weightedScore += application.price * normalizeMinimizedMetric(metrics.cost, application.maxCost, "maxCost");
+            weightedScore += application.price
+                    * normalizeMinimizedMetric(metrics.cost, bounds.minimumCost, bounds.maximumCost);
         }
 
         if (application.energy > EPSILON) {
             weightedScore += application.energy
-                    * normalizeMinimizedMetric(metrics.energy, application.maxEnergyConsumption, "maxEnergyConsumption");
+                    * normalizeMinimizedMetric(metrics.energy, bounds.minimumEnergy, bounds.maximumEnergy);
         }
 
         if (application.latency > EPSILON) {
-            weightedScore += application.latency * normalizeMinimizedMetric(metrics.latency, application.maxLatency, "maxLatency");
+            weightedScore += application.latency
+                    * normalizeMinimizedMetric(metrics.latency, bounds.minimumLatency, bounds.maximumLatency);
         }
 
         if (application.bandwidth > EPSILON) {
-            weightedScore += application.bandwidth * normalizeMaximizedMetric(metrics.bandwidth, application.minBandwidth, "minBandwidth");
+            weightedScore += application.bandwidth
+                    * normalizeMaximizedMetric(metrics.bandwidth, bounds.minimumBandwidth, bounds.maximumBandwidth);
         }
 
         return weightedScore / totalWeight;
     }
 
-    private double normalizeMinimizedMetric(double actualValue, Double referenceValue, String requirementName) {
-        if (referenceValue == null || referenceValue <= EPSILON) {
-            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
+    private double normalizeMinimizedMetric(double actualValue, double minimumValue, double maximumValue) {
+        double range = maximumValue - minimumValue;
+
+        if (range <= EPSILON) {
+            return 0.0;
         }
 
-        return actualValue / referenceValue;
+        return clampToUnitRange((actualValue - minimumValue) / range);
     }
 
-    private double normalizeMaximizedMetric(double actualValue, Double referenceValue, String requirementName) {
-        if (referenceValue == null || referenceValue <= EPSILON) {
-            throw new IllegalArgumentException(requirementName + " must be positive when its QoS weight is positive.");
+    private double normalizeMaximizedMetric(double actualValue, double minimumValue, double maximumValue) {
+        double range = maximumValue - minimumValue;
+
+        if (range <= EPSILON) {
+            return 0.0;
         }
 
-        return referenceValue / Math.max(actualValue, EPSILON);
+        return clampToUnitRange((maximumValue - actualValue) / range);
+    }
+
+    private double clampToUnitRange(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
     }
 
     private boolean haveSameAssignments(LocalMappingState firstState, LocalMappingState secondState) {
@@ -374,11 +406,6 @@ public class SimulatedAnnealingStrategy extends MappingStrategy {
     }
 
     private double calculateResourceScore(LocalMetrics metrics) {
-        double balancePenalty = 1.0 - metrics.balance;
-        double utilisationPenalty = 1.0 - metrics.utilisation;
-        double fragmentationPenalty = metrics.fragmentation;
-        double compactnessPenalty = 1.0 - metrics.compactness;
-
-        return (balancePenalty + utilisationPenalty + fragmentationPenalty + compactnessPenalty) / 4.0;
+        return 1.0 - metricsCalculator.calculateResourceUtility(metrics);
     }
 }

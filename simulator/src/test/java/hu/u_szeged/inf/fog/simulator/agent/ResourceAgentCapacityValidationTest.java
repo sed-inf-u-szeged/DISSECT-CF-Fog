@@ -9,6 +9,7 @@ import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,16 @@ public class ResourceAgentCapacityValidationTest {
         SimLogger.setLogging(0, true);
     }
 
+    @AfterAll
+    static void restoreLogging() {
+        SimLogger.setLogging(0, false);
+    }
+
     @BeforeEach
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
+        AgentApplication.allAgentApplications.clear();
     }
 
     @Test

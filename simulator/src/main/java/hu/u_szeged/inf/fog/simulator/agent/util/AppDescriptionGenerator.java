@@ -19,7 +19,7 @@ public class AppDescriptionGenerator {
     public static void main(String[] args) throws IOException {
         // Workload settings
         String applicationNamePrefix = "App";
-        int applicationCount = 60;
+        int applicationCount = 10;
         int componentCount = 4;
         long randomSeed = 1L;
 
@@ -42,10 +42,17 @@ public class AppDescriptionGenerator {
         double maxEnergyConsumption = 3_000.0;
 
         // Component resource requirement ranges
-        int maximumCpu = 4; // 1-4 CPU.
-        int maximumMemoryGb = 4; // 1-4 GB.
-        int maximumStorageGb = 8; // 1-8 GB.
-        int maximumImageSizeGb = 2; // 0.5-2 GB.
+        int minimumCpu = 3;
+        int maximumCpu = 9;
+
+        int minimumMemoryGb = 4;
+        int maximumMemoryGb = 14;
+
+        int minimumStorageGb = 32;
+        int maximumStorageGb = 160;
+
+        double minimumImageSizeGb = 0.5;
+        double maximumImageSizeGb = 2.0;
 
         // Optional component-level placement constraints
         double providerRequirementProbability = 0.0; // 0.0 disables provider requirements.
@@ -97,15 +104,13 @@ public class AppDescriptionGenerator {
 
                 ObjectNode requirements = mapper.createObjectNode();
 
-                requirements.put("cpu", random.nextInt(maximumCpu) + 1);
+                int cpu = minimumCpu + random.nextInt(maximumCpu - minimumCpu + 1);
+                int memoryGb = minimumMemoryGb + random.nextInt(maximumMemoryGb - minimumMemoryGb + 1);
+                int storageGb = minimumStorageGb + random.nextInt(maximumStorageGb - minimumStorageGb + 1);
 
-                requirements.put(
-                        "memory",
-                        (random.nextInt(maximumMemoryGb) + 1L) * ScenarioBase.GB_IN_BYTE);
-
-                requirements.put(
-                        "storage",
-                        (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
+                requirements.put("cpu", cpu);
+                requirements.put("memory", memoryGb * ScenarioBase.GB_IN_BYTE);
+                requirements.put("storage", storageGb * ScenarioBase.GB_IN_BYTE);
 
                 if (random.nextDouble() < locationRequirementProbability) {
                     String location = LOCATIONS[random.nextInt(LOCATIONS.length)];
@@ -124,12 +129,12 @@ public class AppDescriptionGenerator {
                 }
 
                 ObjectNode properties = mapper.createObjectNode();
-
                 properties.put("kind", "server");
 
-                long imageSizeStep = ScenarioBase.GB_IN_BYTE / 2;
-                int maximumImageSteps = maximumImageSizeGb * 2;
-                long imageSize = (random.nextInt(maximumImageSteps) + 1L) * imageSizeStep;
+                int minimumImageSteps = (int) Math.round(minimumImageSizeGb * 2.0);
+                int maximumImageSteps = (int) Math.round(maximumImageSizeGb * 2.0);
+                int imageSizeSteps = minimumImageSteps + random.nextInt(maximumImageSteps - minimumImageSteps + 1);
+                long imageSize = imageSizeSteps * (ScenarioBase.GB_IN_BYTE / 2);
 
                 properties.put("image", imageSize);
 

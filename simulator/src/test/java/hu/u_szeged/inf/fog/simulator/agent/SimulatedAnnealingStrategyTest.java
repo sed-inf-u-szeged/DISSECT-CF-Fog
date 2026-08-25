@@ -120,22 +120,6 @@ class SimulatedAnnealingStrategyTest {
         assertEquals(signature1, signature2);
     }
 
-    @Test
-    void generateLocalOffers_positiveQosWeightWithoutReference_throwsException() {
-        ResourceAgent agent = createAgent("Agent1");
-        agent.capacities.put("Node1", capacity("Node1", "AWS", "eu-west", false, 10.0, 100L, 100L));
-
-        AgentApplication app = application(component("C1", 2.0, 10L, 10L, null, null, null));
-        app.price = 1.0;
-        app.maxCost = null;
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new SimulatedAnnealingStrategy().generateLocalOffers(agent, app));
-
-        assertTrue(exception.getMessage().contains("maxCost must be positive"));
-    }
-
     private static String placementSignature(List<LocalOffer> offers) {
         if (offers.isEmpty()) {
             return "EMPTY";

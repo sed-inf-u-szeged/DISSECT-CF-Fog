@@ -136,11 +136,11 @@ public class Capacity {
 
     public long storage;
 
-    public final double totalCpu;
+    public double totalCpu;
 
-    public final long totalMemory;
+    public long totalMemory;
 
-    public final long totalStorage;
+    public long totalStorage;
 
     public ComputingAppliance node;
 

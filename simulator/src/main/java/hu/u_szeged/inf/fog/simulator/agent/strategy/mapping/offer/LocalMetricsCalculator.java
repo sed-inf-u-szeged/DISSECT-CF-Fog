@@ -207,18 +207,24 @@ public class LocalMetricsCalculator {
     }
 
     private double calculateFragmentation(ResourceAgent agent, List<ComponentPlacement> placements) {
-
         if (agent.capacities.isEmpty()) {
             return 0.0;
         }
 
-        long usedCapacityCount =
-                placements.stream()
-                        .map(placement -> placement.capacity)
-                        .distinct()
-                        .count();
+        int partiallyUsedCapacityCount = 0;
 
-        return (double) usedCapacityCount / agent.capacities.size();
+        for (Capacity capacity : agent.capacities.values()) {
+            List<Double> remainingRatios = calculateRemainingRatios(capacity, placements);
+
+            boolean alreadyUsed = remainingRatios.stream().anyMatch(ratio -> ratio < 1.0);
+            boolean stillUsable = remainingRatios.stream().allMatch(ratio -> ratio > 0.0);
+
+            if (alreadyUsed && stillUsable) {
+                partiallyUsedCapacityCount++;
+            }
+        }
+
+        return (double) partiallyUsedCapacityCount / agent.capacities.size();
     }
 
     private double calculateCompactness(ResourceAgent agent, List<ComponentPlacement> placements) {
@@ -336,6 +342,31 @@ public class LocalMetricsCalculator {
         return remainingRatios;
     }
 
+    public double calculateResourceUtility(LocalMetrics metrics) {
+        return calculateResourceUtility(
+                metrics.balance,
+                metrics.utilisation,
+                metrics.fragmentation,
+                metrics.compactness);
+    }
+
+    public double calculateCurrentResourceUtility(ResourceAgent agent) {
+        return calculateResourceUtility(
+                calculateCurrentBalance(agent),
+                calculateCurrentUtilisation(agent),
+                calculateCurrentCapacityFragmentation(agent),
+                calculateCurrentCompactness(agent));
+    }
+
+    private double calculateResourceUtility(
+            double balance,
+            double utilisation,
+            double fragmentation,
+            double compactness) {
+
+        return (balance + utilisation + (1.0 - fragmentation) + compactness) / 4.0;
+    }
+
     public double calculateCurrentUtilisation(ResourceAgent agent) {
         return calculateUtilisation(agent, List.of());
     }
@@ -349,23 +380,6 @@ public class LocalMetricsCalculator {
     }
 
     public double calculateCurrentCapacityFragmentation(ResourceAgent agent) {
-        if (agent.capacities.isEmpty()) {
-            return 0.0;
-        }
-
-        int partiallyUsedCapacityCount = 0;
-
-        for (Capacity capacity : agent.capacities.values()) {
-            List<Double> remainingRatios = calculateRemainingRatios(capacity, List.of());
-
-            boolean alreadyUsed = remainingRatios.stream().anyMatch(ratio -> ratio < 1.0);
-            boolean stillUsable = remainingRatios.stream().allMatch(ratio -> ratio > 0.0);
-
-            if (alreadyUsed && stillUsable) {
-                partiallyUsedCapacityCount++;
-            }
-        }
-
-        return (double) partiallyUsedCapacityCount / agent.capacities.size();
+        return calculateFragmentation(agent, List.of());
     }
 }

@@ -5,6 +5,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.QoSNormalizationBounds;
 import hu.u_szeged.inf.fog.simulator.agent.util.AgentApplicationReader;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -58,14 +59,19 @@ public class Submission extends Timed {
         }
         return true;
     }
-    
+
     @Override
     public void tick(long fires) {
         if (this.checkRaStatus()) {
             unsubscribe();
+
             SimLogger.logRun(agent.name + " picked up application " + app.name + " at: "
                     + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
-            agent.broadcast(app, 100);
+
+            app.qosNormalizationBounds = QoSNormalizationBounds.calculateFor(app);
+            //SimLogger.logRun("QoS normalization bounds for " + app.name + ": " + app.qosNormalizationBounds);
+
+            agent.broadcast(app, bcastMessageSize);
             app.deploymentTime = Timed.getFireCount();
         }
     }

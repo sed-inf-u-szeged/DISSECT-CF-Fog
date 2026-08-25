@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.agent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalMetricsCalculator;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.util.ResourceAgentCsvExporter;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
@@ -85,6 +86,56 @@ class ResourceAgentManagerAndCsvExporterTest {
         assertEquals(17.0, second.hourlyPrice, EPSILON);
 
         ResourceAgentManager.getInstance().stop();
+    }
+
+    @Test
+    void start_whenAlreadyRunning_ignoresSecondStartConfiguration() {
+        ResourceAgent first = createAgent("RA1", 10.0);
+        first.capacities.put("NodeA", createCapacity("NodeA", 10.0, 100L, 100L, 1000L, 10));
+
+        ResourceAgentManager manager = ResourceAgentManager.getInstance();
+        manager.start(10_000L, false);
+        manager.start(10_000L, true);
+        manager.tick(0L);
+
+        Path hourlyPricePath = Path.of(ScenarioBase.RESULT_DIRECTORY, "ra-hourly-price.csv");
+        Path resourceMetricsPath = Path.of(ScenarioBase.RESULT_DIRECTORY, "ra-resource-metrics.csv");
+
+        assertFalse(Files.exists(hourlyPricePath));
+        assertFalse(Files.exists(resourceMetricsPath));
+
+        manager.stop();
+    }
+
+    @Test
+    void stop_whenNotRunning_isNoOp() {
+        ResourceAgentManager manager = ResourceAgentManager.getInstance();
+
+        manager.stop();
+
+        assertFalse(manager.isSubscribed());
+    }
+
+    @Test
+    void exporter_getAverageResourceUtility_returnsAverageOfLoggedValues() {
+        ResourceAgent agent = createAgent("RA1", 10.0);
+        Capacity capacity = createCapacity("NodeA", 10.0, 100L, 100L, 1000L, 10);
+        agent.capacities.put("NodeA", capacity);
+
+        ResourceAgentCsvExporter exporter = ResourceAgentCsvExporter.getInstance();
+        LocalMetricsCalculator calculator = new LocalMetricsCalculator();
+
+        double firstUtility = calculator.calculateCurrentResourceUtility(agent);
+        exporter.log();
+
+        capacity.cpu = 5.0;
+        capacity.memory = 50L;
+        capacity.storage = 50L;
+
+        double secondUtility = calculator.calculateCurrentResourceUtility(agent);
+        exporter.log();
+
+        assertEquals((firstUtility + secondUtility) / 2.0, exporter.getAverageResourceUtility(), EPSILON);
     }
 
     @Test
