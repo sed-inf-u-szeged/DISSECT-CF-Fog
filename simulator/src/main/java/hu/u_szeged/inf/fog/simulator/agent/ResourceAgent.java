@@ -75,20 +75,37 @@ public class ResourceAgent {
         allResourceAgents.put(name, this);
     }
 
-    public void initResourceAgent(VirtualAppliance resourceAgentVa, AlterableResourceConstraints resourceAgentArc,  Capacity...capacity) {
-        if(validateAndAddCapacitiesLimit(capacity)) {
+    public void initResourceAgent(
+            VirtualAppliance resourceAgentVa,
+            AlterableResourceConstraints resourceAgentArc,
+            Capacity... capacity) {
+
+        if (validateAndAddCapacitiesLimit(capacity)) {
             if (!isTurnedOn) {
                 isTurnedOn = true;
+
                 List<Capacity> values = new ArrayList<>(this.capacities.values());
                 this.hostNode = values.get(SeedSyncer.centralRnd.nextInt(values.size())).node;
+
                 VirtualAppliance va = resourceAgentVa.newCopy(this.name + "-VA");
                 this.hostNode.iaas.repositories.get(0).registerObject(va);
+
                 try {
-                    this.raService = this.hostNode.iaas.requestVM(va, resourceAgentArc,
-                            this.hostNode.iaas.repositories.get(0), 1)[0];
+                    this.raService = this.hostNode.iaas.requestVM(
+                            va,
+                            resourceAgentArc,
+                            this.hostNode.iaas.repositories.get(0),
+                            1)[0];
+
+                    Capacity hostCapacity = this.capacities.get(this.hostNode.name);
+
+                    hostCapacity.cpu -= resourceAgentArc.getRequiredCPUs();
+                    hostCapacity.memory -= resourceAgentArc.getRequiredMemory();
+
                 } catch (VMManager.VMManagementException e) {
                     SimLogger.logError(name + "(RA) service cannot be created: " + e);
                 }
+
                 SimLogger.logRun(name + " (RA) was assigned to: " + this.hostNode.name + " at: "
                         + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             }

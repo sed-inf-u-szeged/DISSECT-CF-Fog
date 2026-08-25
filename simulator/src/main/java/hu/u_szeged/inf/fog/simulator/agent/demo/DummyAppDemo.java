@@ -45,158 +45,36 @@ public class    DummyAppDemo {
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network)));
 
-        /* node config
-        final ComputingAppliance node1 = new ComputingAppliance(
-                Config.createNode(
-                        "Node1",
-                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 200, 500, // minimum, idle and maximum power
-                        100_000, // bandwidth
-                        20, sharedLatencyMap), // latency
-                new GeoLocation(51.5074, -0.1278), "EU", "Azure", false); // London
-
-        final ComputingAppliance node2 = new ComputingAppliance(
-                Config.createNode(
-                        "Node2",
-                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        20, 100, 250, // minimum, idle and maximum power
-                        50_000, // bandwidth
-                        35, sharedLatencyMap), // latency
-                new GeoLocation(52.5200, 13.4050), "EU", "Azure", false); // Berlin
-
-        final ComputingAppliance node3 = new ComputingAppliance(
-                Config.createNode(
-                        "Node3",
-                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 200, 500, // minimum, idle and maximum power
-                        150_000, // bandwidth
-                        15, sharedLatencyMap), // latency
-                new GeoLocation(48.8566, 2.3522), "EU", "AWS", false); // Paris
-
-        final ComputingAppliance node4 = new ComputingAppliance(
-                Config.createNode(
-                        "Node4",
-                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        20, 100, 250, // minimum, idle and maximum power
-                        75_000, // bandwidth
-                        25, sharedLatencyMap), // latency
-                new GeoLocation(50.1109, 8.6821), "EU", "AWS", false); // Frankfurt
-
-        final ComputingAppliance node5 = new ComputingAppliance(
-                Config.createNode(
-                        "Node5",
-                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 200, 500, // minimum, idle and maximum power
-                        100_000, // bandwidth
-                        50, sharedLatencyMap), // latency
-                new GeoLocation(41.8781, -87.6298), "US", "Azure", false); // Chicago
-
-        final ComputingAppliance node6 = new ComputingAppliance(
-                Config.createNode(
-                        "Node6",
-                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        20, 100, 250, // minimum, idle and maximum power
-                        50_000, // bandwidth
-                        65, sharedLatencyMap), // latency
-                new GeoLocation(29.7604, -95.3698), "US", "Azure", false); // Houston
-
-        final ComputingAppliance node7 = new ComputingAppliance(
-                Config.createNode(
-                        "Node7",
-                        64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        30, 200, 500, // minimum, idle and maximum power
-                        150_000, // bandwidth
-                        40, sharedLatencyMap), // latency
-                new GeoLocation(39.0438, -77.4874), "US", "AWS", false); // Virginia
-
-        final ComputingAppliance node8 = new ComputingAppliance(
-                Config.createNode(
-                        "Node8",
-                        32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE,
-                        20, 100, 250, // minimum, idle and maximum power
-                        75_000, // bandwidth
-                        70, sharedLatencyMap), // latency
-                new GeoLocation(45.5152, -122.6784), "US", "AWS", false); // Oregon
-
-        new EnergyDataCollector("Node1-energy", node1.iaas, true, true, () -> hasRunningApplication(node1));
-        new EnergyDataCollector("Node2-energy", node2.iaas, true, true, () -> hasRunningApplication(node2));
-        new EnergyDataCollector("Node3-energy", node3.iaas, true, true, () -> hasRunningApplication(node3));
-        new EnergyDataCollector("Node4-energy", node4.iaas, true, true, () -> hasRunningApplication(node4));
-        new EnergyDataCollector("Node5-energy", node5.iaas, true, true, () -> hasRunningApplication(node5));
-        new EnergyDataCollector("Node6-energy", node6.iaas, true, true, () -> hasRunningApplication(node6));
-        new EnergyDataCollector("Node7-energy", node7.iaas, true, true, () -> hasRunningApplication(node7));
-        new EnergyDataCollector("Node8-energy", node8.iaas, true, true, () -> hasRunningApplication(node8));
-        */
-
         VirtualAppliance resourceAgentVa = new VirtualAppliance("resourceAgentVa", 30_000, 0, false, 536_870_912L);
         AlterableResourceConstraints resourceAgentArc = new AlterableResourceConstraints(1, 1, 536_870_912L);
         createEvaluationInfrastructure(sharedLatencyMap, resourceAgentVa, resourceAgentArc);
 
-        /* agent config
-        ResourceAgent ra1 = new ResourceAgent(
-                "Agent1", 1.00,
-                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
-                new FloodingMessagingStrategy());
-
-        ra1.initResourceAgent(
-                resourceAgentVa,
-                resourceAgentArc,
-                new Capacity(node1, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node2, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
-
-        ResourceAgent ra2 = new ResourceAgent(
-                "Agent2", 1.25,
-                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
-                new FloodingMessagingStrategy());
-
-        ra2.initResourceAgent(
-                resourceAgentVa,
-                resourceAgentArc,
-                new Capacity(node3, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node4, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
-
-        ResourceAgent ra3 = new ResourceAgent(
-                "Agent3", 1.50,
-                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
-                new FloodingMessagingStrategy());
-
-        ra3.initResourceAgent(
-                resourceAgentVa,
-                resourceAgentArc,
-                new Capacity(node5, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node6, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
-
-        ResourceAgent ra4 = new ResourceAgent(
-                "Agent4", 1.75,
-                (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
-                new FloodingMessagingStrategy());
-
-        ra4.initResourceAgent(
-                resourceAgentVa,
-                resourceAgentArc,
-                new Capacity(node7, 64, 64 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node8, 32, 32 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
-        */
-
         ResourceAgentManager.getInstance().start((long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6,(boolean) Config.DUMMY_CONFIGURATION.get("csvLogging"));
 
         /* app submission */
-        List<Path> appDescriptionFiles = Files.list((Path) Config.DUMMY_CONFIGURATION.get("inputDir"))
-                .filter(f -> f.toString().endsWith(".json"))
-                .sorted()
-                .toList();
+        List<Integer> submissionDelays = (List<Integer>) Config.DUMMY_CONFIGURATION.get("submissionDelay");
 
-        int i = 0;
-        for (Path file : appDescriptionFiles) {
-            List<Integer> delays = (List<Integer>) Config.DUMMY_CONFIGURATION.get("submissionDelay");
-            new DeferredEvent(delays.get(i) * ScenarioBase.MINUTE_IN_MILLISECONDS) {
+        List<Path> appDescriptionFiles;
+
+        try (var files = Files.list((Path) Config.DUMMY_CONFIGURATION.get("inputDir"))) {
+            appDescriptionFiles = files
+                    .filter(file -> file.toString().endsWith(".json"))
+                    .sorted()
+                    .limit(submissionDelays.size())
+                    .toList();
+        }
+
+        for (int applicationIndex = 0; applicationIndex < appDescriptionFiles.size(); applicationIndex++) {
+            Path file = appDescriptionFiles.get(applicationIndex);
+            int submissionDelay = submissionDelays.get(applicationIndex);
+
+            new DeferredEvent(submissionDelay * ScenarioBase.MINUTE_IN_MILLISECONDS) {
 
                 @Override
                 protected void eventAction() {
-                    new Submission(file, 2048);
+                    new Submission(file, 2_048);
                 }
             };
-            i++;
         }
 
         final long starttime = System.nanoTime();       
@@ -284,6 +162,7 @@ public class    DummyAppDemo {
         long totalOffersAfterPareto = 0L;
 
         double totalSuccessfulDeploymentTime = 0.0;
+        double totalCosts = 0.0;
 
         for (AgentApplication application : AgentApplication.allAgentApplications) {
             boolean successful = application.deploymentTime != -1;
@@ -304,7 +183,9 @@ public class    DummyAppDemo {
             SimLogger.logRes("\t\tDeployment successful: " + successful);
             SimLogger.logRes("\t\tDeployment time (ms): " + application.deploymentTime);
             SimLogger.logRes("\t\tBroadcast rounds: " + application.broadcastCount);
-            SimLogger.logRes("\t\tTotal cost (unit): " + applicationCosts.getOrDefault(application.name, 0.0));
+            double cost = applicationCosts.getOrDefault(application.name, 0.0);
+            totalCosts += cost;
+            SimLogger.logRes("\t\tTotal cost (unit): " + cost);
             SimLogger.logRes("\t\tLocal candidate evaluations: " + application.localCandidateEvaluationCount);
             SimLogger.logRes("\t\tLocal generation runtime (ms): " + application.localGenerationRuntimeNanos / 1_000_000.0);
             SimLogger.logRes("\t\tGlobal coverage evaluations: " + application.globalCoverageEvaluationCount);
@@ -343,11 +224,12 @@ public class    DummyAppDemo {
         SimLogger.logRes("\tSubmitted applications: " + applicationCount);
         SimLogger.logRes("\tSuccessful deployments: " + successfulApplicationCount);
         SimLogger.logRes("\tDeployment success rate (%): " + deploymentSuccessRate * 100.0);
-        SimLogger.logRes("\tAverage successful deployment time (ms): " + averageDeploymentTime);
+        SimLogger.logRes("\tAverage successful deployment time (sec.): " + averageDeploymentTime / 1000.0);
         SimLogger.logRes("\tAverage local candidate evaluations: " + averageLocalCandidateEvaluations);
         SimLogger.logRes("\tAverage local generation runtime (ms): " + averageLocalGenerationRuntimeMillis);
         SimLogger.logRes("\tAverage global coverage evaluations: " + averageGlobalCoverageEvaluations);
         SimLogger.logRes("\tAverage global selection runtime (ms): " + averageGlobalSelectionRuntimeMillis);
+        SimLogger.logRes("\tAverage total selection runtime (ms): " + (averageLocalGenerationRuntimeMillis + averageGlobalSelectionRuntimeMillis));
         if (totalOffersBeforePareto > 0L) {
             double overallParetoReduction = 1.0 - (double) totalOffersAfterPareto / totalOffersBeforePareto;
 
@@ -394,11 +276,11 @@ public class    DummyAppDemo {
                 + (double) totalGeneratedDataSize / ScenarioBase.MB_IN_BYTE + " / " + (double) totalReceivedDataSize / ScenarioBase.MB_IN_BYTE);
         SimLogger.logRes("Average file delivery latency (ms): " + averageFileDeliveryLatency);
         SimLogger.logRes("Average file throughput (MB/s): " + averageFileThroughput);
+        SimLogger.logRes("Total cost of deployed applications (unit): " + totalCosts);
         SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh);
-        SimLogger.logRes("Simulation time (hour): " + TimeUnit.HOURS.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
+        SimLogger.logRes("Simulation time (min.): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
-        SimLogger.logEmptyLine();
         MappingStrategy mappingStrategy = (MappingStrategy) Config.APP_TYPE.get("mappingStrategy");
         boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
         boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
@@ -435,95 +317,116 @@ public class    DummyAppDemo {
             AlterableResourceConstraints resourceAgentArc) {
 
         int raCount = (int) Config.DUMMY_CONFIGURATION.get("raCount");
-        long nodeStorage = 256 * ScenarioBase.GB_IN_BYTE;
 
         for (int agentIndex = 0; agentIndex < raCount; agentIndex++) {
-            int firstNodeCpu = 48 + SeedSyncer.centralRnd.nextInt(17);
-            int secondNodeCpu = 96 - firstNodeCpu;
+            String cloudNodeName = "CloudNode" + (agentIndex + 1);
+            String edgeNodeName = "EdgeNode" + (agentIndex + 1);
 
-            int firstNodeMemoryGb = 48 + SeedSyncer.centralRnd.nextInt(17);
-            int secondNodeMemoryGb = 96 - firstNodeMemoryGb;
+            String cloudProvider = agentIndex % 2 == 0 ? "Azure" : "AWS";
+            String region = SeedSyncer.centralRnd.nextBoolean() ? "EU" : "US";
 
-            long firstNodeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(100_001);
-            long secondNodeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(100_001);
-
-            int firstNodeLatency = 15 + SeedSyncer.centralRnd.nextInt(56);
-            int secondNodeLatency = 15 + SeedSyncer.centralRnd.nextInt(56);
-
-            boolean firstNodeInEu = SeedSyncer.centralRnd.nextBoolean();
-            boolean secondNodeInEu = SeedSyncer.centralRnd.nextBoolean();
-
-            String firstNodeRegion = firstNodeInEu ? "EU" : "US";
-            String secondNodeRegion = secondNodeInEu ? "EU" : "US";
-
-            double firstNodeLatitude = firstNodeInEu
+            double cloudLatitude = region.equals("EU")
                     ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
                     : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
 
-            double firstNodeLongitude = firstNodeInEu
+            double cloudLongitude = region.equals("EU")
                     ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
                     : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
 
-            double secondNodeLatitude = secondNodeInEu
-                    ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
-                    : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
+            double edgeLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            double edgeLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            double secondNodeLongitude = secondNodeInEu
-                    ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
-                    : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
+            int cloudCpu = 48 + SeedSyncer.centralRnd.nextInt(25); // 48-72 CPU.
+            int cloudMemoryGb = 64 + SeedSyncer.centralRnd.nextInt(65); // 64-128 GB.
+            int cloudStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 512 : 1_024;
 
-            String provider = agentIndex % 2 == 0 ? "Azure" : "AWS";
+            long cloudBandwidth = 250_000L + SeedSyncer.centralRnd.nextInt(1_000_001); // 2-10 Gbit/s.
+            int cloudLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
 
-            String firstNodeName = "Node" + (agentIndex * 2 + 1);
-            String secondNodeName = "Node" + (agentIndex * 2 + 2);
+            double cloudMinimumPower = cloudCpu * 0.5;
+            double cloudIdlePower = cloudCpu * 3.0;
+            double cloudMaximumPower = cloudCpu * 8.0;
 
-            ComputingAppliance firstNode = new ComputingAppliance(
+            ComputingAppliance cloudNode = new ComputingAppliance(
                     Config.createNode(
-                            firstNodeName,
-                            firstNodeCpu,
-                            firstNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            nodeStorage,
-                            firstNodeCpu * 0.5, // Minimum power in watts.
-                            firstNodeCpu * 3.0, // Idle power in watts.
-                            firstNodeCpu * 7.5, // Maximum power in watts.
-                            firstNodeBandwidth, // Input, output and disk bandwidth in bytes/ms.
-                            firstNodeLatency, // Input latency in milliseconds.
+                            cloudNodeName,
+                            cloudCpu,
+                            cloudMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            cloudStorageGb * ScenarioBase.GB_IN_BYTE,
+                            cloudMinimumPower,
+                            cloudIdlePower,
+                            cloudMaximumPower,
+                            cloudBandwidth,
+                            cloudLatency,
                             sharedLatencyMap),
-                    new GeoLocation(firstNodeLatitude, firstNodeLongitude),
-                    firstNodeRegion,
-                    provider,
+                    new GeoLocation(cloudLatitude, cloudLongitude),
+                    region,
+                    cloudProvider,
                     false);
 
-            ComputingAppliance secondNode = new ComputingAppliance(
+            boolean raspberryPi = agentIndex % 2 == 0;
+
+            int edgeCpu;
+            int edgeMemoryGb;
+            int edgeStorageGb;
+            long edgeBandwidth;
+            double edgeMinimumPower;
+            double edgeIdlePower;
+            double edgeMaximumPower;
+            String edgeProvider;
+
+            if (raspberryPi) {
+                edgeCpu = 4 + SeedSyncer.centralRnd.nextInt(5); // 4-8 CPU.
+                edgeMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 4 : 8;
+                edgeStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 64 : 128;
+                edgeBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(75_001); // 0.4-1 Gbit/s.
+                edgeMinimumPower = 1.5;
+                edgeIdlePower = 3.0;
+                edgeMaximumPower = 15.0;
+                edgeProvider = "RaspberryPi";
+            } else {
+                edgeCpu = 12 + SeedSyncer.centralRnd.nextInt(13); // 12-24 CPU.
+                edgeMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 16 : 32;
+                edgeStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 256 : 512;
+                edgeBandwidth = 75_000L + SeedSyncer.centralRnd.nextInt(175_001); // 0.6-2 Gbit/s.
+                edgeMinimumPower = 3.0;
+                edgeIdlePower = 8.0 + edgeCpu * 0.4;
+                edgeMaximumPower = 30.0 + edgeCpu * 3.0;
+                edgeProvider = "Laptop";
+            }
+
+            int edgeLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
+
+            ComputingAppliance edgeNode = new ComputingAppliance(
                     Config.createNode(
-                            secondNodeName,
-                            secondNodeCpu,
-                            secondNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            nodeStorage,
-                            secondNodeCpu * 0.5, // Minimum power in watts.
-                            secondNodeCpu * 3.0, // Idle power in watts.
-                            secondNodeCpu * 7.5, // Maximum power in watts.
-                            secondNodeBandwidth, // Input, output and disk bandwidth in bytes/ms.
-                            secondNodeLatency, // Input latency in milliseconds.
+                            edgeNodeName,
+                            edgeCpu,
+                            edgeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            edgeStorageGb * ScenarioBase.GB_IN_BYTE,
+                            edgeMinimumPower,
+                            edgeIdlePower,
+                            edgeMaximumPower,
+                            edgeBandwidth,
+                            edgeLatency,
                             sharedLatencyMap),
-                    new GeoLocation(secondNodeLatitude, secondNodeLongitude),
-                    secondNodeRegion,
-                    provider,
-                    false);
+                    new GeoLocation(edgeLatitude, edgeLongitude),
+                    region,
+                    edgeProvider,
+                    true);
 
             new EnergyDataCollector(
-                    firstNodeName + "-energy",
-                    firstNode.iaas,
+                    cloudNodeName + "-energy",
+                    cloudNode.iaas,
                     true,
                     true,
-                    () -> hasRunningApplication(firstNode));
+                    () -> hasRunningApplication(cloudNode));
 
             new EnergyDataCollector(
-                    secondNodeName + "-energy",
-                    secondNode.iaas,
+                    edgeNodeName + "-energy",
+                    edgeNode.iaas,
                     true,
                     true,
-                    () -> hasRunningApplication(secondNode));
+                    () -> hasRunningApplication(edgeNode));
 
             double initialHourlyPrice = 1.0 + agentIndex % 4 * 0.25;
 
@@ -537,15 +440,16 @@ public class    DummyAppDemo {
                     resourceAgentVa,
                     resourceAgentArc,
                     new Capacity(
-                            firstNode,
-                            firstNodeCpu,
-                            firstNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            nodeStorage),
+                            cloudNode,
+                            cloudCpu,
+                            cloudMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            cloudStorageGb * ScenarioBase.GB_IN_BYTE),
                     new Capacity(
-                            secondNode,
-                            secondNodeCpu,
-                            secondNodeMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            nodeStorage));
+                            edgeNode,
+                            edgeCpu,
+                            edgeMemoryGb * ScenarioBase.GB_IN_BYTE,
+                            edgeStorageGb * ScenarioBase.GB_IN_BYTE));
         }
     }
+
 }

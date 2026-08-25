@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,43 +17,60 @@ public class AppDescriptionGenerator {
     private static final String[] LOCATIONS = {"EU", "US"};
 
     public static void main(String[] args) throws IOException {
-        // global settings
+        // Workload settings
         String applicationNamePrefix = "App";
-        int applicationCount = 30;
+        int applicationCount = 60;
         int componentCount = 4;
         long randomSeed = 1L;
-        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1";
 
-        // QoS weights [0..1]
+        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1/";
+
+        // Application Owner QoS weights
         double energyWeight = 0.25;
         double priceWeight = 0.25;
         double latencyWeight = 0.25;
         double bandwidthWeight = 0.25;
 
-        // hard requirements
+        // Application-level hard requirements
         int minProviderCount = 1;
-        int maxProviderCount = 2;
-        double maxCost = 1.0;
+        int maxProviderCount = 4;
+
+        // Permissive QoS limits used primarily as normalization references in Scenario 1
+        double maxCost = 10.0;
         double maxLatency = 70.0;
         double minBandwidth = 50_000.0;
-        double maxEnergyConsumption = 2_000.0;
+        double maxEnergyConsumption = 3_000.0;
 
-        // max. resource requirement per component
-        int maximumCpu = 4;
-        int maximumMemoryGb = 4;
-        int maximumStorageGb = 8;
-        int maximumImageSizeGb = 2;
-        //Boolean edgeRequirement = true;  // only edge
-        //Boolean edgeRequirement = false; // only non-edge
-        Boolean edgeRequirement = null;  // any node
+        // Component resource requirement ranges
+        int maximumCpu = 4; // 1-4 CPU.
+        int maximumMemoryGb = 4; // 1-4 GB.
+        int maximumStorageGb = 8; // 1-8 GB.
+        int maximumImageSizeGb = 2; // 0.5-2 GB.
+
+        // Optional component-level placement constraints
+        double providerRequirementProbability = 0.0; // 0.0 disables provider requirements.
+        double locationRequirementProbability = 0.0; // 0.0 disables location requirements.
+
+        double edgeOnlyApplicationRatio = 0.0; // Applications containing edge=true components.
+        double nonEdgeOnlyApplicationRatio = 0.0; // Applications containing edge=false components.
+        int edgeConstrainedComponentsPerApplication = 1;
 
         ObjectMapper mapper = new ObjectMapper();
-        Random random = new Random();
+        Random random = new Random(randomSeed);
 
         Files.createDirectories(Path.of(outputDirectory));
 
         for (int applicationIndex = 1; applicationIndex <= applicationCount; applicationIndex++) {
-            String applicationName = applicationNamePrefix + "-" + applicationIndex;
+            String applicationName = applicationNamePrefix + "-" + String.format("%03d", applicationIndex);
+
+            double edgeConstraintSelection = random.nextDouble();
+            Boolean applicationEdgeRequirement = null;
+
+            if (edgeConstraintSelection < edgeOnlyApplicationRatio) {
+                applicationEdgeRequirement = true;
+            } else if (edgeConstraintSelection < edgeOnlyApplicationRatio + nonEdgeOnlyApplicationRatio) {
+                applicationEdgeRequirement = false;
+            }
 
             ObjectNode root = mapper.createObjectNode();
 
@@ -80,19 +98,29 @@ public class AppDescriptionGenerator {
                 ObjectNode requirements = mapper.createObjectNode();
 
                 requirements.put("cpu", random.nextInt(maximumCpu) + 1);
-                requirements.put("memory", (random.nextInt(maximumMemoryGb) + 1L) * ScenarioBase.GB_IN_BYTE);
-                requirements.put("storage", (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
 
-                if (random.nextBoolean()) {
-                    requirements.put("location", LOCATIONS[random.nextInt(LOCATIONS.length)]);
+                requirements.put(
+                        "memory",
+                        (random.nextInt(maximumMemoryGb) + 1L) * ScenarioBase.GB_IN_BYTE);
+
+                requirements.put(
+                        "storage",
+                        (random.nextInt(maximumStorageGb) + 1L) * ScenarioBase.GB_IN_BYTE);
+
+                if (random.nextDouble() < locationRequirementProbability) {
+                    String location = LOCATIONS[random.nextInt(LOCATIONS.length)];
+                    requirements.put("location", location);
                 }
 
-                if (random.nextBoolean()) {
-                    requirements.put("provider", PROVIDERS[random.nextInt(PROVIDERS.length)]);
+                if (random.nextDouble() < providerRequirementProbability) {
+                    String provider = PROVIDERS[random.nextInt(PROVIDERS.length)];
+                    requirements.put("provider", provider);
                 }
 
-                if (edgeRequirement != null) {
-                    requirements.put("edge", edgeRequirement);
+                if (applicationEdgeRequirement != null
+                        && componentIndex <= edgeConstrainedComponentsPerApplication) {
+
+                    requirements.put("edge", applicationEdgeRequirement);
                 }
 
                 ObjectNode properties = mapper.createObjectNode();

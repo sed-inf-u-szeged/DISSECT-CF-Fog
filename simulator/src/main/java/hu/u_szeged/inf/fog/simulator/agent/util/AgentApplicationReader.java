@@ -13,7 +13,7 @@ public class AgentApplicationReader {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final String APPLICATION_NAME_PATTERN = "[A-Za-z][A-Za-z0-9_]*-[1-9][0-9]*";
+    private static final String APPLICATION_NAME_PATTERN = "[A-Za-z][A-Za-z0-9_]*-0*[1-9][0-9]*";
 
     private static final String COMPONENT_KIND_PATTERN = "[A-Za-z][A-Za-z0-9_]*";
 

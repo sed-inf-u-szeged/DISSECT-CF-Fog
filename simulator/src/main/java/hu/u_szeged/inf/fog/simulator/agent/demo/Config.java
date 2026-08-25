@@ -36,8 +36,10 @@ public class Config {
                     // Scenario 1
                     Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
                     Map.entry("raCount", 4),
-                    Map.entry("submissionDelay", createSubmissionDelays(30, 3)), // One application every 3 minutes
+                    Map.entry("submissionDelay", createSubmissionDelays(30, 1)),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
+                    //Map.entry("submissionDelay", List.of(0)), // 1 app
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/")),
                     Map.entry("maxRebroadcast", 2),
                     Map.entry("csvLogging", true),
 
@@ -66,13 +68,13 @@ public class Config {
                     // Map.entry("computeTaskPerByte", 0.0),
 
                     // Algorithm 1: First Fit + all hard-valid coverages + ranking
-                     Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                     Map.entry("atomicOffers", false),
-                     Map.entry("onlyFirstOffer", false),
+                    //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                    //Map.entry("atomicOffers", false),
+                    //Map.entry("onlyFirstOffer", false),
                     // Map.entry("rankingMethod", "random"),
-                     Map.entry("rankingMethod", "rank_no_re"),
-                     Map.entry("rankingScript", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/for_simulator/call_ranking_func.py"),
-                     Map.entry("rankingPython", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/.venv/bin/python"),
+                    //Map.entry("rankingMethod", "rank_no_re"),
+                    //Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
+                    //Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
@@ -80,9 +82,9 @@ public class Config {
                     //Map.entry("onlyFirstOffer", true),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
-                    //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
-                    //Map.entry("atomicOffers", true),
-                    //Map.entry("onlyFirstOffer", false),
+                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    Map.entry("atomicOffers", true),
+                    Map.entry("onlyFirstOffer", false),
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor
