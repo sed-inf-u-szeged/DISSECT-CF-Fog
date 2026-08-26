@@ -546,7 +546,7 @@ public class ResourceAgent {
                 failedApplicationCount++;
                 List<Integer> submissionCounts = (List<Integer>) Config.APP_TYPE.get("submissionDelay");
                 if (failedApplicationCount == submissionCounts.size()) {
-                    SimLogger.logError("All " + failedApplicationCount + " submitted applications failed to deploy.");
+                    SimLogger.logRun("All " + failedApplicationCount + " submitted applications failed to deploy.");
                     ResourceAgentManager.getInstance().stop();
                     for (EnergyDataCollector edc : EnergyDataCollector.allEnergyCollectors.values()) {
                         edc.stop();

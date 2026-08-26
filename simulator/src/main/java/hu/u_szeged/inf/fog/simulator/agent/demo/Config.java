@@ -73,8 +73,8 @@ public class Config {
                     Map.entry("onlyFirstOffer", false),
                     //Map.entry("rankingMethod", "random"),
                     Map.entry("rankingMethod", "rank_no_re"),
-                    Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
-                    Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
+                    Map.entry("rankingScript", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/for_simulator/call_ranking_func.py"),
+                    Map.entry("rankingPython", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/.venv/bin/python"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),

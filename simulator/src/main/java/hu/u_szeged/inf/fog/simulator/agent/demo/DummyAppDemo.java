@@ -164,7 +164,7 @@ public class    DummyAppDemo {
         double totalSuccessfulDeploymentTime = 0.0;
         double totalCosts = 0.0;
         double totalGlobalQosScore = 0.0;
-        int globalQosScoreCount = 0;
+
 
         for (AgentApplication application : AgentApplication.allAgentApplications) {
             boolean successful = application.deploymentTime != -1;
@@ -175,7 +175,6 @@ public class    DummyAppDemo {
 
                 if (application.winningGlobalQosScore != null) {
                     totalGlobalQosScore += application.winningGlobalQosScore;
-                    globalQosScoreCount++;
                 }
             }
 
@@ -227,15 +226,15 @@ public class    DummyAppDemo {
         double averageGlobalSelectionRuntimeMillis =
                 applicationCount == 0 ? 0.0 : totalGlobalSelectionRuntimeNanos / 1_000_000.0 / applicationCount;
 
-        double averageGlobalQosScore =
-                globalQosScoreCount == 0 ? 0.0 : totalGlobalQosScore / globalQosScoreCount;
+        double overallAchievedQosYield =
+                applicationCount == 0 ? 0.0 : totalGlobalQosScore / applicationCount;
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Aggregated application results:");
         SimLogger.logRes("\tSubmitted applications: " + applicationCount);
         SimLogger.logRes("\tSuccessful deployments: " + successfulApplicationCount);
         SimLogger.logRes("\tDeployment success rate (%): " + deploymentSuccessRate * 100.0);
-        SimLogger.logRes("\tAverage global QoS score of successful deployments: " + averageGlobalQosScore);
+        SimLogger.logRes("\tOverall achieved QoS yield: " + overallAchievedQosYield);
         SimLogger.logRes("\tAverage successful deployment time (sec.): " + averageDeploymentTime / 1000.0);
         SimLogger.logRes("\tAverage local candidate evaluations: " + averageLocalCandidateEvaluations);
         SimLogger.logRes("\tAverage local generation runtime (ms): " + averageLocalGenerationRuntimeMillis);
@@ -250,10 +249,10 @@ public class    DummyAppDemo {
             SimLogger.logRes("\tPareto reduction (%): " + overallParetoReduction * 100.0);
         }
         if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
-            SimLogger.logRes("\tAverage Resource Agent utility during simulation: "
-                    + ResourceAgentCsvExporter.getInstance().getAverageResourceUtility());
+            double providerQuality = ResourceAgentCsvExporter.getInstance().getProviderQuality();
+            SimLogger.logRes("\tProvider quality during simulation: " + providerQuality);
         } else {
-            SimLogger.logRes("\tAverage Resource Agent utility during simulation: not available (CSV logging disabled)");
+            SimLogger.logRes("\tProvider quality during simulation: not available because CSV logging is disabled.");
         }
 
         double applicationEnergyKwh = 0.0;
@@ -288,8 +287,17 @@ public class    DummyAppDemo {
                 + (double) totalGeneratedDataSize / ScenarioBase.MB_IN_BYTE + " / " + (double) totalReceivedDataSize / ScenarioBase.MB_IN_BYTE);
         SimLogger.logRes("Average file delivery latency (ms): " + averageFileDeliveryLatency);
         SimLogger.logRes("Average file throughput (MB/s): " + averageFileThroughput);
-        SimLogger.logRes("Total cost of deployed applications (unit): " + totalCosts);
-        SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh);
+        double averageCostPerSuccessfulDeployment =
+                successfulApplicationCount == 0 ? 0.0 : totalCosts / successfulApplicationCount;
+
+        double averageEnergyPerSuccessfulDeployment =
+                successfulApplicationCount == 0 ? 0.0 : applicationEnergyKwh / successfulApplicationCount;
+
+        SimLogger.logRes("Total cost of deployed applications (unit): " + totalCosts
+                + " - average per successful deployment: " + averageCostPerSuccessfulDeployment);
+
+        SimLogger.logRes("Energy consumption of utilized nodes (kWh): " + applicationEnergyKwh
+                + " - average per successful deployment: " + averageEnergyPerSuccessfulDeployment);
         SimLogger.logRes("Simulation time (min.): " + TimeUnit.MINUTES.convert(Timed.getFireCount(), TimeUnit.MILLISECONDS));
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
@@ -351,7 +359,7 @@ public class    DummyAppDemo {
             double raspberryPiLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
             double raspberryPiLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            int cloudCpu = 24 + SeedSyncer.centralRnd.nextInt(17); // 32-49 CPU.
+            int cloudCpu = 24 + SeedSyncer.centralRnd.nextInt(17); // 24-40 CPU.
             int cloudMemoryGb = 64 + SeedSyncer.centralRnd.nextInt(33); // 64-96 GB.
             int cloudStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 512 : 1_024;
             long cloudBandwidth = 250_000L + SeedSyncer.centralRnd.nextInt(1_000_001); // 2-10 Gbit/s.

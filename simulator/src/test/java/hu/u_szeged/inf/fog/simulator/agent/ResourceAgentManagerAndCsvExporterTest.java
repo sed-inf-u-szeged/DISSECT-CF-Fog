@@ -117,25 +117,24 @@ class ResourceAgentManagerAndCsvExporterTest {
     }
 
     @Test
-    void exporter_getAverageResourceUtility_returnsAverageOfLoggedValues() {
+    void exporter_getProviderQuality_returnsUtilisationWeightedPlacementQuality() {
         ResourceAgent agent = createAgent("RA1", 10.0);
         Capacity capacity = createCapacity("NodeA", 10.0, 100L, 100L, 1000L, 10);
         agent.capacities.put("NodeA", capacity);
 
         ResourceAgentCsvExporter exporter = ResourceAgentCsvExporter.getInstance();
-        LocalMetricsCalculator calculator = new LocalMetricsCalculator();
 
-        double firstUtility = calculator.calculateCurrentResourceUtility(agent);
         exporter.log();
+
+        assertEquals(0.0, exporter.getProviderQuality(), EPSILON);
 
         capacity.cpu = 5.0;
         capacity.memory = 50L;
         capacity.storage = 50L;
 
-        double secondUtility = calculator.calculateCurrentResourceUtility(agent);
         exporter.log();
 
-        assertEquals((firstUtility + secondUtility) / 2.0, exporter.getAverageResourceUtility(), EPSILON);
+        assertEquals(0.75, exporter.getProviderQuality(), EPSILON);
     }
 
     @Test

@@ -98,6 +98,7 @@ class LocalMetricsCalculatorTest {
         assertEquals(25.555555555555554, metrics.cost, EPSILON);
         assertEquals(20.0, metrics.latency, EPSILON);
         assertEquals(2000.0, metrics.bandwidth, EPSILON);
+        assertEquals(0.4174415519901162, new LocalMetricsCalculator().calculateResourceUtility(metrics), EPSILON);
 
         double expectedEnergy = expectedProjectedEnergy(placements);
         assertEquals(expectedEnergy, metrics.energy, EPSILON);

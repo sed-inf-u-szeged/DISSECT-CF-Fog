@@ -13,7 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 public class ResourceAgentCsvExporter implements Closeable {
 
@@ -23,6 +26,7 @@ public class ResourceAgentCsvExporter implements Closeable {
         if (instance == null) {
             instance = new ResourceAgentCsvExporter();
         }
+
         return instance;
     }
 
@@ -36,48 +40,76 @@ public class ResourceAgentCsvExporter implements Closeable {
     public final PrintWriter hourlyPriceWriter;
     public final PrintWriter resourceUtilityWriter;
 
-    private double averageResourceUtilitySum;
-
-    private long resourceUtilitySampleCount;
+    private double weightedProviderQualitySum;
+    private double providerQualityWeightSum;
 
     private final LocalMetricsCalculator localMetricsCalculator = new LocalMetricsCalculator();
 
     private ResourceAgentCsvExporter() {
-        // TODO: check if NoiseAppCsvExporter also needs this fix!
         this.resourceAgents = ResourceAgent.allResourceAgents.values().stream()
                 .sorted(Comparator.comparing(resourceAgent -> resourceAgent.name))
                 .toList();
 
         try {
-            hourlyPricePath = Paths.get(ScenarioBase.RESULT_DIRECTORY,"ra-hourly-price.csv");
-            resourceMetricsPath = Paths.get(ScenarioBase.RESULT_DIRECTORY, "ra-resource-metrics.csv");
+            hourlyPricePath = Paths.get(
+                    ScenarioBase.RESULT_DIRECTORY,
+                    "ra-hourly-price.csv");
+
+            resourceMetricsPath = Paths.get(
+                    ScenarioBase.RESULT_DIRECTORY,
+                    "ra-resource-metrics.csv");
 
             hourlyPriceWriter = new PrintWriter(
-                    Files.newBufferedWriter(hourlyPricePath, StandardCharsets.UTF_8,
-                            StandardOpenOption.CREATE, StandardOpenOption.APPEND),
-                    true
-            );
+                    Files.newBufferedWriter(
+                            hourlyPricePath,
+                            StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.APPEND),
+                    true);
+
             resourceUtilityWriter = new PrintWriter(
-                    Files.newBufferedWriter(resourceMetricsPath, StandardCharsets.UTF_8,
-                            StandardOpenOption.CREATE, StandardOpenOption.APPEND),
-                    true
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+                    Files.newBufferedWriter(
+                            resourceMetricsPath,
+                            StandardCharsets.UTF_8,
+                            StandardOpenOption.CREATE,
+                            StandardOpenOption.APPEND),
+                    true);
+
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
         }
     }
 
     private String generateHeader() {
-        List<String> names = new ArrayList<>();
-        for (ResourceAgent ra : resourceAgents) {
-            names.add(ra.name);
+        List<String> columns = new ArrayList<>();
+        columns.add("time");
+
+        for (ResourceAgent resourceAgent : resourceAgents) {
+            columns.add(resourceAgent.name);
         }
 
-        return "time" + "," + String.join(",", names);
+        return String.join(",", columns);
     }
 
     private String generateResourceUtilityHeader() {
-        return generateHeader() + ",Average";
+        List<String> columns = new ArrayList<>();
+        columns.add("time");
+
+        for (ResourceAgent resourceAgent : resourceAgents) {
+            columns.add(resourceAgent.name + "-Balance");
+            columns.add(resourceAgent.name + "-Utilisation");
+            columns.add(resourceAgent.name + "-Fragmentation");
+            columns.add(resourceAgent.name + "-Compactness");
+            columns.add(resourceAgent.name + "-Utility");
+        }
+
+        columns.add("Average-Balance");
+        columns.add("Average-Utilisation");
+        columns.add("Average-Fragmentation");
+        columns.add("Average-Compactness");
+        columns.add("Average-Utility");
+
+        return String.join(",", columns);
     }
 
     @Override
@@ -101,36 +133,84 @@ public class ResourceAgentCsvExporter implements Closeable {
         rowForHourlyPrice.append(String.format(Locale.ROOT, "%.3f", time));
         rowForResourceUtility.append(String.format(Locale.ROOT, "%.3f", time));
 
+        double currentBalanceSum = 0.0;
+        double currentUtilisationSum = 0.0;
+        double currentFragmentationSum = 0.0;
+        double currentCompactnessSum = 0.0;
         double currentResourceUtilitySum = 0.0;
-        for (ResourceAgent ra : resourceAgents) {
-            rowForHourlyPrice.append(",");
-            rowForHourlyPrice.append(ra.hourlyPrice);
 
-            double resourceUtility = localMetricsCalculator.calculateCurrentResourceUtility(ra);
-            currentResourceUtilitySum += resourceUtility;
+        for (ResourceAgent resourceAgent : resourceAgents) {
+            rowForHourlyPrice.append(",");
+            rowForHourlyPrice.append(resourceAgent.hourlyPrice);
+
+            double balance = localMetricsCalculator.calculateCurrentBalance(resourceAgent);
+            double utilisation = localMetricsCalculator.calculateCurrentUtilisation(resourceAgent);
+            double fragmentation =
+                    localMetricsCalculator.calculateCurrentCapacityFragmentation(resourceAgent);
+            double compactness = localMetricsCalculator.calculateCurrentCompactness(resourceAgent);
+            double utility = localMetricsCalculator.calculateCurrentResourceUtility(resourceAgent);
+
+            double consolidation = ((1.0 - fragmentation) + compactness) / 2.0;
+            double providerQuality = (balance + consolidation) / 2.0;
+
+            weightedProviderQualitySum += utilisation * providerQuality;
+            providerQualityWeightSum += utilisation;
+
+            currentBalanceSum += balance;
+            currentUtilisationSum += utilisation;
+            currentFragmentationSum += fragmentation;
+            currentCompactnessSum += compactness;
+            currentResourceUtilitySum += utility;
 
             rowForResourceUtility.append(",");
-            rowForResourceUtility.append(resourceUtility);
+            rowForResourceUtility.append(balance);
+            rowForResourceUtility.append(",");
+            rowForResourceUtility.append(utilisation);
+            rowForResourceUtility.append(",");
+            rowForResourceUtility.append(fragmentation);
+            rowForResourceUtility.append(",");
+            rowForResourceUtility.append(compactness);
+            rowForResourceUtility.append(",");
+            rowForResourceUtility.append(utility);
         }
 
-        double currentAverageResourceUtility =
-                resourceAgents.isEmpty() ? 0.0 : currentResourceUtilitySum / resourceAgents.size();
+        int resourceAgentCount = resourceAgents.size();
+
+        double averageBalance =
+                resourceAgentCount == 0 ? 0.0 : currentBalanceSum / resourceAgentCount;
+
+        double averageUtilisation =
+                resourceAgentCount == 0 ? 0.0 : currentUtilisationSum / resourceAgentCount;
+
+        double averageFragmentation =
+                resourceAgentCount == 0 ? 0.0 : currentFragmentationSum / resourceAgentCount;
+
+        double averageCompactness =
+                resourceAgentCount == 0 ? 0.0 : currentCompactnessSum / resourceAgentCount;
+
+        double averageUtility =
+                resourceAgentCount == 0 ? 0.0 : currentResourceUtilitySum / resourceAgentCount;
 
         rowForResourceUtility.append(",");
-        rowForResourceUtility.append(currentAverageResourceUtility);
-
-        averageResourceUtilitySum += currentAverageResourceUtility;
-        resourceUtilitySampleCount++;
+        rowForResourceUtility.append(averageBalance);
+        rowForResourceUtility.append(",");
+        rowForResourceUtility.append(averageUtilisation);
+        rowForResourceUtility.append(",");
+        rowForResourceUtility.append(averageFragmentation);
+        rowForResourceUtility.append(",");
+        rowForResourceUtility.append(averageCompactness);
+        rowForResourceUtility.append(",");
+        rowForResourceUtility.append(averageUtility);
 
         hourlyPriceWriter.println(rowForHourlyPrice);
         resourceUtilityWriter.println(rowForResourceUtility);
     }
 
-    public double getAverageResourceUtility() {
-        if (resourceUtilitySampleCount == 0L) {
+    public double getProviderQuality() {
+        if (providerQualityWeightSum == 0.0) {
             return 0.0;
         }
 
-        return averageResourceUtilitySum / resourceUtilitySampleCount;
+        return weightedProviderQualitySum / providerQualityWeightSum;
     }
 }

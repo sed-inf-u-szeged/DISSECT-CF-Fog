@@ -364,7 +364,9 @@ public class LocalMetricsCalculator {
             double fragmentation,
             double compactness) {
 
-        return (balance + utilisation + (1.0 - fragmentation) + compactness) / 4.0;
+        double consolidation = ((1.0 - fragmentation) + compactness) / 2.0;
+
+        return (balance + utilisation + consolidation) / 3.0;
     }
 
     public double calculateCurrentUtilisation(ResourceAgent agent) {
