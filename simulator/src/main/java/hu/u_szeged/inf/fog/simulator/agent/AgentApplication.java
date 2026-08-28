@@ -43,6 +43,8 @@ public class AgentApplication {
     
     public double deploymentTime;
 
+    public boolean deploymentSuccessful = false;
+
     public long terminationTime;
 
     public long submissionTime;

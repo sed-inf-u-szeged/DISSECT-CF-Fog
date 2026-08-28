@@ -20,6 +20,8 @@ import java.util.Locale;
 
 public class ResourceAgentCsvExporter implements Closeable {
 
+    private static final double EPSILON = 1e-9;
+
     private static ResourceAgentCsvExporter instance;
 
     public static ResourceAgentCsvExporter getInstance() {
@@ -40,8 +42,13 @@ public class ResourceAgentCsvExporter implements Closeable {
     public final PrintWriter hourlyPriceWriter;
     public final PrintWriter resourceUtilityWriter;
 
-    private double weightedProviderQualitySum;
-    private double providerQualityWeightSum;
+    private double providerQualitySum;
+    private long activeProviderObservationCount;
+
+    private double activeBalanceSum;
+    private double activeUtilisationSum;
+    private double activeFragmentationSum;
+    private double activeCompactnessSum;
 
     private final LocalMetricsCalculator localMetricsCalculator = new LocalMetricsCalculator();
 
@@ -151,10 +158,16 @@ public class ResourceAgentCsvExporter implements Closeable {
             double utility = localMetricsCalculator.calculateCurrentResourceUtility(resourceAgent);
 
             double consolidation = ((1.0 - fragmentation) + compactness) / 2.0;
-            double providerQuality = (balance + consolidation) / 2.0;
 
-            weightedProviderQualitySum += utilisation * providerQuality;
-            providerQualityWeightSum += utilisation;
+            if (utilisation > EPSILON) {
+                providerQualitySum += utility;
+                activeProviderObservationCount++;
+
+                activeBalanceSum += balance;
+                activeUtilisationSum += utilisation;
+                activeFragmentationSum += fragmentation;
+                activeCompactnessSum += compactness;
+            }
 
             currentBalanceSum += balance;
             currentUtilisationSum += utilisation;
@@ -207,10 +220,30 @@ public class ResourceAgentCsvExporter implements Closeable {
     }
 
     public double getProviderQuality() {
-        if (providerQualityWeightSum == 0.0) {
+        return calculateActiveAverage(providerQualitySum);
+    }
+
+    public double getAverageActiveBalance() {
+        return calculateActiveAverage(activeBalanceSum);
+    }
+
+    public double getAverageActiveUtilisation() {
+        return calculateActiveAverage(activeUtilisationSum);
+    }
+
+    public double getAverageActiveFragmentation() {
+        return calculateActiveAverage(activeFragmentationSum);
+    }
+
+    public double getAverageActiveCompactness() {
+        return calculateActiveAverage(activeCompactnessSum);
+    }
+
+    private double calculateActiveAverage(double sum) {
+        if (activeProviderObservationCount == 0L) {
             return 0.0;
         }
 
-        return weightedProviderQualitySum / providerQualityWeightSum;
+        return sum / activeProviderObservationCount;
     }
 }

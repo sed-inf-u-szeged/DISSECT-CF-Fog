@@ -117,7 +117,7 @@ class ResourceAgentManagerAndCsvExporterTest {
     }
 
     @Test
-    void exporter_getProviderQuality_returnsUtilisationWeightedPlacementQuality() {
+    void exporter_getProviderQuality_returnsAverageResourceUtility() {
         ResourceAgent agent = createAgent("RA1", 10.0);
         Capacity capacity = createCapacity("NodeA", 10.0, 100L, 100L, 1000L, 10);
         agent.capacities.put("NodeA", capacity);
@@ -134,7 +134,7 @@ class ResourceAgentManagerAndCsvExporterTest {
 
         exporter.log();
 
-        assertEquals(0.75, exporter.getProviderQuality(), EPSILON);
+        assertEquals(2.0 / 3.0, exporter.getProviderQuality(), EPSILON);
     }
 
     @Test

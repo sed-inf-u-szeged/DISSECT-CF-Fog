@@ -207,6 +207,10 @@ public class ResourceAgent {
                 app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
             }
 
+            if (app.winningOffer < 0 || app.winningOffer >= app.offers.size()) {
+                throw new IllegalStateException("The ranking did not return a valid offer index for " + app.name + ": " + app.winningOffer);
+            }
+
             Offer winningOffer = app.offers.get(app.winningOffer);
             GlobalOfferEvaluator globalOfferEvaluator = new GlobalOfferEvaluator();
 
@@ -235,6 +239,7 @@ public class ResourceAgent {
                         */
                     } else {
                         acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
+                        app.deploymentSuccessful = false;
                         app.deploymentTime = -1;
                     }
                 }
@@ -243,12 +248,16 @@ public class ResourceAgent {
     }
 
     private void generateOffers(AgentApplication app) {
-        app.localCandidateEvaluationCount = 0L;
-        app.localGenerationRuntimeNanos = 0L;
-        app.globalCoverageEvaluationCount = 0L;
-        app.globalSelectionRuntimeNanos = 0L;
-        app.localOffersBeforePareto = 0L;
-        app.localOffersAfterPareto = 0L;
+        app.offers.clear();
+        app.winningOffer = -1;
+        app.winningGlobalQosScore = null;
+
+        //app.localCandidateEvaluationCount = 0L;
+        //app.localGenerationRuntimeNanos = 0L;
+        //app.globalCoverageEvaluationCount = 0L;
+        //app.globalSelectionRuntimeNanos = 0L;
+        //app.localOffersBeforePareto = 0L;
+        //app.localOffersAfterPareto = 0L;
 
         List<LocalOffer> localOffers = new ArrayList<>();
 
@@ -433,7 +442,6 @@ public class ResourceAgent {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     //SimLogger.logRun("[ranking Python] " + line);
-                    Thread.sleep(300);
                     outputBuilder.append(line).append(" ");
                 }
             }

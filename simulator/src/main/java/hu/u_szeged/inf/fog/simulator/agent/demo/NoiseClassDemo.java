@@ -243,7 +243,7 @@ public class NoiseClassDemo {
 
         for (SwarmAgent sa : SwarmAgent.allSwarmAgents) {
             SimLogger.logRes(sa.app.name + " deployment: ");
-            if (sa.app.deploymentTime != -1) {
+            if (sa.app.deploymentSuccessful) {
                 avgDeploymentTime += sa.app.deploymentTime;
                 SimLogger.logRes("\tTime (min.): " + sa.app.deploymentTime / ScenarioBase.MINUTE_IN_MILLISECONDS);
             } else {

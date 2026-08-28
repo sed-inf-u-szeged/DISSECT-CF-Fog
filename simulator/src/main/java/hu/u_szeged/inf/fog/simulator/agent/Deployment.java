@@ -70,7 +70,7 @@ public class Deployment extends Timed {
             utilisation.vm = node.iaas.requestVM(va, arc, registryService, 1)[0];
             utilisation.initTime = Timed.getFireCount();
         } catch (VMManagementException e) {
-            SimLogger.logError("VM deployment failed for " + app.name + ": " + e);
+            SimLogger.logError("VM deployment failed for " + app.name + ", component " + utilisation.component.id + ": " + e);
         }
     }
 
@@ -97,6 +97,7 @@ public class Deployment extends Timed {
             SimLogger.logRun("Remaining resources for "
                     + this.app.name + " started to run at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             app.deploymentTime = Timed.getFireCount() - app.deploymentTime;
+            app.deploymentSuccessful = true;
             unsubscribe(); // The deployment is now done!
             deployActaulApplication();
         }

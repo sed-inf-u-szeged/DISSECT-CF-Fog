@@ -167,7 +167,7 @@ public class    DummyAppDemo {
 
 
         for (AgentApplication application : AgentApplication.allAgentApplications) {
-            boolean successful = application.deploymentTime != -1;
+            boolean successful = application.deploymentSuccessful;
 
             if (successful) {
                 successfulApplicationCount++;
@@ -189,6 +189,20 @@ public class    DummyAppDemo {
             SimLogger.logRes("\t\tDeployment successful: " + successful);
             SimLogger.logRes("\t\tDeployment time (ms): " + application.deploymentTime);
             SimLogger.logRes("\t\tWinning global QoS score: " + (application.winningGlobalQosScore == null ? "not available" : application.winningGlobalQosScore));
+
+            if (successful) {
+                Offer winningOffer = application.offers.get(application.winningOffer);
+                SimLogger.logRes("\t\tWinning provider count: " + winningOffer.metrics.providerCount);
+
+                SimLogger.logRes("\t\tWinning cost: " + winningOffer.metrics.cost);
+
+                SimLogger.logRes("\t\tWinning projected power (W): " + winningOffer.metrics.energy);
+
+                SimLogger.logRes("\t\tWinning average latency (ms): " + winningOffer.metrics.latency);
+
+                SimLogger.logRes("\t\tWinning average bandwidth (byte/ms): " + winningOffer.metrics.bandwidth);
+            }
+
             SimLogger.logRes("\t\tBroadcast rounds: " + application.broadcastCount);
             double cost = applicationCosts.getOrDefault(application.name, 0.0);
             totalCosts += cost;
@@ -249,8 +263,13 @@ public class    DummyAppDemo {
             SimLogger.logRes("\tPareto reduction (%): " + overallParetoReduction * 100.0);
         }
         if ((boolean) Config.DUMMY_CONFIGURATION.get("csvLogging")) {
-            double providerQuality = ResourceAgentCsvExporter.getInstance().getProviderQuality();
-            SimLogger.logRes("\tProvider quality during simulation: " + providerQuality);
+            ResourceAgentCsvExporter exporter = ResourceAgentCsvExporter.getInstance();
+
+            SimLogger.logRes("\tProvider quality during simulation: " + exporter.getProviderQuality());
+            SimLogger.logRes("\t\tAverage active balance: " + exporter.getAverageActiveBalance());
+            SimLogger.logRes("\t\tAverage active utilisation: " + exporter.getAverageActiveUtilisation());
+            SimLogger.logRes("\t\tAverage active fragmentation: " + exporter.getAverageActiveFragmentation());
+            SimLogger.logRes("\t\tAverage active compactness: " + exporter.getAverageActiveCompactness());
         } else {
             SimLogger.logRes("\tProvider quality during simulation: not available because CSV logging is disabled.");
         }
