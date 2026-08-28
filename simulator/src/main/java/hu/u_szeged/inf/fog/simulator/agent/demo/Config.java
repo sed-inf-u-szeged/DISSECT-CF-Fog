@@ -7,9 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
-import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
@@ -30,12 +28,23 @@ public class Config {
                 .toList();
     }
 
+    public record ResourceAgentTopology(
+            int cloudCapacityCount,
+            int fogCapacityCount,
+            int edgeCapacityCount) {
+    }
+
+
     // TODO: create a common config map for shared parameters
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
-                    // Scenario 1
                     Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
-                    Map.entry("raCount", 4),
+                    Map.entry("raTopologies", List.of(
+                                    new ResourceAgentTopology(1, 1, 1),
+                                    new ResourceAgentTopology(1, 1, 1),
+                                    new ResourceAgentTopology(1, 1, 1),
+                                    new ResourceAgentTopology(1, 1, 1)
+                            )),
                     Map.entry("submissionDelay", createSubmissionDelays(10, 1)),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     //Map.entry("submissionDelay", List.of(0)), // 1 app

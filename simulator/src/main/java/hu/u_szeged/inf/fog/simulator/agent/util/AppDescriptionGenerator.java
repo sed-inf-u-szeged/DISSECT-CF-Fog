@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
 
 public class AppDescriptionGenerator {
@@ -19,8 +20,9 @@ public class AppDescriptionGenerator {
     public static void main(String[] args) throws IOException {
         // Workload settings
         String applicationNamePrefix = "App";
-        int applicationCount = 10;
-        int componentCount = 4;
+        int applicationCount = 5;
+        int minimumComponentCount = 4;
+        int maximumComponentCount = 4;
         long randomSeed = 1L;
 
         String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1/";
@@ -65,10 +67,45 @@ public class AppDescriptionGenerator {
         ObjectMapper mapper = new ObjectMapper();
         Random random = new Random(randomSeed);
 
-        Files.createDirectories(Path.of(outputDirectory));
+        Path outputPath = Path.of(outputDirectory);
+
+        Files.createDirectories(outputPath);
+
+        try (var existingFiles = Files.list(outputPath)) {
+            List<Path> generatedApplicationFiles =
+                    existingFiles
+                            .filter(Files::isRegularFile)
+                            .filter(path -> {
+                                String fileName =
+                                        path.getFileName().toString();
+
+                                return fileName.startsWith(
+                                        applicationNamePrefix + "-")
+                                        && fileName.endsWith(".json");
+                            })
+                            .toList();
+
+            for (Path generatedApplicationFile
+                    : generatedApplicationFiles) {
+
+                Files.delete(generatedApplicationFile);
+            }
+        }
 
         for (int applicationIndex = 1; applicationIndex <= applicationCount; applicationIndex++) {
             String applicationName = applicationNamePrefix + "-" + String.format("%03d", applicationIndex);
+
+            int componentCount;
+            if (minimumComponentCount == maximumComponentCount) {
+                componentCount = minimumComponentCount;
+            } else {
+                componentCount =
+                        minimumComponentCount
+                                + random.nextInt(
+                                maximumComponentCount
+                                        - minimumComponentCount
+                                        + 1);
+            }
 
             double edgeConstraintSelection = random.nextDouble();
             Boolean applicationEdgeRequirement = null;

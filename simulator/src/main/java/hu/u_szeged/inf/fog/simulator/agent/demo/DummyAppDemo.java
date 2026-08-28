@@ -23,10 +23,7 @@ import hu.u_szeged.inf.fog.simulator.common.util.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class    DummyAppDemo {
@@ -52,23 +49,48 @@ public class    DummyAppDemo {
         ResourceAgentManager.getInstance().start((long) Config.DUMMY_CONFIGURATION.get("samplingFreq") * 6,(boolean) Config.DUMMY_CONFIGURATION.get("csvLogging"));
 
         /* app submission */
-        List<Integer> submissionDelays = (List<Integer>) Config.DUMMY_CONFIGURATION.get("submissionDelay");
+        List<Integer> submissionDelays =
+                (List<Integer>)
+                        Config.DUMMY_CONFIGURATION.get("submissionDelay");
 
         List<Path> appDescriptionFiles;
 
-        try (var files = Files.list((Path) Config.DUMMY_CONFIGURATION.get("inputDir"))) {
-            appDescriptionFiles = files
-                    .filter(file -> file.toString().endsWith(".json"))
-                    .sorted()
-                    .limit(submissionDelays.size())
-                    .toList();
+        try (var files =
+                     Files.list(
+                             (Path)
+                                     Config.DUMMY_CONFIGURATION.get("inputDir"))) {
+
+            appDescriptionFiles =
+                    files
+                            .filter(Files::isRegularFile)
+                            .filter(file ->
+                                    file.toString().endsWith(".json"))
+                            .sorted()
+                            .toList();
         }
 
-        for (int applicationIndex = 0; applicationIndex < appDescriptionFiles.size(); applicationIndex++) {
-            Path file = appDescriptionFiles.get(applicationIndex);
-            int submissionDelay = submissionDelays.get(applicationIndex);
+        if (appDescriptionFiles.size() != submissionDelays.size()) {
+            SimLogger.logError(
+                    "Inconsistent application configuration: "
+                            + appDescriptionFiles.size()
+                            + " application description files were found, but "
+                            + submissionDelays.size()
+                            + " submission delays are configured.");
+        }
 
-            new DeferredEvent(submissionDelay * ScenarioBase.MINUTE_IN_MILLISECONDS) {
+        for (int applicationIndex = 0;
+             applicationIndex < appDescriptionFiles.size();
+             applicationIndex++) {
+
+            Path file =
+                    appDescriptionFiles.get(applicationIndex);
+
+            int submissionDelay =
+                    submissionDelays.get(applicationIndex);
+
+            new DeferredEvent(
+                    submissionDelay
+                            * ScenarioBase.MINUTE_IN_MILLISECONDS) {
 
                 @Override
                 protected void eventAction() {
@@ -355,157 +377,295 @@ public class    DummyAppDemo {
             VirtualAppliance resourceAgentVa,
             AlterableResourceConstraints resourceAgentArc) {
 
-        int raCount = (int) Config.DUMMY_CONFIGURATION.get("raCount");
+        List<Config.ResourceAgentTopology> raTopologies =
+                (List<Config.ResourceAgentTopology>)
+                        Config.DUMMY_CONFIGURATION.get("raTopologies");
 
-        for (int agentIndex = 0; agentIndex < raCount; agentIndex++) {
-            String cloudNodeName = "CloudNode" + (agentIndex + 1);
-            String laptopNodeName = "LaptopNode" + (agentIndex + 1);
-            String raspberryPiNodeName = "RaspberryPiNode" + (agentIndex + 1);
+        for (int agentIndex = 0;
+             agentIndex < raTopologies.size();
+             agentIndex++) {
 
-            String region = SeedSyncer.centralRnd.nextBoolean() ? "EU" : "US";
-            String cloudProvider = agentIndex % 2 == 0 ? "Azure" : "AWS";
+            Config.ResourceAgentTopology topology =
+                    raTopologies.get(agentIndex);
 
-            double cloudLatitude = region.equals("EU")
+            String region =
+                    SeedSyncer.centralRnd.nextBoolean() ? "EU" : "US";
+
+            String cloudProvider =
+                    agentIndex % 2 == 0 ? "Azure" : "AWS";
+
+            double cloudAnchorLatitude = region.equals("EU")
                     ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
                     : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
 
-            double cloudLongitude = region.equals("EU")
+            double cloudAnchorLongitude = region.equals("EU")
                     ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
                     : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
 
-            double laptopLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
-            double laptopLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
-            double raspberryPiLatitude = cloudLatitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
-            double raspberryPiLongitude = cloudLongitude + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
+            List<GeoLocation> cloudLocations = new ArrayList<>();
+            List<GeoLocation> fogLocations = new ArrayList<>();
+            List<GeoLocation> raspberryPiLocations = new ArrayList<>();
 
-            int cloudCpu = 24 + SeedSyncer.centralRnd.nextInt(17); // 24-40 CPU.
-            int cloudMemoryGb = 64 + SeedSyncer.centralRnd.nextInt(33); // 64-96 GB.
-            int cloudStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 512 : 1_024;
-            long cloudBandwidth = 250_000L + SeedSyncer.centralRnd.nextInt(1_000_001); // 2-10 Gbit/s.
-            int cloudLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
+            if (topology.cloudCapacityCount() > 0) {
+                cloudLocations.add(
+                        new GeoLocation(
+                                cloudAnchorLatitude,
+                                cloudAnchorLongitude));
+            }
 
-            double cloudMinimumPower = cloudCpu * 0.5;
-            double cloudIdlePower = cloudCpu * 3.0;
-            double cloudMaximumPower = cloudCpu * 8.0;
+            for (int index = 1;
+                 index < topology.cloudCapacityCount();
+                 index++) {
 
-            ComputingAppliance cloudNode = new ComputingAppliance(
-                    Config.createNode(
-                            cloudNodeName,
-                            cloudCpu,
-                            cloudMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            cloudStorageGb * ScenarioBase.GB_IN_BYTE,
-                            cloudMinimumPower,
-                            cloudIdlePower,
-                            cloudMaximumPower,
-                            cloudBandwidth,
-                            cloudLatency,
-                            sharedLatencyMap),
-                    new GeoLocation(cloudLatitude, cloudLongitude),
-                    region,
-                    cloudProvider,
-                    false);
+                double latitude = region.equals("EU")
+                        ? 45.0 + SeedSyncer.centralRnd.nextDouble() * 10.0
+                        : 29.0 + SeedSyncer.centralRnd.nextDouble() * 17.0;
 
-            int laptopCpu = 12 + SeedSyncer.centralRnd.nextInt(13); // 12-24 CPU.
-            int laptopMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 16 : 32;
-            int laptopStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 256 : 512;
-            long laptopBandwidth = 75_000L + SeedSyncer.centralRnd.nextInt(175_001); // 0.6-2 Gbit/s.
-            int laptopLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
+                double longitude = region.equals("EU")
+                        ? -1.0 + SeedSyncer.centralRnd.nextDouble() * 16.0
+                        : -123.0 + SeedSyncer.centralRnd.nextDouble() * 46.0;
 
-            double laptopMinimumPower = 3.0;
-            double laptopIdlePower = 8.0 + laptopCpu * 0.4;
-            double laptopMaximumPower = 30.0 + laptopCpu * 3.0;
+                cloudLocations.add(
+                        new GeoLocation(latitude, longitude));
+            }
 
-            ComputingAppliance laptopNode = new ComputingAppliance(
-                    Config.createNode(
-                            laptopNodeName,
-                            laptopCpu,
-                            laptopMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            laptopStorageGb * ScenarioBase.GB_IN_BYTE,
-                            laptopMinimumPower,
-                            laptopIdlePower,
-                            laptopMaximumPower,
-                            laptopBandwidth,
-                            laptopLatency,
-                            sharedLatencyMap),
-                    new GeoLocation(laptopLatitude, laptopLongitude),
-                    region,
-                    "Laptop",
-                    true);
+            for (int index = 0;
+                 index < topology.fogCapacityCount();
+                 index++) {
 
-            int raspberryPiCpu = 4 + SeedSyncer.centralRnd.nextInt(5); // 4-8 CPU.
-            int raspberryPiMemoryGb = SeedSyncer.centralRnd.nextBoolean() ? 4 : 8;
-            int raspberryPiStorageGb = SeedSyncer.centralRnd.nextBoolean() ? 64 : 128;
-            long raspberryPiBandwidth = 50_000L + SeedSyncer.centralRnd.nextInt(75_001); // 0.4-1 Gbit/s.
-            int raspberryPiLatency = 15 + SeedSyncer.centralRnd.nextInt(56); // 15-70 ms input latency.
+                double latitude = cloudAnchorLatitude
+                        + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            double raspberryPiMinimumPower = 1.5;
-            double raspberryPiIdlePower = 3.0;
-            double raspberryPiMaximumPower = 15.0;
+                double longitude = cloudAnchorLongitude
+                        + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            ComputingAppliance raspberryPiNode = new ComputingAppliance(
-                    Config.createNode(
-                            raspberryPiNodeName,
-                            raspberryPiCpu,
-                            raspberryPiMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            raspberryPiStorageGb * ScenarioBase.GB_IN_BYTE,
-                            raspberryPiMinimumPower,
-                            raspberryPiIdlePower,
-                            raspberryPiMaximumPower,
-                            raspberryPiBandwidth,
-                            raspberryPiLatency,
-                            sharedLatencyMap),
-                    new GeoLocation(raspberryPiLatitude, raspberryPiLongitude),
-                    region,
-                    "RaspberryPi",
-                    true);
+                fogLocations.add(
+                        new GeoLocation(latitude, longitude));
+            }
 
-            new EnergyDataCollector(
-                    cloudNodeName + "-energy",
-                    cloudNode.iaas,
-                    true,
-                    true,
-                    () -> hasRunningApplication(cloudNode));
+            for (int index = 0;
+                 index < topology.edgeCapacityCount();
+                 index++) {
 
-            new EnergyDataCollector(
-                    laptopNodeName + "-energy",
-                    laptopNode.iaas,
-                    true,
-                    true,
-                    () -> hasRunningApplication(laptopNode));
+                double latitude = cloudAnchorLatitude
+                        + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            new EnergyDataCollector(
-                    raspberryPiNodeName + "-energy",
-                    raspberryPiNode.iaas,
-                    true,
-                    true,
-                    () -> hasRunningApplication(raspberryPiNode));
+                double longitude = cloudAnchorLongitude
+                        + (SeedSyncer.centralRnd.nextDouble() - 0.5) * 0.2;
 
-            double initialHourlyPrice = 1.0 + agentIndex % 4 * 0.25;
+                raspberryPiLocations.add(
+                        new GeoLocation(latitude, longitude));
+            }
+
+            List<Capacity> capacities = new ArrayList<>();
+
+            for (int capacityIndex = 0;
+                 capacityIndex < topology.cloudCapacityCount();
+                 capacityIndex++) {
+
+                String nodeName = "CloudNode"
+                        + (agentIndex + 1)
+                        + "-"
+                        + (capacityIndex + 1);
+
+                int cpu =
+                        24 + SeedSyncer.centralRnd.nextInt(17);
+
+                int memoryGb =
+                        64 + SeedSyncer.centralRnd.nextInt(33);
+
+                int storageGb =
+                        SeedSyncer.centralRnd.nextBoolean()
+                                ? 512
+                                : 1_024;
+
+                long bandwidth =
+                        250_000L
+                                + SeedSyncer.centralRnd.nextInt(1_000_001);
+
+                int latency =
+                        15 + SeedSyncer.centralRnd.nextInt(56);
+
+                double minimumPower = cpu * 0.5;
+                double idlePower = cpu * 3.0;
+                double maximumPower = cpu * 8.0;
+
+                ComputingAppliance node = new ComputingAppliance(
+                        Config.createNode(
+                                nodeName,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE,
+                                minimumPower,
+                                idlePower,
+                                maximumPower,
+                                bandwidth,
+                                latency,
+                                sharedLatencyMap),
+                        cloudLocations.get(capacityIndex),
+                        region,
+                        cloudProvider,
+                        false);
+
+                new EnergyDataCollector(
+                        nodeName + "-energy",
+                        node.iaas,
+                        true,
+                        true,
+                        () -> hasRunningApplication(node));
+
+                capacities.add(
+                        new Capacity(
+                                node,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE));
+            }
+
+            for (int capacityIndex = 0;
+                 capacityIndex < topology.fogCapacityCount();
+                 capacityIndex++) {
+
+                String nodeName = "LaptopNode"
+                        + (agentIndex + 1)
+                        + "-"
+                        + (capacityIndex + 1);
+
+                int cpu =
+                        12 + SeedSyncer.centralRnd.nextInt(13);
+
+                int memoryGb =
+                        SeedSyncer.centralRnd.nextBoolean()
+                                ? 16
+                                : 32;
+
+                int storageGb =
+                        SeedSyncer.centralRnd.nextBoolean()
+                                ? 256
+                                : 512;
+
+                long bandwidth =
+                        75_000L
+                                + SeedSyncer.centralRnd.nextInt(175_001);
+
+                int latency =
+                        15 + SeedSyncer.centralRnd.nextInt(56);
+
+                double minimumPower = 3.0;
+                double idlePower = 8.0 + cpu * 0.4;
+                double maximumPower = 30.0 + cpu * 3.0;
+
+                ComputingAppliance node = new ComputingAppliance(
+                        Config.createNode(
+                                nodeName,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE,
+                                minimumPower,
+                                idlePower,
+                                maximumPower,
+                                bandwidth,
+                                latency,
+                                sharedLatencyMap),
+                        fogLocations.get(capacityIndex),
+                        region,
+                        "Laptop",
+                        true);
+
+                new EnergyDataCollector(
+                        nodeName + "-energy",
+                        node.iaas,
+                        true,
+                        true,
+                        () -> hasRunningApplication(node));
+
+                capacities.add(
+                        new Capacity(
+                                node,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE));
+            }
+
+            for (int capacityIndex = 0;
+                 capacityIndex < topology.edgeCapacityCount();
+                 capacityIndex++) {
+
+                String nodeName = "RaspberryPiNode"
+                        + (agentIndex + 1)
+                        + "-"
+                        + (capacityIndex + 1);
+
+                int cpu =
+                        4 + SeedSyncer.centralRnd.nextInt(5);
+
+                int memoryGb =
+                        SeedSyncer.centralRnd.nextBoolean()
+                                ? 4
+                                : 8;
+
+                int storageGb =
+                        SeedSyncer.centralRnd.nextBoolean()
+                                ? 64
+                                : 128;
+
+                long bandwidth =
+                        50_000L
+                                + SeedSyncer.centralRnd.nextInt(75_001);
+
+                int latency =
+                        15 + SeedSyncer.centralRnd.nextInt(56);
+
+                double minimumPower = 1.5;
+                double idlePower = 3.0;
+                double maximumPower = 15.0;
+
+                ComputingAppliance node = new ComputingAppliance(
+                        Config.createNode(
+                                nodeName,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE,
+                                minimumPower,
+                                idlePower,
+                                maximumPower,
+                                bandwidth,
+                                latency,
+                                sharedLatencyMap),
+                        raspberryPiLocations.get(capacityIndex),
+                        region,
+                        "RaspberryPi",
+                        true);
+
+                new EnergyDataCollector(
+                        nodeName + "-energy",
+                        node.iaas,
+                        true,
+                        true,
+                        () -> hasRunningApplication(node));
+
+                capacities.add(
+                        new Capacity(
+                                node,
+                                cpu,
+                                memoryGb * ScenarioBase.GB_IN_BYTE,
+                                storageGb * ScenarioBase.GB_IN_BYTE));
+            }
+
+            double initialHourlyPrice =
+                    1.0 + agentIndex % 4 * 0.25;
 
             ResourceAgent resourceAgent = new ResourceAgent(
                     "Agent" + (agentIndex + 1),
                     initialHourlyPrice,
-                    (MappingStrategy) Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
+                    (MappingStrategy)
+                            Config.DUMMY_CONFIGURATION.get("mappingStrategy"),
                     new FloodingMessagingStrategy());
 
             resourceAgent.initResourceAgent(
                     resourceAgentVa,
                     resourceAgentArc,
-                    new Capacity(
-                            cloudNode,
-                            cloudCpu,
-                            cloudMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            cloudStorageGb * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(
-                            laptopNode,
-                            laptopCpu,
-                            laptopMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            laptopStorageGb * ScenarioBase.GB_IN_BYTE),
-                    new Capacity(
-                            raspberryPiNode,
-                            raspberryPiCpu,
-                            raspberryPiMemoryGb * ScenarioBase.GB_IN_BYTE,
-                            raspberryPiStorageGb * ScenarioBase.GB_IN_BYTE));
+                    capacities.toArray(new Capacity[0]));
         }
     }
 
