@@ -20,18 +20,20 @@ public class AppDescriptionGenerator {
     public static void main(String[] args) throws IOException {
         // Workload settings
         String applicationNamePrefix = "App";
-        int applicationCount = 5;
+        int applicationCount = 6;
+
         int minimumComponentCount = 4;
         int maximumComponentCount = 4;
+
         long randomSeed = 1L;
 
-        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1/";
+        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy/";
 
         // Application Owner QoS weights
-        double energyWeight = 0.25;
-        double priceWeight = 0.25;
-        double latencyWeight = 0.25;
-        double bandwidthWeight = 0.25;
+        double energyWeight = 0.7;
+        double priceWeight = 0.1;
+        double latencyWeight = 0.1;
+        double bandwidthWeight = 0.1;
 
         // Application-level hard requirements
         int minProviderCount = 1;

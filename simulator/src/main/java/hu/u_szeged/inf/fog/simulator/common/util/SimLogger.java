@@ -54,6 +54,18 @@ public final class SimLogger {
     }
 
     /**
+     * Logs a non-fatal warning message.
+     * This is just a convenience method to log warnings with a consistent prefix.
+     *
+     * @param message the warning message to log
+     */
+    public static void logWarning(String message) {
+        if (logger.isLoggable(Level.WARNING)) {
+            logger.log(Level.WARNING, "[WARN] " + message);
+        }
+    }
+
+    /**
      * Logs a named simulation result and stores it for JSON serialization.
      *
      * @param key the result name

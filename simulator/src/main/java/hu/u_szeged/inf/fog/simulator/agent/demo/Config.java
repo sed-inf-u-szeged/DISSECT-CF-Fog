@@ -7,7 +7,9 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
@@ -45,8 +47,12 @@ public class Config {
                                     new ResourceAgentTopology(1, 1, 1),
                                     new ResourceAgentTopology(1, 1, 1)
                             )),
-                    Map.entry("submissionDelay", createSubmissionDelays(10, 1)),
-                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
+                    Map.entry("submissionDelay", createSubmissionDelays(6, 1)),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-bw")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-latency")),
+                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-price")),
                     //Map.entry("submissionDelay", List.of(0)), // 1 app
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/")),
                     Map.entry("maxRebroadcast", 2),
@@ -59,31 +65,31 @@ public class Config {
                     Map.entry("computeTaskPerByte", 16.0), // additional CPU work per received byte (no. instructions)
 
                     // Application profile: latency-heavy
-                    // Map.entry("samplingFreq", 1_000L),
-                    // Map.entry("resFileSize", 1_024L),
-                    // Map.entry("computeTaskBase", 1_000.0),
-                    // Map.entry("computeTaskPerByte", 0.0),
+                    //Map.entry("samplingFreq", 1_000L),
+                    //Map.entry("resFileSize", 1_024L),
+                    //Map.entry("computeTaskBase", 1_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0),
 
                     // Application profile: bandwidth-heavy
-                    // Map.entry("samplingFreq", 60_000L),
-                    // Map.entry("resFileSize", 100L * ScenarioBase.MB_IN_BYTE),
-                    // Map.entry("computeTaskBase", 1_000.0),
-                    // Map.entry("computeTaskPerByte", 0.0),
+                    //Map.entry("samplingFreq", 60_000L),
+                    //Map.entry("resFileSize", 100L * ScenarioBase.MB_IN_BYTE),
+                    //Map.entry("computeTaskBase", 1_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0),
 
                     // Application profile: compute-heavy
-                    // Map.entry("samplingFreq", 10_000L),
-                    // Map.entry("resFileSize", 1_024L),
-                    // Map.entry("computeTaskBase", 10_000_000.0),
-                    // Map.entry("computeTaskPerByte", 0.0),
+                    //Map.entry("samplingFreq", 10_000L),
+                    //Map.entry("resFileSize", 1_024L),
+                    //Map.entry("computeTaskBase", 10_000_000.0),
+                    //Map.entry("computeTaskPerByte", 0.0),
 
                     // Algorithm 1: First Fit + all hard-valid coverages + ranking
-                    //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                    //Map.entry("atomicOffers", false),
-                    //Map.entry("onlyFirstOffer", false),
+                    Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                    Map.entry("atomicOffers", false),
+                    Map.entry("onlyFirstOffer", false),
                     //Map.entry("rankingMethod", "random"),
-                    //Map.entry("rankingMethod", "rank_no_re"),
-                    //Map.entry("rankingScript", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/for_simulator/call_ranking_func.py"),
-                    //Map.entry("rankingPython", "/Users/markusa/Documents/git-repos/swarm-deployment-ranking/.venv/bin/python"),
+                    Map.entry("rankingMethod", "rank_no_re"),
+                    Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
+                    Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
@@ -91,9 +97,9 @@ public class Config {
                     //Map.entry("onlyFirstOffer", true),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
-                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
-                    Map.entry("atomicOffers", true),
-                    Map.entry("onlyFirstOffer", false),
+                    //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    //Map.entry("atomicOffers", true),
+                    //Map.entry("onlyFirstOffer", false),
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor

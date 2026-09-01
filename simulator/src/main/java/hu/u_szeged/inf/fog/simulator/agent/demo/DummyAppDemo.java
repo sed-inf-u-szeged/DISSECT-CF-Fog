@@ -69,13 +69,29 @@ public class    DummyAppDemo {
                             .toList();
         }
 
-        if (appDescriptionFiles.size() != submissionDelays.size()) {
-            SimLogger.logError(
-                    "Inconsistent application configuration: "
-                            + appDescriptionFiles.size()
-                            + " application description files were found, but "
+        if (appDescriptionFiles.size() > submissionDelays.size()) {
+            SimLogger.logWarning(
+                    appDescriptionFiles.size()
+                            + " application description files were found, but only "
                             + submissionDelays.size()
-                            + " submission delays are configured.");
+                            + " applications are configured for submission. "
+                            + "Only the first "
+                            + submissionDelays.size()
+                            + " files will be used.");
+
+            try {
+                Thread.sleep(2_000L);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+
+                SimLogger.logError(
+                        "The simulation was interrupted while waiting after "
+                                + "the application configuration warning.");
+            }
+
+            appDescriptionFiles =
+                    appDescriptionFiles
+                            .subList(0, submissionDelays.size());
         }
 
         for (int applicationIndex = 0;
@@ -140,9 +156,17 @@ public class    DummyAppDemo {
 
         SimLogger.logEmptyLine();
 
+        double totalAvailableCpuCapacity = 0.0;
+        long totalAvailableMemoryCapacity = 0L;
+        long totalAvailableStorageCapacity = 0L;
+
         Map<String, Double> applicationCosts = new HashMap<>();
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             for (Capacity cap : agent.capacities.values()) {
+                totalAvailableCpuCapacity += cap.totalCpu;
+                totalAvailableMemoryCapacity += cap.totalMemory;
+                totalAvailableStorageCapacity += cap.totalStorage;
+
                 SimLogger.logRes("\t(" + agent.name + ") " + cap);
 
                 for (Utilisation util : cap.utilisations) {
@@ -187,8 +211,18 @@ public class    DummyAppDemo {
         double totalCosts = 0.0;
         double totalGlobalQosScore = 0.0;
 
+        double totalSubmittedCpuDemand = 0.0;
+        long totalSubmittedMemoryDemand = 0L;
+        long totalSubmittedStorageDemand = 0L;
+
 
         for (AgentApplication application : AgentApplication.allAgentApplications) {
+            for (AgentApplication.Component component : application.components) {
+                totalSubmittedCpuDemand += component.requirements.cpu;
+                totalSubmittedMemoryDemand += component.requirements.memory;
+                totalSubmittedStorageDemand += component.requirements.storage;
+            }
+
             boolean successful = application.deploymentSuccessful;
 
             if (successful) {
@@ -265,6 +299,24 @@ public class    DummyAppDemo {
         double overallAchievedQosYield =
                 applicationCount == 0 ? 0.0 : totalGlobalQosScore / applicationCount;
 
+        double aggregateCpuPressure =
+                totalAvailableCpuCapacity == 0.0
+                        ? 0.0
+                        : totalSubmittedCpuDemand
+                        / totalAvailableCpuCapacity;
+
+        double aggregateMemoryPressure =
+                totalAvailableMemoryCapacity == 0L
+                        ? 0.0
+                        : (double) totalSubmittedMemoryDemand
+                        / totalAvailableMemoryCapacity;
+
+        double aggregateStoragePressure =
+                totalAvailableStorageCapacity == 0L
+                        ? 0.0
+                        : (double) totalSubmittedStorageDemand
+                        / totalAvailableStorageCapacity;
+
         SimLogger.logEmptyLine();
         SimLogger.logRes("Aggregated application results:");
         SimLogger.logRes("\tSubmitted applications: " + applicationCount);
@@ -295,6 +347,39 @@ public class    DummyAppDemo {
         } else {
             SimLogger.logRes("\tProvider quality during simulation: not available because CSV logging is disabled.");
         }
+        SimLogger.logRes(
+                "\tSubmitted resource demand "
+                        + "(CPU / memory GB / storage GB): "
+                        + String.format(
+                        java.util.Locale.US,
+                        "%.1f / %.2f / %.2f",
+                        totalSubmittedCpuDemand,
+                        totalSubmittedMemoryDemand
+                                / (double) ScenarioBase.GB_IN_BYTE,
+                        totalSubmittedStorageDemand
+                                / (double) ScenarioBase.GB_IN_BYTE));
+
+        SimLogger.logRes(
+                "\tAvailable resource capacity "
+                        + "(CPU / memory GB / storage GB): "
+                        + String.format(
+                        java.util.Locale.US,
+                        "%.1f / %.2f / %.2f",
+                        totalAvailableCpuCapacity,
+                        totalAvailableMemoryCapacity
+                                / (double) ScenarioBase.GB_IN_BYTE,
+                        totalAvailableStorageCapacity
+                                / (double) ScenarioBase.GB_IN_BYTE));
+
+        SimLogger.logRes(
+                "\tAggregate resource pressure "
+                        + "(CPU / memory / storage) (%): "
+                        + String.format(
+                        java.util.Locale.US,
+                        "%.2f / %.2f / %.2f",
+                        aggregateCpuPressure * 100.0,
+                        aggregateMemoryPressure * 100.0,
+                        aggregateStoragePressure * 100.0));
 
         double applicationEnergyKwh = 0.0;
 
