@@ -1,1 +1,15 @@
 /.metadata/
+
+# Generated FL demo and campaign outputs. The published reference copy
+# lives in artefacts/; fresh runs land here and are not tracked.
+simulator/results/
+gossip_demo_output/
+simulator/gossip_demo_output/
+cosim_demo_output/
+simulator/cosim_demo_output/
+**/.data/
+__pycache__/
+*.pyc
+
+# Bundled Maven distribution: the driver probes for mvn instead.
+tools/apache-maven-*/
