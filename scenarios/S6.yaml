@@ -1,0 +1,61 @@
+# §9 S6 — the scale-invariance check.
+#
+# WHAT THIS CELL TURNED OUT TO BE. It was designed as a boundary test: S4 found
+# every cost-aware selector losing to uniform random with metered energy flat to
+# 0.05%, and the suspected reason was structural — local training costs ~171
+# ticks per node-round against ~22 for one peer exchange, so communication is
+# ~2.4% of a round and no ranking of peers can move system cost. Scaling link
+# capacity by 0.1 was meant to move communication into the binding position and
+# give the B~ term of Eq. score a real lever.
+#
+# It cannot. Each term of Eq. score is min-max normalised WITHIN the
+# neighbourhood, independently, and min-max normalisation is invariant to any
+# positive affine rescaling of its input. Scaling every link's capacity by the
+# same factor multiplies every raw B_ij by 10 and leaves every normalised B~_ij
+# bit-identical. Selection is therefore unchanged: all 3000 peer decisions in
+# this scenario match S4 exactly, and so does every accuracy.
+#
+# The cell is retained because it demonstrates that invariance empirically
+# rather than only analytically: the system model DID respond to the change
+# (metered energy 99.3 -> 111.5 kJ, +12.3%; round duration 920 -> 1230 ticks)
+# while selection did not move at all. Cost accounting and selection are
+# decoupled, and this is the measurement that shows it.
+#
+# It is NOT a boundary test and carries no hypothesis. The design lesson it
+# supports belongs in S8.2: because normalisation discards magnitude, no cost
+# regime can make a cost term more influential — only its weight can. S4's
+# SINGLE_BANDWIDTH cell already tests the maximal weighting (delta=1, others 0)
+# and loses to random by 0.064.
+#
+# The pre-commitment stands and is honoured: we do not search further
+# configurations. There was never a regime to find.
+#
+# 3 selectors x 5 seeds = 15 runs.
+scenario: S6
+erq: ERQ5c
+modes: [decentralized]
+topology: scale_free
+n: 30
+ba_m: 2
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 100
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 256
+model: lenet5
+
+dataset: mnist
+samples: 6000
+eval_samples: 2000
+eval_every: 5
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+link_bandwidth_scale: 0.1     # the single varied factor vs S4
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+policy: [COMPOSITE, SINGLE_BANDWIDTH, RANDOM]
+seeds: [11, 12, 13, 14, 15]

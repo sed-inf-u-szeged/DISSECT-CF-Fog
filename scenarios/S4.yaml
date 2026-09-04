@@ -1,0 +1,54 @@
+# §9 S4 — ERQ5: does the topology- and resource-aware composite selector do
+# anything, and which of its four terms carries the effect?
+#
+# This scenario exists because contribution (ii) — the adaptive peer-selection
+# policy of Eq. score — previously had NO supporting experiment. Every cell of
+# the earlier campaign ran with uniform link costs and a zero background load,
+# which drives the min–max normaliser onto its homogeneous guard and leaves
+# L̃ = C̃ = B̃ = 0: the "four-term, topology- and resource-aware" selector was in
+# fact a divergence-only selector everywhere it was reported.
+#
+# With cost_source: HETEROGENEOUS the four terms are live, so the seven §8.2
+# selectors are separable:
+#   COMPOSITE          — all four terms, equal weights, explore-then-exploit γ
+#   SINGLE_LATENCY     — α=1: fastest links
+#   SINGLE_LOAD        — β=1: least-loaded peers (straggler avoidance)
+#   SINGLE_DIVERGENCE  — |γ|=1: the term the old campaign was implicitly running
+#   SINGLE_BANDWIDTH   — δ=1: cheapest transfers
+#   DEGREE             — topology-only control: most-connected peers
+#   RANDOM             — topology-only control: uniform k of N(i)
+#
+# Endpoints are both learning (held-out accuracy, TID) and system (traffic,
+# idle, energy): a cost-aware selector should trade accuracy against measured
+# system cost, which is exactly the trade the SLR's "resource management for low
+# latency" intersection is about.
+#
+# 7 selectors × 5 seeds = 35 runs.
+scenario: S4
+erq: ERQ5
+modes: [decentralized]
+topology: scale_free
+n: 30
+ba_m: 2
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 100
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 256
+model: lenet5
+
+dataset: mnist
+samples: 6000
+eval_samples: 2000
+eval_every: 5
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+policy: [COMPOSITE, SINGLE_LATENCY, SINGLE_LOAD, SINGLE_DIVERGENCE,
+         SINGLE_BANDWIDTH, DEGREE, RANDOM]
+seeds: [11, 12, 13, 14, 15]

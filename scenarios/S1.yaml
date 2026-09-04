@@ -1,0 +1,41 @@
+# §9 S1 — ERQ2: coordination-mode competitiveness on the two-cluster anchor.
+#
+# H1: gossip's accuracy cost is positive but bounded, and the busiest node
+# carries less traffic than a central aggregator would.
+#
+# All three legs run from the SAME pass1 trace at a matched local computation
+# budget (identical T, E, partitions, and shared initialisation), so the only
+# difference is the coordination scheme. The decentralized leg's Pass-2 trace is
+# also what Pass 3 replays, so a cell's accuracy and its system cost come from
+# one run on one workload.
+scenario: S1
+erq: ERQ2
+modes: [decentralized, centralized, hierarchical]
+topology: clustered
+n: 6
+policy: COMPOSITE
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 20
+local_epochs: 1
+dirichlet_rho: 0.5     # moderate non-IID
+signature_dim: 256
+model: lenet5
+global_every: 5        # hierarchical reconciliation cadence G
+
+dataset: mnist
+samples: 12000         # 2 000 samples/node
+eval_samples: 0        # full 10k MNIST test split
+eval_every: 1
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+
+# Calibrated analytic compute delay, produced by cell V. Without it the replay
+# times rounds by the calibration host's wall clock and the device tiers have no
+# effect on round duration or barrier idle.
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+seeds: [11, 12, 13, 14, 15]

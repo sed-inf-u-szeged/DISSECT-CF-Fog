@@ -1,0 +1,36 @@
+# §9 cell V — ERQ1, the fidelity gate.
+#
+# One fixed anchor cell (clustered n=6, T=20, seed 11) run through Track A. The
+# Track-B counterpart is driven by harness/fidelity_check.py against this same
+# pass1/system_trace.json, and the F1-F4 criteria are written INTO this cell's
+# directory, so the gate is reproducible from the released tree rather than from
+# a scratch directory.
+scenario: V
+erq: ERQ1
+modes: [decentralized]
+topology: clustered
+n: 6
+policy: COMPOSITE
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 20
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 256
+model: lenet5
+
+# Workload: real MNIST, 2 000 samples/node. Small enough that Track B's genuine
+# end-to-end training is tractable, large enough to be a credible deployment.
+dataset: mnist
+samples: 12000
+eval_samples: 0        # full 10k MNIST test split as the held-out pool
+eval_every: 1
+num_classes: 10
+in_channels: 1
+
+# Per-link latency/bandwidth from the device tier + geography, plus a non-zero
+# background load, so all four terms of Eq. score are live.
+cost_source: HETEROGENEOUS
+
+seeds: [11]

@@ -1,0 +1,47 @@
+# §9 S5 — ERQ5b: which half of the explore-then-exploit schedule costs the
+# composite selector its accuracy?
+#
+# S4 found uniform-random selection beating every cost-aware policy, and TID
+# showed why: the policies that lost also mixed least. The composite selector's
+# divergence weight γ(t) is the one term that changes sign over a run — it is
+# NEGATIVE for t < T/2 (reward divergence: reach dissimilar peers, mix widely)
+# and POSITIVE thereafter (penalise divergence: prefer similar peers, mix
+# narrowly). If mixing is what matters, the exploit half is the culprit and the
+# ordering must be ALWAYS_EXPLORE > EXPLORE_THEN_EXPLOIT > ALWAYS_EXPLOIT.
+#
+# That is a sharp, falsifiable prediction: it can fail in three ways (no
+# ordering, the reverse ordering, or no significant differences at all), and
+# each would refute the mixing account rather than merely soften it.
+#
+# Everything else is held identical to S4's COMPOSITE cell — same topology,
+# n, T, ρ, merge rule, seeds — so the γ schedule is the only varied factor and
+# S4's COMPOSITE and RANDOM cells are directly comparable reference points.
+#
+# 3 schedules × 5 seeds = 15 runs.
+scenario: S5
+erq: ERQ5b
+modes: [decentralized]
+topology: scale_free
+n: 30
+ba_m: 2
+policy: COMPOSITE
+merge: DRIFT_SUPPRESSED
+k: 2
+rounds: 100
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 256
+model: lenet5
+
+dataset: mnist
+samples: 6000
+eval_samples: 2000
+eval_every: 5
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+gamma: [ALWAYS_EXPLORE, EXPLORE_THEN_EXPLOIT, ALWAYS_EXPLOIT]
+seeds: [11, 12, 13, 14, 15]

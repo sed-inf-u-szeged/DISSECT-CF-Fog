@@ -1,0 +1,14 @@
+# Pass-2 learning-harness dependencies (§8.4). Versions pinned to what the
+# Phase-3 canary was validated against (Python 3.12, CPU). torch/torchvision
+# from the CPU index: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+#
+# The harness is plain PyTorch for all three coordination modes and both
+# co-simulation tracks (D2, §8.4) — no FL-framework dependency.
+numpy==2.4.3
+torch==2.12.1
+torchvision==0.27.1
+pytest==9.1.1
+# Analysis package (§9 stats + Results-Schema figures).
+scipy==1.18.0
+matplotlib==3.10.8
+pandas==3.0.3

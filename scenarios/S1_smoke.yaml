@@ -1,0 +1,25 @@
+# Plumbing smoke for the scenario runner (P6 DoD): an S1-shaped decentralized
+# cell sized to run Pass1→Pass2→Pass3 end-to-end in seconds. NOT a science cell
+# — S1's topology claims rest on n∈{30,100} (n=6 is degenerate, §9); this only
+# exercises the runner, the three passes, and the output convention.
+scenario: S1_smoke
+erq: smoke
+modes: [decentralized]
+topology: ring
+n: 6
+policy: COMPOSITE
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 3
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 64
+model: lenet5
+# Hermetic workload: the smoke test must not depend on a dataset download.
+dataset: synthetic
+samples: 240
+eval_samples: 80
+num_classes: 4
+in_channels: 1
+seeds: [42]

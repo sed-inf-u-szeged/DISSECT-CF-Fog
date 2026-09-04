@@ -1,0 +1,42 @@
+# §9 S3 — ERQ4: merge-rule efficacy under severe heterogeneity (ρ=0.1).
+#
+# H3: the drift-suppressed merge beats plain uniform averaging, robustly across
+# the peer-selection rule.
+#
+# FOUR merge rules, not three. DRIFT_SUPPRESSED (ω ∝ n_j/(1+D)) differs from
+# UNIFORM in two ways at once — it weights by sample count AND damps divergent
+# peers — and at ρ=0.1 the shard sizes span orders of magnitude, so sample
+# weighting alone is a large effect. SAMPLE_WEIGHTED (ω ∝ n_j) is the control
+# that holds the sample factor fixed, making SAMPLE_WEIGHTED → DRIFT_SUPPRESSED
+# a clean one-factor contrast for the drift term. Without it the +Δ over UNIFORM
+# cannot be attributed to drift suppression at all.
+#
+# 2 selectors × 4 merge rules × 5 seeds = 40 runs.
+scenario: S3
+erq: ERQ4
+modes: [decentralized]
+topology: scale_free
+n: 30
+ba_m: 2
+k: 2
+rounds: 100
+local_epochs: 1
+dirichlet_rho: 0.1     # severe non-IID — the client-drift regime under test
+signature_dim: 256
+model: lenet5
+gamma: EXPLORE_THEN_EXPLOIT
+
+dataset: mnist
+samples: 6000
+eval_samples: 2000
+eval_every: 5
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+seeds: [11, 12, 13, 14, 15]
+groups:
+  - policy: [COMPOSITE, RANDOM]
+    merge: [UNIFORM, SAMPLE_WEIGHTED, DRIFT_SUPPRESSED, METROPOLIS_HASTINGS]

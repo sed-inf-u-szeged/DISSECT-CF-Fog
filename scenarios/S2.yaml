@@ -1,0 +1,65 @@
+# §9 S2 — ERQ3: how much learning divergence the communication graph itself
+# causes, against algebraic connectivity.
+#
+# H2: both TID measures decrease monotonically with λ₂ (λ̄₂ for the dynamic
+# family). Four topology families spanning three orders of magnitude in λ₂, at a
+# matched communication budget (k=2 exchanges per node per round in every
+# family, so only the graph differs).
+#
+# Real MNIST rather than the Gaussian-blob generator: the SLR flags reliance on
+# synthetic non-IID data as a gap, so the study should not rest its own topology
+# claim on synthetic pixels. At 200 samples/node the runtime is unchanged, and
+# TID can now be reported alongside genuine held-out accuracy.
+scenario: S2
+erq: ERQ3
+modes: [decentralized]
+n: [30]
+dynamic: {p_link: 0.9}
+ba_m: 2
+policy: COMPOSITE
+merge: DRIFT_SUPPRESSED
+gamma: EXPLORE_THEN_EXPLOIT
+k: 2
+rounds: 100
+local_epochs: 1
+dirichlet_rho: 0.5
+signature_dim: 256
+model: lenet5
+
+dataset: mnist
+samples: 6000          # 200 samples/node at n=30
+eval_samples: 2000     # held-out MNIST test subset (eval runs 30x per cadence)
+eval_every: 5
+num_classes: 10
+in_channels: 1
+
+cost_source: HETEROGENEOUS
+calibration: results/paper/V/cell/seed_11/trackb/calib/calibration.json
+
+seeds: [11, 12, 13, 14, 15]
+
+# SIX families, not four. λ₂ is the predictor in the H2 monotonicity test, and
+# ring/scale-free/dynamic/mesh leaves a hole spanning 0.6 → 21 — a factor of 35,
+# which is precisely where "well-connected topologies stop being separated by
+# λ₂" would have to be resolved. Two Watts-Strogatz families fill it.
+#
+# The knob is the lattice DEGREE, not the rewiring probability. Measured λ₂ at
+# n=30, β=0.3: k_ring 4 → 0.68/0.43, 6 → 2.05/1.55, 10 → 4.48/4.11,
+# 14 → 8.40/7.65, 20 → 14.86/14.51 (seeds 11/13). Degree moves λ₂ monotonically
+# and separates cleanly; β does not — at k_ring=4, β=0.5 gave a LOWER λ₂ (0.52)
+# than β=0.3 (0.68), and both collided with scale-free (0.64). β is fixed at 0.3,
+# enough rewiring to give genuine small-world shortcuts.
+#
+# The statistical reason matters as much as the coverage: the family-level
+# permutation test has a floor of 1/k! for k families, so at four families the
+# smallest attainable p is 1/24 ≈ 0.042 and ONLY a perfectly monotone ordering is
+# detectable at α=0.05. At six families the floor is 1/720 ≈ 0.0014, so a
+# partial ordering is testable too.
+#
+# Resulting λ₂ ladder: ring 0.04 → scale-free 0.6 → SW(6) ≈ 1.8 → SW(14) ≈ 8
+#                      → dynamic ≈ 21.7 → mesh 30.
+ws_beta: 0.3
+groups:
+  - topology: [ring, mesh, scale_free, dynamic]
+  - topology: [small_world]
+    ws_k_ring: [6, 14]
