@@ -1557,4 +1557,38 @@ public class PhysicalMachine extends MaxMinProvider implements VMManager<Physica
 	public void setSecure(boolean secureExtensions) {
 		this.secureExtensions = secureExtensions;
 	}
+	
+	
+	//--------------------
+	// ADDED: Native CPU work entry point for non-VM clients (e.g., FL local training).
+	// Schedules a ResourceConsumption on this PM’s direct CPU consumer, so it is
+	// fully visible to the PhysicalMachineEnergyMeter (→ device columns in energy.csv).
+	public void compute(long instructions, hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter cb) {
+	    // Guard: zero/negative work should still “complete” deterministically.
+	    if (instructions <= 0L) {
+	        if (cb != null) cb.conComplete();
+	        return;
+	    }
+	    // The per-tick CPU throughput of the PM (instructions/tick).
+	    double perTick = getPerTickProcessingPower();
+
+	    // Create a native CPU task for the host (no VMs involved).
+	    // total = instructions; limit = perTick; consumer = directConsumer; producer = this
+	    new hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption(
+	            instructions,
+	            perTick,
+	            directConsumer,  // internal MaxMinConsumer of this PM
+	            this,
+	            cb
+	    );
+	}
+
+	// ADDED: Convenience overload for double-based callers.
+	public void compute(double instructions, hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ConsumptionEventAdapter cb) {
+	    long rounded = (long) Math.ceil(instructions);
+	    compute(rounded, cb);
+	}
+	//----------------------
+	
+	
 }
