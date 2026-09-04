@@ -1,0 +1,10 @@
+{
+  "eval_split" : "heldout",
+  "eval_samples" : 10000,
+  "a_cen" : 0.9718000292778015,
+  "a_dec_mean_over_nodes" : 0.9380833407243093,
+  "tid_gap" : 0.03371668855349219,
+  "a_dec_mean_model" : 0.9650999903678894,
+  "tid_gap_mean_model" : 0.006700038909912109,
+  "a_dec_worst_node" : 0.9253000020980835
+}

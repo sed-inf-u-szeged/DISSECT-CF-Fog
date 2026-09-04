@@ -1,0 +1,8 @@
+[runner] pass2 decentralized -> pass2
+[runner] figures for seed_42:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S1_smoke\cell\seed_42
+[runner] campaign complete: 1 runs.

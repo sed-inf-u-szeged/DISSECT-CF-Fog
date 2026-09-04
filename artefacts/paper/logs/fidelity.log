@@ -1,0 +1,14 @@
+[calibration] instrument=PLACEHOLDER model=affine_in_n_samples tiers=['near_edge', 'far_edge'] val_mean_rel_error=0.0217 (median 0.0176, n=60) -> C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\V\cell\seed_11\trackb\calib
+[fidelity] cell=seed_11 rounds=20 n=6 dataset=mnist samples=12000 eval_samples=0 (read from the cell)
+[fidelity] round 5/20
+[fidelity] round 10/20
+[fidelity] round 15/20
+[fidelity] round 20/20
+
+===== ERQ1 fidelity =====
+  F1  Selection-agreement rate (independent Track B)                    1.0  tol = 1.0 exact    PASS
+  F2  Signature-distortion ratio                            0.9694 ± 0.0200  tol [0.9, 1.1]     PASS
+  F3  Track A vs B held-out accuracy MAE                                0.0  tol <= 0.01        PASS
+  F4  Held-out compute-delay relative error                            2.2%  tol <= 10%         PASS
+
+  wrote C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\V\cell\seed_11\trackb\fidelity.json

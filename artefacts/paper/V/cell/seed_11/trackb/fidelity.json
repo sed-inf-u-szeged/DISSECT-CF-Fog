@@ -1,0 +1,62 @@
+{
+  "cell": "C:\\Users\\user\\Desktop\\University of Szeged\\FL Module DISSECT-CF-Fog\\DISSECT-CF-Fog-FL-master\\simulator\\results\\paper\\V\\cell\\seed_11",
+  "rounds": 20,
+  "n": 6,
+  "node_rounds_compared": 120,
+  "accuracy_pairs_compared": 120,
+  "selection_source_track_b": "independent",
+  "workload": {
+    "dataset": "mnist",
+    "samples": 12000,
+    "eval_samples": 0,
+    "model": "lenet5",
+    "num_classes": 10,
+    "in_channels": 1,
+    "epochs": 1,
+    "lr": 0.05,
+    "batch": 16,
+    "init_seed": 777
+  },
+  "criteria": [
+    {
+      "id": "F1",
+      "criterion": "Selection-agreement rate (independent Track B)",
+      "tolerance": "= 1.0 exact",
+      "measured": 1.0,
+      "pass": true
+    },
+    {
+      "id": "F2",
+      "criterion": "Signature-distortion ratio",
+      "tolerance": "[0.9, 1.1]",
+      "measured": "0.9694 \u00b1 0.0200",
+      "pass": true
+    },
+    {
+      "id": "F3",
+      "criterion": "Track A vs B held-out accuracy MAE",
+      "tolerance": "<= 0.01",
+      "measured": 0.0,
+      "pass": true
+    },
+    {
+      "id": "F4",
+      "criterion": "Held-out compute-delay relative error",
+      "tolerance": "<= 10%",
+      "measured": "2.2%",
+      "pass": true
+    }
+  ],
+  "all_pass": true,
+  "calibration": {
+    "model": "affine_in_n_samples",
+    "instrument": "PLACEHOLDER",
+    "warmup_rounds_excluded": [
+      0
+    ],
+    "validation_mean_rel_error": 0.02166497576457639,
+    "validation_median_rel_error": 0.01761662606181098,
+    "validation_pairs": 60
+  },
+  "note": "Track B derived its own peer sets, so F1 and F3 are measurements of the online coupling rather than restatements of determinism."
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version" : 1,
+  "scenario_id" : "S1_n30/topo=dynamic",
+  "seed" : 11,
+  "n" : 30,
+  "rounds" : 100,
+  "k" : 2,
+  "policy" : "COMPOSITE",
+  "merge_rule" : "DRIFT_SUPPRESSED",
+  "topology_hash" : "7b48fbbc722507f517faae21bffb84e39fa833ae84f75aa4e9321366f002bc17",
+  "lambda2" : 21.04629991020046,
+  "lambda2_expected" : 21.848719110272295,
+  "lambda2_union" : 29.999999999999947,
+  "dynamic" : true,
+  "p_link" : 0.9,
+  "learning_source" : "TRACE",
+  "selection_agreement_rate" : 0.7703333333333333,
+  "config_hash" : "7b48fbbc7225-11-k2",
+  "code_git_hash" : "be4d60d29d55b7866a586baf44ac5bd1837eaf0c"
+}

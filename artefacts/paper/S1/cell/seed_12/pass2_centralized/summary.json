@@ -1,0 +1,5 @@
+{
+  "eval_split": "heldout",
+  "eval_samples": 10000,
+  "acc_global_model": 0.9754999876022339
+}

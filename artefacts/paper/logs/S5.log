@@ -1,0 +1,121 @@
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_11:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLORE\seed_11
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_12:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLORE\seed_12
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_13:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLORE\seed_13
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_14:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLORE\seed_14
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_15:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLORE\seed_15
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_11:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=EXPLORE_THEN_EXPLOIT\seed_11
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_12:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=EXPLORE_THEN_EXPLOIT\seed_12
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_13:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=EXPLORE_THEN_EXPLOIT\seed_13
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_14:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=EXPLORE_THEN_EXPLOIT\seed_14
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_15:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=EXPLORE_THEN_EXPLOIT\seed_15
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_11:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLOIT\seed_11
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_12:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLOIT\seed_12
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_13:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLOIT\seed_13
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_14:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLOIT\seed_14
+[runner] pass2 decentralized -> pass2
+[runner] compute delay: calibrated fit from results\paper\V\cell\seed_11\trackb\calib\calibration.json
+[runner] figures for seed_15:
+  saved accuracy_vs_round.png
+  saved gossip_tid.png
+  saved gossip_traffic_idle.png
+  saved gossip_energy.png
+[runner] done cell C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\S5\gam=ALWAYS_EXPLOIT\seed_15
+[runner] campaign complete: 15 runs.

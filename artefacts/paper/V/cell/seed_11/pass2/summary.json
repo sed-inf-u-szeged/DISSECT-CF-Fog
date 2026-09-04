@@ -1,0 +1,27 @@
+{
+  "eval_split": "heldout",
+  "eval_samples": 10000,
+  "acc_mean_over_nodes": 0.9380833407243093,
+  "acc_worst_node": 0.9253000020980835,
+  "acc_mean_model": 0.9650999903678894,
+  "acc_per_node": [
+    0.947700023651123,
+    0.9253000020980835,
+    0.930400013923645,
+    0.9380000233650208,
+    0.9592999815940857,
+    0.9277999997138977
+  ],
+  "workload": {
+    "dataset": "mnist",
+    "samples": 12000,
+    "eval_samples": 0,
+    "model": "lenet5",
+    "num_classes": 10,
+    "in_channels": 1,
+    "epochs": 1,
+    "lr": 0.05,
+    "batch": 16,
+    "init_seed": 777
+  }
+}

@@ -1,0 +1,73 @@
+# §9 results — regenerated from the artefact tree
+
+## ERQ1 — fidelity gate
+
+| ID | Criterion | Tolerance | Measured | Pass |
+|----|-----------|-----------|----------|------|
+| F1 | Selection-agreement rate (independent Track B) | = 1.0 exact | 1.0 | yes |
+| F2 | Signature-distortion ratio | [0.9, 1.1] | 0.9694 ± 0.0200 | yes |
+| F3 | Track A vs B held-out accuracy MAE | <= 0.01 | 0.0 | yes |
+| F4 | Held-out compute-delay relative error | <= 10% | 4.4% | yes |
+
+## ERQ2 — coordination-mode competitiveness
+
+Held-out accuracy, mean ± 95% CI (bootstrap percentile) over seeds (n=5).
+
+| Mode | Held-out accuracy | Endpoint traffic (MB) | Busiest endpoint (MB) | Energy (J) | Idle (ticks) |
+|------|-------------------|----------------------|----------------------|-----------|--------------|
+| Centralized | 0.975 [0.973, 0.976] | 118.5 [118.5, 118.5] | 59.2 [59.2, 59.2] (analytic) | — | — |
+| Hierarchical | 0.974 [0.971, 0.976] | — | — | — | — |
+| Decentralized | 0.921 [0.902, 0.935] | 151.5 [147.3, 155.0] | **29.6 [29.6, 29.6]** | 17745.0 [15732.2, 19757.8] | 4865.1 [4017.3, 5712.8] |
+
+- TID gap = 0.054 [0.039, 0.072]; w̄-view 0.968 [0.965, 0.972]; worst node 0.871 [0.826, 0.908]
+- Busiest gossip endpoint = 50.0 [50.0, 50.0]% of the central aggregator's own endpoint load
+- On-wire (each byte once): gossip 75.7 [73.7, 77.5] MB vs centralized 59.2 [59.2, 59.2] MB
+
+- centralized vs decentralized: Δ=+0.0536, welch_t, p_raw=0.004907, p_Holm=0.009814, effect=3.52
+- hierarchical vs decentralized: Δ=+0.0527, welch_t, p_raw=0.004991, p_Holm=0.009814, effect=3.44
+
+## ERQ3 — topology effect
+
+| Topology | λ₂ | Initial TID | Final TID | Held-out accuracy |
+|----------|-----|-------------|-----------|-------------------|
+| ring | 0.044 | 0.49 [0.47, 0.51] | 1.76 [1.64, 1.89] | 0.911 [0.903, 0.922] |
+| scale | 0.730 | 0.49 [0.47, 0.51] | 1.04 [0.88, 1.20] | 0.860 [0.836, 0.881] |
+| small | 1.674 | 0.49 [0.47, 0.51] | 1.00 [0.83, 1.18] | 0.868 [0.856, 0.883] |
+| dynamic | 21.670 | 0.49 [0.47, 0.51] | 0.79 [0.71, 0.88] | 0.868 [0.854, 0.884] |
+| mesh | 30.000 | 0.49 [0.47, 0.51] | 0.95 [0.84, 1.05] | 0.848 [0.822, 0.874] |
+
+- Family-level Spearman (n=5): ρ=-0.90, permutation p=0.042
+- Pooled over all (family, seed) points — descriptive only, 17 distinct λ₂ levels among 25 points: ρ=-0.59
+
+## ERQ4 — merge-rule efficacy
+
+| Merge rule | COMPOSITE | RANDOM |
+|---|---|---|
+| DRIFT | 0.728 [0.678, 0.776] (0.35) | 0.812 [0.790, 0.836] (0.43) |
+| METROPOLIS | 0.702 [0.680, 0.725] (0.37) | 0.782 [0.753, 0.811] (0.46) |
+| SAMPLE | 0.752 [0.701, 0.802] (0.34) | 0.828 [0.802, 0.852] (0.42) |
+| UNIFORM | 0.781 [0.741, 0.820] (0.49) | 0.847 [0.834, 0.860] (0.62) |
+
+Contrasts vs uniform (confounds sample weighting with drift suppression):
+
+Contrasts isolating the drift factor (vs sample-weighted):
+
+## ERQ5 — selector ablation
+
+| Selector | Held-out accuracy | Final TID | Traffic (MB) | Energy (J) | Idle (ticks) |
+|---|---|---|---|---|---|
+| COMPOSITE | 0.860 [0.836, 0.881] | 1.04 [0.88, 1.20] | 5116.4 [5053.8, 5164.7] | 99338.5 [95590.0, 106165.5] | 637.1 [565.1, 764.5] |
+| DEGREE | 0.791 [0.769, 0.818] | 1.15 [1.08, 1.26] | 5549.8 [5488.6, 5609.8] | 99380.0 [95590.0, 106290.0] | 637.8 [565.0, 766.7] |
+| RANDOM | 0.915 [0.907, 0.926] | 0.65 [0.59, 0.70] | 4601.6 [4564.6, 4653.5] | 99374.0 [95590.0, 106272.0] | 637.8 [565.1, 766.4] |
+| SINGLE | 0.887 [0.877, 0.900] | 0.85 [0.76, 0.99] | 5092.7 [5042.7, 5140.9] | 99354.0 [95590.0, 106212.0] | 637.4 [565.1, 765.3] |
+
+- COMPOSITE vs RANDOM: Δ=-0.0558, p_Holm=0.01859, effect=-2.47
+- DEGREE vs RANDOM: Δ=-0.1240, p_Holm=0.0009159, effect=-5.20
+- SINGLE vs RANDOM: Δ=-0.0284, p_Holm=0.01859, effect=-1.98
+
+
+[report] wrote C:\Users\user\Desktop\University of Szeged\FL Module DISSECT-CF-Fog\DISSECT-CF-Fog-FL-master\simulator\results\paper\report\results.json and results.md
+[report] figure R1_accuracy_vs_round.png
+[report] figure R2_tid_vs_lambda2.png
+[report] figure R3_merge_ablation.png
+[report] figure R4_selector_ablation.png
