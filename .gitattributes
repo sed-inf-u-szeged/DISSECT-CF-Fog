@@ -1,0 +1,4 @@
+# Cross-language test fixtures are compared/parsed by both Java and Python.
+# Pin them to LF so a CRLF checkout cannot perturb byte comparisons or hashes.
+simulator/src/test/resources/fl/splitmix64_golden.csv text eol=lf
+simulator/src/test/resources/fl/sample_system_trace.json text eol=lf
