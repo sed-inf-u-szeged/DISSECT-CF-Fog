@@ -1,7 +1,15 @@
 package hu.u_szeged.inf.fog.simulator.fl;
 
-import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
+
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.IaaSService;
+import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
+import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
+import hu.mta.sztaki.lpds.cloud.simulator.util.CloudLoader;
+import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
+
 
 import java.util.*;
 
@@ -10,9 +18,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollectorFL;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+
 
 /**
  * Central server-side component that aggregates client updates, maintains the global model,
@@ -26,50 +34,164 @@ import java.nio.file.Paths;
  *    - Compression factor:
  *    		- dlCompressionFactor applies to broadcast (downlink)
  *    		- ulCompressionFactor applies to client updates (uplink)
- *    - Timeouts & early aggregation via {@code TIMEOUT_RATIO} and {@code minCompletionRate}.
+ *    - Timeouts & early aggregation via per-instance {@code timeoutRatio} and {@code minCompletionRate}.
  *    - Fixed-cadence vs. cool-down pacing (orchestrator vs. aggregator schedules next round).
  *    - Telemetry (per-round and cumulative): bytes, delays (mean/p50/p95), losses, stale arrivals.
  *  What is not modeled?
  *    - Cryptographic details of secure aggregation.
  *    - Cycle-accurate training or packet-level networking.
  *
- *  Time unit: ticks.  Size unit: bytes. 
+ *  <b>Timing vs. energy — deliberate abstraction.</b><br>
+ *  FL local-training duration is computed <i>analytically</i> from
+ *  {@code epochMultiplier * instructionPerByte * fileSize / throughput} (see
+ *  {@link GlobalModelBroadcastEvent}), and the resulting {@code compDelay} is the
+ *  scheduling trigger for {@link LocalTrainingEvent}. In parallel, when
+ *  {@code nativeTransferMeteringEnabled} is on, a CPU task is also submitted to
+ *  the device's VM (or its {@link hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine}
+ *  as a fallback) via {@code newComputeTask} / {@code compute} purely so the simulator's
+ *  energy meters observe the work; the task's completion callback is intentionally a
+ *  no-op. Consequence: FL training time is <i>independent</i> of VM contention and
+ *  scheduling. The two paths can diverge under co-tenancy (energy meter sees real CPU
+ *  draw; FL events fire at the analytic time). This is a known modeling choice — chosen
+ *  for tractability and reproducibility — not a bug. To make FL participate in
+ *  simulator contention, move the {@link LocalTrainingEvent} construction inside the
+ *  {@code ConsumptionEventAdapter#conComplete} callback in
+ *  {@link GlobalModelBroadcastEvent#tryScheduleCpuWorkViaVm}.
+ *
+ *  Time unit: ticks.  Size unit: bytes.
  */
 
-public class FLAggregator extends ComputingAppliance {
+public class FLAggregator {
     // Global Model Initialization
     private static final double DEFAULT_INIT_STD = 0.01;
 
-    /** Ratio of round interval to wait before forcing aggregation on timeout. */
-    private static volatile double TIMEOUT_RATIO = 0.50;
-    
+    // --- Host-node fields (previously inherited from ComputingAppliance) ---
+    // The aggregator no longer extends ComputingAppliance: it is a server-side process,
+    // not a fog/cloud node. These fields preserve the field-level API that the demos and
+    // events relied on (e.g. {@code aggregator.iaas}) without dragging in the unused
+    // fog-node fields (neighbors, parent, applications, broker, range, timeline) and
+    // without registering each aggregator in {@code ComputingAppliance.allComputingAppliances}.
+
+    /** Human-readable identifier; also exposed as the prior {@code name} field. */
+    public final String name;
+    /** Geographic location of the host node (may be {@code null} for IaaS-less constructors). */
+    public final GeoLocation geoLocation;
+    /** Underlying IaaSService that hosts the aggregator's repository ({@code null} for the no-IaaS constructors). */
+    public IaaSService iaas;
+
+    /**
+     * Default timeout ratio applied to newly-constructed FLAggregator instances.
+     * Mutated by the static {@link #setTimeoutRatio(double)} helper; each new
+     * aggregator snapshots this value into its own {@link #timeoutRatio} field
+     * at construction, so changes here do not retroactively affect already-running
+     * aggregators. This allows running multiple aggregators with different
+     * timeout policies in the same simulation.
+     */
+    private static volatile double defaultTimeoutRatio = 0.50;
+
+    /**
+     * Per-instance timeout ratio: fraction of {@code roundInterval} to wait
+     * before forcing aggregation on timeout. Captured at construction time
+     * from {@link #defaultTimeoutRatio} and immutable thereafter.
+     */
+    private final double timeoutRatio = defaultTimeoutRatio;
+
     /** Shared RNG for DP noise and synthetic signals. */
     private final Random rng = SimRandom.get();
+    
+    private Repository serverRepo;
+    
+    //Switch to enable/disable native DL/UL transfer metering
+    private boolean nativeTransferMeteringEnabled = true;  // default ON
+
+    //
+    public void setNativeTransferMeteringEnabled(boolean on) { this.nativeTransferMeteringEnabled = on; }
+    // package-private for module use
+    boolean isNativeTransferMeteringEnabled() { return nativeTransferMeteringEnabled; }
+
+    /**
+     * Optional learning-outcome provider (§8.4). {@code null} (the default) means
+     * SYNTHETIC mode — {@link EvaluationEvent} keeps using the legacy
+     * {@code 0.50 + 0.40·prog + N(0, 0.02)} formula, byte-identical to the
+     * SIMPAT baseline. A non-null TRACE/ONLINE provider routes accuracy through
+     * the bridge for Pass-3 replay of the centralized/hierarchical cells.
+     */
+    private hu.u_szeged.inf.fog.simulator.fl.cosim.LearningProvider learningProvider; // null ⇒ SYNTHETIC
+
+    /** Sets the learning provider (null ⇒ SYNTHETIC, the default). */
+    public void setLearningProvider(hu.u_szeged.inf.fog.simulator.fl.cosim.LearningProvider provider) {
+        this.learningProvider = provider;
+    }
+
+    /** The learning provider, or null in SYNTHETIC mode. */
+    public hu.u_szeged.inf.fog.simulator.fl.cosim.LearningProvider getLearningProvider() {
+        return learningProvider;
+    }
 
     //Timeout Policy helper
     /**
-     * Sets {@link #TIMEOUT_RATIO} in range [0.05, 0.95] to avoid degenerate waits.
+     * Sets the {@link #defaultTimeoutRatio} used by FLAggregator instances
+     * constructed *after* this call, clamped to {@code [0.05, 0.95]} to avoid
+     * degenerate waits. Does not affect aggregators already constructed; each
+     * aggregator captures its own ratio at construction time.
      *
      * @param v ratio of round interval to wait before timing out the round.
      */
      public static void setTimeoutRatio(double v) {
         double clamped = Math.max(0.05, Math.min(0.95, v));
-        TIMEOUT_RATIO = clamped;
+        defaultTimeoutRatio = clamped;
      }
-     
-     
+
+
      /**
-      * @return current timeout ratio (fraction of round interval).
-      */ 
+      * @return the current default timeout ratio applied to newly-constructed
+      *         aggregators. To read an existing aggregator's ratio, use the
+      *         instance accessor on that aggregator.
+      */
      public static double getTimeoutRatio() {
-        return TIMEOUT_RATIO;
+        return defaultTimeoutRatio;
      }
 
      // Aggregator ID
      private final String id;
-    
+
+     /**
+      * The orchestrator that drives this aggregator's rounds. Set by the orchestrator
+      * itself during its construction via {@link #setOrchestrator(FLOrchestrator)}.
+      * Used in cool-down pacing mode: when aggregation completes, the aggregator hands
+      * control back via {@code orchestrator.scheduleNext()} instead of allocating a new
+      * orchestrator instance.
+      */
+     private FLOrchestrator orchestrator;
+
+     /** Package-private hand-off setter invoked by {@link FLOrchestrator}'s constructor. */
+     void setOrchestrator(FLOrchestrator o) {
+         this.orchestrator = o;
+     }
+
+     /**
+      * The currently-armed {@link RoundTimeoutEvent} for the in-progress round, kept so
+      * we can {@link RoundTimeoutEvent#cancel()} it when the round closes early via
+      * {@code minCompletionRate}. Cleared each round in {@link #startRound}.
+      */
+     private RoundTimeoutEvent currentRoundTimeout;
+
+     /**
+      * True while we are inside the {@link RoundTimeoutEvent}'s own {@code eventAction()}
+      * (i.e. inside {@link #handleTimeout}). In that window, {@link #aggregateModels()}
+      * must NOT call {@link RoundTimeoutEvent#cancel() currentRoundTimeout.cancel()}:
+      * {@code DeferredEvent} only marks an event as {@code received} <i>after</i> its
+      * eventAction returns, so cancel would still call
+      * {@code simultaneouslyOccurringDEs.remove(this)} on the list that
+      * {@code AggregatedEventDispatcher.tick} is currently iterating — producing a
+      * {@link java.util.ConcurrentModificationException}. The early-aggregation and
+      * no-participant early-exit paths into {@code aggregateModels} run at a different
+      * tick than the timeout's {@code eventArrival}, so they cancel safely.
+      */
+     private boolean handlingTimeout = false;
+
      // Model versioning (increments after each aggregation)
-     private int modelVersion = 0; 
+     private int modelVersion = 0;
 
      // Secure Aggregation accumulators (current round)
      private int receivedUpdates;          // number of arrivals (updates or shares)
@@ -86,7 +208,11 @@ public class FLAggregator extends ComputingAppliance {
      // Round‐management fields:
      private int expectedUpdates;
      private int currentRound;      // 0-based round index
-     private long roundInterval;
+     // Note: roundInterval was previously stored here so the pre-HIGH-4 scheduleNextRound
+     // could pass it into a freshly-constructed FLOrchestrator. After HIGH-4 the orchestrator
+     // owns its own roundInterval and we just call orchestrator.scheduleNext() with no args,
+     // so the field became dead and was removed. It is still received as a parameter by
+     // startRound and used locally there to compute roundTimeoutTicks.
      private int maxRounds;         // total number of rounds
      private List<FLEdgeDevice> devices;
 
@@ -175,7 +301,7 @@ public class FLAggregator extends ComputingAppliance {
      private final List<Long> roundE2E = new ArrayList<>();     // per-round successful contributors’ E2E
      private final List<Long> allE2E   = new ArrayList<>();     // cumulative E2E
      private long roundDurationTicks   = -1;                    // wall-clock round duration (start→aggregate/timeout)
-     private long roundTimeoutTicks    = 0;                     // TIMEOUT_RATIO * roundInterval (cached for this round)
+     private long roundTimeoutTicks    = 0;                     // timeoutRatio * roundInterval (cached for this round)
      // Telemetry for Per-round export (E2E stats & round duration)
      private final List<Double> prE2EMean      = new ArrayList<>();
      private final List<Long>   prE2EP50       = new ArrayList<>();
@@ -185,6 +311,49 @@ public class FLAggregator extends ComputingAppliance {
      // File names
      private String exportCsvPath = "fl_telemetry.csv";
      private String exportPngPath = "fl_telemetry.png";
+     
+     // Finished-signal callback (invoked after last round’s export/plot)
+     private Runnable finishedCallback = null;
+     
+     // Energy per-round capture
+     private double baseSrv_mJ = 0.0;                 // Store in mJ (as collector provides)
+     private double baseParts_mJ = 0.0;               // Store in mJ
+     private final List<Double> prSrvEnergy_J = new ArrayList<>();   // Store/export in Joules
+     private final List<Double> prPartEnergy_J = new ArrayList<>();  // Store/export in Joules
+     private final List<Double> prSrvAvgPow_JperTick = new ArrayList<>();
+     private final List<Double> prPartAvgPow_JperTick = new ArrayList<>();
+     private String exportEnergyCsvPath = "fl_energy.csv";
+     private String exportEnergyPngPath = "fl_energy.png";
+     
+     // Fallback energy estimator (enabled only if measured delta is zero)
+     private boolean energyFallbackEstimator = false;
+     // Very rough default coefficients (tune to your environment)
+     private double J_PER_BYTE_DL = 1.5e-7;     // Joules per DL byte (server/device side)
+     private double J_PER_BYTE_UL = 1.5e-7;     // Joules per UL byte (server/device side)
+     private double J_PER_INSTR   = 1.0e-9;     // Joules per instruction (device compute)
+     
+     // Public toggles for the estimator
+     public void enableEnergyFallbackEstimator(boolean on) { this.energyFallbackEstimator = on; }
+     public void setEnergyEstimationCoefficients(double jPerByteDL, double jPerByteUL, double jPerInstr) {
+         this.J_PER_BYTE_DL = Math.max(0, jPerByteDL);
+         this.J_PER_BYTE_UL = Math.max(0, jPerByteUL);
+         this.J_PER_INSTR   = Math.max(0, jPerInstr);
+     }
+     
+     // Option to count uplink energy even when an update is dropped in transit.
+     // When true, ParameterUploadEvent will still drive a native repo transfer for failed ULs
+     // (for energy realism) but will NOT call noteUploadSuccess nor addModelUpdate.
+     private boolean energyCountFailedUploads = false;
+     
+     // Enable/disable counting energy for failed in-transit uploads.
+     public void setEnergyCountFailedUploads(boolean on) { this.energyCountFailedUploads = on; }
+     // Query flag for failed-upload energy counting.
+     boolean isEnergyCountFailedUploads() { return energyCountFailedUploads; }
+     
+     // Register a callback invoked when the very last FL step finishes.
+     public void setFinishedCallback(Runnable r) { 
+         this.finishedCallback = r;    
+     }     
      
      /**
       * Creates an aggregator with random Gaussian-initialized weights (σ = {@value #DEFAULT_INIT_STD})
@@ -203,8 +372,12 @@ public class FLAggregator extends ComputingAppliance {
       * @param modelSize number of parameters in the global model; must be {@code > 0}.
       */
      public FLAggregator(String id, int modelSize) {
-         super(id);
+         this.name        = id;
+         this.geoLocation = null;
+         this.iaas        = null;
+
          this.id = id;
+         this.serverRepo = initServerRepo(id);
          if (modelSize <= 0) modelSize = 1; // guard
          this.globalModel = new double[modelSize];
          for (int i = 0; i < globalModel.length; i++) {
@@ -220,8 +393,12 @@ public class FLAggregator extends ComputingAppliance {
       * @param initialWeights initial model weights (copied defensively).
       */
      public FLAggregator(String id, double[] initialWeights) {
-         super(id);
+         this.name        = id;
+         this.geoLocation = null;
+         this.iaas        = null;
+
          this.id = id;
+         this.serverRepo = initServerRepo(id);
          if (initialWeights != null && initialWeights.length > 0) {
              this.globalModel = initialWeights.clone();
          } else {
@@ -230,6 +407,67 @@ public class FLAggregator extends ComputingAppliance {
                  globalModel[i] = rng.nextGaussian() * DEFAULT_INIT_STD;
              }
          }
+     }
+     
+     // Full server-backed constructor so the aggregator has an IaaS to meter.
+     // Loads the IaaSService from {@code cloudfile} directly (replacing the previous
+     // {@code super(cloudfile, id, location, locationCost)} call) so the aggregator
+     // does not get registered in {@link ComputingAppliance#allComputingAppliances}:
+     // it is a server-side process, not a fog node.
+     public FLAggregator(String id,
+                         String cloudfile,
+                         GeoLocation location,
+                         int locationCost,
+                         double[] initialWeights) {
+         this.name        = id;
+         this.geoLocation = location;
+
+         IaaSService loaded = null;
+         try {
+             loaded = CloudLoader.loadNodes(cloudfile);
+         } catch (IOException | SAXException | ParserConfigurationException e) {
+             e.printStackTrace();
+         }
+         this.iaas = loaded;
+
+         // Replicates ComputingAppliance#modifyRepoName so the primary repo carries the
+         // aggregator id as a suffix and any inbound latency entries get rewritten to the
+         // new name. Inlined here because the original method is package-private.
+         if (this.iaas != null && this.iaas.repositories != null && !this.iaas.repositories.isEmpty()) {
+             Repository primary = this.iaas.repositories.get(0);
+             String oldName = primary.getName();
+             String newName = oldName + "-" + id;
+             primary.setName(newName);
+             for (Repository r : this.iaas.repositories) {
+                 if (r.getLatencies().get(oldName) != null) {
+                     int latency = r.getLatencies().get(oldName);
+                     r.getLatencies().remove(oldName);
+                     r.addLatencies(newName, latency);
+                 }
+             }
+         }
+         // {@code locationCost} (the parent's "range" field) is unused in the aggregator
+         // role; kept as a constructor parameter purely for backward compatibility with
+         // existing demos that pass {@code 0}.
+
+         this.id = id;
+         this.serverRepo = resolveIaaSRepoForAggregator();
+         if (initialWeights != null && initialWeights.length > 0) {
+             this.globalModel = initialWeights.clone();
+         } else {
+             this.globalModel = new double[3];
+             for (int i = 0; i < globalModel.length; i++) {
+                 globalModel[i] = rng.nextGaussian() * DEFAULT_INIT_STD;
+             }
+         }
+     }
+
+     // Convenience overload if caller wants random init
+     public FLAggregator(String id,
+                         String cloudfile,
+                         GeoLocation location,
+                         int locationCost) {
+         this(id, cloudfile, location, locationCost, null);
      }
 
      /** @return aggregator identifier (for logging). */
@@ -333,7 +571,6 @@ public class FLAggregator extends ComputingAppliance {
 
          this.currentRound                 = round;
          this.expectedUpdates              = expectedCount;
-         this.roundInterval                = roundInterval;
          this.maxRounds                    = maxRounds;
          this.devices                      = devices;
 
@@ -384,32 +621,41 @@ public class FLAggregator extends ComputingAppliance {
          // Telemetry: Round duration telemetry
          roundE2E.clear();
          roundDurationTicks = -1;
-         roundTimeoutTicks  = Math.max(1, (long)Math.ceil(roundInterval * TIMEOUT_RATIO)); // cache
+         roundTimeoutTicks  = Math.max(1, (long)Math.ceil(roundInterval * timeoutRatio)); // cache
          
          // Informative logging
-         int  estSampled   = (int) Math.round(devices.size() * samplingFraction);
-         int  estDropped   = Math.max(0, estSampled - expectedCount);
+         // Precise policy logging for sampling
+         String policyStr;
+         if (useFixedKSampling) {
+             policyStr = "selPolicy=fixedK(" + this.fixedK + ")";
+         } else {
+             int estSampled = (int) Math.round(devices.size() * this.samplingFraction);
+             int estDropped = (int) Math.round(estSampled * this.dropoutProbability); // approx
+             policyStr = "selPolicy=Bernoulli(sf=" + this.samplingFraction
+                     + ", estSampled≈" + estSampled
+                     + ", estDropped≈" + estDropped + ")";
+         }
+
          System.out.println("Aggregator " + id + ": Round " + round
-                 + " — policy sf=" + samplingFraction
-                 + ", dp=" + dropoutProbability
-                 + ", preUF=" + preUploadFailureProbability
-                 + ", inTransF=" + inTransitFailureProbability
+                 + " — " + policyStr
+                 + " | preUF=" + this.preUploadFailureProbability
+                 + ", inTransF=" + this.inTransitFailureProbability
                  + " | minCompletionRate=" + this.minCompletionRate
-                 + " | estSampled=" + estSampled
-                 + ", estDropped≈" + estDropped
-                 + ", participating=" + expectedCount
+                 + " | participating=" + expectedCount
                  + " | secureAgg=" + secureAggregationEnabled
-                 + ", dlCompFactor=" + this.dlCompressionFactor 
+                 + ", dlCompFactor=" + this.dlCompressionFactor
                  + ", ulCompFactor=" + this.ulCompressionFactor
                  + ", dpNoiseStd=" + dpNoiseStd
                  + " | pacing=" + (fixedCadence ? "Fixed_Cadence" : "Cooldown_After_Finish")
                  + " | broadcastPolicy=" + (broadcastSelectedOnly ? "Participants_Only" : "All_Devices")
-                 + " | modelVersion=" + modelVersion + "."
-         );
+                 + " | modelVersion=" + modelVersion + ".");
 
          // Timeout event handling (relative to round start)
          roundClosed = false;
-         new RoundTimeoutEvent(roundTimeoutTicks, this, round);
+         // Stash the timeout event so {@link #aggregateModels()} can cancel it when
+         // the round closes early via {@code minCompletionRate}, keeping the event
+         // queue clean instead of letting a no-op timeout fire later.
+         currentRoundTimeout = new RoundTimeoutEvent(roundTimeoutTicks, this, round);
 
          if (expectedUpdates == 0) { //Early Exit if no participants
              System.out.println("Aggregator " + id + ": No participants selected for round "
@@ -422,6 +668,8 @@ public class FLAggregator extends ComputingAppliance {
                  scheduleNextRound();
              }
          }
+         // Capture energy baselines in mJ at the start of the round
+         snapshotRoundEnergyBaseline();         
      }
      
      //record successful contributor’s end-to-end latency
@@ -524,6 +772,14 @@ public class FLAggregator extends ComputingAppliance {
      private void aggregateModels() {
          roundClosed = true;
 
+         // Cancel the round-timeout event so it doesn't fire as a no-op after early
+         // aggregation — but ONLY when we're not inside the timeout's own eventAction.
+         // See {@link #handlingTimeout} for the ConcurrentModificationException case.
+         if (currentRoundTimeout != null && !handlingTimeout) {
+             currentRoundTimeout.cancel();
+         }
+         currentRoundTimeout = null;
+
          // Telemetry capture observed count for this round
          int observedThisRound = receivedUpdates;
          
@@ -534,11 +790,11 @@ public class FLAggregator extends ComputingAppliance {
                  long kth = kthSmallest(roundE2E, minNeeded);
                  roundDurationTicks = Math.min(kth, roundTimeoutTicks);
                  System.out.println("Aggregator " + id + ": roundWallClock computed in aggregateModels() "
-                         + "(late set, early-agg) = " + roundDurationTicks + " ticks."); // [NEW]
+                         + "(late set, early-agg) = " + roundDurationTicks + " ticks.");
              } else {
                  roundDurationTicks = roundTimeoutTicks;
                  System.out.println("Aggregator " + id + ": roundWallClock computed in aggregateModels() "
-                         + "(timeout path) = " + roundDurationTicks + " ticks."); // [NEW]
+                         + "(timeout path) = " + roundDurationTicks + " ticks.");
              }
          }
          
@@ -551,6 +807,7 @@ public class FLAggregator extends ComputingAppliance {
                          + " | modelVersion=" + modelVersion);
                  printRoundTelemetry(observedThisRound);
                  stashRoundTelemetry(observedThisRound);
+                 stashRoundEnergy();
                  scheduleEvaluationEvent();
                  return;
              }
@@ -570,7 +827,8 @@ public class FLAggregator extends ComputingAppliance {
                      + Arrays.toString(globalModel)
                      + " | modelVersion=" + modelVersion);
              printRoundTelemetry(observedThisRound);
-             stashRoundTelemetry(observedThisRound); 
+             stashRoundTelemetry(observedThisRound);
+             stashRoundEnergy();
              scheduleEvaluationEvent();
              return;
          }
@@ -582,6 +840,7 @@ public class FLAggregator extends ComputingAppliance {
                      + Arrays.toString(globalModel));
              printRoundTelemetry(observedThisRound);
              stashRoundTelemetry(observedThisRound);
+             stashRoundEnergy();
              scheduleEvaluationEvent();
              return;
          }
@@ -617,12 +876,35 @@ public class FLAggregator extends ComputingAppliance {
          updates.clear();
          printRoundTelemetry(observedThisRound);
          stashRoundTelemetry(observedThisRound);
+         stashRoundEnergy(); 
          scheduleEvaluationEvent();
      }
 
      /** @return defensive reference to the current global model array. */
      public double[] getGlobalModel() {
          return globalModel;
+     }
+
+     /**
+      * Replaces the current global model with the provided weights and bumps the
+      * {@link #modelVersion}. Intended for hierarchical FL: a higher-tier
+      * coordinator periodically reads the global models from several regional
+      * aggregators, synthesises a new model (e.g., uniform or weighted average),
+      * and pushes the result back into each regional aggregator via this method.
+      *
+      * The next {@link #broadcastGlobalModel()} (start of the next regional round)
+      * will then carry the new {@code modelVersion}, so client-side staleness
+      * tracking stays consistent.
+      *
+      * @param newWeights the new global model; defensively copied (callers may mutate
+      *                   their array after the call). Null or empty inputs are no-ops.
+      */
+     public synchronized void replaceGlobalModel(double[] newWeights) {
+         if (newWeights == null || newWeights.length == 0) return;
+         this.globalModel = newWeights.clone();
+         this.modelVersion++;
+         System.out.println("Aggregator " + id + ": global model replaced by external coordinator "
+                 + "(dim=" + this.globalModel.length + ", modelVersion=" + modelVersion + ").");
      }
 
      /** Schedules a one-tick delayed {@link EvaluationEvent} to record synthetic accuracy. */
@@ -649,7 +931,7 @@ public class FLAggregator extends ComputingAppliance {
       * device has a local copy.
       */
      public void broadcastGlobalModel() {
-         // [ADDED] Round-0 guardrail: broadcast to ALL devices once so every device has a model copy.
+         // Round-0 guardrail: broadcast to ALL devices once so every device has a model copy.
          boolean forceAllThisRound = (currentRound == 0) && !round0AllBroadcastDone;
          if (forceAllThisRound) {
              System.out.println("Aggregator " + id + ": Round-0 guardrail → broadcasting to ALL devices once.");
@@ -686,26 +968,15 @@ public class FLAggregator extends ComputingAppliance {
      private void scheduleNextRound() {
          // Rounds are 0..maxRounds-1
          if ((currentRound + 1) < maxRounds) {
-             int nextRound = currentRound + 1;
-             System.out.println("Aggregator " + id + ": Scheduling round "
-                     + nextRound + " after " + roundInterval + " ticks.");
-             new FLOrchestrator(roundInterval, maxRounds, devices, this,
-                     nextRound,
-                     samplingFraction,
-                     dropoutProbability,
-                     preUploadFailureProbability,
-                     inTransitFailureProbability,
-                     minCompletionRate,
-                     //Privacy and Security
-                     secureAggregationEnabled,
-                     secureExtraBytesPerClient,
-                     dlCompressionFactor,
-                     ulCompressionFactor,
-                     dpNoiseStd,
-                     false,
-                     broadcastSelectedOnly,
-                     useFixedKSampling,
-                     fixedK);
+             // Hand off to the existing orchestrator instead of allocating a new one
+             // per round — the orchestrator already owns the round parameters and
+             // simply needs to re-arm its Timed subscription.
+             if (orchestrator != null) {
+                 orchestrator.scheduleNext();
+             } else {
+                 System.out.println("Aggregator " + id
+                         + ": cool-down scheduleNext skipped — no orchestrator registered.");
+             }
          } else {
              //Final Summary
              double avgPart = (double) totalParticipants / totalRounds;
@@ -748,14 +1019,19 @@ public class FLAggregator extends ComputingAppliance {
       */
      void handleTimeout(int roundId) {
          if (roundId != currentRound || roundClosed) return;
-         int observed = receivedUpdates; // counts updates or secure shares
-         String unit = secureAggregationEnabled ? "shares" : "updates";
-         System.out.println("Aggregator " + id + ": TIMEOUT for round " + roundId
-                 + ". Proceeding with " + observed + "/" + expectedUpdates + " " + unit + ".");
-         if (roundDurationTicks < 0) roundDurationTicks = roundTimeoutTicks;
-         aggregateModels();
-         if (!fixedCadence) {
-             scheduleNextRound();
+         handlingTimeout = true;
+         try {
+             int observed = receivedUpdates; // counts updates or secure shares
+             String unit = secureAggregationEnabled ? "shares" : "updates";
+             System.out.println("Aggregator " + id + ": TIMEOUT for round " + roundId
+                     + ". Proceeding with " + observed + "/" + expectedUpdates + " " + unit + ".");
+             if (roundDurationTicks < 0) roundDurationTicks = roundTimeoutTicks;
+             aggregateModels();
+             if (!fixedCadence) {
+                 scheduleNextRound();
+             }
+         } finally {
+             handlingTimeout = false;
          }
      }
 
@@ -805,6 +1081,48 @@ public class FLAggregator extends ComputingAppliance {
                  + ", in-transit=" + roundInTransitLosses
                  + " | staleArrivals=" + roundStaleArrivals
                  + " | lateArrivals=" + roundLateArrivals);
+         // Energy snapshot to demonstrate that metering is active
+         printEnergySnapshot();
+     }
+     
+     // Human-friendly energy summary (server + participants). Uses same kWh conversion as EnergyDataCollectorFL CSV.
+     private void printEnergySnapshot() {
+         try {
+        	 double srv_mJ = 0.0;
+             EnergyDataCollectorFL srv = EnergyDataCollectorFL.getEnergyCollector(this.iaas);
+             // forceSample() instead of reading the cache, so the [ENERGY] log line
+             // reflects energy actually consumed up to the round's aggregation time
+             // (not the last 60 s sampling tick). Idempotent within the same fire
+             // count: if stashRoundEnergy already forced a sample this tick, the
+             // meter's internal {@code if (now != lastMetered)} guard makes this a
+             // cheap no-op that just re-reads the already-updated value.
+             if (srv != null) srv_mJ = srv.forceSample();
+
+             double parts_mJ = 0.0;
+             int counted = 0;
+             List<String> samples = new ArrayList<>();
+             for (FLEdgeDevice dev : participantsThisRound) {
+                 EnergyDataCollectorFL edc = EnergyDataCollectorFL.getEnergyCollector(dev.getLocalMachine());
+                 if (edc != null) {
+                	 double live = edc.forceSample();
+                	 parts_mJ += live;
+                     counted++;
+                     if (samples.size() < 3) {
+                         double kWh = (live / 1000.0) / 3_600_000.0; //  mJ→J→kWh
+                         samples.add(edc.name + "=" + String.format(Locale.US, "%.6f", kWh) + " kWh");
+                     }
+                 }
+             }
+             double srvKWh   = (srv_mJ / 1000.0) / 3_600_000.0; // mJ→J→kWh
+             double partsKWh = (parts_mJ / 1000.0) / 3_600_000.0;
+
+             System.out.println("Aggregator " + id + " [ENERGY]: "
+                     + "server≈" + String.format(Locale.US, "%.6f", srvKWh) + " kWh"
+                     + " | participants(" + counted + ")≈" + String.format(Locale.US, "%.6f", partsKWh) + " kWh"
+                     + (samples.isEmpty() ? "" : " | examples " + samples));
+         } catch (Throwable t) {
+             System.out.println("Aggregator " + id + " [ENERGY]: snapshot unavailable (" + t.getMessage() + ")");
+         }
      }
 
      /**
@@ -935,68 +1253,253 @@ public class FLAggregator extends ComputingAppliance {
          System.out.println("Aggregator " + id + ": Telemetry CSV exported to " + path);
      }
 
-     /** Attempts to plot the exported CSV using Python (matplotlib). */
-     private void tryPlotWithPython(String csvPath, String outPngPath) {
-         String py = ""
-             + "import csv, sys\n"
-             + "import matplotlib.pyplot as plt\n"
-             + "csv_path=sys.argv[1]; out_path=sys.argv[2]\n"
-             + "R=[]; ACC=[]; DL=[]; UL=[]\n"
-             + "with open(csv_path, newline='') as f:\n"
-             + "    r=csv.DictReader(f)\n"
-             + "    for row in r:\n"
-             + "        R.append(int(row['round']))\n"
-             + "        acc=row.get('accuracy','')\n"
-             + "        ACC.append(float(acc) if acc not in ('', None) else float('nan'))\n"
-             + "        DL.append((float(row['down_bytes']))/1e6)\n"
-             + "        UL.append((float(row['up_model_bytes'])+float(row['up_sec_overhead_bytes']))/1e6)\n"
-             + "plt.figure(figsize=(8,5))\n"
-             + "ax1=plt.gca()\n"
-             + "ax1.plot(R, ACC, marker='o', label='Accuracy')\n"
-             + "ax1.set_xlabel('Round'); ax1.set_ylabel('Accuracy'); ax1.set_ylim(0,1)\n"
-             + "ax2=ax1.twinx()\n"
-             + "ax2.plot(R, DL, linestyle='--', label='Down MB')\n"
-             + "ax2.plot(R, UL, linestyle=':', label='Up MB (model+sec)')\n"
-             + "ax2.set_ylabel('Traffic (MB)')\n"
-             + "lines1, labels1 = ax1.get_legend_handles_labels()\n"
-             + "lines2, labels2 = ax2.get_legend_handles_labels()\n"
-             + "ax2.legend(lines1+lines2, labels1+labels2, loc='best')\n"
-             + "ax1.grid(True, linestyle='--', alpha=0.3)\n"
-             + "plt.title('FL Telemetry: Accuracy and Traffic')\n"
-             + "plt.tight_layout(); plt.savefig(out_path, dpi=150)\n";
+     // Telemetry plotting moved to {@link FLTelemetry#plotTelemetry(String, String, String)}
+     // as part of the LOW-3 extraction. Call site at the bottom of onFinalEvaluationComplete().
 
+
+     // Allow demos to redirect outputs
+     public void setExportPaths(String csvPath, String pngPath) {
+         if (csvPath != null && !csvPath.isEmpty()) this.exportCsvPath = csvPath;
+         if (pngPath != null && !pngPath.isEmpty()) this.exportPngPath = pngPath;
+     }
+     
+     public void setEnergyExportPaths(String csvPath, String pngPath) {
+         if (csvPath != null && !csvPath.isEmpty()) this.exportEnergyCsvPath = csvPath;
+         if (pngPath != null && !pngPath.isEmpty()) this.exportEnergyPngPath = pngPath;
+     }
+     
+     // FL-Energy - Initialize a lightweight repository to meter network/storage energy
+     private static Repository initServerRepo(String id) {
+         java.util.EnumMap<PowerTransitionGenerator.PowerStateKind, java.util.Map<String, PowerState>> tr =
+                 PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
+         java.util.Map<String, PowerState> diskStates = tr.get(PowerTransitionGenerator.PowerStateKind.storage);
+         java.util.Map<String, PowerState> netStates  = tr.get(PowerTransitionGenerator.PowerStateKind.network);
+         java.util.HashMap<String, Integer> lat = new java.util.HashMap<>();
+         return new Repository(
+                 4_294_967_296L,                 // 4 GB
+                 "fl-agg-repo-" + id,
+                 3_250_000L, 3_250_000L,         // maxInBW, maxOutBW (bytes/tick)
+                 3_250_000L,                     // diskBW (bytes/tick)
+                 lat,
+                 diskStates,
+                 netStates
+         );
+     }
+     
+     private Repository resolveIaaSRepoForAggregator() {
          try {
-             Path script = Paths.get("fl_plot_tmp.py");
-             Files.write(script, py.getBytes(StandardCharsets.UTF_8));
-             List<String> cmd = new ArrayList<>();
-             cmd.add("python3"); cmd.add(script.toString()); cmd.add(csvPath); cmd.add(outPngPath);
-             Process p = new ProcessBuilder(cmd).inheritIO().start();
-             int exit = p.waitFor();
-             if (exit != 0) {
-                 cmd.set(0, "python");
-                 Process p2 = new ProcessBuilder(cmd).inheritIO().start();
-                 int exit2 = p2.waitFor();
-                 if (exit2 != 0) {
-                     System.out.println("Aggregator " + id + ": Python plotting failed (matplotlib missing?). CSV is available at " + csvPath);
-                 } else {
-                     System.out.println("Aggregator " + id + ": Plot saved to " + outPngPath);
+             if (this.iaas != null && this.iaas.repositories != null && !this.iaas.repositories.isEmpty()) {
+                 String override = System.getProperty("fl.serverRepoId", "").trim();
+                 String preferred = override.isEmpty() ? ("ceph-" + this.id) : override;
+
+                 Repository exact = null;
+                 for (Repository r : this.iaas.repositories) {
+                     String rid = safeRepoName(r);
+                     if (preferred.equals(rid)) { exact = r; break; }
                  }
-             } else {
-                 System.out.println("Aggregator " + id + ": Plot saved to " + outPngPath);
+                 if (exact != null) {
+                     System.out.println("Aggregator " + id + ": using IaaS repository '" + safeRepoName(exact) + "'.");
+                     return exact;
+                 }
+
+                 // As a secondary heuristic, try any repo that starts with "ceph-" if available
+                 for (Repository r : this.iaas.repositories) {
+                     String rid = safeRepoName(r);
+                     if (rid != null && rid.startsWith("ceph-")) {
+                         System.out.println("Aggregator " + id + ": preferred repo '" + preferred + "' not found; using '" + rid + "'.");
+                         return r;
+                     }
+                 }
+
+                 // Fallback to first
+                 Repository first = this.iaas.repositories.get(0);
+                 System.out.println("Aggregator " + id + ": preferred repo '" + preferred + "' not found; falling back to first ('" + safeRepoName(first) + "').");
+                 return first;
              }
-             try { Files.deleteIfExists(script); } catch (Exception ignore) {}
-         } catch (Exception e) {
-             System.out.println("Aggregator " + id + ": Skipping plot – " + e.getMessage() + ". CSV at " + csvPath);
+         } catch (Throwable t) {
+             System.out.println("Aggregator " + id + ": repository resolution failed (" + t.getMessage() + "), falling back to local repo.");
          }
+         // No IaaS: use a local lightweight repo
+         return initServerRepo(this.id);
      }
 
-     public void onFinalEvaluationComplete() {
+     /**
+      * Returns the repository's name. {@link Repository} inherits {@code getName()}
+      * from {@code NetworkNode}, so we can bind directly to it; the previous
+      * reflection-based lookup was defensive scaffolding for a non-existent API
+      * compatibility problem and is now removed.
+      */
+     private static String safeRepoName(Repository r) {
+         if (r == null) return "null";
+         String n = r.getName();
+         return n != null ? n : String.valueOf(r);
+     }
+
+     // FL-Energy 
+     public Repository getServerRepository() { 
+    	 return serverRepo; 
+     }
+     
+     public String getServerRepositoryId() {
+         return safeRepoName(serverRepo);
+     }
+
+     // FL-Energy Convenience helpers for DL sizing
+     long getModelBytes() { 
+    	 return (long) getModelSize() * (long) Double.BYTES; 
+    	 }
+     long getCompressedModelBytesForDownlink() {
+         double f = Math.max(0.0, Math.min(1.0, getDlCompressionFactor()));
+         return (long) Math.ceil(getModelBytes() * f);
+     }
+     
+     public void onFinalEvaluationComplete() {        
          try {
              exportTelemetryCsv(exportCsvPath);
          } catch (IOException e) {
              System.out.println("Aggregator " + id + ": Failed to export telemetry CSV: " + e.getMessage());
-             return;
          }
-         tryPlotWithPython(exportCsvPath, exportPngPath);
+         FLTelemetry.plotTelemetry(exportCsvPath, exportPngPath, id);
+         // Export and plot energy
+         try {
+             exportEnergyCsv(exportEnergyCsvPath);
+         } catch (IOException e) {
+             System.out.println("Aggregator " + id + ": Failed to export energy CSV: " + e.getMessage());
+         }
+         FLTelemetry.plotEnergy(exportEnergyCsvPath, exportEnergyPngPath, id);
+         
+         // Notify whoever registered that we’re fully done (after export/plot)
+         if (finishedCallback != null) {
+             try { finishedCallback.run(); }
+             catch (Throwable t) {
+                 System.out.println("Aggregator " + id + ": finishedCallback threw: " + t);
+             }
+         }
+     }                                 
+     
+     // Energy helpers
+     //
+     // Both methods call EnergyDataCollectorFL#forceSample() before reading the
+     // consumption value. The cached field on the collector is only refreshed every
+     // FREQ_TICKS (default 60 s) — which is much longer than a typical FL round —
+     // so reading the cache directly would give baseline == current and a zero delta
+     // for almost every round. forceSample() ticks the underlying DISSECT-CF meter
+     // at the current sim time, returning a live value for accurate per-round deltas.
+     private void snapshotRoundEnergyBaseline() {
+         try {
+             baseSrv_mJ = 0.0;
+             EnergyDataCollectorFL srv = EnergyDataCollectorFL.getEnergyCollector(this.iaas);
+             if (srv != null) baseSrv_mJ = srv.forceSample();
+
+             baseParts_mJ = 0.0;
+             for (FLEdgeDevice dev : participantsThisRound) {
+                 EnergyDataCollectorFL edc = EnergyDataCollectorFL.getEnergyCollector(dev.getLocalMachine());
+                 if (edc != null) baseParts_mJ += edc.forceSample();
+             }
+         } catch (Throwable t) {
+             baseSrv_mJ = 0.0;
+             baseParts_mJ = 0.0;
+         }
      }
+
+     private void stashRoundEnergy() {
+         try {
+        	 double curSrv_mJ = 0.0;
+             EnergyDataCollectorFL srv = EnergyDataCollectorFL.getEnergyCollector(this.iaas);
+             if (srv != null) curSrv_mJ = srv.forceSample();
+
+             double curParts_mJ = 0.0;
+             for (FLEdgeDevice dev : participantsThisRound) {
+                 EnergyDataCollectorFL edc = EnergyDataCollectorFL.getEnergyCollector(dev.getLocalMachine());
+                 if (edc != null) curParts_mJ += edc.forceSample();
+             }
+
+             double dSrv_J = Math.max(0.0, (curSrv_mJ - baseSrv_mJ) / 1000.0);
+             double dPar_J = Math.max(0.0, (curParts_mJ - baseParts_mJ) / 1000.0);
+
+             double durTicks = Math.max(0.0, (double) Math.max(0, roundDurationTicks));
+             double pSrv_Jpt = (durTicks > 0.0) ? (dSrv_J / durTicks) : 0.0;
+             double pPar_Jpt = (durTicks > 0.0) ? (dPar_J / durTicks) : 0.0;
+
+             // Fallback estimator if both are 0 (likely due to coarse sampling window)
+             if (energyFallbackEstimator && dSrv_J == 0.0 && dPar_J == 0.0 && roundDurationTicks > 0) {
+                 double estSrv = estimateServerEnergy_J();
+                 double estPar = estimateParticipantsEnergy_J();
+                 System.out.println("Aggregator " + id + " [ENERGY ESTIMATOR]: replacing 0 J with "
+                         + String.format(Locale.US, "server≈%.6f J, participants≈%.6f J", estSrv, estPar));
+                 dSrv_J = estSrv;
+                 dPar_J = estPar;
+                 pSrv_Jpt = dSrv_J / roundDurationTicks;
+                 pPar_Jpt = dPar_J / roundDurationTicks;
+             }
+
+             prSrvEnergy_J.add(dSrv_J);
+             prPartEnergy_J.add(dPar_J);
+             prSrvAvgPow_JperTick.add(pSrv_Jpt);
+             prPartAvgPow_JperTick.add(pPar_Jpt);
+         } catch (Throwable t) {
+             prSrvEnergy_J.add(0.0);
+             prPartEnergy_J.add(0.0);
+             prSrvAvgPow_JperTick.add(0.0);
+             prPartAvgPow_JperTick.add(0.0);
+         }
+     }
+     
+     // Server estimate from bytes
+     private double estimateServerEnergy_J() {
+         // All DL bytes counted on server NIC; UL bytes (model + sec).
+         double dlJ = J_PER_BYTE_DL * (double) roundDownBytes;
+         double ulJ = J_PER_BYTE_UL * (double) (roundUpModelBytes + roundUpSecOverheadBytes);
+         return Math.max(0.0, dlJ + ulJ);
+     }
+     
+     // Participants estimate from compute + their DL/UL bytes
+     private double estimateParticipantsEnergy_J() {
+         double computeJ = 0.0;
+         double dlJ = 0.0;
+         double ulJ = 0.0;
+
+         // Compute energy: sum over participating devices
+         double epoch = GlobalModelBroadcastEvent.getEpochMultiplier();
+         for (FLEdgeDevice dev : participantsThisRound) {
+             double instr = epoch * dev.getInstructionPerByte() * (double) dev.getFileSize();
+             computeJ += instr * J_PER_INSTR;
+         }
+         // Attribute DL bytes to participants only (reasonable for participants-only broadcast).
+         dlJ = J_PER_BYTE_DL * (double) roundDownBytes;
+
+         // UL bytes are only from participants
+         ulJ = J_PER_BYTE_UL * (double) (roundUpModelBytes + roundUpSecOverheadBytes);
+
+         return Math.max(0.0, computeJ + dlJ + ulJ);
+     }
+     
+     public synchronized void exportEnergyCsv(String path) throws IOException {
+         int rows = prRoundId.size();
+         try (PrintWriter pw = new PrintWriter(
+                 new OutputStreamWriter(new FileOutputStream(path), StandardCharsets.UTF_8))) {
+        	 pw.println("round,server_joules,participants_joules,round_duration_ticks,"
+                     + "server_avg_power_J_per_tick,participants_avg_power_J_per_tick");
+             for (int r = 0; r < rows; r++) {
+                 double srvJ  = (r < prSrvEnergy_J.size()) ? prSrvEnergy_J.get(r) : 0.0;
+                 double parJ  = (r < prPartEnergy_J.size()) ? prPartEnergy_J.get(r) : 0.0;
+                 long   dur   = (r < prRoundDuration.size()) ? prRoundDuration.get(r) : 0L;
+                 double pSrv  = (r < prSrvAvgPow_JperTick.size()) ? prSrvAvgPow_JperTick.get(r) : 0.0;
+                 double pPar  = (r < prPartAvgPow_JperTick.size()) ? prPartAvgPow_JperTick.get(r) : 0.0;
+
+                 pw.println(
+                         prRoundId.get(r) + ","
+                         + String.format(Locale.US, "%.6f", srvJ) + ","
+                         + String.format(Locale.US, "%.6f", parJ) + ","
+                         + dur + ","
+                         + String.format(Locale.US, "%.9f", pSrv) + ","
+                         + String.format(Locale.US, "%.9f", pPar)
+                 );
+             }
+         }
+         System.out.println("Aggregator " + id + ": Energy CSV exported to " + path);
+     }
+     
+     // Energy plotting moved to {@link FLTelemetry#plotEnergy(String, String, String)}
+     // as part of the LOW-3 extraction.
  }

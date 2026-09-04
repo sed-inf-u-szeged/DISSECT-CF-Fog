@@ -8,10 +8,13 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.u_szeged.inf.fog.simulator.fl.FLOrchestrator;
 import hu.u_szeged.inf.fog.simulator.fl.FLAggregator;
 import hu.u_szeged.inf.fog.simulator.fl.FLEdgeDevice;
+import hu.u_szeged.inf.fog.simulator.fl.FLTelemetry;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.RandomDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom; 
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollectorFL;
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 
 import java.util.*;
 
@@ -49,8 +52,12 @@ public class FLSimulationExample {
         SimRandom.setSeed(42L);
         Random rng = SimRandom.get();
         
+        // --------- PARAMETERS (override with -D flags) -----------
+        final int N             =  10;    // number of devices
+        final int MODEL         =  3;      // |w| (weights)
+        
         //     Configure the timeout ratio for early aggregation vs. stragglers
-        FLAggregator.setTimeoutRatio(0.60); // wait 60% of the round interval before forcing aggregation
+        FLAggregator.setTimeoutRatio(0.70); // wait 70% of the round interval before forcing aggregation
         
         //     Set early-aggregation rate
         final double minCompletionRate = 0.80;   // e.g., 0.80 = aggregate after 80 % of uploads
@@ -59,20 +66,54 @@ public class FLSimulationExample {
         final double clientClipNorm = 0.10;   // L2 bound
         final double clientDP_Sigma  = 0.02;  // Gaussian σ
         
-        // Initialize the Global Model - tiny Gaussian-initialised weight vector
-        double[] initWeights = {
-                rng.nextGaussian() * 0.01,
-                rng.nextGaussian() * 0.01,
-                rng.nextGaussian() * 0.01
-        };
+        // Initialize the Global Model - tiny Gaussian-initialised weight vector        
+        double[] initWeights = new double[MODEL];
+        for (int i=0; i<MODEL; i++) initWeights[i] = rng.nextGaussian()*0.01;
+        
+        // Set up an actual server-side ComputingAppliance for the aggregator (for energy metering)
+        final String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+        final GeoLocation aggLoc = new GeoLocation(47.4979, 19.0402); // GeoLocation: Budapest
         
         // 1) Create the FL aggregator:
-        FLAggregator aggregator = new FLAggregator("FL-Aggregator-1", initWeights);
-
+        // Use the aggregator constructor that attaches to an IaaS stack (Energy Model)
+        FLAggregator aggregator = new FLAggregator("FL-Aggregator-1", cloudfile, aggLoc, 0, initWeights);
+    	
+        //Enable per-round energy fallback estimator fl_energy.csv
+        //Enable/disable estimator to energy stays 100% native
+        aggregator.enableEnergyFallbackEstimator(false);
+        //Meter energy for in-transit failed uploads (optional)
+        aggregator.setEnergyCountFailedUploads(true);
+        
+        // Energy meter for the aggregator (IaaS level)
+        new EnergyDataCollectorFL("aggregator", aggregator.iaas, true);
+        // Stop the simulator when FL process completes
+        aggregator.setFinishedCallback(() -> { //Move the single energy write here so it happens exactly once
+            try {
+                EnergyDataCollectorFL.writeToFile(ScenarioBase.resultDirectory); // write CSVs/PNGs for energy
+            } catch (Throwable t) {
+                System.out.println("EnergyDataCollectorFL: failed to write results: " + t.getMessage());
+            }
+            // Plot the time-series energy.csv (one row per 60 s sampling tick, cumulative
+            // kWh per collector — aggregator + each device PM). Complements fl_energy.png
+            // (per-round deltas) with a wall-clock view of energy growth.
+            FLTelemetry.plotEnergyTimeseries(
+                    ScenarioBase.resultDirectory + java.io.File.separator + "energy.csv",
+                    ScenarioBase.resultDirectory + java.io.File.separator + "energy.png",
+                    "FL-Aggregator-1");
+            // HIGH-2 follow-up: release native meters and clear static state so repeated
+            // runs in the same JVM (parameter sweeps, test suites) don't leak meters.
+            EnergyDataCollectorFL.clearAll();
+            System.out.println("FL finished – end-of-run callback. Exiting.");
+            System.out.flush();
+            System.err.flush();
+            System.exit(0);
+        });
+        //end callback
+        
         // 2) Build a list of FL-enabled edge devices:
         List<FLEdgeDevice> flDevices = new ArrayList<>();
         
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < N; i++) {
             try {
                 long startTime = 0;
                 long stopTime = 1 * 60 * 60 * 1000;      // 1 hour of simulation time.
@@ -87,7 +128,7 @@ public class FLSimulationExample {
                 // Dummy Repository & Power Transitions:
                 HashMap<String, Integer> latencyMap = new HashMap<>();
                 EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
-                        PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
+                        PowerTransitionGenerator.generateTransitions(2.5, 10, 1.0, 3, 3);
                 Map<String, PowerState> dummyMapstT  = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
                 Map<String, PowerState> dummyMapnwT  = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
                 Map<String, PowerState> dummyMapcpuT = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
@@ -132,6 +173,8 @@ public class FLSimulationExample {
                         true             // pathLogging
                 );
                 flDevices.add(flDevice);
+                // Energy meter for each device's local physical machine
+                new EnergyDataCollectorFL("device-" + i, localMachine, true);
                 System.out.println("Created FLEdgeDevice " + flDevice.hashCode());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -141,11 +184,11 @@ public class FLSimulationExample {
         // 3) FL hyper-parameters
         int    desiredRounds      = 10;    // rounds 0..9
         double samplingFraction   = 1.0;   // 100% sampled each round
-        double dropoutProbability = 0.5;   // 0% drop-out
+        double dropoutProbability = 0.5;   // 50% drop-out
         double preUploadFail      = 0.10;  // pre-send loss
         double inTransitFail      = 0.05;  // in-flight loss
         // Pacing Policy 
-        final boolean fixedCadence = true; // true = start-to-start heartbeat; false = cool-down after finish
+        final boolean fixedCadence = false; // true = start-to-start heartbeat; false = cool-down after finish [WAS TRUEE. OJOOOOO]
         // Broadcast Policy
         final boolean broadcastSelectedOnly = true; // true  = broadcast model only to selected participants (typical FL)
         											// false = broadcast model to all the participants 
@@ -162,8 +205,23 @@ public class FLSimulationExample {
         boolean useFixedKSampling = false;
         int     fixedK            = 3;
         
+        // Increase round interval so most devices can finish before timeout
+        final long RoundIntervalTicks = 22_000L; // was: 1000
+        
+        // Optional: route CSV/PNG to your results directory
+        aggregator.setExportPaths(
+                ScenarioBase.resultDirectory + "/fl_telemetry.csv", 
+                ScenarioBase.resultDirectory + "/fl_telemetry.png"
+        );
+        
+        // Energy telemetry outputs
+        aggregator.setEnergyExportPaths(
+                ScenarioBase.resultDirectory + "/fl_energy.csv",
+                ScenarioBase.resultDirectory + "/fl_energy.png"
+        );
+        
         // 4) Create and schedule the first FLOrchestrator (round 0):
-        new FLOrchestrator(1000, 
+        new FLOrchestrator(RoundIntervalTicks, 
         		desiredRounds,
                 flDevices,
                 aggregator,

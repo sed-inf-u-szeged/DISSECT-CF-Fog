@@ -90,7 +90,13 @@
             <artifactId>snakeyaml</artifactId>
             <version>1.32</version>            
         </dependency>
-	</dependencies>
+			<!-- Gossip FL extension: dense EigenDecomposition for the graph Laplacian (lambda_2). -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.6.1</version>
+		</dependency>
+</dependencies>
 	
 	<build>
 		<plugins>

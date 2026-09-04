@@ -1,6 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.fl;
 
-import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 
 import java.util.ArrayList;
@@ -24,11 +24,27 @@ import java.util.Random;
  * only schedules high-level events consistent with DISSECT-CF-Fog’s design.
  */
 
-public class FLOrchestrator extends DeferredEvent {
+public class FLOrchestrator extends Timed {
 	/** Shared RNG for sampling/dropout. Reproducible via {@link SimRandom#setSeed(long)}. */
 	private final Random rng = SimRandom.get();
-	
-	private final int currentRound;              // index of this round (0-based)
+
+	/**
+	 * Index of the round that the next {@link #tick(long)} will start (0-based).
+	 * Mutable: advanced after each fixed-cadence tick and inside {@link #scheduleNext()}
+	 * for cool-down hand-offs.
+	 */
+	private int currentRound;
+
+	/**
+	 * Set to {@code true} when {@link #scheduleNext()} is invoked from <i>inside</i>
+	 * the current {@link #tick(long)} (cool-down + zero-participants path: the
+	 * aggregator's {@code startRound} early-exits and calls back into us before
+	 * {@code tick} can finish). Read at the end of {@code tick} to skip the
+	 * normal cool-down {@code unsubscribe()} that would otherwise cancel the
+	 * just-re-armed subscription. Reset to {@code false} at the start of every
+	 * {@code tick}.
+	 */
+	private boolean rearmedDuringTick;
     private final long roundInterval;            // ticks between round starts (heartbeat) OR cool-down, depending on policy
     private final List<FLEdgeDevice> devices;    // full devices pool
     private final FLAggregator aggregator;
@@ -150,7 +166,6 @@ public class FLOrchestrator extends DeferredEvent {
 			              boolean broadcastSelectedOnly,
 			              boolean useFixedKSampling, 
 			              int     fixedK) {
-		    	super(roundInterval);
 		        this.currentRound       = currentRound;
 		        this.roundInterval      = roundInterval;
 		        this.devices            = devices;
@@ -171,17 +186,34 @@ public class FLOrchestrator extends DeferredEvent {
 		        this.broadcastSelectedOnly      = broadcastSelectedOnly;
 		        this.useFixedKSampling          = useFixedKSampling;
 		        this.fixedK                     = Math.max(0, fixedK);
+
+		        // Register with the aggregator so it can call back into scheduleNext()
+		        // when aggregation completes in cool-down mode.
+		        this.aggregator.setOrchestrator(this);
+
+		        // Schedule the first tick {@code roundInterval} ticks from now (replaces
+		        // the prior DeferredEvent super(roundInterval) pattern). In fixed-cadence
+		        // mode, Timed continues firing every roundInterval ticks without further
+		        // allocation. In cool-down mode, tick() unsubscribes after each round and
+		        // {@link #scheduleNext()} re-subscribes once aggregation finishes.
+		        subscribe(roundInterval);
     }
     
     /**
-     * Schedules one FL round:
-     * - Sample devices (and apply dropout).</li>
-     * - Call {@link FLAggregator#startRound(int, int, long, int, List, List, double, double, double, double, double, boolean, long, double, double, double, boolean, boolean, boolean, int)}.
-     * - Trigger {@link FLAggregator#broadcastGlobalModel()} (which schedules {@code GlobalModelBroadcastEvent}s).
-     * - If fixed cadence and more rounds remain, schedule the next {@code FLOrchestrator} now.
+     * Runs one FL round per Timed firing:
+     * <ul>
+     *   <li>Sample devices (and apply dropout).</li>
+     *   <li>Call {@link FLAggregator#startRound(int, int, long, int, List, List, double, double, double, double, double, boolean, long, double, double, double, boolean, boolean, boolean, int)}.</li>
+     *   <li>Trigger {@link FLAggregator#broadcastGlobalModel()} (which schedules {@code GlobalModelBroadcastEvent}s).</li>
+     *   <li>Fixed cadence: advance {@link #currentRound} and let Timed fire again
+     *       {@link #roundInterval} ticks later; once we run out of rounds, {@link #unsubscribe()}.</li>
+     *   <li>Cool-down: {@link #unsubscribe()} now; the aggregator calls
+     *       {@link #scheduleNext()} after aggregation completes for this round.</li>
+     * </ul>
      */
     @Override
-    protected void eventAction() {
+    public void tick(long fires) {
+        rearmedDuringTick = false;
         final int round = currentRound;
         System.out.println("Orchestrator: Starting FL Round " + round
                 + " | pacing=" + (fixedCadence ? "Fixed_Cadence" : "Cooldown_After_Finish"));
@@ -225,8 +257,8 @@ public class FLOrchestrator extends DeferredEvent {
                 samplingFraction,
                 dropoutProbability,
                 //failure probabilities
-                preUploadFailureProb, 
-                inTransitFailureProb, 
+                preUploadFailureProb,
+                inTransitFailureProb,
                 minCompletionRate,
                 //Privacy & Security
                 secureAggregationEnabled,
@@ -237,32 +269,62 @@ public class FLOrchestrator extends DeferredEvent {
                 fixedCadence,              // pass pacing policy
                 broadcastSelectedOnly,
                 useFixedKSampling,
-                fixedK);				
+                fixedK);
 
         // 3) Broadcast the current global model at round start
         System.out.println("Orchestrator: Broadcasting global model for round " + round + ".");
         aggregator.broadcastGlobalModel(); // schedules per-device download events
-        
-        // 4) In FIXED cadence, schedule the next round now (start-to-start)
-        if (fixedCadence && (round + 1) < maxRounds) {  
-            int nextRound = round + 1;
-            System.out.println("Orchestrator: Scheduling next round " + nextRound
-                    + " to start in " + roundInterval + " ticks (fixed cadence).");
-            new FLOrchestrator(roundInterval, maxRounds, devices, aggregator,
-                    nextRound, samplingFraction, dropoutProbability,
-                    preUploadFailureProb, 
-                    inTransitFailureProb,
-                    minCompletionRate,
-                    // Privacy and Security
-                    secureAggregationEnabled,
-                    secureExtraBytesPerClient,
-                    dlCompressionFactor,
-                    ulCompressionFactor,
-                    dpNoiseStd,
-                    true,                   // fixed cadence
-                    broadcastSelectedOnly,
-                    useFixedKSampling,
-                    fixedK); // broadcast model policy
+
+        // 4) Advance the round counter / decide what happens next.
+        //    Fixed cadence: let Timed keep firing every roundInterval ticks until
+        //    we run out of rounds, then unsubscribe.
+        //    Cool-down: unsubscribe now; the aggregator calls back via
+        //    {@link #scheduleNext()} once aggregation completes for this round.
+        if (fixedCadence) {
+            if (round + 1 < maxRounds) {
+                currentRound = round + 1;
+                System.out.println("Orchestrator: Round " + (round + 1)
+                        + " will start in " + roundInterval + " ticks (fixed cadence).");
+            } else {
+                unsubscribe();
+            }
+        } else {
+            // Cool-down: normally we unsubscribe here and wait for the aggregator to
+            // call scheduleNext() once aggregation completes. Exception: zero-participant
+            // rounds aggregate synchronously inside startRound, which calls scheduleNext
+            // while we are still inside this tick — and Timed.subscribe is a no-op when
+            // already subscribed, so a naive unsubscribe here would silently strand the
+            // next round. The {@link #rearmedDuringTick} flag tells us scheduleNext
+            // already updated our subscription via updateFrequency(); leave it alone.
+            if (!rearmedDuringTick) {
+                unsubscribe();
+            }
+        }
+    }
+
+    /**
+     * Cool-down hand-off called by {@link FLAggregator} after aggregation (or timeout)
+     * completes for the current round. Bumps the round counter and re-subscribes so
+     * the next {@link #tick(long)} fires {@code roundInterval} ticks from now.
+     * No-op once all rounds have been processed.
+     */
+    public void scheduleNext() {
+        if (currentRound + 1 >= maxRounds) {
+            return;
+        }
+        currentRound = currentRound + 1;
+        System.out.println("Orchestrator: Scheduling round " + currentRound
+                + " to start in " + roundInterval + " ticks (cool-down).");
+        if (isSubscribed()) {
+            // Called from inside our own tick() (zero-participant early-exit path
+            // in FLAggregator.startRound). Timed.subscribe is a no-op when already
+            // subscribed, so use updateFrequency to reset the next-fire time, and
+            // signal tick() to skip the cool-down unsubscribe that would undo this.
+            updateFrequency(roundInterval);
+            rearmedDuringTick = true;
+        } else {
+            // Normal cool-down path: tick already unsubscribed; subscribe afresh.
+            subscribe(roundInterval);
         }
     }
 }

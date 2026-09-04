@@ -5,7 +5,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 /**
  * Forces aggregation when a round has exceeded its timeout window.
  *  
- * The timeout is scheduled as {@code TIMEOUT_RATIO × roundInterval} relative
+ * The timeout is scheduled as {@code timeoutRatio × roundInterval} relative
  * to round start. If the round is already closed or the round id mismatches,
  * this event is a no-op.
  */

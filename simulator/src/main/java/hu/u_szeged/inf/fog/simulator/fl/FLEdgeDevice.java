@@ -4,6 +4,9 @@ import hu.u_szeged.inf.fog.simulator.iot.EdgeDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VirtualMachine;                       // [FL-VM] NEW
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.VMManager.VMManagementException;      // [FL-VM] NEW
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode.NetworkException;          // [FL-VM] NEW
 import hu.u_szeged.inf.fog.simulator.util.SimRandom;
 
 import java.util.Random;
@@ -74,6 +77,19 @@ public class FLEdgeDevice extends EdgeDevice {
         super(startTime, stopTime, fileSize, freq,
               mobilityStrategy, deviceStrategy, localMachine,
               instructionPerByte, latency, pathLogging);
+
+        if (bandwidth <= 0L) {
+            throw new IllegalArgumentException(
+                    "FLEdgeDevice: bandwidth must be > 0 (bytes/tick), got " + bandwidth);
+        }
+        if (throughput <= 0.0 || Double.isNaN(throughput)) {
+            throw new IllegalArgumentException(
+                    "FLEdgeDevice: throughput must be > 0 (instructions/tick), got " + throughput);
+        }
+        if (instructionPerByte <= 0.0 || Double.isNaN(instructionPerByte)) {
+            throw new IllegalArgumentException(
+                    "FLEdgeDevice: instructionPerByte must be > 0, got " + instructionPerByte);
+        }
 
         this.instructionPerByte = instructionPerByte;
         this.fileSize           = fileSize;
@@ -192,5 +208,47 @@ public class FLEdgeDevice extends EdgeDevice {
                 + " | rawBytes=" + rawBytes
                 + ", sentBytes=" + finalBytes);
         return update;
+    }
+
+    // =====================================================================
+    // [FL-VM] VM helpers for native CPU modelling of FL training
+    // =====================================================================
+
+    /**
+     * Ensures that the underlying edge VM exists and is RUNNING so that
+     * native CPU modelling can execute FL training tasks.
+     *
+     * This mirrors {@link EdgeDevice}'s private startVm() logic.
+     */
+    public void ensureLocalVmRunning() {    // [FL-VM] NEW
+        try {
+            if (this.localVm == null) {
+                // Register the appliance and request a new VM on the local machine
+                this.localMachine.localDisk.registerObject(EdgeDevice.edgeDeviceVa);
+                this.localVm = this.localMachine.requestVM(
+                        EdgeDevice.edgeDeviceVa,
+                        this.edgeDeviceArc,
+                        this.localMachine.localDisk,
+                        1
+                )[0];
+            } else if (this.localVm.getState().equals(VirtualMachine.State.SHUTDOWN)) {
+                this.localVm.switchOn(
+                        this.localMachine.allocateResources(this.edgeDeviceArc, false, PhysicalMachine.defaultAllocLen),
+                        this.localMachine.localDisk
+                );
+            }
+        } catch (VMManagementException | NetworkException e) {
+            System.out.println("FLEdgeDevice " + this.hashCode()
+                    + " [FL-VM] failed to ensure local VM is running: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Exposes the VM used for native FL training CPU tasks.
+     *
+     * @return the {@link VirtualMachine} backing this device, or {@code null} if unavailable.
+     */
+    public VirtualMachine getLocalVm() {    // [FL-VM] NEW
+        return this.localVm;
     }
 }
