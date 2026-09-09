@@ -160,6 +160,18 @@ public class    DummyAppDemo {
         long totalAvailableMemoryCapacity = 0L;
         long totalAvailableStorageCapacity = 0L;
 
+        int cloudComponentCount = 0;
+        int fogComponentCount = 0;
+        int edgeComponentCount = 0;
+
+        double cloudAllocatedCpu = 0.0;
+        double fogAllocatedCpu = 0.0;
+        double edgeAllocatedCpu = 0.0;
+
+        Set<String> usedCloudNodes = new HashSet<>();
+        Set<String> usedFogNodes = new HashSet<>();
+        Set<String> usedEdgeNodes = new HashSet<>();
+
         Map<String, Double> applicationCosts = new HashMap<>();
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             for (Capacity cap : agent.capacities.values()) {
@@ -174,6 +186,22 @@ public class    DummyAppDemo {
 
                     if (util.state != Utilisation.State.TERMINATED) {
                         continue;
+                    }
+
+                    String nodeName = cap.node.name;
+
+                    if (nodeName.startsWith("CloudNode")) {
+                        cloudComponentCount++;
+                        cloudAllocatedCpu += util.utilisedCpu;
+                        usedCloudNodes.add(nodeName);
+                    } else if (nodeName.startsWith("LaptopNode")) {
+                        fogComponentCount++;
+                        fogAllocatedCpu += util.utilisedCpu;
+                        usedFogNodes.add(nodeName);
+                    } else if (nodeName.startsWith("RaspberryPiNode")) {
+                        edgeComponentCount++;
+                        edgeAllocatedCpu += util.utilisedCpu;
+                        usedEdgeNodes.add(nodeName);
                     }
 
                     double durationHours = (util.endTime - util.initTime) / 3_600_000.0;
@@ -317,6 +345,49 @@ public class    DummyAppDemo {
                         : (double) totalSubmittedStorageDemand
                         / totalAvailableStorageCapacity;
 
+        int totalPlacedComponentCount =
+                cloudComponentCount
+                        + fogComponentCount
+                        + edgeComponentCount;
+
+        double totalAllocatedCpu =
+                cloudAllocatedCpu
+                        + fogAllocatedCpu
+                        + edgeAllocatedCpu;
+
+        double cloudComponentShare =
+                totalPlacedComponentCount == 0
+                        ? 0.0
+                        : (double) cloudComponentCount
+                        / totalPlacedComponentCount;
+
+        double fogComponentShare =
+                totalPlacedComponentCount == 0
+                        ? 0.0
+                        : (double) fogComponentCount
+                        / totalPlacedComponentCount;
+
+        double edgeComponentShare =
+                totalPlacedComponentCount == 0
+                        ? 0.0
+                        : (double) edgeComponentCount
+                        / totalPlacedComponentCount;
+
+        double cloudCpuShare =
+                totalAllocatedCpu == 0.0
+                        ? 0.0
+                        : cloudAllocatedCpu / totalAllocatedCpu;
+
+        double fogCpuShare =
+                totalAllocatedCpu == 0.0
+                        ? 0.0
+                        : fogAllocatedCpu / totalAllocatedCpu;
+
+        double edgeCpuShare =
+                totalAllocatedCpu == 0.0
+                        ? 0.0
+                        : edgeAllocatedCpu / totalAllocatedCpu;
+
         SimLogger.logEmptyLine();
         SimLogger.logRes("Aggregated application results:");
         SimLogger.logRes("\tSubmitted applications: " + applicationCount);
@@ -380,6 +451,29 @@ public class    DummyAppDemo {
                         aggregateCpuPressure * 100.0,
                         aggregateMemoryPressure * 100.0,
                         aggregateStoragePressure * 100.0));
+
+        SimLogger.logRes("Placement distribution by node type:");
+
+        SimLogger.logRes(
+                "\tCloud: components=" + cloudComponentCount
+                        + " (" + String.format(Locale.US, "%.2f", cloudComponentShare * 100.0) + "%)"
+                        + ", allocated CPU=" + cloudAllocatedCpu
+                        + " (" + String.format(Locale.US, "%.2f", cloudCpuShare * 100.0) + "%)"
+                        + ", used nodes=" + usedCloudNodes.size());
+
+        SimLogger.logRes(
+                "\tFog: components=" + fogComponentCount
+                        + " (" + String.format(Locale.US, "%.2f", fogComponentShare * 100.0) + "%)"
+                        + ", allocated CPU=" + fogAllocatedCpu
+                        + " (" + String.format(Locale.US, "%.2f", fogCpuShare * 100.0) + "%)"
+                        + ", used nodes=" + usedFogNodes.size());
+
+        SimLogger.logRes(
+                "\tEdge: components=" + edgeComponentCount
+                        + " (" + String.format(Locale.US, "%.2f", edgeComponentShare * 100.0) + "%)"
+                        + ", allocated CPU=" + edgeAllocatedCpu
+                        + " (" + String.format(Locale.US, "%.2f", edgeCpuShare * 100.0) + "%)"
+                        + ", used nodes=" + usedEdgeNodes.size());
 
         double applicationEnergyKwh = 0.0;
 

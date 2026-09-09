@@ -20,14 +20,14 @@ public class AppDescriptionGenerator {
     public static void main(String[] args) throws IOException {
         // Workload settings
         String applicationNamePrefix = "App";
-        int applicationCount = 6;
+        int applicationCount = 1;
 
-        int minimumComponentCount = 4;
-        int maximumComponentCount = 4;
+        int minimumComponentCount = 16;
+        int maximumComponentCount = 16;
 
         long randomSeed = 1L;
 
-        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy/";
+        String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-L16/";
 
         // Application Owner QoS weights
         double energyWeight = 0.7;

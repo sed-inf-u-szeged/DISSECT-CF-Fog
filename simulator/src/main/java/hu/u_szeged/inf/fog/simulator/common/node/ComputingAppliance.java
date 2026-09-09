@@ -56,9 +56,16 @@ public class ComputingAppliance {
      * @param edge true if the appliance is an edge node
      */
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider, boolean edge) {
-        this.name = iaas.repositories.get(0).getName().contains("-") 
-                ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
-                : iaas.repositories.get(0).getName();
+        String repositoryName =
+                iaas.repositories.get(0).getName();
+
+        String externalRepositorySuffix =
+                "-externalRepo";
+
+        this.name =
+                repositoryName.endsWith(externalRepositorySuffix)
+                        ? repositoryName.substring(0, repositoryName.length() - externalRepositorySuffix.length())
+                        : repositoryName;
         this.iaas = iaas;
         this.geoLocation = geoLocation;
         this.location = location;

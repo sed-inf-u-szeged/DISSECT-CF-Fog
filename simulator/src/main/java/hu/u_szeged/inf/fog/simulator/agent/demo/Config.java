@@ -41,21 +41,31 @@ public class Config {
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
                     Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
+                    /*
                     Map.entry("raTopologies", List.of(
-                                    new ResourceAgentTopology(1, 1, 1),
-                                    new ResourceAgentTopology(1, 1, 1),
-                                    new ResourceAgentTopology(1, 1, 1),
-                                    new ResourceAgentTopology(1, 1, 1)
+                            new ResourceAgentTopology(1, 1, 1),
+                            new ResourceAgentTopology(1, 1, 1),
+                            new ResourceAgentTopology(1, 1, 1),
+                            new ResourceAgentTopology(1, 1, 1)
                             )),
+                    */
+                    Map.entry("raTopologies", List.of(
+                            new ResourceAgentTopology(1, 0, 14),
+                            new ResourceAgentTopology(4, 2, 2),
+                            new ResourceAgentTopology(0, 5, 6),
+                            new ResourceAgentTopology(3, 1, 2)
+                    )),
                     Map.entry("submissionDelay", createSubmissionDelays(6, 1)),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-bw")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-latency")),
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-price")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-S8")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-M12")),
                     //Map.entry("submissionDelay", List.of(0)), // 1 app
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/")),
-                    Map.entry("maxRebroadcast", 2),
+                    //Map.entry("maxRebroadcast", 2),
                     Map.entry("csvLogging", true),
 
                     // Application profile: default
