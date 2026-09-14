@@ -231,12 +231,13 @@ public class FeatureManager {
             PredictionConfigurator.predictor_writer.get(predictorName).newLine();
             PredictionConfigurator.predictor_writer.get(predictorName).flush();
 
+            String predictionString =
+                    PredictionConfigurator.predictor_reader.get(predictorName).readLine();
+
             PredictionLogger.info(
                     "Predictor-message",
-                    PredictionConfigurator.predictor_reader.get(predictorName).readLine()
+                    predictionString
             );
-            String predictionString = PredictionConfigurator.predictor_reader.get(predictorName).readLine();
-            // PredictionLogger.info("FeatureManager-predictionRecived", predictionString);
 
             result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
 

@@ -44,7 +44,7 @@ public abstract class Launcher {
 
             if (SystemUtils.IS_OS_WINDOWS) {
                 return openWindows();
-            } else if (SystemUtils.IS_OS_LINUX) {
+            } else if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
                 return openLinux();
             } else {
                 throw new Exception();

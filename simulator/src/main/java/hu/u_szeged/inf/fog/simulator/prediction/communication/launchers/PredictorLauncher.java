@@ -59,20 +59,31 @@ public class PredictorLauncher extends Launcher {
     @Override
     public Process openLinux() throws Exception {
         for (var predictionSetting : SimulationSettings.get().getPredictionSettings()) {
-            String command = "cd /d " + getProjectLocation() + String.format(
-                            " && %s/venv/Scripts/python.exe %s/main.py %s",
-                            getProjectLocation(),
-                            getProjectLocation(),
-                            new JSONObject().put(
-                                    "predictor-settings",
-                                    JsonParser.toJson(predictionSetting, PairPredictionSettings.class)
-                            ).toString().replace("\"", "\\\"")
-                    );
+            String command = "cd " + getProjectLocation() + String.format(
+                    " && %s/venv/bin/python %s/main.py '%s'",
+                    getProjectLocation(),
+                    getProjectLocation(),
+                    new JSONObject().put(
+                            "predictor-settings",
+                            JsonParser.toJson(predictionSetting, PairPredictionSettings.class)
+                    ).toString()
+            );
 
             ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-            pb.redirectError(new File(String.format("%s\\prediction_error_logs.txt", ScenarioBase.resultDirectory)));
 
-            PredictionLogger.info("Predictor-opening", "Opening \"" + predictionSetting + "\" named predictor");
+            pb.redirectError(
+                    new File(
+                            ScenarioBase.resultDirectory
+                                    + File.separator
+                                    + "prediction_error_logs.txt"
+                    )
+            );
+
+            PredictionLogger.info(
+                    "Predictor-opening",
+                    "Opening \"" + predictionSetting + "\" named predictor"
+            );
+
             Process predictorProcess = pb.start();
 
             PredictionConfigurator.addPredictorProcess(

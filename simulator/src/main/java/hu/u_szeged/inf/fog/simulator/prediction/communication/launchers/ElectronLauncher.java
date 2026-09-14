@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
+import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
+
 import java.io.File;
 
 /**
@@ -31,10 +33,23 @@ public class ElectronLauncher extends Launcher {
 
     @Override
     public Process openLinux() throws Exception {
-        String startCommand = (!buildExists()) ? "build_and_run" : "run";
-        return Runtime.getRuntime().exec(
-                String.format("gnome-terminal --working-directory=%s -- npm run electron:%s", 
-                        getProjectLocation(), startCommand));
+        ProcessBuilder pb = new ProcessBuilder(
+                "npm",
+                "run",
+                "electron:build_and_run"
+        );
+
+        pb.directory(new File(getProjectLocation()));
+
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(
+                new File(
+                        ScenarioBase.resultDirectory,
+                        "electron.log"
+                )
+        );
+
+        return pb.start();
     }
 
     private boolean buildExists() {

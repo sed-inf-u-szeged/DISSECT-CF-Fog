@@ -30,11 +30,11 @@ public class PredictionSimulation {
         List<PairPredictionSettings> predictionSettings = new ArrayList<>();
 
         predictionSettings.add(new PairPredictionSettings(
-                "Arima256",
+                "Arima128",
                 new PredictionSettings(
                         64,
                         64,
-                        256,
+                        128,
                         new PredictionSettings.SmoothingSettings(48, 5),
                         true,
                         0
@@ -43,11 +43,11 @@ public class PredictionSimulation {
         ));
 
         predictionSettings.add(new PairPredictionSettings(
-                "LinerRegression256",
+                "LinerRegression128",
                 new PredictionSettings(
                         64,
                         64,
-                        256,
+                        128,
                         new PredictionSettings.SmoothingSettings(48, 5),
                         true,
                         0
@@ -88,11 +88,11 @@ public class PredictionSimulation {
         List<PairPredictionSettings> predictionSettings = new ArrayList<>();
 
         predictionSettings.add(new PairPredictionSettings(
-                "Arima256",
+                "Arima128",
                 new PredictionSettings(
                         64,
                         64,
-                        256,
+                        128,
                         new PredictionSettings.SmoothingSettings(48, 5),
                         true,
                         0
@@ -101,11 +101,11 @@ public class PredictionSimulation {
         ));
 
         predictionSettings.add(new PairPredictionSettings(
-                "LinerRegression256",
+                "LinerRegression128",
                 new PredictionSettings(
                         64,
                         64,
-                        256,
+                        128,
                         new PredictionSettings.SmoothingSettings(48, 5),
                         true,
                         0

@@ -12,7 +12,7 @@ class PredictorModel(ABC):
         self._predictior_settings = predictor_settings
 
     def make_prediction(self, feature_name, original_data, preprocessed_data, test_data_beginning, test_data_end):
-        Log.info(f"Model '{self._name}' is predicting feature '{feature_name}'...")
+        #Log.info(f"Model '{self._name}' is predicting feature '{feature_name}'...")
 
         prediction_future = self.predict(
             feature_name=feature_name,

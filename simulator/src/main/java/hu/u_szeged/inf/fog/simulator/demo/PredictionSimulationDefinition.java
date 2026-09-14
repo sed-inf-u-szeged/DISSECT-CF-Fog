@@ -19,6 +19,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
 import java.util.EnumMap;
@@ -109,6 +110,19 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
         Miskolc_fog2.addApplication(Miskolc_fog2_app);
         Debrecen_fog2.addApplication(Debrecen_fog2_app);
         Gyongyos_fog1.addApplication(Gyongyos_fog1_app);
+
+        new EnergyDataCollector("Budapest_cloud", Budapest_cloud.iaas, true);
+        new EnergyDataCollector("Sopron_fog2", Sopron_fog2.iaas, true);
+        new EnergyDataCollector("Szombathely_fog2", Szombathely_fog2.iaas, true);
+        new EnergyDataCollector("Gyor_fog1", Gyor_fog1.iaas, true);
+
+        new EnergyDataCollector("Szeged_fog2", Szeged_fog2.iaas, true);
+        new EnergyDataCollector("Pecs_fog2", Pecs_fog2.iaas, true);
+        new EnergyDataCollector("Kecskemet_fog1", Kecskemet_fog1.iaas, true);
+
+        new EnergyDataCollector("Miskolc_fog2", Miskolc_fog2.iaas, true);
+        new EnergyDataCollector("Debrecen_fog2", Debrecen_fog2.iaas, true);
+        new EnergyDataCollector("Gyongyos_fog1", Gyongyos_fog1.iaas, true);
 
         generateDevices(device_multiplier);
 
