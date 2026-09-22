@@ -7,6 +7,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.pmscheduling.AlwaysOnMachines;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.vmscheduling.FirstFitScheduler;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
+import hu.u_szeged.inf.fog.simulator.agent.application.parking.ParkingSensor;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealingStrategy;
@@ -133,10 +134,16 @@ public class Config {
 
                     Map.entry("submissionDelay", List.of(0)), // 1 app
 
+                    Map.entry("sensorCount", 16), // pc.
+                    Map.entry("sensorsPerGateway", 15), // pc.
                     Map.entry("batteryCapacity", 600_000), // unit
 
                     Map.entry("cooldownFreq", 60_000L), // 1 min.
                     Map.entry("gatewayFreq", 60_000L), // 1 min.
+
+                    Map.entry("orchestrationEnabled", false),
+                    Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
+                    //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.BLE_POLL),
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true)

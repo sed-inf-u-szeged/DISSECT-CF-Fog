@@ -58,8 +58,11 @@ public class ParkingSensor extends Timed {
 
     public String id;
 
-    ParkingMode mode;
-    private final ParkingZone zone;
+    public ParkingMode mode;
+
+    public ParkingMode pendingMode;
+
+    public final ParkingZone zone;
 
     public final Repository nbiotRepository;
     public final Repository bleRepository;
@@ -79,6 +82,7 @@ public class ParkingSensor extends Timed {
         this.nbiotRepository = nbiotRepository;
         this.bleRepository = bleRepository;
         this.mode = mode;
+        this.pendingMode = null;
         this.batteryLevel = batteryLevel;
         this.zone = zone;
         this.platformService = platformService;
@@ -99,6 +103,7 @@ public class ParkingSensor extends Timed {
         if (this.mode == ParkingMode.NBIOT_PUSH) {
             nbiotRepository.registerObject(so);
             this.batteryLevel = Math.max(0, this.batteryLevel - ParkingMode.NBIOT_PUSH.batteryCost);
+
             try {
                 nbiotRepository.requestContentDelivery(so.id, platformService.platformRepo, new ConsumptionEventAdapter() {
 
@@ -115,6 +120,7 @@ public class ParkingSensor extends Timed {
 
                         SimLogger.logRun("File received in " + (Timed.getFireCount() - fires) + " ms. from " + id + " with NBIoT mode at "
                                 + Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                        applyPendingReconfiguration(ParkingMode.BLE_POLL);
                     }
                 });
             } catch (NetworkNode.NetworkException e) {
@@ -196,5 +202,12 @@ public class ParkingSensor extends Timed {
         return resolveParkingProfile(
                 zone,
                 resolveTimePeriod(Timed.getFireCount()));
+    }
+
+    public void applyPendingReconfiguration(ParkingMode expectedMode) {
+        if (pendingMode == expectedMode) {
+            mode = pendingMode;
+            pendingMode = null;
+        }
     }
 }

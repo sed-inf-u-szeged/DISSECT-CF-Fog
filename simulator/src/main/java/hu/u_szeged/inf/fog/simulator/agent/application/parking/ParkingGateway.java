@@ -50,6 +50,8 @@ public class ParkingGateway extends Timed {
                 SimLogger.logRun("Sensor stopped at " + parkingSensor.stopTime / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             }
 
+            parkingSensor.applyPendingReconfiguration(ParkingSensor.ParkingMode.NBIOT_PUSH);
+
             for (StorageObject so : parkingSensor.bleRepository.contents()){
                 try {
                     parkingSensor.bleRepository.requestContentDelivery(so.id, this.gatewayRepo,  new ConsumptionEventAdapter() {
