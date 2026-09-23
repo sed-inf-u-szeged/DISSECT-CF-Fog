@@ -206,8 +206,11 @@ public class ParkingSensor extends Timed {
 
     public void applyPendingReconfiguration(ParkingMode expectedMode) {
         if (pendingMode == expectedMode) {
+            ParkingMode previousMode = mode;
             mode = pendingMode;
             pendingMode = null;
+            SimLogger.logRun( "Sensor " + id + " switched from " + previousMode + " to " + mode
+                            + " at " + Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
         }
     }
 }

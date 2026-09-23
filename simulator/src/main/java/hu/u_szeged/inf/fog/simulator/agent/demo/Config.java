@@ -141,7 +141,18 @@ public class Config {
                     Map.entry("cooldownFreq", 60_000L), // 1 min.
                     Map.entry("gatewayFreq", 60_000L), // 1 min.
 
-                    Map.entry("orchestrationEnabled", false),
+                    Map.entry("nbiotSensorToPlatformLatencyMs", 3_000),
+                    Map.entry("nbiotSensorToPlatformBandwidthBytesPerMs", 13L),
+
+                    Map.entry("bleSensorToGatewayLatencyMs", 1_000),
+                    Map.entry("bleSensorToGatewayBandwidthBytesPerMs", 125L),
+
+                    Map.entry("gatewayToPlatformLatencyMs", 50),
+                    Map.entry("gatewayToPlatformBandwidthBytesPerMs", 1_250L),
+
+                    Map.entry("platformBandwidthBytesPerMs", 125_000L),
+
+                    Map.entry("orchestrationEnabled", true),
                     Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
                     //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.BLE_POLL),
 

@@ -27,28 +27,38 @@ public class ParkingAppDemo {
 
         SeedSyncer.setSeed(1234567890);
 
-        Map<String, Integer> sharedLatencyMap = new HashMap<>();
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = PowerTransitionGenerator.generateTransitions(0, 0, 0, 0, 0);
 
         // platform service
-        Repository platformRepo = new Repository(1_099_511_627_776L, "platformRepo", 125_000L, 125_000L, 125_000L, sharedLatencyMap,
+        Map<String, Integer> platformLatencyMap = new HashMap<>();
+
+        long platformBandwidth = (long) Config.PARKING_CONFIGURATION.get("platformBandwidthBytesPerMs");
+
+        Repository platformRepo = new Repository(1_099_511_627_776L, "platformRepo", platformBandwidth, platformBandwidth, platformBandwidth, platformLatencyMap,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
-        sharedLatencyMap.put("platformRepo", 3_000);
         platformRepo.setState(NetworkNode.State.RUNNING);
         PlatformService platformService = new PlatformService(platformRepo);
 
         // parking sensors
         ParkingSensor.ParkingZone[] zones = ParkingSensor.ParkingZone.values();
         for (int i = 0; i < (int) Config.PARKING_CONFIGURATION.get("sensorCount"); i++) {
+            Map<String, Integer> nbiotLatencyMap = new HashMap<>();
+            nbiotLatencyMap.put("platformRepo",  (int) Config.PARKING_CONFIGURATION.get("nbiotSensorToPlatformLatencyMs"));
+
+            Map<String, Integer> bleLatencyMap = new HashMap<>();
+
             String id = "parking-sensor-" + i;
-            Repository nbiotRepo = new Repository(8_388_608, id + "-nbiotRepo", 13, 13, 13, sharedLatencyMap,
+            long nbiotBandwidth = (long) Config.PARKING_CONFIGURATION.get("nbiotSensorToPlatformBandwidthBytesPerMs");
+            Repository nbiotRepo = new Repository(8_388_608, id + "-nbiotRepo", nbiotBandwidth, nbiotBandwidth, nbiotBandwidth, nbiotLatencyMap,
                     transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
-            Repository bleRepo = new Repository(8_388_608, id + "-bleRepo", 125, 125, 125, sharedLatencyMap,
+
+            long bleBandwidth = (long) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayBandwidthBytesPerMs");
+            Repository bleRepo = new Repository(8_388_608, id + "-bleRepo", bleBandwidth, bleBandwidth, bleBandwidth, bleLatencyMap,
                     transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
             nbiotRepo.setState(NetworkNode.State.RUNNING);
             bleRepo.setState(NetworkNode.State.RUNNING);
 
-            ParkingSensor parkingSensor = new ParkingSensor(id, platformService, nbiotRepo, bleRepo, 600_000,
+            ParkingSensor parkingSensor = new ParkingSensor(id, platformService, nbiotRepo, bleRepo, (int) Config.PARKING_CONFIGURATION.get("batteryCapacity"),
                     (ParkingSensor.ParkingMode) Config.PARKING_CONFIGURATION.get("initialParkingMode"), zones[i % zones.length]);
         }
 
@@ -58,19 +68,24 @@ public class ParkingAppDemo {
         int reqGateways = (int) Math.ceil( ParkingSensor.allParkingSensors.size() / (double) sensorsPerGateway);
 
         for (int i = 0; i < reqGateways; i++) {
-            Map<String, Integer> latencyMap = new HashMap<>();
+            Map<String, Integer> gatewayLatencyMap = new HashMap<>();
+            gatewayLatencyMap.put("platformRepo",  (int) Config.PARKING_CONFIGURATION.get("gatewayToPlatformLatencyMs"));
 
-            Repository gatewayRepo = new Repository(8_388_608,"gatewayRepo-" + i,125,1250,1250,
-                    latencyMap,transitions.get(PowerTransitionGenerator.PowerStateKind.storage),transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+            long bleBandwidth = (long) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayBandwidthBytesPerMs");
+            long gatewayToPlatformBandwidth = (long) Config.PARKING_CONFIGURATION.get("gatewayToPlatformBandwidthBytesPerMs");
+
+            Repository gatewayRepo = new Repository(8_388_608,"gatewayRepo-" + i,bleBandwidth,gatewayToPlatformBandwidth,gatewayToPlatformBandwidth,
+                    gatewayLatencyMap,transitions.get(PowerTransitionGenerator.PowerStateKind.storage),transitions.get(PowerTransitionGenerator.PowerStateKind.network));
             gatewayRepo.setState(NetworkNode.State.RUNNING);
-
-            sharedLatencyMap.put("gatewayRepo-" + i, 1000);
-            latencyMap.put("platformRepo", 50);
 
             ParkingGateway gateway = new ParkingGateway("parking-gateway-" + i, gatewayRepo, platformService, new ArrayList<>());
 
             for (int j = 0; j < sensorsPerGateway && i * sensorsPerGateway + j < ParkingSensor.allParkingSensors.size();j++) {
-                gateway.addSensor(ParkingSensor.allParkingSensors.get(i * sensorsPerGateway + j));
+                ParkingSensor sensor = ParkingSensor.allParkingSensors.get(i * sensorsPerGateway + j);
+
+                sensor.bleRepository.getLatencies().put(gatewayRepo.getName(), (int) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayLatencyMs"));
+
+                gateway.addSensor(sensor);
             }
         }
 
