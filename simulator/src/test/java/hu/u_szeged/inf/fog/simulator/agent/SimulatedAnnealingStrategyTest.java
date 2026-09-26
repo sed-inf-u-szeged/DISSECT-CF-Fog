@@ -10,6 +10,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStr
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +26,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SimulatedAnnealingStrategyTest {
 
+    private int originalSeed;
+
     @BeforeEach
-    void resetGlobalState() {
+    void beforeEach() {
+        originalSeed = SeedSyncer.getSeed();
+        resetGlobalState();
+    }
+
+    private void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
         AgentApplication.allAgentApplications.clear();
+
         SeedSyncer.setSeed(12345);
+    }
+
+    @AfterEach
+    void restoreSeed() {
+        SeedSyncer.setSeed(originalSeed);
     }
 
     @Test

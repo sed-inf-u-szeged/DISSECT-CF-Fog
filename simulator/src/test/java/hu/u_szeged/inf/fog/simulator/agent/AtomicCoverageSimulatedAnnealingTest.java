@@ -14,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageS
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,12 +34,20 @@ class AtomicCoverageSimulatedAnnealingTest {
 
     private static final AtomicInteger NODE_SEQUENCE = new AtomicInteger();
 
+    private int originalSeed;
+
+    @AfterEach
+    void restoreSeed() {
+        SeedSyncer.setSeed(originalSeed);
+    }
+
     @BeforeEach
     void resetGlobalState() {
         ResourceAgent.allResourceAgents.clear();
         ComputingAppliance.allComputingAppliances.clear();
         AgentApplication.allAgentApplications.clear();
         NODE_SEQUENCE.set(0);
+        originalSeed = SeedSyncer.getSeed();
         SeedSyncer.setSeed(12345);
     }
 
