@@ -9,6 +9,8 @@ import java.util.Map;
 
 public class PlatformService {
 
+    public static final List<PlatformService> allPlatformServices = new ArrayList<>();
+
     public static Map<String, Long> networkTimePerFile = new HashMap<>();
 
     public static long totalEndToEndLatency;
@@ -22,5 +24,6 @@ public class PlatformService {
 
     public PlatformService(Repository platformRepo) {
         this.platformRepo = platformRepo;
+        allPlatformServices.add(this);
     }
 }

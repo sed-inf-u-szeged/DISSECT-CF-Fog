@@ -11,9 +11,9 @@ import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.NoiseSensor;
 import hu.u_szeged.inf.fog.simulator.agent.application.noise.RemoteServer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
-import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.ResourceNode;
-import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Component;
-import hu.u_szeged.inf.fog.simulator.agent.dt.DigitalTwinRequest.Operation;
+import hu.u_szeged.inf.fog.simulator.agent.dt.NoiseDigitalTwinRequest.ResourceNode;
+import hu.u_szeged.inf.fog.simulator.agent.dt.NoiseDigitalTwinRequest.Component;
+import hu.u_szeged.inf.fog.simulator.agent.dt.NoiseDigitalTwinRequest.Operation;
 import hu.u_szeged.inf.fog.simulator.agent.management.noise.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
@@ -23,24 +23,24 @@ import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SimulationBuilder {
+public class NoiseSimulationBuilder {
 
-    public static void build(DigitalTwinRequest request, NoiseCsvData noiseData) {
+    public static void build(NoiseDigitalTwinRequest request, NoiseCsvData noiseData) {
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
         for (ResourceNode resourceNode : request.resources) {
             ComputingAppliance node = new ComputingAppliance(
-                    Config.createNode(resourceNode.nodeId, resourceNode.cpu, resourceNode.memoryMb * ScenarioBase.MB_IN_BYTE,
-                            resourceNode.storageGb * ScenarioBase.GB_IN_BYTE,resourceNode.minPower, resourceNode.idlePower, resourceNode.maxPower,
-                            resourceNode.bandwidthMbps * ScenarioBase.MBPS_TO_BPMS, resourceNode.latencyMs, sharedLatencyMap),
+                    Config.createNode(resourceNode.nodeId, resourceNode.cpuCores, resourceNode.memoryMb * ScenarioBase.MB_IN_BYTE,
+                            resourceNode.storageGb * ScenarioBase.GB_IN_BYTE,resourceNode.minPowerW, resourceNode.idlePowerW, resourceNode.maxPowerW,
+                            resourceNode.networkBandwidthBytesPerMs, resourceNode.networkLatencyMs, sharedLatencyMap),
                     null, resourceNode.location, resourceNode.provider, true);
         }
         HashMap<Component, VirtualMachine> componentVmMap = new HashMap<>();
         for (Component component : request.application.components) {
-            AlterableResourceConstraints arc = new AlterableResourceConstraints(component.cpuRequest, 1, component.memoryRequestMb * ScenarioBase.MB_IN_BYTE);
+            AlterableResourceConstraints arc = new AlterableResourceConstraints(component.cpuRequestCores, 1, component.memoryRequestMb * ScenarioBase.MB_IN_BYTE);
             VirtualAppliance va = new VirtualAppliance(component.componentId + "-va", 0, 0, false, component.properties.imageSizeBytes);
 
-            ComputingAppliance ca = ComputingAppliance.allComputingAppliances.get(component.mappedNode);
+            ComputingAppliance ca = ComputingAppliance.allComputingAppliances.get(component.assignedResource);
             ca.iaas.repositories.get(0).registerObject(va);
             try {
                 VirtualMachine vm = ca.iaas.requestVM(va, arc, ca.iaas.repositories.get(0), 1)[0];
@@ -60,7 +60,6 @@ public class SimulationBuilder {
         Config.NOISE_CLASS_CONFIGURATION.put("minCpuTemp", request.metadata.minCpuTemperature);
         Config.NOISE_CLASS_CONFIGURATION.put("maxCpuTemp", request.metadata.maxCpuTemperature);
         Config.NOISE_CLASS_CONFIGURATION.put("minContainerCount", request.metadata.minContainerCount);
-
         Config.NOISE_CLASS_CONFIGURATION.put("cpuTimeWindow", request.metadata.scalingCooldown);
         Config.NOISE_CLASS_CONFIGURATION.put("cpuLoadScaleDown", request.metadata.cpuLoadScaleDown);
         Config.NOISE_CLASS_CONFIGURATION.put("cpuLoadScaleUp", request.metadata.cpuLoadScaleUp);
@@ -73,7 +72,7 @@ public class SimulationBuilder {
             util.component.id = component.componentId;
 
 
-            if (component.componentId.contains("sensor")){
+            if ("noise-sensor".equals(component.properties.componentType)) {
                 NoiseSensor ns = new NoiseSensor(sa, util, component.properties.inside, component.properties.sun, noiseData);
                 ns.cpuTemperature = component.properties.cpuTemperature;
 
@@ -98,7 +97,7 @@ public class SimulationBuilder {
             }
         }
 
-        if (!request.operations.isEmpty()) {
+        if (request.operations != null && !request.operations.isEmpty()) {
             sa.noiseSensorsWithClassifier.clear();
             for (Operation operation : request.operations) {
                 if (operation.classifier == true) {
@@ -117,15 +116,5 @@ public class SimulationBuilder {
                             + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min."
             );
         }
-
-
-        /*
-        for(ComputingAppliance ca : ComputingAppliance.allComputingAppliances.values()){
-            System.out.println(ca);
-            for(VirtualMachine vm : ca.iaas.listVMs()){
-                System.out.println("  " + vm);
-            }
-        }
-        */
     }
 }

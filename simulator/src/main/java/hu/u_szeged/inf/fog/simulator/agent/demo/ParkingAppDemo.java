@@ -22,10 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class ParkingAppDemo {
 
     public static void main(String[] args) throws NetworkException {
-
         SimLogger.setLogging(1, true);
-
-        SeedSyncer.setSeed(1234567890);
+        SeedSyncer.setSeed(Config.RANDOM_SEED);
 
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = PowerTransitionGenerator.generateTransitions(0, 0, 0, 0, 0);
 

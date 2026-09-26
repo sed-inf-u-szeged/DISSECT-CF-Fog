@@ -24,6 +24,8 @@ import java.util.stream.IntStream;
 
 public class Config {
 
+    public static int RANDOM_SEED = 987654321;
+
     private static List<Integer> createSubmissionDelays(int applicationCount, int intervalMinutes) {
         return IntStream.range(0, applicationCount)
                 .map(index -> index * intervalMinutes)
@@ -128,7 +130,7 @@ public class Config {
             );
 
     public static final Map<String, Object> PARKING_CONFIGURATION =
-            Map.ofEntries(
+            new HashMap<>(Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
                     //Map.entry("simLength",5 * 365 * 24 * 60 * 60 * 1000L), // 5 years
 
@@ -158,7 +160,7 @@ public class Config {
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
                     Map.entry("csvLogging", true)
-            );
+            ));
 
     public static final Map<String, Object> NOISE_CLASS_CONFIGURATION =
             new HashMap<>(Map.ofEntries(

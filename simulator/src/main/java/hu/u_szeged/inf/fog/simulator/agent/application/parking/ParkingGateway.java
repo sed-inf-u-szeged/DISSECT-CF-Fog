@@ -72,7 +72,7 @@ public class ParkingGateway extends Timed {
                                         platformService.latencies.add(latency);
                                         PlatformService.totalEndToEndLatency += latency;
 
-                                        SimLogger.logRun("File received in " + (Timed.getFireCount() - fires) + " ms. from " + id + " with BLE mode at " +
+                                        SimLogger.logRun("File received in " + latency + " ms. from " + id + " with BLE mode at " +
                                                 Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
                                     }
                                 });

@@ -39,9 +39,8 @@ import java.util.concurrent.TimeUnit;
 public class NoiseClassDemo {
 
     public static void main(String[] args) throws Exception {
-
         SimLogger.setLogging(1, true);
-        SeedSyncer.setSeed(987654321);
+        SeedSyncer.setSeed(Config.RANDOM_SEED);
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
 

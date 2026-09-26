@@ -6,10 +6,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.agent.dt.ParkingCsvData;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
 import java.util.ArrayList;
+import java.util.Deque;
 
 public class ParkingSensor extends Timed {
 
@@ -76,6 +78,8 @@ public class ParkingSensor extends Timed {
 
     public long stopTime;
 
+    private Deque<ParkingCsvData.ParkingEvent> parkingEvents;
+
     public ParkingSensor(String id, PlatformService platformService, Repository nbiotRepository, Repository bleRepository, int batteryLevel,
                          ParkingMode mode, ParkingZone zone) {
         this.id = id;
@@ -92,6 +96,26 @@ public class ParkingSensor extends Timed {
         //this.batteryLevel = Config.PARKING_CONFIGURATION.get("batteryCapacity") instanceof Long capacity ? capacity : 0L; TODO:!!
     }
 
+    public ParkingSensor(String id, PlatformService platformService, Repository nbiotRepository,
+                         Repository bleRepository, int batteryLevel, ParkingMode mode,
+                         ParkingZone zone, Deque<ParkingCsvData.ParkingEvent> parkingEvents) {
+        this.id = id;
+        this.nbiotRepository = nbiotRepository;
+        this.bleRepository = bleRepository;
+        this.mode = mode;
+        this.batteryLevel = batteryLevel;
+        this.zone = zone;
+        this.platformService = platformService;
+        this.stopTime = 0;
+        this.parkingEvents = parkingEvents;
+
+        if (!parkingEvents.isEmpty()) {
+            subscribe(parkingEvents.peek().simulationTimeMs());
+        }
+
+        allParkingSensors.add(this);
+    }
+
     @Override
     public void tick(long fires) {
         this.isTaken = !this.isTaken;
@@ -100,29 +124,43 @@ public class ParkingSensor extends Timed {
 
         StorageObject so = new StorageObject(id + "-" + fires, 50, false);
         PlatformService.networkTimePerFile.put(so.id, Timed.getFireCount());
+
         if (this.mode == ParkingMode.NBIOT_PUSH) {
             nbiotRepository.registerObject(so);
             this.batteryLevel = Math.max(0, this.batteryLevel - ParkingMode.NBIOT_PUSH.batteryCost);
 
             try {
-                nbiotRepository.requestContentDelivery(so.id, platformService.platformRepo, new ConsumptionEventAdapter() {
+                nbiotRepository.requestContentDelivery(
+                        so.id,
+                        platformService.platformRepo,
+                        new ConsumptionEventAdapter() {
+                            @Override
+                            public void conComplete() {
+                                nbiotRepository.deregisterObject(so.id);
+                                platformService.platformRepo.deregisterObject(so.id);
+                                platformService.receivedDataSize += so.size;
+                                platformService.receivedEventCount++;
 
-                    @Override
-                    public void conComplete() {
-                        nbiotRepository.deregisterObject(so.id);
-                        platformService.platformRepo.deregisterObject(so.id);
-                        platformService.receivedDataSize += so.size;
-                        platformService.receivedEventCount++;
+                                long latency =
+                                        Timed.getFireCount() - PlatformService.networkTimePerFile.remove(so.id);
 
-                        long latency =  Timed.getFireCount() - PlatformService.networkTimePerFile.remove(so.id);
-                        platformService.latencies.add(latency);
-                        PlatformService.totalEndToEndLatency += latency;
+                                platformService.latencies.add(latency);
+                                PlatformService.totalEndToEndLatency += latency;
 
-                        SimLogger.logRun("File received in " + (Timed.getFireCount() - fires) + " ms. from " + id + " with NBIoT mode at "
-                                + Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
-                        applyPendingReconfiguration(ParkingMode.BLE_POLL);
-                    }
-                });
+                                applyPendingReconfiguration(ParkingMode.BLE_POLL);
+
+                                SimLogger.logRun(
+                                        "File received in "
+                                                + (Timed.getFireCount() - fires)
+                                                + " ms. from "
+                                                + id
+                                                + " with NBIoT mode at "
+                                                + Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS
+                                                + " min."
+                                );
+                            }
+                        }
+                );
             } catch (NetworkNode.NetworkException e) {
                 throw new RuntimeException(e);
             }
@@ -130,12 +168,31 @@ public class ParkingSensor extends Timed {
             bleRepository.registerObject(so);
         }
 
-        updateFrequency(sampleNextEventDelay(getCurrentProfile().meanInterval));
+        if (parkingEvents == null) {
+            TimePeriod period = resolveTimePeriod(Timed.getFireCount());
+            ParkingProfile currentProfile = resolveParkingProfile(zone, period);
+
+            updateFrequency(sampleNextEventDelay(currentProfile.meanInterval));
+        } else {
+            parkingEvents.poll();
+
+            if (parkingEvents.isEmpty()) {
+                unsubscribe();
+            } else {
+                long nextEventTime = parkingEvents.peek().simulationTimeMs();
+                updateFrequency(nextEventTime - Timed.getFireCount());
+            }
+        }
 
         if (this.batteryLevel <= 0) {
             unsubscribe();
             this.stopTime = Timed.getFireCount();
-            SimLogger.logRun("Sensor stopped at " + this.stopTime / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+
+            SimLogger.logRun(
+                    "Sensor stopped at "
+                            + this.stopTime / ScenarioBase.MINUTE_IN_MILLISECONDS
+                            + " min."
+            );
         }
     }
 

@@ -2,12 +2,11 @@ package hu.u_szeged.inf.fog.simulator.agent.dt;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DigitalTwinRequest {
+public class ParkingDigitalTwinRequest {
 
     public Metadata metadata;
     public List<ResourceNode> resources;
@@ -29,29 +28,11 @@ public class DigitalTwinRequest {
         @JsonProperty("prediction_horizon_min")
         public int predictionHorizonMin;
 
-        @JsonProperty("sound_level_threshold")
-        public int soundLevelThreshold;
-
-        @JsonProperty("cpu_temperature_threshold")
-        public double cpuTemperatureThreshold;
-
-        @JsonProperty("min_cpu_temperature")
-        public double minCpuTemperature;
-
-        @JsonProperty("max_cpu_temperature")
-        public double maxCpuTemperature;
-
-        @JsonProperty("min_container_count")
-        public int minContainerCount;
-
-        @JsonProperty("cpu_load_scale_up")
-        public double cpuLoadScaleUp;
-
-        @JsonProperty("cpu_load_scale_down")
-        public double cpuLoadScaleDown;
-
         @JsonProperty("scaling_cooldown_ms")
-        public long scalingCooldown;
+        public long scalingCooldownMs;
+
+        @JsonProperty("ble_polling_interval_ms")
+        public long blePollingIntervalMs;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -60,7 +41,8 @@ public class DigitalTwinRequest {
         @JsonProperty("node_id")
         public String nodeId;
 
-        public int cpu;
+        @JsonProperty("cpu_cores")
+        public int cpuCores;
 
         @JsonProperty("storage_gb")
         public int storageGb;
@@ -74,20 +56,20 @@ public class DigitalTwinRequest {
         @JsonProperty("node_type")
         public String nodeType;
 
-        @JsonProperty("min_power")
-        public double minPower;
+        @JsonProperty("min_power_w")
+        public double minPowerW;
 
-        @JsonProperty("idle_power")
-        public double idlePower;
+        @JsonProperty("idle_power_w")
+        public double idlePowerW;
 
-        @JsonProperty("max_power")
-        public double maxPower;
+        @JsonProperty("max_power_w")
+        public double maxPowerW;
 
-        @JsonProperty("latency_ms")
-        public int latencyMs;
+        @JsonProperty("network_latency_ms")
+        public int networkLatencyMs;
 
-        @JsonProperty("bandwidth_mbps")
-        public int bandwidthMbps;
+        @JsonProperty("network_bandwidth_bytes_per_ms")
+        public long networkBandwidthBytesPerMs;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -105,17 +87,16 @@ public class DigitalTwinRequest {
         @JsonProperty("component_id")
         public String componentId;
 
-        @JsonProperty("mapped_node")
-        public String mappedNode;
+        @JsonProperty("assigned_resource")
+        public String assignedResource;
 
-        @JsonProperty("cpu_request")
-        public int cpuRequest;
+        @JsonProperty("cpu_request_cores")
+        public int cpuRequestCores;
 
         @JsonProperty("memory_request_mb")
         public int memoryRequestMb;
 
         public String workload;
-
         public ComponentProperties properties;
     }
 
@@ -128,19 +109,22 @@ public class DigitalTwinRequest {
         @JsonProperty("image_size_bytes")
         public long imageSizeBytes;
 
-        public Boolean classifier;
+        @JsonProperty("battery_level")
+        public int batteryLevel;
 
-        @JsonProperty("queue_length")
-        public int queueLength;
+        public String mode;
 
-        @JsonProperty("cpu_temperature")
-        public double cpuTemperature;
+        @JsonProperty("nbiot_network_latency_ms")
+        public int nbiotNetworkLatencyMs;
 
-        public Boolean inside;
+        @JsonProperty("nbiot_network_bandwidth_bytes_per_ms")
+        public long nbiotNetworkBandwidthBytesPerMs;
 
-        public Boolean sun;
+        @JsonProperty("ble_network_latency_ms")
+        public int bleNetworkLatencyMs;
 
-        //public Integer instances;
+        @JsonProperty("ble_network_bandwidth_bytes_per_ms")
+        public long bleNetworkBandwidthBytesPerMs;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -151,9 +135,7 @@ public class DigitalTwinRequest {
         @JsonProperty("component_id")
         public String componentId;
 
-        @JsonProperty("target_node")
-        public String targetNode;
-
-        public Boolean classifier;
+        @JsonProperty("target_mode")
+        public String targetMode;
     }
 }
