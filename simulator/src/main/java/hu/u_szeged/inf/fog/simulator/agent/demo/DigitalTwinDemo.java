@@ -36,21 +36,22 @@ public class DigitalTwinDemo {
 
     public static void main(String[] args) throws Exception {
         SimLogger.setLogging(1, true);
-        SeedSyncer.setSeed(Config.RANDOM_SEED);
 
         ObjectMapper mapper = new ObjectMapper();
         Path csvPath;
         JsonNode root;
 
-        if (args.length != 2) {
+        if (args.length != 3) {
             System.err.println("Only for debugging purposes!");
-            System.err.println("Usage: DigitalTwinDemo <input-json> <data-csv>");
+            System.err.println("Usage: DigitalTwinDemo <input-json> <data-csv> <seed>");
 
             root = mapper.readTree(new File(""));
             csvPath = Path.of("");
+            SeedSyncer.setSeed(Integer.parseInt(args[2]));
         } else {
             root = mapper.readTree(Path.of(args[0]).toFile());
             csvPath = Path.of(args[1]);
+            SeedSyncer.setSeed(Integer.parseInt(args[2]));
         }
 
         String applicationType = root.path("metadata").path("application_type").asText();
@@ -203,6 +204,7 @@ public class DigitalTwinDemo {
             param.put("max-simulable-time-according-to-data_min",
                     parkingData.maxSimulationTimeMs / ScenarioBase.MINUTE_IN_MILLISECONDS);
             param.put("requested-prediction-horizon_min", request.metadata.predictionHorizonMin);
+            param.put("seed", SeedSyncer.getSeed());
         });
 
         System.out.println(SimLogger.getResultsAsJson());
@@ -373,6 +375,7 @@ public class DigitalTwinDemo {
             param.put("max-simulable-time-according-to-data_min",
                     noiseData.maxSimulationTimeMs / ScenarioBase.MINUTE_IN_MILLISECONDS);
             param.put("requested-prediction-horizon_min", request.metadata.predictionHorizonMin);
+            param.put("seed", SeedSyncer.getSeed());
         });
 
         System.out.println(SimLogger.getResultsAsJson());
