@@ -238,7 +238,9 @@ public class ParkingSimulationBuilder {
         AgentApplication app = new AgentApplication();
         app.name = request.application.applicationId;
 
-        ParkingTimeBasedSwarmAgent sa = new ParkingTimeBasedSwarmAgent(app);
+        long startOffsetMs = parkingData.simulationStartTime.toLocalTime().toNanoOfDay() / 1_000_000L;
+
+        ParkingTimeBasedSwarmAgent sa = new ParkingTimeBasedSwarmAgent(app, startOffsetMs);
         sa.observedAppComponents.addAll(ParkingSensor.allParkingSensors);
         sa.start((long) Config.PARKING_CONFIGURATION.get("cooldownFreq")
         );

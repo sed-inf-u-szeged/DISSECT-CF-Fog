@@ -12,8 +12,15 @@ public class ParkingTimeBasedSwarmAgent extends SwarmAgent {
 
     ParkingAppCsvExporter parkingAppCsvExporter;
 
+    private final long startOffsetMs;
+
     public ParkingTimeBasedSwarmAgent(AgentApplication app) {
+        this(app, 0L);
+    }
+
+    public ParkingTimeBasedSwarmAgent(AgentApplication app, long startOffsetMs) {
         super(app);
+        this.startOffsetMs = startOffsetMs;
 
         if ((boolean) Config.PARKING_CONFIGURATION.get("csvLogging")) {
             this.parkingAppCsvExporter = new ParkingAppCsvExporter(this);
@@ -36,7 +43,7 @@ public class ParkingTimeBasedSwarmAgent extends SwarmAgent {
     }
 
     private void evaluateTimeBasedReconfiguration(long simulationTimeMs) {
-        long timeOfDay = simulationTimeMs % (24 * ScenarioBase.HOUR_IN_MILLISECONDS);
+        long timeOfDay = (startOffsetMs + simulationTimeMs) % (24 * ScenarioBase.HOUR_IN_MILLISECONDS);
 
         long eightAm = 8 * ScenarioBase.HOUR_IN_MILLISECONDS;
         long sixPm = 18 * ScenarioBase.HOUR_IN_MILLISECONDS;
