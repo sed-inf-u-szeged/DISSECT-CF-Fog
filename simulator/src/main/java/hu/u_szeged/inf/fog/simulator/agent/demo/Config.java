@@ -129,6 +129,14 @@ public class Config {
                     Map.entry("atomicSaAdditionalRemovalProbability", 0.25) // probability of removing an additional LocalOffer
             );
 
+    public enum ParkingScenario {
+        COMMERCIAL_ONLY,
+        LOADING_ONLY,
+        RESIDENTIAL_ONLY,
+        BALANCED,
+        COMMERCIAL_HEAVY
+    }
+
     public static final Map<String, Object> PARKING_CONFIGURATION =
             new HashMap<>(Map.ofEntries(
                     Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
@@ -136,7 +144,7 @@ public class Config {
 
                     Map.entry("submissionDelay", List.of(0)), // 1 app
 
-                    Map.entry("sensorCount", 16), // pc.
+                    Map.entry("sensorCount", 300), // pc.
                     Map.entry("sensorsPerGateway", 15), // pc.
                     Map.entry("batteryCapacity", 600_000), // unit
 
@@ -154,7 +162,13 @@ public class Config {
 
                     Map.entry("platformBandwidthBytesPerMs", 125_000L),
 
-                    Map.entry("orchestrationEnabled", true),
+                    //Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_ONLY),
+                    //Map.entry( "parkingScenario", ParkingScenario.LOADING_ONLY),
+                    //Map.entry( "parkingScenario", ParkingScenario.RESIDENTIAL_ONLY),
+                    //Map.entry( "parkingScenario", ParkingScenario.BALANCED),
+                    Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_HEAVY),
+                    //Map.entry("orchestrationEnabled", true),
+                    Map.entry("orchestrationEnabled", false),
                     Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
                     //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.BLE_POLL),
 

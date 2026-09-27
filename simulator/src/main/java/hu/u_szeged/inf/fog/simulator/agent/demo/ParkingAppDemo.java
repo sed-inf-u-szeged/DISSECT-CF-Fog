@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ParkingAppDemo {
 
+
+
     public static void main(String[] args) throws NetworkException {
         SimLogger.setLogging(1, true);
         SeedSyncer.setSeed(Config.RANDOM_SEED);
@@ -38,26 +40,56 @@ public class ParkingAppDemo {
         PlatformService platformService = new PlatformService(platformRepo);
 
         // parking sensors
-        ParkingSensor.ParkingZone[] zones = ParkingSensor.ParkingZone.values();
-        for (int i = 0; i < (int) Config.PARKING_CONFIGURATION.get("sensorCount"); i++) {
+        Config.ParkingScenario parkingScenario = (Config.ParkingScenario) Config.PARKING_CONFIGURATION.get("parkingScenario");
+        int sensorCount = (int) Config.PARKING_CONFIGURATION.get("sensorCount");
+
+        for (int i = 0; i < sensorCount; i++) {
             Map<String, Integer> nbiotLatencyMap = new HashMap<>();
-            nbiotLatencyMap.put("platformRepo",  (int) Config.PARKING_CONFIGURATION.get("nbiotSensorToPlatformLatencyMs"));
-
+            nbiotLatencyMap.put("platformRepo", (int) Config.PARKING_CONFIGURATION.get("nbiotSensorToPlatformLatencyMs"));
             Map<String, Integer> bleLatencyMap = new HashMap<>();
-
             String id = "parking-sensor-" + i;
+
             long nbiotBandwidth = (long) Config.PARKING_CONFIGURATION.get("nbiotSensorToPlatformBandwidthBytesPerMs");
-            Repository nbiotRepo = new Repository(8_388_608, id + "-nbiotRepo", nbiotBandwidth, nbiotBandwidth, nbiotBandwidth, nbiotLatencyMap,
-                    transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+            Repository nbiotRepo = new Repository(
+                    8_388_608,
+                    id + "-nbiotRepo",
+                    nbiotBandwidth,
+                    nbiotBandwidth,
+                    nbiotBandwidth,
+                    nbiotLatencyMap,
+                    transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
+                    transitions.get(PowerTransitionGenerator.PowerStateKind.network)
+            );
 
             long bleBandwidth = (long) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayBandwidthBytesPerMs");
-            Repository bleRepo = new Repository(8_388_608, id + "-bleRepo", bleBandwidth, bleBandwidth, bleBandwidth, bleLatencyMap,
-                    transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+
+            Repository bleRepo = new Repository(
+                    8_388_608,
+                    id + "-bleRepo",
+                    bleBandwidth,
+                    bleBandwidth,
+                    bleBandwidth,
+                    bleLatencyMap,
+                    transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
+                    transitions.get(PowerTransitionGenerator.PowerStateKind.network)
+            );
+
             nbiotRepo.setState(NetworkNode.State.RUNNING);
             bleRepo.setState(NetworkNode.State.RUNNING);
 
-            ParkingSensor parkingSensor = new ParkingSensor(id, platformService, nbiotRepo, bleRepo, (int) Config.PARKING_CONFIGURATION.get("batteryCapacity"),
-                    (ParkingSensor.ParkingMode) Config.PARKING_CONFIGURATION.get("initialParkingMode"), zones[i % zones.length]);
+            ParkingSensor.ParkingZone zone = getZoneForSensor(i, sensorCount, parkingScenario);
+
+            ParkingSensor parkingSensor = new ParkingSensor(
+                    id,
+                    platformService,
+                    nbiotRepo,
+                    bleRepo,
+                    (int) Config.PARKING_CONFIGURATION.get("batteryCapacity"),
+                    (ParkingSensor.ParkingMode) Config.PARKING_CONFIGURATION.get(
+                            "initialParkingMode"
+                    ),
+                    zone
+            );
         }
 
         // gateways
@@ -148,11 +180,11 @@ public class ParkingAppDemo {
 
         for (ParkingSensor.ParkingZone zone : ParkingSensor.ParkingZone.values()) {
             long totalConsumed = consumedByZone.get(zone);
-            int sensorCount = sensorCountByZone.get(zone);
+            int sensorCountPerZone = sensorCountByZone.get(zone);
 
-            double averageConsumed = sensorCount > 0 ? totalConsumed / (double) sensorCount : 0.0;
+            double averageConsumed = sensorCountPerZone > 0 ? totalConsumed / (double) sensorCountPerZone : 0.0;
 
-            SimLogger.logRes("\t" + zone + ": total consumed = " + totalConsumed + ", sensors = " + sensorCount + ", average per sensor = " + averageConsumed);
+            SimLogger.logRes("\t" + zone + ": total consumed = " + totalConsumed + ", sensors = " + sensorCountPerZone + ", average per sensor = " + averageConsumed);
         }
 
         Collections.sort(platformService.latencies);
@@ -171,10 +203,40 @@ public class ParkingAppDemo {
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Configuration:");
+        SimLogger.logRes("\tParking scenario: " + Config.PARKING_CONFIGURATION.get("parkingScenario"));
         SimLogger.logRes("\tOrchestration enabled: " + Config.PARKING_CONFIGURATION.get("orchestrationEnabled"));
         SimLogger.logRes("\tInitial parking mode: " + Config.PARKING_CONFIGURATION.get("initialParkingMode"));
         SimLogger.logRes("\tNumber of sensors: " + Config.PARKING_CONFIGURATION.get("sensorCount"));
         SimLogger.logRes("\tNumber of sensors per gateway: " + Config.PARKING_CONFIGURATION.get("sensorsPerGateway"));
         // savingPercent = (baselineConsumed - timeBasedConsumed) / baselineConsumed * 100
+    }
+
+    private static ParkingSensor.ParkingZone getZoneForSensor(int sensorIndex, int sensorCount, Config.ParkingScenario parkingScenario) {
+
+        return switch (parkingScenario) {
+            case COMMERCIAL_ONLY -> ParkingSensor.ParkingZone.COMMERCIAL;
+            case LOADING_ONLY -> ParkingSensor.ParkingZone.LOADING;
+            case RESIDENTIAL_ONLY -> ParkingSensor.ParkingZone.RESIDENTIAL;
+            case BALANCED -> {
+                int type = sensorIndex % 3;
+
+                yield switch (type) {
+                    case 0 -> ParkingSensor.ParkingZone.COMMERCIAL;
+                    case 1 -> ParkingSensor.ParkingZone.LOADING;
+                    default -> ParkingSensor.ParkingZone.RESIDENTIAL;
+                };
+            }
+            case COMMERCIAL_HEAVY -> {
+                double ratio = sensorIndex / (double) sensorCount;
+
+                if (ratio < 0.60) {
+                    yield ParkingSensor.ParkingZone.COMMERCIAL;
+                } else if (ratio < 0.80) {
+                    yield ParkingSensor.ParkingZone.LOADING;
+                } else {
+                    yield ParkingSensor.ParkingZone.RESIDENTIAL;
+                }
+            }
+        };
     }
 }
