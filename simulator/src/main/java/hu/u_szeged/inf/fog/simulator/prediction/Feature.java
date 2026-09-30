@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,12 +52,24 @@ public abstract class Feature {
     /**
      * Computes the feature's value and adds it to the list of values.
      * If database is enabled creates a row in the database.
+     * Routes the new actual value to lifecycle shadow evaluation.
      */
     public void computeValue() {
         double value = compute();
         values.add(value);
 
-        PredictionConfigurator.sqLiteManager.addRawDataToTable(getName(), value);
+        int timestamp = values.size() - 1;
+
+        LifecycleManager.getInstance().resolveActualValue(
+                getName(),
+                timestamp,
+                value
+        );
+
+        PredictionConfigurator.sqLiteManager.addRawDataToTable(
+                getName(),
+                value
+        );
 
         hasNewValue = true;
     }
