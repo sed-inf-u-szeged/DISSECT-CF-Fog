@@ -241,10 +241,16 @@ public class FeatureManager {
                     predictionString
             );
 
-            result = JsonParser.fromJsonObject(new JSONObject(predictionString).getJSONObject("prediction"), Prediction.class, null);
+            result = JsonParser.fromJsonObject(
+                    new JSONObject(predictionString).getJSONObject("prediction"),
+                    Prediction.class,
+                    null
+            );
 
             SimulationSettings.get().getPredictionSettings().stream().filter(
-                    settings -> settings.getPredictorName().equals(result.getPredictionSettings().getPredictorName())
+                    settings -> settings.getPredictorName().equals(
+                            result.getPredictionSettings().getPredictorName()
+                    )
             ).findFirst().orElseThrow().increaseSumOfErrorMetrics(
                     (result.getErrorMetrics().getMae()
                             + result.getErrorMetrics().getMse()
@@ -256,11 +262,14 @@ public class FeatureManager {
 
             registerShadowPredictions(
                     predictorName,
-                    feature.getName(),
+                    feature,
                     result
             );
 
-            PredictionConfigurator.sqLiteManager.addPredictionDataToTable(feature.getName(), result);
+            PredictionConfigurator.sqLiteManager.addPredictionDataToTable(
+                    feature.getName(),
+                    result
+            );
         }
         
         return predictions;
@@ -268,24 +277,33 @@ public class FeatureManager {
 
     /**
      * Registers future prediction points for shadow evaluation.
+     * Converts predictor-local timestamps to global feature timestamps.
      *
      * @param predictorName the predictor that produced the result
-     * @param featureName the predicted feature
+     * @param feature the predicted feature
      * @param prediction the complete prediction result
      */
     private void registerShadowPredictions(
             String predictorName,
-            String featureName,
+            Feature feature,
             Prediction prediction
     ) {
+        Prediction.Data originalData =
+                prediction.getOriginalData();
         Prediction.Data predictionFuture =
                 prediction.getPredictionFuture();
 
-        if (predictionFuture == null
+        if (originalData == null
+                || originalData.getTimestamp() == null
+                || predictionFuture == null
                 || predictionFuture.getTimestamp() == null
                 || predictionFuture.getData() == null) {
             return;
         }
+
+        int windowStartTimestamp =
+                feature.getValues().size()
+                        - originalData.getTimestamp().size();
 
         int predictionPointCount = Math.min(
                 predictionFuture.getTimestamp().size(),
@@ -294,14 +312,15 @@ public class FeatureManager {
 
         for (int i = 0; i < predictionPointCount; i++) {
             int targetTimestamp =
-                    predictionFuture.getTimestamp().get(i);
+                    windowStartTimestamp
+                            + predictionFuture.getTimestamp().get(i);
             double predictedValue =
                     predictionFuture.getData().get(i);
 
             ShadowPrediction shadowPrediction =
                     new ShadowPrediction(
                             predictorName,
-                            featureName,
+                            feature.getName(),
                             prediction.getPredictionNumber(),
                             targetTimestamp,
                             predictedValue
@@ -368,7 +387,11 @@ public class FeatureManager {
         TableBuilder table = new TableBuilder();
         table.addHeader("Feature name", "Dataset length", "Number of predictions");
         for (Feature feature : features) {
-            table.addRow(feature.getName(), feature.getValues().size(), feature.getPredictions().size());
+            table.addRow(
+                    feature.getName(),
+                    feature.getValues().size(),
+                    feature.getPredictions().size()
+            );
         }
         System.out.println(table);
     }
