@@ -19,6 +19,7 @@ public class Block {
     private boolean nonceFound = false;
     private long timestamp;
     private long difficulty;
+    private boolean finalized = false;
 
     private boolean technicallyFull = false;
 
@@ -28,7 +29,7 @@ public class Block {
      * Constructs a new Block according to the consensus strategy.
      *
      * @param consensusStrategy the consensus strategy used for the block
-     * @param difficulty the difficulty level of the block, used for proof of work
+     * @param difficulty        the difficulty level of the block, used for proof of work
      */
     public Block(ConsensusStrategy consensusStrategy, long difficulty) {
         this.consensusStrategy = consensusStrategy;
@@ -139,6 +140,7 @@ public class Block {
      * Finalizes the block by setting its timestamp and recording metrics.
      */
     public void finalizeBlock() {
+        this.finalized = true;
         this.timestamp = Timed.getFireCount();
         SimulationMetrics.getInstance().markBlockCreated(this, timestamp);
         SimulationMetrics.getInstance().recordTransactionOnChain(transactions.size());
@@ -155,5 +157,9 @@ public class Block {
 
     public void forceFull() {
         this.technicallyFull = true;
+    }
+
+    public boolean isFinalized() {
+        return finalized;
     }
 }

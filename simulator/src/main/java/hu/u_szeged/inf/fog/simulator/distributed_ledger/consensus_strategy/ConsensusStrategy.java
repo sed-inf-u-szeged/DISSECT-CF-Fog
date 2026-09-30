@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy;
 
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 
@@ -28,4 +30,12 @@ public interface ConsensusStrategy {
      * @return the block size
      */
     int getBlockSize();
+
+    /**
+     * Creates a new block according to the rules of the consensus mechanism.
+     *
+     * @param miner the miner creating the block
+     * @return the newly created block
+     */
+    Block createBlock(Miner miner);
 }

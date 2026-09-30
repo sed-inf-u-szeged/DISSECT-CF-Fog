@@ -33,7 +33,7 @@ public class PropagateBlockTask implements MinerTask {
      */
     @Override
     public boolean canExecute(Miner miner) {
-        return block != null && block.isNonceFound();
+        return block != null && block.isFinalized();
     }
 
     /**

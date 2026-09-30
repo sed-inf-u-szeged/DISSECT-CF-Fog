@@ -4,7 +4,6 @@ import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.DifficultyAdjustmentStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
@@ -26,6 +25,7 @@ public class BuildBlockTask implements MinerTask {
 
     /**
      * Determines whether this BuildBlockTask can execute on the given miner.
+     *
      * @param miner The {@link Miner} instance to check for task eligibility.
      * @return {@code true} if the task can execute, {@code false} otherwise.
      */
@@ -37,15 +37,14 @@ public class BuildBlockTask implements MinerTask {
     /**
      * Executes the block building process for the given miner.
      * This method initiates the building of a new block and adds transactions to it.
+     *
      * @param miner The {@link Miner} that owns and executes this task.
      */
     @Override
     public void execute(Miner miner) {
         miner.setState(Miner.MinerState.BUILDING_BLOCK);
         if (currentState == State.NEW) {
-            DifficultyAdjustmentStrategy das = ((DifficultyAdjustmentStrategy) miner.consensusStrategy);
-            long nextDiff = das.computeNextDifficulty(miner.getLocalLedger());
-            buildingBlock = new Block(miner.consensusStrategy, nextDiff);
+            buildingBlock = miner.consensusStrategy.createBlock(miner);
             miner.setNextBlock(buildingBlock);
             currentState = State.IN_PROGRESS;
         }
@@ -59,6 +58,7 @@ public class BuildBlockTask implements MinerTask {
     /**
      * Adds the next transaction to the block being built.
      * If the block is full or the mempool is empty for too long, it finalizes the block and schedules the next task.
+     *
      * @param miner The {@link Miner} that owns and executes this task.
      */
     private void addNextTransactionToBlock(Miner miner) {
@@ -81,7 +81,7 @@ public class BuildBlockTask implements MinerTask {
                 currentState = State.DONE;
                 buildingBlock.forceFull();
                 miner.scheduleTask(new CalculateHeaderTask());
-            }else{
+            } else {
                 miner.scheduleTask(this);
             }
             miner.finishTask(this);
@@ -106,6 +106,7 @@ public class BuildBlockTask implements MinerTask {
 
     /**
      * Provides a description of this task.
+     *
      * @return a string describing the task
      */
     @Override

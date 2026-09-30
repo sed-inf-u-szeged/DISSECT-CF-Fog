@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy;
 
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.LocalLedger;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
@@ -109,6 +110,18 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
     }
 
     /**
+     * Creates a new block using the Proof of Work difficulty adjustment mechanism.
+     *
+     * @param miner the miner creating the block
+     * @return the newly created block
+     */
+    @Override
+    public Block createBlock(Miner miner) {
+        long nextDifficulty = computeNextDifficulty(miner.getLocalLedger());
+        return new Block(this, nextDifficulty);
+    }
+
+    /**
      * Computes the next mining difficulty based on the recent block confirmation times
      * in the given {@link LocalLedger}.
      * <p>
@@ -161,12 +174,12 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
         long expectedTimespan = difficultyAdjustmentBlock * targetBlockTimespan;
 
         boolean clampingUsed = false;
-        if (actualTimespan < expectedTimespan / 4){
+        if (actualTimespan < expectedTimespan / 4) {
             actualTimespan = expectedTimespan / 4;
             clampingUsed = true;
         }
 
-        if (actualTimespan > expectedTimespan * 4){
+        if (actualTimespan > expectedTimespan * 4) {
             actualTimespan = expectedTimespan * 4;
             clampingUsed = true;
         }
