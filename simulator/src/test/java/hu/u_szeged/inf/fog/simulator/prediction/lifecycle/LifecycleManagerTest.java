@@ -1,8 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction.lifecycle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,6 +128,80 @@ class LifecycleManagerTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> manager.registerPrediction(prediction)
+        );
+    }
+
+    @Test
+    void shouldRegisterPredictionWhenCoordinatorIsEvaluating() {
+        LifecycleCoordinator coordinator =
+                createCoordinator("lstm", "fog-1::cpu");
+
+        manager.registerCoordinator(coordinator);
+        startEvaluation(coordinator);
+
+        boolean registered =
+                manager.registerPredictionIfEvaluating(
+                        new ShadowPrediction(
+                                "lstm",
+                                "fog-1::cpu",
+                                1,
+                                64,
+                                100.0
+                        )
+                );
+
+        int resolvedCount = manager.resolveActualValue(
+                "fog-1::cpu",
+                64,
+                100.0
+        );
+
+        assertTrue(registered);
+        assertEquals(1, resolvedCount);
+    }
+
+    @Test
+    void shouldIgnorePredictionWithoutCoordinator() {
+        boolean registered =
+                manager.registerPredictionIfEvaluating(
+                        new ShadowPrediction(
+                                "lstm",
+                                "fog-1::cpu",
+                                1,
+                                64,
+                                100.0
+                        )
+                );
+
+        assertFalse(registered);
+    }
+
+    @Test
+    void shouldIgnorePredictionWhenCoordinatorIsNotEvaluating() {
+        LifecycleCoordinator coordinator =
+                createCoordinator("lstm", "fog-1::cpu");
+
+        manager.registerCoordinator(coordinator);
+
+        boolean registered =
+                manager.registerPredictionIfEvaluating(
+                        new ShadowPrediction(
+                                "lstm",
+                                "fog-1::cpu",
+                                1,
+                                64,
+                                100.0
+                        )
+                );
+
+        assertFalse(registered);
+    }
+
+    @Test
+    void shouldRejectNullPredictionForSafeRegistration() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.registerPredictionIfEvaluating(null)
         );
     }
 

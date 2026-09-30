@@ -116,6 +116,38 @@ public class LifecycleManager {
     }
 
     /**
+     * Registers a shadow prediction only when its coordinator exists
+     * and is currently evaluating.
+     *
+     * @param prediction the shadow prediction
+     * @return true when the prediction was registered;
+     *         false when it was ignored
+     */
+    public boolean registerPredictionIfEvaluating(
+            ShadowPrediction prediction
+    ) {
+        if (prediction == null) {
+            throw new IllegalArgumentException(
+                    "Shadow prediction must not be null."
+            );
+        }
+
+        LifecycleCoordinator coordinator = getCoordinator(
+                prediction.getPredictorName(),
+                prediction.getFeatureName()
+        );
+
+        if (coordinator == null
+                || coordinator.getState()
+                != LifecycleState.EVALUATING) {
+            return false;
+        }
+
+        coordinator.registerPrediction(prediction);
+        return true;
+    }
+
+    /**
      * Resolves an actual value in every evaluating coordinator
      * registered for the feature.
      *
