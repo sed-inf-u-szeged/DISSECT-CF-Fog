@@ -16,33 +16,64 @@ import hu.u_szeged.inf.fog.simulator.provider.IbmProvider;
 import hu.u_szeged.inf.fog.simulator.provider.Provider;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
-import hu.u_szeged.inf.fog.simulator.util.result.ActuatorEvents;
-import hu.u_szeged.inf.fog.simulator.util.result.Architecture;
-import hu.u_szeged.inf.fog.simulator.util.result.Cost;
-import hu.u_szeged.inf.fog.simulator.util.result.DataVolume;
-import hu.u_szeged.inf.fog.simulator.util.result.SimulatorJobResult;
+import hu.u_szeged.inf.fog.simulator.util.result.*;
 import hu.u_szeged.inf.fog.simulator.workflow.WorkflowJob;
 import hu.u_szeged.inf.fog.simulator.workflow.aco.CentralisedAntOptimiser;
 import hu.u_szeged.inf.fog.simulator.workflow.scheduler.WorkflowScheduler;
+
 import java.io.File;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ScenarioBase {
-        
+
+    private static final Path moduleRoot = findModuleRoot();
+
+    private static Path findModuleRoot() {
+        Path cwd = Paths.get(System.getProperty("user.dir"))
+                .toAbsolutePath()
+                .normalize();
+
+        // Ha eleve a simulator könyvtárból fut
+        if (Files.isDirectory(
+                cwd.resolve("src").resolve("main").resolve("resources"))) {
+            return cwd;
+        }
+
+        // Ha a repository gyökeréből fut
+        Path simulator = cwd.resolve("simulator");
+        if (Files.isDirectory(
+                simulator.resolve("src").resolve("main").resolve("resources"))) {
+            return simulator;
+        }
+
+        throw new IllegalStateException(
+                "Cannot locate simulator module from working directory: " + cwd
+        );
+    }
+
+    /* Régi resource path és scriptPath
+
     public static final String resourcePath = new StringBuilder(System.getProperty("user.dir"))
             .append(File.separator).append("src").append(File.separator).append("main").append(File.separator)
             .append("resources").append(File.separator).append("demo").append(File.separator).toString();
 
     public static final String scriptPath = new StringBuilder(System.getProperty("user.dir")).append(File.separator)
             .append("src").append(File.separator).append("main").append(File.separator).append("resources")
-            .append(File.separator).append("script").append(File.separator).toString();
+            .append(File.separator).append("script").append(File.separator).toString(); */
+
+    public static final String resourcePath = moduleRoot.resolve("src/main/resources/demo") + File.separator;
+
+    public static final String scriptPath = moduleRoot.resolve("src/main/resources/script") + File.separator;
 
     public static String resultDirectory;
-    
+
     public static boolean reproducibleRandom;
 
     static {
@@ -146,10 +177,10 @@ public class ScenarioBase {
                 + "\n\tChange node: " + MobilityEvent.changeNodeEventCounter + "\n\tConnect to node: "
                 + MobilityEvent.connectToNodeEventCounter + "\n\tDisconnect from node: "
                 + MobilityEvent.disconnectFromNodeEventCounter);
-        
+
         SimLogger.logRes("Total number of predictions: " + FeatureManager.getInstance().getTotalNumOfPredictions());
 
-        
+
         final var actuatorEvents = new ActuatorEvents(
                 MobilityEvent.changeNodeEventCounter,
                 MobilityEvent.changePositionEventCounter,
@@ -198,25 +229,25 @@ public class ScenarioBase {
 
     public static void logStreamProcessing() {
         SimLogger.logRes("\nSimulation completed.\n");
-        
+
         double totalCost = 0.0;
         double totalEnergyConsumption = 0.0;
         double avgExecutionTime = 0.0;
         double avgPairwiseDistance = 0.0;
-        for(WorkflowScheduler scheduler : WorkflowScheduler.schedulers) {
+        for (WorkflowScheduler scheduler : WorkflowScheduler.schedulers) {
             SimLogger.logRes("App: " + scheduler.appName);
-            
+
             SimLogger.logRes("\tUtilised VMs: " + scheduler.vmTaskLogger.size());
             for (Map.Entry<String, Integer> entry : scheduler.vmTaskLogger.entrySet()) {
                 String key = entry.getKey();
                 Integer value = entry.getValue();
                 SimLogger.logRes("\t\t" + key + " - " + value + " taks");
             }
-            
+
             long vmTime = 0;
             double cost = 0.0;
             double energyConsumption = 0.0;
-            for(WorkflowComputingAppliance ca : scheduler.computeArchitecture) {
+            for (WorkflowComputingAppliance ca : scheduler.computeArchitecture) {
                 cost += scheduler.instance.calculateCloudCost(ca.vmTime);
                 vmTime += ca.vmTime;
                 energyConsumption += EnergyDataCollector.getEnergyCollector(ca.iaas).energyConsumption;
@@ -230,7 +261,7 @@ public class ScenarioBase {
             SimLogger.logRes("Total bytes on network (MB): " + scheduler.bytesOnNetwork / 1024 / 1024);
             SimLogger.logRes("Average Pairwise Distance (km): " + CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture));
             avgPairwiseDistance += CentralisedAntOptimiser.calculateAvgPairwiseDistance(scheduler.computeArchitecture);
-            
+
             int completed = 0;
             for (WorkflowJob wj : scheduler.jobs) {
                 if (wj.state.equals(WorkflowJob.State.COMPLETED)) {
@@ -238,10 +269,10 @@ public class ScenarioBase {
                 }
             }
             SimLogger.logRes("Completed: " + completed + "/" + scheduler.jobs.size());
-            SimLogger.logRes("Execution time (min.): " 
+            SimLogger.logRes("Execution time (min.): "
                     + (scheduler.stopTime - scheduler.startTime) / 1000 / 60);
             avgExecutionTime += (scheduler.stopTime - scheduler.startTime) / 1000 / 60;
-                    
+
             SimLogger.logRes("");
         }
         SimLogger.logRes("Total cost (EUR): " + totalCost);
