@@ -1,5 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.ShadowPrediction;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
@@ -252,10 +254,64 @@ public class FeatureManager {
             feature.addPrediction(result);
             predictions.add(result);
 
+            registerShadowPredictions(
+                    predictorName,
+                    feature.getName(),
+                    result
+            );
+
             PredictionConfigurator.sqLiteManager.addPredictionDataToTable(feature.getName(), result);
         }
         
         return predictions;
+    }
+
+    /**
+     * Registers future prediction points for shadow evaluation.
+     *
+     * @param predictorName the predictor that produced the result
+     * @param featureName the predicted feature
+     * @param prediction the complete prediction result
+     */
+    private void registerShadowPredictions(
+            String predictorName,
+            String featureName,
+            Prediction prediction
+    ) {
+        Prediction.Data predictionFuture =
+                prediction.getPredictionFuture();
+
+        if (predictionFuture == null
+                || predictionFuture.getTimestamp() == null
+                || predictionFuture.getData() == null) {
+            return;
+        }
+
+        int predictionPointCount = Math.min(
+                predictionFuture.getTimestamp().size(),
+                predictionFuture.getData().size()
+        );
+
+        for (int i = 0; i < predictionPointCount; i++) {
+            int targetTimestamp =
+                    predictionFuture.getTimestamp().get(i);
+            double predictedValue =
+                    predictionFuture.getData().get(i);
+
+            ShadowPrediction shadowPrediction =
+                    new ShadowPrediction(
+                            predictorName,
+                            featureName,
+                            prediction.getPredictionNumber(),
+                            targetTimestamp,
+                            predictedValue
+                    );
+
+            LifecycleManager.getInstance()
+                    .registerPredictionIfEvaluating(
+                            shadowPrediction
+                    );
+        }
     }
 
     /**
