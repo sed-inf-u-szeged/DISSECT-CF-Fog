@@ -134,6 +134,17 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
     }
 
     /**
+     * Allows every miner to attempt block creation in the Proof of Work consensus mechanism.
+     *
+     * @param miner the miner attempting to create a block
+     * @return always true
+     */
+    @Override
+    public boolean canCreateBlock(Miner miner) {
+        return true;
+    }
+
+    /**
      * Computes the next mining difficulty based on the recent block confirmation times
      * in the given {@link LocalLedger}.
      * <p>

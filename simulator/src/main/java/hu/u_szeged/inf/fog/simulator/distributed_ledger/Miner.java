@@ -8,7 +8,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.*;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.BuildBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.ValidateBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain.SyncChainTask;
@@ -20,7 +20,10 @@ import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.eclipse.collections.impl.bimap.mutable.HashBiMap;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents a Miner node in the distributed ledger simulation.
@@ -244,7 +247,7 @@ public class Miner extends Timed {
             setState(MinerState.IDLE);
         }
 
-        if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty() && !isBuildBlockTaskQueued()) {
+        if (state == MinerState.IDLE && nextBlock == null && !mempool.isEmpty() && !isBuildBlockTaskQueued() && consensusStrategy.canCreateBlock(this)) {
             scheduleTask(new BuildBlockTask(), true);
         }
 
@@ -362,6 +365,7 @@ public class Miner extends Timed {
 
     /**
      * Removes a transaction from the task queue.
+     *
      * @param transaction The transaction to remove.
      */
     public void removeTransactionFromQueue(Transaction transaction) {

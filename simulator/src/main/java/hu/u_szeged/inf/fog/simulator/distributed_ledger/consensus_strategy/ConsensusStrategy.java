@@ -46,4 +46,12 @@ public interface ConsensusStrategy {
      * @return the block finalization task
      */
     MinerTask createBlockFinalizationTask();
+
+    /**
+     * Determines whether the given miner is allowed to create a block.
+     *
+     * @param miner the miner attempting to create a block
+     * @return true if the miner is allowed to create a block
+     */
+    boolean canCreateBlock(Miner miner);
 }
