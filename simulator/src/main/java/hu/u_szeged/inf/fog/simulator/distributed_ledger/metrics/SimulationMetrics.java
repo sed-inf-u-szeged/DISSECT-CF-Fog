@@ -18,6 +18,11 @@ public class SimulationMetrics {
     private static final SimulationMetrics INSTANCE = new SimulationMetrics();
 
     /**
+     * Stores the number of blocks produced by each proposer.
+     */
+    private final Map<String, Long> blocksProducedByProposer = new LinkedHashMap<>();
+
+    /**
      * Retrieve the singleton instance.
      *
      * @return the {@link SimulationMetrics} singleton
@@ -220,7 +225,12 @@ public class SimulationMetrics {
      * @param time  the simulation time it was mined
      */
     public void markBlockCreated(Block block, long time) {
-        blockCreationTime.putIfAbsent(block, time);
+        Long previous = blockCreationTime.putIfAbsent(block, time);
+
+        if (previous == null && block.getProposerId() != null) {
+            blocksProducedByProposer.merge(block.getProposerId(), 1L, Long::sum);
+        }
+
         blockArrivalTimes.putIfAbsent(block, new HashMap<>());
     }
 
@@ -275,7 +285,7 @@ public class SimulationMetrics {
 
         // 2) Throughput
         double totalSimTime = simEndTime;
-        double tps = (double) globalTransactionsOnChain / (totalSimTime > 0 ? totalSimTime/1000 : 1.0);
+        double tps = (double) globalTransactionsOnChain / (totalSimTime > 0 ? totalSimTime / 1000 : 1.0);
         SimLogger.logRun("Transactions On-Chain: " + globalTransactionsOnChain);
         SimLogger.logRun("Throughput (TPS):      " + tps);
 
@@ -313,6 +323,16 @@ public class SimulationMetrics {
         }
         double avgBlockPropagation = blockPropagationCount > 0 ? sumBlockPropagation / blockPropagationCount : 0.0;
         SimLogger.logRun("Avg Block Propagation Delay: " + avgBlockPropagation);
+
+        if (!blocksProducedByProposer.isEmpty()) {
+            SimLogger.logRun("Blocks produced by proposer:");
+
+            for (Map.Entry<String, Long> entry : blocksProducedByProposer.entrySet()) {
+                SimLogger.logRun(
+                        "  " + entry.getKey() + ": " + entry.getValue()
+                );
+            }
+        }
 
         SimLogger.logRun("=== END OF METRICS ===");
     }
