@@ -166,4 +166,24 @@ public class PoSConsensusStrategyTest {
 
         assertFalse(consensus.isConsensusValid(block));
     }
+
+    @Test
+    void shouldRejectBlockWhenValidatorRegistryIsEmpty() {
+        ValidatorRegistry registry = new ValidatorRegistry();
+
+        PoSConsensusStrategy consensus = new PoSConsensusStrategy(
+                25_000L,
+                1000,
+                new RSAStrategy(4096),
+                new SHA256Strategy(),
+                registry,
+                new StakeWeightedSelectionStrategy(42L)
+        );
+
+        Block block = new Block(consensus, 0);
+        block.setSlot(0L);
+        block.setProposerId("[Miner]0");
+
+        assertFalse(consensus.isConsensusValid(block));
+    }
 }

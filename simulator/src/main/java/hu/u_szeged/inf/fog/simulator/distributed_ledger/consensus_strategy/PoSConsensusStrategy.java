@@ -158,7 +158,10 @@ public class PoSConsensusStrategy implements ConsensusStrategy {
      */
     @Override
     public boolean isConsensusValid(Block block) {
-        if (block == null || block.getSlot() < 0 || block.getProposerId() == null) {
+        if (block == null
+                || block.getSlot() < 0
+                || block.getProposerId() == null
+                || validatorRegistry.getValidators().isEmpty()) {
             return false;
         }
 
