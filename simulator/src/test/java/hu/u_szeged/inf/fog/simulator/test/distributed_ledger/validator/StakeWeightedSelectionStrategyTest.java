@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class StakeWeightedSelectionStrategyTest {
 
@@ -90,5 +91,25 @@ public class StakeWeightedSelectionStrategyTest {
         assertEquals(0.10, miner0Selections / (double) numberOfSlots, 0.03);
         assertEquals(0.30, miner1Selections / (double) numberOfSlots, 0.03);
         assertEquals(0.60, miner2Selections / (double) numberOfSlots, 0.03);
+    }
+
+    @Test
+    void shouldSelectSameValidatorForSameSlot() throws Exception {
+        Miner miner0 = createMiner("validator-0");
+        Miner miner1 = createMiner("validator-1");
+        Miner miner2 = createMiner("validator-2");
+
+        Map<Miner, Long> validators = new LinkedHashMap<>();
+        validators.put(miner0, 10L);
+        validators.put(miner1, 30L);
+        validators.put(miner2, 60L);
+
+        StakeWeightedSelectionStrategy strategy =
+                new StakeWeightedSelectionStrategy(42L);
+
+        Miner firstSelection = strategy.selectValidator(validators, 50L);
+        Miner secondSelection = strategy.selectValidator(validators, 50L);
+
+        assertSame(firstSelection, secondSelection);
     }
 }
