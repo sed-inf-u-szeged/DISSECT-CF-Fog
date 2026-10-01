@@ -1,13 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block;
 
+import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
+import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockTransferEvent;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.resourcemodel.ResourceConsumption;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
@@ -27,7 +27,8 @@ public class PropagateBlockTask implements MinerTask {
 
     /**
      * Determines whether this PropagateBlockTask can execute on the given miner.
-     * The task can execute if the block is not null and has a found nonce.
+     * The task can execute if the block is not null and has been finalized.
+     *
      * @param miner The {@link Miner} instance to check for task eligibility.
      * @return {@code true} if the task can execute, {@code false} otherwise.
      */
@@ -39,6 +40,7 @@ public class PropagateBlockTask implements MinerTask {
     /**
      * Executes the block propagation process for the given miner.
      * This method initiates the broadcasting of the block to the miner's neighbors.
+     *
      * @param miner The {@link Miner} that owns and executes this task.
      */
     @Override
@@ -53,7 +55,7 @@ public class PropagateBlockTask implements MinerTask {
             Miner neighbor = Miner.miners.get(ca);
             if (neighbor == null) continue;
 
-            if(neighbor.isBlockKnown(block)) {
+            if (neighbor.isBlockKnown(block)) {
                 SimLogger.logRun(miner.name + " Block already known by " + neighbor.getName());
                 continue;
             }
@@ -75,6 +77,7 @@ public class PropagateBlockTask implements MinerTask {
 
     /**
      * Provides a description of this task.
+     *
      * @return a string describing the task
      */
     @Override

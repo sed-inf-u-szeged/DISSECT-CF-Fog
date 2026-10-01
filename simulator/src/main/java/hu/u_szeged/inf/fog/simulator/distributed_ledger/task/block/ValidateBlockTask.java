@@ -25,6 +25,7 @@ public class ValidateBlockTask implements MinerTask {
 
     /**
      * Determines whether this ValidateBlockTask can execute on the given miner.
+     *
      * @param miner The {@link Miner} instance to check for task eligibility.
      * @return {@code true} if the task can execute, {@code false} otherwise.
      */
@@ -36,6 +37,7 @@ public class ValidateBlockTask implements MinerTask {
     /**
      * Executes the block validation process for the given miner.
      * This method initiates the validation of the received block.
+     *
      * @param miner The {@link Miner} that owns and executes this task.
      */
     @Override
@@ -49,7 +51,8 @@ public class ValidateBlockTask implements MinerTask {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {
                 @Override
                 public void conComplete() {
-                    boolean accepted = miner.getValidationStrategy().isValidBlock(block);
+                    boolean consensusValid = miner.consensusStrategy.isConsensusValid(block);
+                    boolean accepted = consensusValid && miner.getValidationStrategy().isValidBlock(block);
 
                     if (accepted) {
                         SimLogger.logRun(miner.name + " VALID block: " + block.getId());
@@ -72,6 +75,7 @@ public class ValidateBlockTask implements MinerTask {
 
     /**
      * Removes transactions from the miner's mempool and queue.
+     *
      * @param miner The {@link Miner} that owns this task.
      */
     private void removeTransactions(Miner miner) {
@@ -83,6 +87,7 @@ public class ValidateBlockTask implements MinerTask {
 
     /**
      * Returns the block associated with this task.
+     *
      * @return the block to be validated
      */
     public Block getBlock() {
@@ -91,6 +96,7 @@ public class ValidateBlockTask implements MinerTask {
 
     /**
      * Provides a description of this task.
+     *
      * @return a string describing the task
      */
     @Override

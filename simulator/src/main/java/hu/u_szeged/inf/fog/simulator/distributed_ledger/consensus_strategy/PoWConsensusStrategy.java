@@ -221,4 +221,26 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
 
         return newDifficulty;
     }
+
+    /**
+     * Checks whether the block contains a valid Proof of Work result.
+     *
+     * @param block the block to validate
+     * @return true if the nonce has been found
+     */
+    @Override
+    public boolean isConsensusValid(Block block) {
+        return block != null && block.isNonceFound();
+    }
+
+    /**
+     * Returns the computational cost of validating the Proof of Work nonce.
+     *
+     * @param block the block to validate
+     * @return the nonce validation cost
+     */
+    @Override
+    public double getConsensusValidationCost(Block block) {
+        return digestStrategy.hash(80L);
+    }
 }

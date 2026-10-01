@@ -30,8 +30,8 @@ public class Utils {
     /**
      * Calculates the number of instructions required for proof of work based on the given difficulty.
      *
-     * @param difficulty the difficulty level of the proof of work
-        * @param digestStrategy the strategy used to compute the hash
+     * @param difficulty     the difficulty level of the proof of work
+     * @param digestStrategy the strategy used to compute the hash
      * @return the number of instructions required
      */
     public static double instructionsPoW(long difficulty, DigestStrategy digestStrategy) {
@@ -148,9 +148,10 @@ public class Utils {
     public static double validateBlockCost(ConsensusStrategy consensusStrategy, Block block) {
         int numberOfTx = block.getTransactions().size();
         double verifySign = consensusStrategy.getCryptoStrategy().verify();
-        double verifyNonce = consensusStrategy.getDigestStrategy().hash(80L);
+        //double verifyNonce = consensusStrategy.getDigestStrategy().hash(80L);
+        double verifyConsensus = consensusStrategy.getConsensusValidationCost(block);
         double verifyMerkle = Utils.merkleRoot(block, consensusStrategy.getDigestStrategy());
-        return verifySign * numberOfTx + verifyNonce + verifyMerkle;
+        return verifySign * numberOfTx + verifyConsensus + verifyMerkle;
     }
 
     /**

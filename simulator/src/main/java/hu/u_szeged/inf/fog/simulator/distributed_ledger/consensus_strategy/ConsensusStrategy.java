@@ -54,4 +54,21 @@ public interface ConsensusStrategy {
      * @return true if the miner is allowed to create a block
      */
     boolean canCreateBlock(Miner miner);
+
+    /**
+     * Checks whether the given block is valid according to the consensus mechanism.
+     *
+     * @param block the block to validate
+     * @return true if the block is valid according to the consensus rules
+     */
+    boolean isConsensusValid(Block block);
+
+    /**
+     * Returns the computational cost of validating the consensus-specific
+     * part of a block.
+     *
+     * @param block the block to validate
+     * @return the consensus validation cost
+     */
+    double getConsensusValidationCost(Block block);
 }

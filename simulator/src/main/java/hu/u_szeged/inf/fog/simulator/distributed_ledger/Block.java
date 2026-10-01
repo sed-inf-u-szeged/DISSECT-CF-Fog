@@ -26,6 +26,18 @@ public class Block {
     final ConsensusStrategy consensusStrategy;
 
     /**
+     * The identifier of the validator that proposed the block.
+     * Used by Proof of Stake consensus mechanisms.
+     */
+    private String proposerId;
+
+    /**
+     * The Proof of Stake slot in which the block was created.
+     * A negative value indicates that no slot is assigned.
+     */
+    private long slot = -1;
+
+    /**
      * Constructs a new Block according to the consensus strategy.
      *
      * @param consensusStrategy the consensus strategy used for the block
@@ -161,5 +173,41 @@ public class Block {
 
     public boolean isFinalized() {
         return finalized;
+    }
+
+    /**
+     * Returns the identifier of the validator that proposed the block.
+     *
+     * @return the proposer identifier
+     */
+    public String getProposerId() {
+        return proposerId;
+    }
+
+    /**
+     * Sets the identifier of the validator that proposed the block.
+     *
+     * @param proposerId the proposer identifier
+     */
+    public void setProposerId(String proposerId) {
+        this.proposerId = proposerId;
+    }
+
+    /**
+     * Returns the slot in which the block was created.
+     *
+     * @return the slot number
+     */
+    public long getSlot() {
+        return slot;
+    }
+
+    /**
+     * Sets the slot in which the block was created.
+     *
+     * @param slot the slot number
+     */
+    public void setSlot(long slot) {
+        this.slot = slot;
     }
 }
