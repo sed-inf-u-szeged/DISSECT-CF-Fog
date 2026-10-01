@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.test.distributed_ledger.consensus_strategy;
 
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.PoSConsensusStrategy;
@@ -17,8 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URL;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 public class PoSConsensusStrategyTest {
@@ -90,5 +90,80 @@ public class PoSConsensusStrategyTest {
         if (selected != miner2) {
             assertFalse(consensus.canCreateBlock(miner2));
         }
+    }
+
+    @Test
+    void createdBlockShouldContainSelectedProposerAndCurrentSlot() throws Exception {
+        ValidatorRegistry registry = new ValidatorRegistry();
+        StakeWeightedSelectionStrategy selectionStrategy =
+                new StakeWeightedSelectionStrategy(42L);
+
+        PoSConsensusStrategy consensus = new PoSConsensusStrategy(
+                25_000L,
+                1000,
+                new RSAStrategy(4096),
+                new SHA256Strategy(),
+                registry,
+                selectionStrategy
+        );
+
+        Miner miner0 = createMiner("validator-0", consensus);
+        Miner miner1 = createMiner("validator-1", consensus);
+        Miner miner2 = createMiner("validator-2", consensus);
+
+        registry.register(miner0, 10L);
+        registry.register(miner1, 30L);
+        registry.register(miner2, 60L);
+
+        long currentSlot = consensus.getCurrentSlot();
+
+        Miner selected = selectionStrategy.selectValidator(
+                registry.getValidators(),
+                currentSlot
+        );
+
+        Block block = consensus.createBlock(selected);
+
+        assertEquals(selected.getName(), block.getProposerId());
+        assertEquals(currentSlot, block.getSlot());
+    }
+
+    @Test
+    void shouldValidateBlockBasedOnSelectedProposer() throws Exception {
+        ValidatorRegistry registry = new ValidatorRegistry();
+        StakeWeightedSelectionStrategy selectionStrategy =
+                new StakeWeightedSelectionStrategy(42L);
+
+        PoSConsensusStrategy consensus = new PoSConsensusStrategy(
+                25_000L,
+                1000,
+                new RSAStrategy(4096),
+                new SHA256Strategy(),
+                registry,
+                selectionStrategy
+        );
+
+        Miner miner0 = createMiner("validator-0", consensus);
+        Miner miner1 = createMiner("validator-1", consensus);
+        Miner miner2 = createMiner("validator-2", consensus);
+
+        registry.register(miner0, 10L);
+        registry.register(miner1, 30L);
+        registry.register(miner2, 60L);
+
+        long currentSlot = consensus.getCurrentSlot();
+
+        Miner selected = selectionStrategy.selectValidator(
+                registry.getValidators(),
+                currentSlot
+        );
+
+        Block block = consensus.createBlock(selected);
+
+        assertTrue(consensus.isConsensusValid(block));
+
+        block.setProposerId("invalid-validator");
+
+        assertFalse(consensus.isConsensusValid(block));
     }
 }
