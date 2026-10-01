@@ -5,6 +5,8 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.LocalLedger;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.FindNonceTask;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
@@ -119,6 +121,16 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
     public Block createBlock(Miner miner) {
         long nextDifficulty = computeNextDifficulty(miner.getLocalLedger());
         return new Block(this, nextDifficulty);
+    }
+
+    /**
+     * Creates the block finalization task used by the Proof of Work consensus mechanism.
+     *
+     * @return a new nonce finding task
+     */
+    @Override
+    public MinerTask createBlockFinalizationTask() {
+        return new FindNonceTask();
     }
 
     /**

@@ -47,7 +47,9 @@ public class CalculateHeaderTask implements MinerTask {
                 @Override
                 public void conComplete() {
                     miner.finishTask(CalculateHeaderTask.this);
-                    miner.scheduleTask(new FindNonceTask());
+                    miner.scheduleTask(
+                            miner.consensusStrategy.createBlockFinalizationTask()
+                    );
                 }
             });
         } catch (NetworkNode.NetworkException e) {
@@ -58,6 +60,7 @@ public class CalculateHeaderTask implements MinerTask {
 
     /**
      * Provides a description of this task.
+     *
      * @return a string describing the task
      */
     @Override

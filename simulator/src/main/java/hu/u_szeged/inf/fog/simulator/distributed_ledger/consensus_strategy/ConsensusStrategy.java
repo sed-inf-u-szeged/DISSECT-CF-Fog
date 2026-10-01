@@ -4,6 +4,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.CryptoStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.DigestStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 
 /**
  * The ConsensusStrategy interface defines the methods required for a consensus mechanism in a distributed ledger.
@@ -38,4 +39,11 @@ public interface ConsensusStrategy {
      * @return the newly created block
      */
     Block createBlock(Miner miner);
+
+    /**
+     * Creates the task responsible for finalizing a block according to the consensus mechanism.
+     *
+     * @return the block finalization task
+     */
+    MinerTask createBlockFinalizationTask();
 }
