@@ -3,7 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.validator.selection;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 
 import java.util.Map;
-import java.util.Random;
+import java.util.SplittableRandom;
 
 /**
  * Selects validators randomly, weighted by their stake.
@@ -43,7 +43,7 @@ public class StakeWeightedSelectionStrategy implements ValidatorSelectionStrateg
             throw new IllegalArgumentException("Total stake must be positive");
         }
 
-        Random random = new Random(seed + slot);
+        SplittableRandom random = new SplittableRandom(seed + slot);
         double ticket = random.nextDouble() * totalStake;
 
         long cumulativeStake = 0;

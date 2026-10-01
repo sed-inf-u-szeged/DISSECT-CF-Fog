@@ -9,6 +9,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.FinalizePoSBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validator.ValidatorRegistry;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validator.selection.ValidatorSelectionStrategy;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -123,6 +124,12 @@ public class PoSConsensusStrategy implements ConsensusStrategy {
         if (selected != miner) {
             throw new IllegalStateException("Miner is not selected for the current slot");
         }
+
+        SimLogger.logRun(
+                "[PoSConsensusStrategy] Slot " + slot
+                        + " selected validator: " + miner.getName()
+                        + ", stake: " + validatorRegistry.getStake(miner)
+        );
 
         Block block = new Block(this, 0);
         block.setProposerId(miner.getName());
