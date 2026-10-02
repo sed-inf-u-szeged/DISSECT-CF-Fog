@@ -208,6 +208,76 @@ public class LifecycleManager {
     }
 
     /**
+     * Prints a read-only summary of all registered lifecycle coordinators.
+     *
+     * This method is intended for simulation observability. It does not
+     * change lifecycle state or trigger another evaluation.
+     */
+    public void printSummary() {
+        System.out.println("=== Lifecycle Summary ===");
+
+        if (coordinators.isEmpty()) {
+            System.out.println("No lifecycle coordinators registered.");
+            return;
+        }
+
+        for (Map<String, LifecycleCoordinator>
+                featureCoordinators : coordinators.values()) {
+            for (LifecycleCoordinator coordinator
+                    : featureCoordinators.values()) {
+                EvaluationMetrics metrics =
+                        coordinator.getLatestMetrics();
+
+                System.out.println(
+                        "Predictor: "
+                                + coordinator.getPredictorName()
+                );
+                System.out.println(
+                        "Feature: "
+                                + coordinator.getFeatureName()
+                );
+                System.out.println(
+                        "State: "
+                                + coordinator.getState()
+                );
+
+                if (metrics == null) {
+                    System.out.println(
+                            "Metrics: not available"
+                    );
+                } else {
+                    System.out.println(
+                            "Matched samples: "
+                                    + metrics.getMatchedSamples()
+                    );
+                    System.out.println(
+                            "Accuracy: "
+                                    + metrics.getAccuracy()
+                    );
+                    System.out.println(
+                            "MAE: "
+                                    + metrics.getMae()
+                    );
+                    System.out.println(
+                            "MSE: "
+                                    + metrics.getMse()
+                    );
+                    System.out.println(
+                            "RMSE: "
+                                    + metrics.getRmse()
+                    );
+                    System.out.println(
+                            "SMAPE: "
+                                    + metrics.getSmape()
+                    );
+                }
+
+                System.out.println("-------------------------");
+            }
+        }
+    }
+
+    /**
      * Removes every registered coordinator.
      * This allows a new simulation to start with clean lifecycle state.
      */
