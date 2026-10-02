@@ -7,6 +7,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.io.File;
+import java.util.Locale;
 import org.json.JSONObject;
 
 /**
@@ -68,7 +69,7 @@ public class PredictorLauncher extends Launcher {
             ProcessBuilder pb = new ProcessBuilder(
                     pythonExecutable,
                     predictorScript.getAbsolutePath(),
-                    predictorSettings.toString()
+                    buildPredictorSettingsArgument(predictorSettings)
             );
 
             pb.directory(projectDirectory);
@@ -88,6 +89,20 @@ public class PredictorLauncher extends Launcher {
         }
 
         return null;
+    }
+
+    private String buildPredictorSettingsArgument(JSONObject predictorSettings) {
+        String json = predictorSettings.toString();
+
+        boolean runningOnWindows = System.getProperty("os.name")
+                .toLowerCase(Locale.ROOT)
+                .contains("win");
+
+        if (runningOnWindows) {
+            return json.replace("\"", "\\\"");
+        }
+
+        return json;
     }
 
     private String resolvePythonExecutable(String... relativePaths) {

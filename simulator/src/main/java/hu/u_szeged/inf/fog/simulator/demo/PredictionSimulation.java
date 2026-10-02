@@ -15,149 +15,212 @@ import java.util.List;
 
 @SuppressWarnings("unused")
 public class PredictionSimulation {
-    
+
     public static void main(String[] args) throws Exception {
-        /** run only with prediction **/
-//         runPredictionOnly();
-        /** run with prediction and UI **/
-        runPredictionWithUI();
+        if (args.length > 0
+                && "--prediction-only".equalsIgnoreCase(args[0])) {
+            runPredictionOnly();
+        } else {
+            runPredictionWithUI();
+        }
     }
-    
+
     private static void runPredictionOnly() throws Exception {
-        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
+        PredictionConfigurator predictionConfigurator =
+                new PredictionConfigurator(
+                        new PredictionSimulationDefinition()
+                );
 
-        //List of predictor setting's for multiple launch
-        List<PairPredictionSettings> predictionSettings = new ArrayList<>();
+        // List of predictor settings for multiple launch
+        List<PairPredictionSettings> predictionSettings =
+                new ArrayList<>();
 
-        predictionSettings.add(new PairPredictionSettings(
-                "Arima128",
-                new PredictionSettings(
-                        64,
-                        64,
-                        128,
-                        new PredictionSettings.SmoothingSettings(48, 5),
-                        true,
-                        0
-                ),
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
-        ));
-
-        predictionSettings.add(new PairPredictionSettings(
-                "LinerRegression128",
-                new PredictionSettings(
-                        64,
-                        64,
-                        128,
-                        new PredictionSettings.SmoothingSettings(48, 5),
-                        true,
-                        0
-                ),
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LINEAR_REGRESSION)
-        ));
-
-        predictionConfigurator.addSimulationSettings(new SimulationSettings(
-                new ExportSettings(true, ScenarioBase.resultDirectory, true, true, true, true),
-                predictionSettings,
-                new TrainSettings(
-                        "model_i256_o64.h5",
-                        ScenarioBase.resultDirectory + File.separator  + "..",
-                        ScenarioBase.resultDirectory,
-                        true,
-                        new PredictionSettings.SmoothingSettings(
-                                48,
-                                5
+        predictionSettings.add(
+                new PairPredictionSettings(
+                        "Arima128",
+                        new PredictionSettings(
+                                64,
+                                64,
+                                128,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                true,
+                                0
                         ),
-                        192,
-                        64,
-                        "mean_squared_error",
-                        "Adam",
-                        3,
-                        true
-                ),
-                new LifecycleSettings(
-                        true,
-                        64,
-                        Double.MAX_VALUE,
-                        Double.MAX_VALUE,
-                        Double.MAX_VALUE,
-                        200.0,
-                        0.0,
-                        0.1
+                        PredictorSettings.getPredictorSettings(
+                                PredictorSettings.PredictorEnum.ARIMA
+                        )
                 )
-        ));
+        );
+
+        predictionSettings.add(
+                new PairPredictionSettings(
+                        "LinerRegression128",
+                        new PredictionSettings(
+                                64,
+                                64,
+                                128,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                true,
+                                0
+                        ),
+                        PredictorSettings.getPredictorSettings(
+                                PredictorSettings.PredictorEnum.LINEAR_REGRESSION
+                        )
+                )
+        );
+
+        predictionConfigurator.addSimulationSettings(
+                new SimulationSettings(
+                        new ExportSettings(
+                                true,
+                                ScenarioBase.resultDirectory,
+                                true,
+                                true,
+                                true,
+                                true
+                        ),
+                        predictionSettings,
+                        new TrainSettings(
+                                "model_i256_o64.h5",
+                                ScenarioBase.resultDirectory
+                                        + File.separator
+                                        + "..",
+                                ScenarioBase.resultDirectory,
+                                true,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                192,
+                                64,
+                                "mean_squared_error",
+                                "Adam",
+                                3,
+                                true
+                        ),
+                        new LifecycleSettings(
+                                true,
+                                64,
+                                Double.MAX_VALUE,
+                                Double.MAX_VALUE,
+                                Double.MAX_VALUE,
+                                200.0,
+                                0.0,
+                                0.1
+                        )
+                )
+        );
+
         predictionConfigurator.addLaunchers(
                 new PredictorLauncher()
         );
+
         predictionConfigurator.execute();
     }
-    
+
     private static void runPredictionWithUI() throws Exception {
-        PredictionConfigurator predictionConfigurator = new PredictionConfigurator(new PredictionSimulationDefinition());
+        PredictionConfigurator predictionConfigurator =
+                new PredictionConfigurator(
+                        new PredictionSimulationDefinition()
+                );
 
-        //List of predictor setting's for multiple launch
-        List<PairPredictionSettings> predictionSettings = new ArrayList<>();
+        // List of predictor settings for multiple launch
+        List<PairPredictionSettings> predictionSettings =
+                new ArrayList<>();
 
-        predictionSettings.add(new PairPredictionSettings(
-                "Arima128",
-                new PredictionSettings(
-                        64,
-                        64,
-                        128,
-                        new PredictionSettings.SmoothingSettings(48, 5),
-                        true,
-                        0
-                ),
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.ARIMA)
-        ));
-
-        predictionSettings.add(new PairPredictionSettings(
-                "LinerRegression128",
-                new PredictionSettings(
-                        64,
-                        64,
-                        128,
-                        new PredictionSettings.SmoothingSettings(48, 5),
-                        true,
-                        0
-                ),
-                PredictorSettings.getPredictorSettings(PredictorSettings.PredictorEnum.LINEAR_REGRESSION)
-        ));
-
-        predictionConfigurator.addSimulationSettings(new SimulationSettings(
-                new ExportSettings(true, ScenarioBase.resultDirectory, true, true, true, true),
-                predictionSettings,
-                new TrainSettings(
-                        "model_i256_o64.h5",
-                        ScenarioBase.resultDirectory + File.separator  + "..",
-                        ScenarioBase.resultDirectory,
-                        true,
-                        new PredictionSettings.SmoothingSettings(
-                                48,
-                                5
+        predictionSettings.add(
+                new PairPredictionSettings(
+                        "Arima128",
+                        new PredictionSettings(
+                                64,
+                                64,
+                                128,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                true,
+                                0
                         ),
-                        192,
-                        64,
-                        "mean_squared_error",
-                        "Adam",
-                        3,
-                        true
-                ),
-                new LifecycleSettings(
-                        true,
-                        64,
-                        Double.MAX_VALUE,
-                        Double.MAX_VALUE,
-                        Double.MAX_VALUE,
-                        200.0,
-                        0.0,
-                        0.1
+                        PredictorSettings.getPredictorSettings(
+                                PredictorSettings.PredictorEnum.ARIMA
+                        )
                 )
-        ));
+        );
+
+        predictionSettings.add(
+                new PairPredictionSettings(
+                        "LinerRegression128",
+                        new PredictionSettings(
+                                64,
+                                64,
+                                128,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                true,
+                                0
+                        ),
+                        PredictorSettings.getPredictorSettings(
+                                PredictorSettings.PredictorEnum.LINEAR_REGRESSION
+                        )
+                )
+        );
+
+        predictionConfigurator.addSimulationSettings(
+                new SimulationSettings(
+                        new ExportSettings(
+                                true,
+                                ScenarioBase.resultDirectory,
+                                true,
+                                true,
+                                true,
+                                true
+                        ),
+                        predictionSettings,
+                        new TrainSettings(
+                                "model_i256_o64.h5",
+                                ScenarioBase.resultDirectory
+                                        + File.separator
+                                        + "..",
+                                ScenarioBase.resultDirectory,
+                                true,
+                                new PredictionSettings.SmoothingSettings(
+                                        48,
+                                        5
+                                ),
+                                192,
+                                64,
+                                "mean_squared_error",
+                                "Adam",
+                                3,
+                                true
+                        ),
+                        new LifecycleSettings(
+                                true,
+                                64,
+                                Double.MAX_VALUE,
+                                Double.MAX_VALUE,
+                                Double.MAX_VALUE,
+                                200.0,
+                                0.0,
+                                0.1
+                        )
+                )
+        );
 
         predictionConfigurator.addLaunchers(
                 new PredictorLauncher(),
                 new ElectronLauncher()
         );
+
         predictionConfigurator.execute();
     }
 }
