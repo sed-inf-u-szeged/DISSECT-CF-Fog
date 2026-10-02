@@ -1,8 +1,10 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleCoordinator;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.ShadowPrediction;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.LifecycleSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.io.IOException;
@@ -54,8 +56,62 @@ public class FeatureManager {
         if (getFeatureByName(feature.getName()) == null) {
             features.add(feature);
             PredictionConfigurator.sqLiteManager.createTable(feature.getName());
+            initializeLifecycleCoordinators(feature);
         }
         return this;
+    }
+
+    /**
+     * Creates lifecycle coordinators for a newly added feature.
+     * Existing prediction behavior remains unchanged when lifecycle
+     * evaluation is not configured or is disabled.
+     *
+     * @param feature the newly added feature
+     */
+    private void initializeLifecycleCoordinators(Feature feature) {
+        SimulationSettings simulationSettings =
+                SimulationSettings.get();
+
+        if (simulationSettings == null) {
+            return;
+        }
+
+        LifecycleSettings lifecycleSettings =
+                simulationSettings.getLifecycleSettings();
+
+        if (lifecycleSettings == null
+                || !lifecycleSettings.isEnabled()
+                || simulationSettings.getPredictionSettings() == null) {
+            return;
+        }
+
+        LifecycleManager lifecycleManager =
+                LifecycleManager.getInstance();
+
+        for (PairPredictionSettings predictionSettings
+                : simulationSettings.getPredictionSettings()) {
+
+            String predictorName =
+                    predictionSettings.getPredictorName();
+
+            if (lifecycleManager.getCoordinator(
+                    predictorName,
+                    feature.getName()
+            ) != null) {
+                continue;
+            }
+
+            LifecycleCoordinator coordinator =
+                    new LifecycleCoordinator(
+                            predictorName,
+                            feature.getName(),
+                            lifecycleSettings.toPolicy()
+                    );
+
+            lifecycleManager.registerCoordinator(coordinator);
+            coordinator.startTraining();
+            coordinator.startEvaluation();
+        }
     }
 
     /**
@@ -314,8 +370,16 @@ public class FeatureManager {
             int targetTimestamp =
                     windowStartTimestamp
                             + predictionFuture.getTimestamp().get(i);
+
+            Object predictedValueObject =
+                    ((List<?>) predictionFuture.getData()).get(i);
+
+            if (!(predictedValueObject instanceof Number)) {
+                continue;
+            }
+
             double predictedValue =
-                    predictionFuture.getData().get(i);
+                    ((Number) predictedValueObject).doubleValue();
 
             ShadowPrediction shadowPrediction =
                     new ShadowPrediction(

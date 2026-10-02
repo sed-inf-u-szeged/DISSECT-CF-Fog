@@ -1,11 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.prediction.lifecycle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.sqlite.SqLiteManager;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.LifecycleSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PredictorSettings;
@@ -30,7 +32,6 @@ class FeatureManagerLifecycleIntegrationTest {
 
     private static final String PREDICTOR_NAME = "test-predictor";
     private static final String FEATURE_NAME = "test-feature";
-    private static final double FEATURE_VALUE = 10.5;
 
     private LifecycleManager lifecycleManager;
     private FeatureManager featureManager;
@@ -79,11 +80,24 @@ class FeatureManagerLifecycleIntegrationTest {
                         predictorSettings
                 );
 
+        LifecycleSettings lifecycleSettings =
+                new LifecycleSettings(
+                        true,
+                        1,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        100.0,
+                        0.0
+                );
+
         SimulationSettings.set(
                 new SimulationSettings(
                         null,
                         List.of(pairPredictionSettings),
-                        null
+                        null,
+                        lifecycleSettings
                 )
         );
     }
@@ -99,12 +113,14 @@ class FeatureManagerLifecycleIntegrationTest {
         PredictionConfigurator.predictor_reader.clear();
         PredictionConfigurator.predictor_writer.clear();
 
+        SimulationSettings.set(null);
         SqLiteManager.setEnabled(false);
     }
 
     /**
-     * Verifies that FeatureManager receives a predictor result,
-     * registers its future value, and later matches the actual value.
+     * Verifies that adding a feature automatically initializes its
+     * lifecycle coordinator, receives a predictor result, registers
+     * its future value, and later matches the actual value.
      */
     @Test
     void predictorResultIsAutomaticallyRegisteredForLifecycle()
@@ -113,35 +129,28 @@ class FeatureManagerLifecycleIntegrationTest {
         Feature feature = new Feature(FEATURE_NAME) {
             @Override
             public double compute() {
-                return FEATURE_VALUE;
+                return 10.0;
             }
         };
 
-        feature.computeValue();
-        feature.computeValue();
-        feature.computeValue();
-
-        LifecyclePolicy policy =
-                new LifecyclePolicy(
-                        1,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        100.0,
-                        0.0
-                );
+        featureManager.addFeature(feature);
 
         LifecycleCoordinator coordinator =
-                new LifecycleCoordinator(
+                lifecycleManager.getCoordinator(
                         PREDICTOR_NAME,
-                        FEATURE_NAME,
-                        policy
+                        FEATURE_NAME
                 );
 
-        lifecycleManager.registerCoordinator(coordinator);
-        coordinator.startTraining();
-        coordinator.startEvaluation();
+        assertNotNull(coordinator);
+
+        assertEquals(
+                LifecycleState.EVALUATING,
+                coordinator.getState()
+        );
+
+        feature.computeValue();
+        feature.computeValue();
+        feature.computeValue();
 
         PredictionConfigurator.predictor_reader.put(
                 PREDICTOR_NAME,
@@ -288,9 +297,9 @@ class FeatureManagerLifecycleIntegrationTest {
                                 createData(
                                         List.of(0, 1, 2),
                                         List.of(
-                                                FEATURE_VALUE,
-                                                FEATURE_VALUE,
-                                                FEATURE_VALUE
+                                                10.0,
+                                                10.0,
+                                                10.0
                                         )
                                 )
                         )
@@ -299,9 +308,9 @@ class FeatureManagerLifecycleIntegrationTest {
                                 createData(
                                         List.of(0, 1, 2),
                                         List.of(
-                                                FEATURE_VALUE,
-                                                FEATURE_VALUE,
-                                                FEATURE_VALUE
+                                                10.0,
+                                                10.0,
+                                                10.0
                                         )
                                 )
                         )
@@ -310,8 +319,8 @@ class FeatureManagerLifecycleIntegrationTest {
                                 createData(
                                         List.of(0, 1),
                                         List.of(
-                                                FEATURE_VALUE,
-                                                FEATURE_VALUE
+                                                10.0,
+                                                10.0
                                         )
                                 )
                         )
@@ -319,21 +328,21 @@ class FeatureManagerLifecycleIntegrationTest {
                                 "test_data_end",
                                 createData(
                                         List.of(2),
-                                        List.of(FEATURE_VALUE)
+                                        List.of(10.0)
                                 )
                         )
                         .put(
                                 "prediction_future",
                                 createData(
                                         List.of(3),
-                                        List.of(FEATURE_VALUE)
+                                        List.of(10.0)
                                 )
                         )
                         .put(
                                 "prediction_test",
                                 createData(
                                         List.of(2),
-                                        List.of(FEATURE_VALUE)
+                                        List.of(10.0)
                                 )
                         )
                         .put(
