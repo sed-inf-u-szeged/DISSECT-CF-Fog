@@ -149,7 +149,8 @@ public class LifecycleManager {
 
     /**
      * Resolves an actual value in every evaluating coordinator
-     * registered for the feature.
+     * registered for the feature. Each coordinator is evaluated
+     * automatically after at least one prediction is resolved.
      *
      * @param featureName the observed feature
      * @param targetTimestamp the timestamp of the actual value
@@ -172,10 +173,17 @@ public class LifecycleManager {
             if (coordinator != null
                     && coordinator.getState()
                     == LifecycleState.EVALUATING) {
-                resolvedCount += coordinator.resolveActualValue(
-                        targetTimestamp,
-                        actualValue
-                );
+                int coordinatorResolvedCount =
+                        coordinator.resolveActualValue(
+                                targetTimestamp,
+                                actualValue
+                        );
+
+                resolvedCount += coordinatorResolvedCount;
+
+                if (coordinatorResolvedCount > 0) {
+                    coordinator.evaluate();
+                }
             }
         }
 

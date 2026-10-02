@@ -101,10 +101,10 @@ class LifecycleManagerTest {
         );
 
         EvaluationMetrics lstmMetrics =
-                manager.evaluate("lstm", "fog-1::cpu");
+                lstm.getLatestMetrics();
 
         EvaluationMetrics gruMetrics =
-                manager.evaluate("gru", "fog-1::cpu");
+                gru.getLatestMetrics();
 
         assertEquals(2, resolvedCount);
         assertEquals(1, lstmMetrics.getMatchedSamples());

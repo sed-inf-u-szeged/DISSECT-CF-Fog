@@ -88,10 +88,8 @@ class FeatureLifecycleIntegrationTest {
 
         feature.computeValue();
 
-        EvaluationMetrics metrics = lifecycleManager.evaluate(
-                PREDICTOR_NAME,
-                FEATURE_NAME
-        );
+        EvaluationMetrics metrics =
+                coordinator.getLatestMetrics();
 
         assertEquals(1, feature.getValues().size());
         assertEquals(42.0, feature.getValues().get(0), 0.0);

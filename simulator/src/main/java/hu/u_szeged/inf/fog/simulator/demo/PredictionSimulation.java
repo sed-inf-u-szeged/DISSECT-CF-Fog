@@ -73,6 +73,16 @@ public class PredictionSimulation {
                         "Adam",
                         3,
                         true
+                ),
+                new LifecycleSettings(
+                        true,
+                        64,
+                        Double.MAX_VALUE,
+                        Double.MAX_VALUE,
+                        Double.MAX_VALUE,
+                        200.0,
+                        0.0,
+                        0.1
                 )
         ));
         predictionConfigurator.addLaunchers(
@@ -131,6 +141,16 @@ public class PredictionSimulation {
                         "Adam",
                         3,
                         true
+                ),
+                new LifecycleSettings(
+                        true,
+                        64,
+                        Double.MAX_VALUE,
+                        Double.MAX_VALUE,
+                        Double.MAX_VALUE,
+                        200.0,
+                        0.0,
+                        0.1
                 )
         ));
 

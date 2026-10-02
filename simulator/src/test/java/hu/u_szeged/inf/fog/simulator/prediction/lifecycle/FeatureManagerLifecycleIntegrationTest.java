@@ -184,10 +184,7 @@ class FeatureManagerLifecycleIntegrationTest {
         feature.computeValue();
 
         EvaluationMetrics metrics =
-                lifecycleManager.evaluate(
-                        PREDICTOR_NAME,
-                        FEATURE_NAME
-                );
+                coordinator.getLatestMetrics();
 
         assertEquals(
                 4,
