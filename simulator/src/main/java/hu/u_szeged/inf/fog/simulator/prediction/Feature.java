@@ -9,12 +9,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * The Feature class represents a measurable characteristic or property used in time series analysis.
- * It provides methods to compute, store, and retrieve the feature's values.
+ * The Feature class represents a measurable characteristic or property used
+ * in time series analysis.
  */
 @NoArgsConstructor
 public abstract class Feature {
-    
+
     @Getter
     private String name;
 
@@ -42,17 +42,18 @@ public abstract class Feature {
     }
 
     /**
-     * This method should be implemented by subclasses to
-     * provide specific computation logic for the feature's value.
+     * Computes the current feature value.
      *
      * @return the computed feature value
      */
     public abstract double compute();
 
     /**
-     * Computes the feature's value and adds it to the list of values.
-     * If database is enabled creates a row in the database.
-     * Routes the new actual value to lifecycle shadow evaluation.
+     * Computes and stores one actual feature value.
+     *
+     * The actual value first resolves shadow predictions and may change a
+     * predictor lifecycle state. The latest lifecycle state is then persisted
+     * to SQLite so the predictor UI can display it.
      */
     public void computeValue() {
         double value = compute();
@@ -66,6 +67,10 @@ public abstract class Feature {
                 value
         );
 
+        PredictionConfigurator.sqLiteManager.syncLifecycleData(
+                getName()
+        );
+
         PredictionConfigurator.sqLiteManager.addRawDataToTable(
                 getName(),
                 value
@@ -75,17 +80,20 @@ public abstract class Feature {
     }
 
     /**
-     * Retrieves a list of the feature's values within a specified window size.
-     * If the number of values is less than the window size, an empty list is returned.
+     * Retrieves the most recent values for the requested window size.
      *
-     * @param windowSize the size of the window
-     * @return a list of the feature's values within the window size
+     * @param windowSize the requested window size
+     * @return the recent values, or an empty list when insufficient data exists
      */
     public List<Double> getWindowValues(int windowSize) {
         if (values.size() < windowSize) {
             return new ArrayList<>();
         }
-        return values.subList(values.size() - windowSize, values.size());
+
+        return values.subList(
+                values.size() - windowSize,
+                values.size()
+        );
     }
 
     public boolean getHasNewValue() {
@@ -98,10 +106,10 @@ public abstract class Feature {
 
     @Override
     public String toString() {
-        return "Feature{" 
+        return "Feature{"
                 + "name='" + name + '\''
-                + ", values=" + values.size() 
-                + ", predictions=" + predictions.size() 
+                + ", values=" + values.size()
+                + ", predictions=" + predictions.size()
                 + '}';
     }
 }

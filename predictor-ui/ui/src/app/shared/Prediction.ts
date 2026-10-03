@@ -1,5 +1,21 @@
+export type LifecycleMetrics = {
+  matched_samples: number;
+  accuracy: number;
+  mae: number;
+  mse: number;
+  rmse: number;
+  smape: number;
+};
+
+export type LifecycleData = {
+  state: string;
+  is_active: boolean;
+  metrics: LifecycleMetrics | null;
+  updated_at: string;
+};
+
 export type Prediction = {
-  feature_name: string,
+  feature_name: string;
   prediction_number: number;
   predictor_settings: any;
   original_data: { timestamp: any[], data: any[] };
@@ -9,4 +25,5 @@ export type Prediction = {
   prediction_future: { timestamp: any[], data: any[] };
   prediction_test: { timestamp: any[], data: any[] };
   error_metrics: any;
+  lifecycle: LifecycleData | null;
 };
