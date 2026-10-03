@@ -160,6 +160,49 @@ public class LifecycleCoordinator {
     }
 
     /**
+     * Activates a predictor that has passed lifecycle evaluation.
+     * A candidate predictor cannot become active directly from evaluation.
+     */
+    public void activate() {
+        requireState(
+                LifecycleState.READY,
+                "activate the predictor"
+        );
+
+        state = LifecycleState.ACTIVE;
+    }
+
+    /**
+     * Activates a configured trusted baseline predictor.
+     *
+     * A baseline is trusted before this simulation starts, so it may
+     * begin serving from COLLECTING_DATA without shadow evaluation.
+     * This method is intentionally separate from activate(), which
+     * continues to protect ordinary candidate predictors.
+     */
+    public void activateAsBaseline() {
+        requireState(
+                LifecycleState.COLLECTING_DATA,
+                "activate the baseline predictor"
+        );
+
+        state = LifecycleState.ACTIVE;
+    }
+
+    /**
+     * Removes the predictor from active service while keeping it
+     * available as an already evaluated READY model.
+     */
+    public void deactivate() {
+        requireState(
+                LifecycleState.ACTIVE,
+                "deactivate the predictor"
+        );
+
+        state = LifecycleState.READY;
+    }
+
+    /**
      * Marks the lifecycle as failed after a technical failure.
      */
     public void markFailed() {

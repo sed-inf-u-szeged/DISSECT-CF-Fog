@@ -26,14 +26,16 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Tests the complete registration path from a predictor response
- * to lifecycle shadow evaluation.
+ * to lifecycle shadow evaluation and automatic activation.
  */
 class FeatureManagerLifecycleIntegrationTest {
 
     private static final String PREDICTOR_NAME = "test-predictor";
+
     private static final String FEATURE_NAME = "test-feature";
 
     private LifecycleManager lifecycleManager;
+
     private FeatureManager featureManager;
 
     /**
@@ -120,7 +122,10 @@ class FeatureManagerLifecycleIntegrationTest {
     /**
      * Verifies that adding a feature automatically initializes its
      * lifecycle coordinator, receives a predictor result, registers
-     * its future value, and later matches the actual value.
+     * its future value, matches the actual value, and activates the
+     * candidate after every lifecycle threshold is satisfied.
+     *
+     * @throws Exception when prediction communication fails
      */
     @Test
     void predictorResultIsAutomaticallyRegisteredForLifecycle()
@@ -227,8 +232,15 @@ class FeatureManagerLifecycleIntegrationTest {
         );
 
         assertEquals(
-                LifecycleState.READY,
+                LifecycleState.ACTIVE,
                 coordinator.getState()
+        );
+
+        assertEquals(
+                PREDICTOR_NAME,
+                lifecycleManager.getActivePredictorName(
+                        FEATURE_NAME
+                )
         );
     }
 
@@ -236,7 +248,7 @@ class FeatureManagerLifecycleIntegrationTest {
      * Creates the JSON returned by the Python predictor process.
      *
      * @return the complete predictor response
-     * @throws Exception when the JSON response cannot be created
+     * @throws Exception when the JSON object cannot be created
      */
     private String createPredictorResponse() throws Exception {
         JSONObject predictionSettings =
@@ -248,7 +260,10 @@ class FeatureManagerLifecycleIntegrationTest {
                                 "smoothing",
                                 new JSONObject()
                                         .put("windowSize", 1)
-                                        .put("polynomialDegree", 0)
+                                        .put(
+                                                "polynomialDegree",
+                                                0
+                                        )
                         )
                         .put("scale", false)
                         .put("minPredictionTime", 0);

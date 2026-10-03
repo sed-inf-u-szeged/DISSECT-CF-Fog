@@ -50,38 +50,15 @@ class LifecycleCoordinatorTest {
         LifecycleCoordinator coordinator =
                 createCoordinator(createPolicy());
 
-        coordinator.startTraining();
-        coordinator.startEvaluation();
+        moveToReady(coordinator);
 
-        coordinator.registerPrediction(new ShadowPrediction(
-                "linear-regression",
-                "cpu",
-                1,
-                1000,
-                100.0
-        ));
-
-        coordinator.registerPrediction(new ShadowPrediction(
-                "linear-regression",
-                "cpu",
-                2,
-                2000,
-                105.0
-        ));
-
-        coordinator.resolveActualValue(1000, 100.0);
-        coordinator.resolveActualValue(2000, 100.0);
-
-        EvaluationMetrics metrics = coordinator.evaluate();
+        EvaluationMetrics metrics =
+                coordinator.getLatestMetrics();
 
         assertEquals(2, metrics.getMatchedSamples());
         assertEquals(
                 LifecycleState.READY,
                 coordinator.getState()
-        );
-        assertEquals(
-                metrics,
-                coordinator.getLatestMetrics()
         );
     }
 
@@ -140,6 +117,54 @@ class LifecycleCoordinatorTest {
     }
 
     @Test
+    void shouldActivateReadyPredictor() {
+        LifecycleCoordinator coordinator =
+                createCoordinator(createPolicy());
+
+        moveToReady(coordinator);
+        coordinator.activate();
+
+        assertEquals(
+                LifecycleState.ACTIVE,
+                coordinator.getState()
+        );
+    }
+
+    @Test
+    void shouldRejectActivationBeforePredictorIsReady() {
+        LifecycleCoordinator coordinator =
+                createCoordinator(createPolicy());
+
+        coordinator.startTraining();
+        coordinator.startEvaluation();
+
+        assertThrows(
+                IllegalStateException.class,
+                coordinator::activate
+        );
+
+        assertEquals(
+                LifecycleState.EVALUATING,
+                coordinator.getState()
+        );
+    }
+
+    @Test
+    void shouldReturnActivePredictorToReadyWhenDeactivated() {
+        LifecycleCoordinator coordinator =
+                createCoordinator(createPolicy());
+
+        moveToReady(coordinator);
+        coordinator.activate();
+        coordinator.deactivate();
+
+        assertEquals(
+                LifecycleState.READY,
+                coordinator.getState()
+        );
+    }
+
+    @Test
     void shouldEnterFailedStateAfterTechnicalFailure() {
         LifecycleCoordinator coordinator =
                 createCoordinator(createPolicy());
@@ -150,6 +175,33 @@ class LifecycleCoordinatorTest {
                 LifecycleState.FAILED,
                 coordinator.getState()
         );
+    }
+
+    private void moveToReady(
+            LifecycleCoordinator coordinator
+    ) {
+        coordinator.startTraining();
+        coordinator.startEvaluation();
+
+        coordinator.registerPrediction(new ShadowPrediction(
+                "linear-regression",
+                "cpu",
+                1,
+                1000,
+                100.0
+        ));
+
+        coordinator.registerPrediction(new ShadowPrediction(
+                "linear-regression",
+                "cpu",
+                2,
+                2000,
+                100.0
+        ));
+
+        coordinator.resolveActualValue(1000, 100.0);
+        coordinator.resolveActualValue(2000, 100.0);
+        coordinator.evaluate();
     }
 
     private LifecycleCoordinator createCoordinator(

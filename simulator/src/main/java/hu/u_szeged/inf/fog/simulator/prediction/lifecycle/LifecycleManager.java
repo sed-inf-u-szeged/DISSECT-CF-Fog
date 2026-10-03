@@ -14,10 +14,16 @@ public class LifecycleManager {
             coordinators;
 
     /**
+     * Stores the active predictor name for each feature.
+     */
+    private final Map<String, String> activePredictors;
+
+    /**
      * Creates an empty lifecycle manager.
      */
     private LifecycleManager() {
         coordinators = new HashMap<>();
+        activePredictors = new HashMap<>();
     }
 
     /**
@@ -94,6 +100,161 @@ public class LifecycleManager {
     }
 
     /**
+     * Activates a trusted baseline predictor for a feature.
+     *
+     * A baseline starts from COLLECTING_DATA because it was trusted before
+     * the simulation started. Only one active predictor is allowed for a
+     * feature.
+     *
+     * @param predictorName trusted baseline predictor
+     * @param featureName feature served by the baseline
+     */
+    public void activateBaseline(
+            String predictorName,
+            String featureName
+    ) {
+        LifecycleCoordinator baselineCoordinator =
+                requireCoordinator(
+                        predictorName,
+                        featureName
+                );
+
+        String currentActivePredictor =
+                activePredictors.get(featureName);
+
+        if (currentActivePredictor != null) {
+            throw new IllegalStateException(
+                    "Feature "
+                            + featureName
+                            + " already has active predictor "
+                            + currentActivePredictor
+                            + "."
+            );
+        }
+
+        if (baselineCoordinator.getState()
+                != LifecycleState.COLLECTING_DATA) {
+            throw new IllegalStateException(
+                    "Predictor "
+                            + predictorName
+                            + " for feature "
+                            + featureName
+                            + " cannot become a baseline while its state is "
+                            + baselineCoordinator.getState()
+                            + "."
+            );
+        }
+
+        baselineCoordinator.activateAsBaseline();
+
+        activePredictors.put(
+                featureName,
+                predictorName
+        );
+    }
+
+    /**
+     * Promotes a READY predictor to ACTIVE for one feature.
+     *
+     * If another predictor is currently active for the same feature,
+     * the old predictor is first moved back to READY. This guarantees
+     * that a feature has at most one active predictor.
+     *
+     * @param predictorName the predictor to activate
+     * @param featureName the feature whose active predictor changes
+     */
+    public void promote(
+            String predictorName,
+            String featureName
+    ) {
+        LifecycleCoordinator newActiveCoordinator =
+                requireCoordinator(
+                        predictorName,
+                        featureName
+                );
+
+        String currentActivePredictor =
+                activePredictors.get(featureName);
+
+        if (predictorName.equals(currentActivePredictor)) {
+            return;
+        }
+
+        if (newActiveCoordinator.getState()
+                != LifecycleState.READY) {
+            throw new IllegalStateException(
+                    "Predictor "
+                            + predictorName
+                            + " for feature "
+                            + featureName
+                            + " cannot be promoted while its state is "
+                            + newActiveCoordinator.getState()
+                            + "."
+            );
+        }
+
+        LifecycleCoordinator oldActiveCoordinator = null;
+
+        if (currentActivePredictor != null) {
+            oldActiveCoordinator = requireCoordinator(
+                    currentActivePredictor,
+                    featureName
+            );
+
+            if (oldActiveCoordinator.getState()
+                    != LifecycleState.ACTIVE) {
+                throw new IllegalStateException(
+                        "The registered active predictor "
+                                + currentActivePredictor
+                                + " for feature "
+                                + featureName
+                                + " is not in ACTIVE state."
+                );
+            }
+        }
+
+        if (oldActiveCoordinator != null) {
+            oldActiveCoordinator.deactivate();
+        }
+
+        newActiveCoordinator.activate();
+
+        activePredictors.put(
+                featureName,
+                predictorName
+        );
+    }
+
+    /**
+     * Returns the active predictor name for a feature.
+     *
+     * @param featureName the feature name
+     * @return the active predictor name, or null when none is active
+     */
+    public String getActivePredictorName(
+            String featureName
+    ) {
+        return activePredictors.get(featureName);
+    }
+
+    /**
+     * Checks whether a predictor is active for a feature.
+     *
+     * @param predictorName the predictor name
+     * @param featureName the feature name
+     * @return true when this predictor is active for the feature
+     */
+    public boolean isActive(
+            String predictorName,
+            String featureName
+    ) {
+        return predictorName != null
+                && predictorName.equals(
+                        activePredictors.get(featureName)
+                );
+    }
+
+    /**
      * Registers a shadow prediction with its matching coordinator.
      *
      * @param prediction the shadow prediction
@@ -152,6 +313,9 @@ public class LifecycleManager {
      * registered for the feature. Each coordinator is evaluated
      * automatically after at least one prediction is resolved.
      *
+     * When a candidate satisfies every lifecycle threshold and becomes
+     * READY, it is automatically promoted to ACTIVE for the feature.
+     *
      * @param featureName the observed feature
      * @param targetTimestamp the timestamp of the actual value
      * @param actualValue the actual observed value
@@ -183,6 +347,14 @@ public class LifecycleManager {
 
                 if (coordinatorResolvedCount > 0) {
                     coordinator.evaluate();
+
+                    if (coordinator.getState()
+                            == LifecycleState.READY) {
+                        promote(
+                                coordinator.getPredictorName(),
+                                featureName
+                        );
+                    }
                 }
             }
         }
@@ -217,7 +389,9 @@ public class LifecycleManager {
         System.out.println("=== Lifecycle Summary ===");
 
         if (coordinators.isEmpty()) {
-            System.out.println("No lifecycle coordinators registered.");
+            System.out.println(
+                    "No lifecycle coordinators registered."
+            );
             return;
         }
 
@@ -239,6 +413,12 @@ public class LifecycleManager {
                 System.out.println(
                         "State: "
                                 + coordinator.getState()
+                );
+                System.out.println(
+                        "Active predictor for feature: "
+                                + getActivePredictorName(
+                                        coordinator.getFeatureName()
+                                )
                 );
 
                 if (metrics == null) {
@@ -278,11 +458,12 @@ public class LifecycleManager {
     }
 
     /**
-     * Removes every registered coordinator.
+     * Removes every registered coordinator and active predictor.
      * This allows a new simulation to start with clean lifecycle state.
      */
     public void reset() {
         coordinators.clear();
+        activePredictors.clear();
     }
 
     /**

@@ -44,7 +44,8 @@ class FeatureLifecycleIntegrationTest {
 
     /**
      * Verifies that Feature.computeValue routes the generated actual
-     * value to lifecycle shadow evaluation using its global timestamp.
+     * value to lifecycle shadow evaluation and automatically activates
+     * an eligible predictor.
      */
     @Test
     void computeValueRoutesActualValueToLifecycleEvaluation() {
@@ -99,9 +100,15 @@ class FeatureLifecycleIntegrationTest {
         assertEquals(0.0, metrics.getRmse(), 0.0);
         assertEquals(0.0, metrics.getSmape(), 0.0);
         assertEquals(100.0, metrics.getAccuracy(), 0.0);
+
         assertEquals(
-                LifecycleState.READY,
+                LifecycleState.ACTIVE,
                 coordinator.getState()
+        );
+
+        assertEquals(
+                PREDICTOR_NAME,
+                lifecycleManager.getActivePredictorName(FEATURE_NAME)
         );
     }
 }

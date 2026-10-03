@@ -91,7 +91,7 @@ class LifecycleManagerTest {
                 "fog-1::cpu",
                 1,
                 64,
-                105.0
+                115.0
         ));
 
         int resolvedCount = manager.resolveActualValue(
@@ -110,9 +110,14 @@ class LifecycleManagerTest {
         assertEquals(1, lstmMetrics.getMatchedSamples());
         assertEquals(1, gruMetrics.getMatchedSamples());
         assertEquals(0.0, lstmMetrics.getMae());
-        assertEquals(5.0, gruMetrics.getMae());
-        assertEquals(LifecycleState.READY, lstm.getState());
-        assertEquals(LifecycleState.READY, gru.getState());
+        assertEquals(15.0, gruMetrics.getMae());
+
+        assertEquals(LifecycleState.ACTIVE, lstm.getState());
+        assertEquals(LifecycleState.EVALUATING, gru.getState());
+        assertEquals(
+                "lstm",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
     }
 
     @Test
@@ -219,6 +224,80 @@ class LifecycleManagerTest {
         );
     }
 
+    @Test
+    void shouldPromoteReadyPredictor() {
+        LifecycleCoordinator candidate =
+                createCoordinator("candidate", "fog-1::cpu");
+
+        manager.registerCoordinator(candidate);
+        moveToReady(candidate);
+
+        manager.promote("candidate", "fog-1::cpu");
+
+        assertEquals(LifecycleState.ACTIVE, candidate.getState());
+        assertEquals(
+                "candidate",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+        assertTrue(manager.isActive("candidate", "fog-1::cpu"));
+    }
+
+    @Test
+    void shouldReplaceActivePredictor() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator candidate =
+                createCoordinator("candidate", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(candidate);
+
+        moveToReady(baseline);
+        moveToReady(candidate);
+
+        manager.promote("baseline", "fog-1::cpu");
+        manager.promote("candidate", "fog-1::cpu");
+
+        assertEquals(LifecycleState.READY, baseline.getState());
+        assertEquals(LifecycleState.ACTIVE, candidate.getState());
+        assertEquals(
+                "candidate",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+        assertFalse(manager.isActive("baseline", "fog-1::cpu"));
+        assertTrue(manager.isActive("candidate", "fog-1::cpu"));
+    }
+
+    @Test
+    void shouldKeepBaselineActiveWhenCandidateIsNotReady() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator candidate =
+                createCoordinator("candidate", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(candidate);
+
+        manager.activateBaseline("baseline", "fog-1::cpu");
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> manager.promote("candidate", "fog-1::cpu")
+        );
+
+        assertEquals(LifecycleState.ACTIVE, baseline.getState());
+        assertEquals(
+                LifecycleState.COLLECTING_DATA,
+                candidate.getState()
+        );
+        assertEquals(
+                "baseline",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+    }
+
     private LifecycleCoordinator createCoordinator(
             String predictorName,
             String featureName
@@ -243,5 +322,22 @@ class LifecycleManagerTest {
     ) {
         coordinator.startTraining();
         coordinator.startEvaluation();
+    }
+
+    private void moveToReady(
+            LifecycleCoordinator coordinator
+    ) {
+        startEvaluation(coordinator);
+
+        coordinator.registerPrediction(new ShadowPrediction(
+                coordinator.getPredictorName(),
+                coordinator.getFeatureName(),
+                1,
+                64,
+                100.0
+        ));
+
+        coordinator.resolveActualValue(64, 100.0);
+        coordinator.evaluate();
     }
 }
