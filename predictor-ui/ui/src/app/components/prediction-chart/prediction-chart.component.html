@@ -1,58 +1,58 @@
 <div class="chart-prediction">
-  <canvas #predictionCanvas></canvas>
+    <canvas #predictionCanvas></canvas>
 </div>
 
 <div class="chart-side">
-  <div class="lifecycle-card">
-    <div class="lifecycle-title">Model lifecycle</div>
+    <div class="lifecycle-card">
+        <div class="lifecycle-title">Model lifecycle</div>
 
-    <div
-      class="state-badge"
-      [ngClass]="getLifecycleClass()">
-      {{ getLifecycleState() }}
+        <div
+            class="state-badge"
+            [ngClass]="getLifecycleClass()">
+            {{ getLifecycleState() }}
+        </div>
+
+        <div
+            class="active-label"
+            [class.active]="prediction.lifecycle?.is_active">
+            {{ getActiveLabel() }}
+        </div>
+
+        <ng-container *ngIf="prediction.lifecycle?.metrics as metrics">
+            <div class="metric-row">
+                <span>Samples</span>
+                <span>{{ metrics.matched_samples }}</span>
+            </div>
+            <div class="metric-row">
+                <span>Accuracy</span>
+                <span>{{ formatMetric(metrics.accuracy) }}</span>
+            </div>
+            <div class="metric-row">
+                <span>MAE</span>
+                <span>{{ formatMetric(metrics.mae) }}</span>
+            </div>
+            <div class="metric-row">
+                <span>MSE</span>
+                <span>{{ formatMetric(metrics.mse) }}</span>
+            </div>
+            <div class="metric-row">
+                <span>RMSE</span>
+                <span>{{ formatMetric(metrics.rmse) }}</span>
+            </div>
+            <div class="metric-row">
+                <span>SMAPE</span>
+                <span>{{ formatMetric(metrics.smape) }}</span>
+            </div>
+        </ng-container>
+
+        <div
+            class="metrics-pending"
+            *ngIf="!prediction.lifecycle?.metrics">
+            Waiting for shadow-evaluation samples
+        </div>
     </div>
 
-    <div
-      class="active-label"
-      [class.active]="prediction.lifecycle?.is_active">
-      {{ getActiveLabel() }}
+    <div class="chart-error">
+        <canvas #errorCanvas></canvas>
     </div>
-
-    <ng-container *ngIf="prediction.lifecycle?.metrics as metrics">
-      <div class="metric-row">
-        <span>Samples</span>
-        <span>{{ metrics.matched_samples }}</span>
-      </div>
-      <div class="metric-row">
-        <span>Accuracy</span>
-        <span>{{ formatMetric(metrics.accuracy) }}</span>
-      </div>
-      <div class="metric-row">
-        <span>MAE</span>
-        <span>{{ formatMetric(metrics.mae) }}</span>
-      </div>
-      <div class="metric-row">
-        <span>MSE</span>
-        <span>{{ formatMetric(metrics.mse) }}</span>
-      </div>
-      <div class="metric-row">
-        <span>RMSE</span>
-        <span>{{ formatMetric(metrics.rmse) }}</span>
-      </div>
-      <div class="metric-row">
-        <span>SMAPE</span>
-        <span>{{ formatMetric(metrics.smape) }}</span>
-      </div>
-    </ng-container>
-
-    <div
-      class="metrics-pending"
-      *ngIf="!prediction.lifecycle?.metrics">
-      Waiting for shadow-evaluation samples
-    </div>
-  </div>
-
-  <div class="chart-error">
-    <canvas #errorCanvas></canvas>
-  </div>
 </div>

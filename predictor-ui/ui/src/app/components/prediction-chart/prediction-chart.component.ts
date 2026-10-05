@@ -1,15 +1,7 @@
-import {
-  AfterViewInit,
-  Component,
-  Input,
-  OnChanges,
-  OnInit,
-  ViewChild
-} from '@angular/core';
+import { AfterViewInit, Component, Input, OnChanges, OnInit, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { Prediction } from '../../shared/Prediction';
-
+import { Prediction } from "../../shared/Prediction";
 Chart.register(annotationPlugin);
 
 @Component({
@@ -17,74 +9,44 @@ Chart.register(annotationPlugin);
   templateUrl: './prediction-chart.component.html',
   styleUrls: ['./prediction-chart.component.scss']
 })
-export class PredictionChartComponent
-  implements OnInit, AfterViewInit, OnChanges {
-
+export class PredictionChartComponent implements OnInit, AfterViewInit, OnChanges {
   @Input() prediction: Prediction;
   @Input() chartFilters: any;
 
-  @ViewChild('predictionCanvas')
-  predictionCanvas!: { nativeElement: any };
-
+  @ViewChild('predictionCanvas') predictionCanvas!: { nativeElement: any };
   ctxPrediction: any;
   chartPrediction: any;
 
-  @ViewChild('errorCanvas')
-  errorCanvas!: { nativeElement: any };
-
+  @ViewChild('errorCanvas') errorCanvas!: { nativeElement: any };
   ctxError: any;
   chartError: any;
-
-  errorColors: string[] = [
-    '#ff5479',
-    '#98ff54',
-    '#546eff',
-    '#fcff54',
-    '#f154ff'
-  ];
+  errorColors: string[] = ['#ff5479', '#98ff54', '#546eff', '#fcff54', '#f154ff'] // TODO add more colors
 
   ngOnInit() {
+
   }
 
   ngOnChanges(changes: any) {
     if (changes?.chartFilters?.currentValue) {
       if (this.chartPrediction && this.chartFilters) {
         const filters = changes.chartFilters.currentValue;
-
-        this.filterDataset('original_data').hidden =
-          !filters.original;
-        this.filterDataset('test_data_beginning').hidden =
-          !filters.preprocessedBeginning;
-        this.filterDataset('test_data_end').hidden =
-          !filters.preprocessedEnd;
-        this.filterDataset('prediction_test').hidden =
-          !filters.predictionTest;
-        this.filterDataset('prediction_future').hidden =
-          !filters.predictionFuture;
-
+        this.filterDataset('original_data').hidden = !filters.original;
+        this.filterDataset('test_data_beginning').hidden = !filters.preprocessedBeginning;
+        this.filterDataset('test_data_end').hidden = !filters.preprocessedEnd;
+        this.filterDataset('prediction_test').hidden = !filters.predictionTest;
+        this.filterDataset('prediction_future').hidden = !filters.predictionFuture;
         this.chartPrediction.update();
       }
     }
 
     if (changes.prediction && this.chartPrediction) {
-      this.chartPrediction.data.datasets =
-        this.createPredictionDatasets();
-
-      this.chartPrediction.options.plugins.title.text =
-        this.getName();
-
+      this.chartPrediction.data.datasets = this.createPredictionDatasets();
+      this.chartPrediction.options.plugins.title.text = this.getName();
       this.chartPrediction.update();
     }
 
     if (changes.prediction && this.chartError) {
-      this.chartError.data.datasets =
-        this.createErrorDatasets();
-
-      this.chartError.data.labels =
-        this.prediction.error_metrics
-          ? Object.keys(this.prediction.error_metrics)
-          : ['No error metrics'];
-
+      this.chartError.data.datasets = this.createErrorDatasets();
       this.chartError.update();
     }
   }
@@ -95,9 +57,7 @@ export class PredictionChartComponent
   }
 
   getName() {
-    return `Feature: ${this.prediction.feature_name}\n`
-      + `predicted with: `
-      + `${this.prediction.predictor_settings.predictor_name}`;
+    return `Feature: ${this.prediction.feature_name}\npredicted with: ${this.prediction.predictor_settings.predictor_name}`;
   }
 
   getId() {
@@ -132,13 +92,11 @@ export class PredictionChartComponent
   }
 
   filterDataset(label: string) {
-    return this.chartPrediction.data.datasets.find(
-      (dataset: any) => dataset.label === label
-    );
+    return this.chartPrediction.data.datasets.find((dataset: any) => dataset.label === label)
   }
 
   createPredictionDatasets() {
-    const datasets: any[] = [];
+    let datasets = [];
 
     if (this.prediction.test_data_beginning) {
       datasets.push({
@@ -149,9 +107,7 @@ export class PredictionChartComponent
         ),
         borderColor: '#ffd174',
         borderWidth: 1,
-        hidden: this.chartFilters
-          ? !this.chartFilters.preprocessedBeginning
-          : false
+        hidden: this.chartFilters ? !this.chartFilters.preprocessedBeginning : false
       });
     }
 
@@ -164,9 +120,7 @@ export class PredictionChartComponent
         ),
         borderColor: '#caa65c',
         borderWidth: 1,
-        hidden: this.chartFilters
-          ? !this.chartFilters.preprocessedEnd
-          : false
+        hidden: this.chartFilters ? !this.chartFilters.preprocessedEnd : false
       });
     }
 
@@ -179,9 +133,7 @@ export class PredictionChartComponent
         ),
         borderColor: '#546eff',
         borderWidth: 1,
-        hidden: this.chartFilters
-          ? !this.chartFilters.predictionTest
-          : false,
+        hidden: this.chartFilters ? !this.chartFilters?.predictionTest : false,
         backgroundColor: '#0000001A',
         fill: '-1'
       });
@@ -196,9 +148,7 @@ export class PredictionChartComponent
         ),
         borderColor: '#ff5479',
         borderWidth: 1,
-        hidden: this.chartFilters
-          ? !this.chartFilters.predictionFuture
-          : false
+        hidden: this.chartFilters ? !this.chartFilters?.predictionFuture : false
       });
     }
 
@@ -211,9 +161,7 @@ export class PredictionChartComponent
         ),
         borderColor: '#ffd17417',
         borderWidth: 1,
-        hidden: this.chartFilters
-          ? !this.chartFilters.original
-          : false
+        hidden: this.chartFilters ? !this.chartFilters?.original : false
       });
     }
 
@@ -221,8 +169,7 @@ export class PredictionChartComponent
   }
 
   createPredictionChart() {
-    this.ctxPrediction =
-      this.predictionCanvas.nativeElement.getContext('2d');
+    this.ctxPrediction = this.predictionCanvas.nativeElement.getContext('2d');
 
     this.chartPrediction = new Chart(this.ctxPrediction, {
       type: 'line',
@@ -247,23 +194,15 @@ export class PredictionChartComponent
             annotations: {
               line1: {
                 type: 'line',
-                xMin:
-                  this.prediction.test_data_beginning
-                    .timestamp.length,
-                xMax:
-                  this.prediction.test_data_beginning
-                    .timestamp.length,
+                xMin: this.prediction.test_data_beginning.timestamp.length,
+                xMax: this.prediction.test_data_beginning.timestamp.length,
                 borderColor: '#ffd17444',
                 borderDash: [5, 5]
               },
               line2: {
                 type: 'line',
-                xMin:
-                  this.prediction.original_data
-                    .timestamp.length,
-                xMax:
-                  this.prediction.original_data
-                    .timestamp.length,
+                xMin: this.prediction.original_data.timestamp.length,
+                xMax: this.prediction.original_data.timestamp.length,
                 borderColor: '#ffd17444',
                 borderDash: [5, 5]
               }
@@ -277,7 +216,7 @@ export class PredictionChartComponent
           legend: {
             display: false
           }
-        }
+        },
       }
     });
   }
@@ -287,30 +226,22 @@ export class PredictionChartComponent
     const backgroundColor: string[] = [];
 
     if (this.prediction.error_metrics) {
-      Object.keys(this.prediction.error_metrics).forEach(
-        (key, index) => {
-          data.push(this.prediction.error_metrics[key]);
-          backgroundColor.push(this.errorColors[index]);
-        }
-      );
+      Object.keys(this.prediction.error_metrics).forEach((key, i) => {
+        data.push(this.prediction.error_metrics[key]);
+        backgroundColor.push(this.errorColors[i]);
+      });
     }
 
-    return [{
-      data,
-      backgroundColor
-    }];
+    return [{ data, backgroundColor }];
   }
 
   createErrorChart() {
-    this.ctxError =
-      this.errorCanvas.nativeElement.getContext('2d');
+    this.ctxError = this.errorCanvas.nativeElement.getContext('2d');
 
     this.chartError = new Chart(this.ctxError, {
       type: 'bar',
       data: {
-        labels: this.prediction.error_metrics
-          ? Object.keys(this.prediction.error_metrics)
-          : ['No error metrics'],
+        labels: this.prediction.error_metrics ? Object.keys(this.prediction.error_metrics) : ['No error metrics'],
         datasets: this.createErrorDatasets()
       },
       options: {
@@ -321,7 +252,7 @@ export class PredictionChartComponent
           x: {
             ticks: {
               font: {
-                size: 9
+                size: 9,
               }
             }
           }
@@ -342,46 +273,39 @@ export class PredictionChartComponent
           legend: {
             display: false
           }
-        }
+        },
       }
     });
   }
 
   createLabels() {
     const labels: string[] = [];
-    const predictionSettings =
-      this.prediction.predictor_settings.prediction;
-
-    const length =
-      predictionSettings.batchSize
-      + predictionSettings.length;
-
-    for (let index = 0; index < length; index++) {
-      labels.push(index.toString());
+    const len = this.prediction.predictor_settings['prediction']['batchSize'] + this.prediction.predictor_settings['prediction']['length'];
+    for (let i = 0; i < len; i++) {
+      labels.push(i.toString());
     }
-
     return labels;
   }
 
   createCoordinateArray(x: number[], y: number[]) {
-    const result: { x: number, y: number | null }[] = [];
+    const res: { x: number, y: number | null }[] = [];
 
     if (x[0] > 0) {
-      for (let index = 0; index < x[0]; index++) {
-        result.push({
-          x: index,
+      for (let i = 0; i < x[0]; i++) {
+        res.push({
+          x: i,
           y: null
         });
       }
     }
 
-    for (let index = 0; index < x.length; index++) {
-      result.push({
-        x: x[index],
-        y: y[index]
+    for (let i = 0; i < x.length; i++) {
+      res.push({
+        x: x[i],
+        y: y[i]
       });
     }
 
-    return result;
+    return res;
   }
 }

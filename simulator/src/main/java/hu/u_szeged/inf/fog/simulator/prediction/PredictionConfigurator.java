@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
-import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.LSTMTrainLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.Launcher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.sqlite.SqLiteManager;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
@@ -108,8 +107,8 @@ public class PredictionConfigurator {
     /**
      * Executes the prediction simulation by opening processes and
      * applications, running the simulation, closing input/output
-     * streams, exporting simulation results, starting LSTM training
-     * based on configuration, and printing information.
+     * streams, exporting simulation results, finalizing the model
+     * lifecycle, and printing information.
      */
     public void execute() throws Exception {
         for (Launcher application : launchers) {
@@ -126,6 +125,7 @@ public class PredictionConfigurator {
 
         simulationDefinition.simulation();
 
+        LstmOnlineLifecycleController.getInstance().finish();
         LifecycleManager.getInstance().printSummary();
 
         for (BufferedReader reader : predictor_reader.values()) {
@@ -137,11 +137,6 @@ public class PredictionConfigurator {
         }
 
         export();
-
-        if (SimulationSettings.get().getTrainSettings() != null) {
-            Launcher lstmTrainLauncher = new LSTMTrainLauncher();
-            lstmTrainLauncher.open();
-        }
 
         SimulationSettings.get().printInfo();
         FeatureManager.getInstance().printInfo();

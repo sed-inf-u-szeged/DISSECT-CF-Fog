@@ -42,7 +42,7 @@ public class SimulationSettings {
         Files.createDirectories(Paths.get(path));
         String fullPath = path + fileName;
         PredictionLogger.info("SimulationSettings-exportToJSON",
-                String.format("Exporting simulation settings to %s...", fullPath));
+               String.format("Exporting simulation settings to %s...", fullPath));
         try (FileWriter fileWriter = new FileWriter(fullPath)) {
             fileWriter.write(JsonParser.toJson(this, SimulationSettings.class).toString());
             PredictionLogger.info("SimulationSettings-exportToJSON", "Export done!");
@@ -63,7 +63,7 @@ public class SimulationSettings {
                     + ", " + predictionSetting.getPredictionSettings().getSmoothing().getPolynomialDegree());
             table.addRow("Best prediction", predictionSetting.getBestPredictor());
             table.addRow("Average sum of error metrics",
-                    predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
+                predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
             table.addRow("Number of predictions", predictionSetting.getNumberOfPredictions());
             System.out.println(table);
         }

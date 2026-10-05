@@ -15,7 +15,7 @@ export type LifecycleData = {
 };
 
 export type Prediction = {
-  feature_name: string;
+  feature_name: string,
   prediction_number: number;
   predictor_settings: any;
   original_data: { timestamp: any[], data: any[] };

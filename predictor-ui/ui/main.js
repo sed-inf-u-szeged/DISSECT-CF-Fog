@@ -2,7 +2,6 @@ const {
   app,
   BrowserWindow
 } = require('electron');
-
 const {
   existsSync,
   readdirSync,
@@ -11,33 +10,18 @@ const {
   readSync,
   closeSync
 } = require('fs');
-
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 let win;
 let db = null;
-let currentDbPath = null;
-let databaseReady = false;
-let lastSentData = '';
+let dbPath = null;
 let refreshTimer = null;
+let refreshInProgress = false;
+let lastSentData = '';
 
 const predictionsForFeature = new Map();
-
-/*
- * __dirname:
- * D:\Github\DISSECT-CF-Fog\predictor-ui\ui
- *
- * Correct simulation result directory:
- * D:\Github\DISSECT-CF-Fog\simulator\sim_res
- */
-const simulationResultsRoot = path.join(
-  __dirname,
-  '..',
-  '..',
-  'simulator',
-  'sim_res'
-);
+const simulationResultsPath = path.join(__dirname, '..', '..', 'simulator', 'sim_res');
 
 const createWindow = () => {
   win = new BrowserWindow({
@@ -52,14 +36,8 @@ const createWindow = () => {
     autoHideMenuBar: true
   });
 
-  win.loadFile(
-    path.join(
-      __dirname,
-      'dist',
-      'dissect-cf-predictor-ui',
-      'index.html'
-    )
-  );
+  //win.webContents.openDevTools();
+  win.loadFile(path.join(__dirname, 'dist/dissect-cf-predictor-ui/index.html'));
 
   win.webContents.once('did-finish-load', () => {
     fetchAndSendData();
@@ -68,16 +46,13 @@ const createWindow = () => {
       clearInterval(refreshTimer);
     }
 
-    refreshTimer = setInterval(
-      fetchAndSendData,
-      5000
-    );
-  });
+    refreshTimer = setInterval(fetchAndSendData, 5000)
+  })
 
   win.on('closed', () => {
     win = null;
   });
-};
+}
 
 function isSqliteDatabase(databasePath) {
   let fileDescriptor = null;
@@ -89,36 +64,15 @@ function isSqliteDatabase(databasePath) {
       return false;
     }
 
-    const headerBuffer = Buffer.alloc(16);
-
+    const header = Buffer.alloc(16);
     fileDescriptor = openSync(databasePath, 'r');
 
-    const bytesRead = readSync(
-      fileDescriptor,
-      headerBuffer,
-      0,
-      16,
-      0
-    );
-
-    if (bytesRead !== 16) {
+    if (readSync(fileDescriptor, header, 0, 16, 0) !== 16) {
       return false;
     }
 
-    const header = headerBuffer.toString(
-      'ascii',
-      0,
-      16
-    );
-
-    return header === 'SQLite format 3\u0000';
+    return header.toString('ascii') === 'SQLite format 3\u0000';
   } catch (error) {
-    console.warn(
-      'Could not validate database:',
-      databasePath,
-      error.message
-    );
-
     return false;
   } finally {
     if (fileDescriptor !== null) {
@@ -128,144 +82,105 @@ function isSqliteDatabase(databasePath) {
 }
 
 function findLatestDatabasePath() {
-  if (!existsSync(simulationResultsRoot)) {
-    console.error(
-      'Simulation result directory does not exist:',
-      simulationResultsRoot
-    );
-
+  if (!existsSync(simulationResultsPath)) {
     return null;
   }
 
-  const candidates = readdirSync(
-    simulationResultsRoot,
-    {
-      withFileTypes: true
-    }
-  )
+  const candidates = readdirSync(simulationResultsPath, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => {
-      const databasePath = path.join(
-        simulationResultsRoot,
-        entry.name,
-        'database.db'
-      );
+    .map((entry) => path.join(simulationResultsPath, entry.name, 'database.db'))
+    .filter((databasePath) => existsSync(databasePath) && isSqliteDatabase(databasePath))
+    .map((databasePath) => ({
+      databasePath,
+      modifiedAt: statSync(databasePath).mtimeMs
+    }))
+    .sort((left, right) => right.modifiedAt - left.modifiedAt);
 
-      if (!existsSync(databasePath)) {
-        return null;
-      }
-
-      const databaseStats = statSync(databasePath);
-
-      if (
-        databaseStats.size === 0
-        || !isSqliteDatabase(databasePath)
-      ) {
-        console.warn(
-          'Skipping invalid database:',
-          databasePath
-        );
-
-        return null;
-      }
-
-      return {
-        databasePath,
-        modifiedAt: databaseStats.mtimeMs
-      };
-    })
-    .filter((candidate) => candidate !== null)
-    .sort(
-      (left, right) =>
-        right.modifiedAt - left.modifiedAt
-    );
-
-  if (candidates.length === 0) {
-    console.error(
-      'No valid SQLite simulation database was found.'
-    );
-
-    return null;
-  }
-
-  return candidates[0].databasePath;
+  return candidates.length > 0 ? candidates[0].databasePath : null;
 }
 
-function connectToLatestDatabase() {
-  const latestDatabasePath =
-    findLatestDatabasePath();
+function closeDatabase(database) {
+  return new Promise((resolve) => {
+    if (!database) {
+      resolve();
+      return;
+    }
+
+    database.close((error) => {
+      if (error) {
+        console.warn('Database close warning:', error.message);
+      }
+
+      resolve();
+    });
+  });
+}
+
+function openDatabase(databasePath) {
+  return new Promise((resolve, reject) => {
+    const database = new sqlite3.Database(
+      databasePath,
+      sqlite3.OPEN_READONLY,
+      (error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(database);
+      }
+    );
+  });
+}
+
+async function connectToLatestDatabase() {
+  const latestDatabasePath = findLatestDatabasePath();
 
   if (!latestDatabasePath) {
     return false;
   }
 
-  if (
-    databaseReady
-    && db
-    && currentDbPath === latestDatabasePath
-  ) {
+  if (db && dbPath === latestDatabasePath) {
     return true;
   }
 
-  if (db) {
-    db.close((error) => {
-      if (error) {
-        console.warn(
-          'Previous database close warning:',
-          error.message
-        );
-      }
-    });
+  await closeDatabase(db);
 
-    db = null;
-  }
-
-  databaseReady = false;
-  currentDbPath = latestDatabasePath;
-
+  db = null;
+  dbPath = null;
   predictionsForFeature.clear();
   lastSentData = '';
 
-  db = new sqlite3.Database(
-    currentDbPath,
-    sqlite3.OPEN_READONLY,
-    (error) => {
-      if (error) {
-        console.error(
-          'Database connection error:',
-          currentDbPath,
-          error.message
-        );
+  try {
+    db = await openDatabase(latestDatabasePath);
+    dbPath = latestDatabasePath;
 
-        databaseReady = false;
-        db = null;
-        currentDbPath = null;
+    console.log('Database opened successfully:', dbPath);
 
-        return;
-      }
+    return true;
+  } catch (error) {
+    console.error(
+      'Database connection error:',
+      latestDatabasePath,
+      error.message
+    );
 
-      databaseReady = true;
-
-      console.log(
-        'Database opened successfully:',
-        currentDbPath
-      );
-    }
-  );
-
-  /*
-   * sqlite3 opens the database asynchronously.
-   * The next refresh cycle will read its content.
-   */
-  return false;
+    return false;
+  }
 }
 
 async function fetchAndSendData() {
-  if (!connectToLatestDatabase()) {
+  if (refreshInProgress) {
     return;
   }
 
+  refreshInProgress = true;
+
   try {
+    if (!await connectToLatestDatabase()) {
+      return;
+    }
+
     const tableRows = await readRows(`
       SELECT name
       FROM sqlite_master
@@ -278,17 +193,12 @@ async function fetchAndSendData() {
 
     for (const tableRow of tableRows) {
       const predictionTableName = tableRow.name;
+      const lifecycleTableName = predictionTableName.replace(
+        '_feature_prediction',
+        '_feature_lifecycle'
+      );
 
-      const lifecycleTableName =
-        predictionTableName.replace(
-          '_feature_prediction',
-          '_feature_lifecycle'
-        );
-
-      const lifecycleData =
-        await readLifecycleData(
-          lifecycleTableName
-        );
+      const lifecycleData = await readLifecycleData(lifecycleTableName);
 
       const predictionRows = await readRows(`
         SELECT *
@@ -300,61 +210,25 @@ async function fetchAndSendData() {
 
       for (const row of predictionRows) {
         try {
-          const predictorSettings = parseJson(
-            row.predictor_settings,
-            {}
-          );
-
-          const predictorName =
-            predictorSettings.predictor_name
+          const predictorSettings = JSON.parse(row["predictor_settings"]);
+          const predictorName = predictorSettings.predictor_name
             || predictorSettings.name
             || 'unknown';
 
           predictions.push({
             feature_name: predictionTableName,
-
-            original_data: parseJson(
-              row.original_data,
-              []
-            ),
-
-            preprocessed_data: parseJson(
-              row.preprocessed_data,
-              []
-            ),
-
-            test_data_beginning: parseJson(
-              row.test_data_beginning,
-              []
-            ),
-
-            test_data_end: parseJson(
-              row.test_data_end,
-              []
-            ),
-
-            prediction_future: parseJson(
-              row.prediction_future,
-              []
-            ),
-
-            prediction_test: parseJson(
-              row.prediction_test,
-              []
-            ),
-
-            error_metrics: parseJson(
-              row.error_metrics,
-              {}
-            ),
-
-            prediction_time: row.prediction_time,
-            prediction_number: row.prediction_number,
+            original_data: JSON.parse(row["original_data"]),
+            preprocessed_data: JSON.parse(row["preprocessed_data"]),
+            test_data_beginning: JSON.parse(row["test_data_beginning"]),
+            test_data_end: JSON.parse(row["test_data_end"]),
+            prediction_future: JSON.parse(row["prediction_future"]),
+            prediction_test: JSON.parse(row["prediction_test"]),
+            error_metrics: JSON.parse(row["error_metrics"]),
+            prediction_time: JSON.parse(row["prediction_time"]),
+            prediction_number: JSON.parse(row["prediction_number"]),
             predictor_settings: predictorSettings,
-
-            lifecycle:
-              lifecycleData[predictorName] || null
-          });
+            lifecycle: lifecycleData[predictorName] || null
+          })
         } catch (error) {
           console.warn(
             'Skipping invalid prediction row:',
@@ -371,44 +245,23 @@ async function fetchAndSendData() {
       );
     }
 
-    predictionsForFeature.clear();
-
-    newPredictionsForFeature.forEach(
-      (predictions, featureName) => {
-        predictionsForFeature.set(
-          featureName,
-          predictions
-        );
-      }
-    );
-
     const serializedData = JSON.stringify(
-      Array.from(
-        predictionsForFeature.entries()
-      )
+      Array.from(newPredictionsForFeature.entries())
     );
 
     if (serializedData !== lastSentData) {
+      predictionsForFeature.clear();
+
+      newPredictionsForFeature.forEach(
+        (predictions, featureName) => {
+          predictionsForFeature.set(
+            featureName,
+            predictions
+          );
+        }
+      );
+
       lastSentData = serializedData;
-
-      const totalPredictions =
-        Array.from(
-          predictionsForFeature.values()
-        ).reduce(
-          (total, predictions) =>
-            total + predictions.length,
-          0
-        );
-
-      console.log(
-        'Prediction tables found:',
-        tableRows.length
-      );
-
-      console.log(
-        'Predictions read this cycle:',
-        totalPredictions
-      );
 
       if (win && !win.isDestroyed()) {
         win.webContents.send(
@@ -418,41 +271,45 @@ async function fetchAndSendData() {
       }
     }
   } catch (error) {
-    sendDatabaseError(error.message);
+    console.error(
+      'Database query error:',
+      error.message
+    );
+
+    if (win && !win.isDestroyed()) {
+      win.webContents.send(
+        'data-error',
+        error.message
+      );
+    }
+  } finally {
+    refreshInProgress = false;
   }
 }
 
-async function readLifecycleData(
-  lifecycleTableName
-) {
+async function readLifecycleData(tableName) {
   try {
-    const lifecycleRows = await readRows(`
+    const rows = await readRows(`
       SELECT predictor_name,
              lifecycle_state,
              is_active,
              latest_metrics,
              updated_at
-      FROM ${quoteIdentifier(lifecycleTableName)};
+      FROM ${quoteIdentifier(tableName)};
     `);
 
-    return lifecycleRows.reduce(
-      (result, row) => {
-        result[row.predictor_name] = {
-          state: row.lifecycle_state,
-          is_active: row.is_active === 1,
+    return rows.reduce((result, row) => {
+      result[row.predictor_name] = {
+        state: row.lifecycle_state,
+        is_active: row.is_active === 1,
+        metrics: row.latest_metrics
+          ? JSON.parse(row.latest_metrics)
+          : null,
+        updated_at: row.updated_at
+      };
 
-          metrics: parseJson(
-            row.latest_metrics,
-            null
-          ),
-
-          updated_at: row.updated_at
-        };
-
-        return result;
-      },
-      {}
-    );
+      return result;
+    }, {});
   } catch (error) {
     if (
       error.message
@@ -467,71 +324,24 @@ async function readLifecycleData(
 
 function readRows(query) {
   return new Promise((resolve, reject) => {
-    if (!db || !databaseReady) {
-      reject(
-        new Error('Database is not ready.')
-      );
-
+    if (!db) {
+      reject(new Error('Database is not ready.'));
       return;
     }
 
-    db.all(
-      query,
-      [],
-      (error, rows) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(rows || []);
+    db.all(query, [], (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
       }
-    );
+
+      resolve(rows || []);
+    });
   });
 }
 
-function parseJson(value, fallbackValue) {
-  if (
-    value === null
-    || value === undefined
-    || value === ''
-  ) {
-    return fallbackValue;
-  }
-
-  if (
-    typeof value === 'object'
-    && !Buffer.isBuffer(value)
-  ) {
-    return value;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return fallbackValue;
-  }
-}
-
 function quoteIdentifier(identifier) {
-  return `"${String(identifier).replace(
-    /"/g,
-    '""'
-  )}"`;
-}
-
-function sendDatabaseError(message) {
-  console.error(
-    'Database query error:',
-    message
-  );
-
-  if (win && !win.isDestroyed()) {
-    win.webContents.send(
-      'data-error',
-      message
-    );
-  }
+  return `"${String(identifier).replace(/"/g, '""')}"`;
 }
 
 app.whenReady().then(createWindow);
@@ -542,20 +352,9 @@ app.on('window-all-closed', () => {
     refreshTimer = null;
   }
 
-  if (db) {
-    db.close((error) => {
-      if (error) {
-        console.warn(
-          'Database close warning:',
-          error.message
-        );
-      }
-    });
-
-    db = null;
-    databaseReady = false;
-    currentDbPath = null;
-  }
+  closeDatabase(db);
+  db = null;
+  dbPath = null;
 
   if (process.platform !== 'darwin') {
     app.quit();
@@ -563,9 +362,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (
-    BrowserWindow.getAllWindows().length === 0
-  ) {
+  if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
 });

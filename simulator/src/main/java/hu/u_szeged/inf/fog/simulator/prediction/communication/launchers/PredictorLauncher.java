@@ -6,8 +6,8 @@ import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
+import hu.u_szeged.inf.fog.simulator.util.ProjectPathResolver;
 import java.io.File;
-import java.util.Locale;
 import org.json.JSONObject;
 
 /**
@@ -21,23 +21,15 @@ public class PredictorLauncher extends Launcher {
 
     @Override
     public String getProjectLocation() {
-        String parentPath = new File(System.getProperty("user.dir"))
-                .getParentFile()
-                .getAbsolutePath();
-
-        return new StringBuilder(parentPath)
-                .append(File.separator)
-                .append("predictor-ui")
-                .append(File.separator)
-                .append("scripts")
-                .toString();
+        return ProjectPathResolver.getPredictorScriptsDirectory().toString();
     }
 
     @Override
     public Process openWindows() throws Exception {
-        return openPredictors(
+        return openWindowsPredictors(
                 resolvePythonExecutable(
-                        "venv" + File.separator + "Scripts" + File.separator + "python.exe",
+                        "venv" + File.separator + "Scripts"
+                                + File.separator + "python.exe",
                         "venv" + File.separator + "python.exe"
                 )
         );
@@ -45,42 +37,67 @@ public class PredictorLauncher extends Launcher {
 
     @Override
     public Process openLinux() throws Exception {
-        return openPredictors(
+        return openLinuxPredictors(
                 resolvePythonExecutable(
-                        "venv" + File.separator + "bin" + File.separator + "python"
+                        "venv" + File.separator + "bin"
+                                + File.separator + "python"
                 )
         );
     }
 
-    private Process openPredictors(String pythonExecutable) throws Exception {
+    private Process openWindowsPredictors(
+            String pythonExecutable
+    ) throws Exception {
         File projectDirectory = new File(getProjectLocation());
-        File predictorScript = new File(projectDirectory, "main.py");
         File errorLog = new File(
                 ScenarioBase.resultDirectory,
                 "prediction_error_logs.txt"
         );
 
-        for (var predictionSetting : SimulationSettings.get().getPredictionSettings()) {
+        for (var predictionSetting
+                : SimulationSettings.get().getPredictionSettings()) {
             JSONObject predictorSettings = new JSONObject().put(
                     "predictor-settings",
-                    JsonParser.toJson(predictionSetting, PairPredictionSettings.class)
+                    JsonParser.toJson(
+                            predictionSetting,
+                            PairPredictionSettings.class
+                    )
             );
 
-            ProcessBuilder pb = new ProcessBuilder(
-                    pythonExecutable,
-                    predictorScript.getAbsolutePath(),
-                    buildPredictorSettingsArgument(predictorSettings)
+            String relativePythonExecutable = projectDirectory.toPath()
+                    .toAbsolutePath()
+                    .normalize()
+                    .relativize(
+                            new File(pythonExecutable).toPath()
+                                    .toAbsolutePath()
+                                    .normalize()
+                    )
+                    .toString();
+
+            String command = String.format(
+                    "%s main.py %s",
+                    relativePythonExecutable,
+                    predictorSettings.toString()
+                            .replace("\"", "\\\"")
             );
 
-            pb.directory(projectDirectory);
-            pb.redirectError(errorLog);
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "cmd.exe",
+                    "/c",
+                    command
+            );
+
+            processBuilder.directory(projectDirectory);
+            processBuilder.redirectError(errorLog);
 
             PredictionLogger.info(
                     "Predictor-opening",
-                    "Opening \"" + predictionSetting + "\" named predictor"
+                    "Opening \""
+                            + predictionSetting
+                            + "\" named predictor"
             );
 
-            Process predictorProcess = pb.start();
+            Process predictorProcess = processBuilder.start();
 
             PredictionConfigurator.addPredictorProcess(
                     predictionSetting.getPredictorName(),
@@ -91,25 +108,66 @@ public class PredictorLauncher extends Launcher {
         return null;
     }
 
-    private String buildPredictorSettingsArgument(JSONObject predictorSettings) {
-        String json = predictorSettings.toString();
+    private Process openLinuxPredictors(
+            String pythonExecutable
+    ) throws Exception {
+        File projectDirectory = new File(getProjectLocation());
+        File predictorScript = new File(
+                projectDirectory,
+                "main.py"
+        );
+        File errorLog = new File(
+                ScenarioBase.resultDirectory,
+                "prediction_error_logs.txt"
+        );
 
-        boolean runningOnWindows = System.getProperty("os.name")
-                .toLowerCase(Locale.ROOT)
-                .contains("win");
+        for (var predictionSetting
+                : SimulationSettings.get().getPredictionSettings()) {
+            JSONObject predictorSettings = new JSONObject().put(
+                    "predictor-settings",
+                    JsonParser.toJson(
+                            predictionSetting,
+                            PairPredictionSettings.class
+                    )
+            );
 
-        if (runningOnWindows) {
-            return json.replace("\"", "\\\"");
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    pythonExecutable,
+                    predictorScript.getAbsolutePath(),
+                    predictorSettings.toString()
+            );
+
+            processBuilder.directory(projectDirectory);
+            processBuilder.redirectError(errorLog);
+
+            PredictionLogger.info(
+                    "Predictor-opening",
+                    "Opening \""
+                            + predictionSetting
+                            + "\" named predictor"
+            );
+
+            Process predictorProcess = processBuilder.start();
+
+            PredictionConfigurator.addPredictorProcess(
+                    predictionSetting.getPredictorName(),
+                    predictorProcess
+            );
         }
 
-        return json;
+        return null;
     }
 
-    private String resolvePythonExecutable(String... relativePaths) {
+    private String resolvePythonExecutable(
+            String... relativePaths
+    ) {
         String projectLocation = getProjectLocation();
 
         for (String relativePath : relativePaths) {
-            File candidate = new File(projectLocation, relativePath);
+            File candidate = new File(
+                    projectLocation,
+                    relativePath
+            );
 
             if (candidate.isFile()) {
                 return candidate.getAbsolutePath();

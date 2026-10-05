@@ -5,6 +5,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.TrainSettings;
+import hu.u_szeged.inf.fog.simulator.util.ProjectPathResolver;
 import java.io.File;
 import java.io.IOException;
 
@@ -28,48 +29,117 @@ public class LSTMTrainLauncher extends Launcher {
 
     @Override
     public String getProjectLocation() {
-        String parentPath = new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath();
-
-        String str = new StringBuilder(parentPath).append(File.separator)
-                .append("predictor-ui").append(File.separator).append("scripts").toString();
-
-        return str;
+        return ProjectPathResolver.getPredictorScriptsDirectory().toString();
     }
 
     @Override
     public Process openWindows() throws Exception {
-        String command = "cd /d " + getProjectLocation() 
-                          + String.format(
-                        " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
-                        getProjectLocation(),
-                        getProjectLocation(),
-                        JsonParser.toJson(
-                            SimulationSettings.get().getTrainSettings(), TrainSettings.class
-                        ).toString().replace("\"", "\\\"")
-                );
-
-        ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
-        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
-
-        PredictionLogger.info("LSTM trainer", "Opening trainer");
-        return pb.start();
+        return openTrainer(
+                resolvePythonExecutable(
+                        "venv" + File.separator + "Scripts"
+                                + File.separator + "python.exe",
+                        "venv" + File.separator + "python.exe"
+                ),
+                true
+        );
     }
 
     @Override
     public Process openLinux() throws Exception {
-        String command = "cd /d " + getProjectLocation() + String.format(
-                        " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
-                        getProjectLocation(),
-                        getProjectLocation(),
-                        JsonParser.toJson(
-                                SimulationSettings.get().getTrainSettings(), TrainSettings.class
-                        ).toString().replace("\"", "\\\"")
-                );
+        return openTrainer(
+                resolvePythonExecutable(
+                        "venv" + File.separator + "bin"
+                                + File.separator + "python"
+                ),
+                false
+        );
+    }
 
-        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
+    private Process openTrainer(
+            String pythonExecutable,
+            boolean windows
+    ) throws Exception {
+        File projectDirectory = new File(getProjectLocation());
+        File trainerScript = new File(
+                projectDirectory,
+                "predictor_models" + File.separator + "lstm_trainer.py"
+        );
+        File trainingLog = new File(
+                ScenarioBase.resultDirectory,
+                "lstm_training.log"
+        );
 
-        PredictionLogger.info("LSTM trainer", "Opening trainer");
-        return pb.start();
+        String trainSettings = JsonParser.toJson(
+                SimulationSettings.get().getTrainSettings(),
+                TrainSettings.class
+        ).toString();
+
+        ProcessBuilder processBuilder;
+
+        if (windows) {
+            String relativePythonExecutable = projectDirectory.toPath()
+                    .toAbsolutePath()
+                    .normalize()
+                    .relativize(
+                            new File(pythonExecutable).toPath()
+                                    .toAbsolutePath()
+                                    .normalize()
+                    )
+                    .toString();
+
+            String relativeTrainerScript = "predictor_models"
+                    + File.separator
+                    + "lstm_trainer.py";
+
+            String command = String.format(
+                    "%s %s \"%s\"",
+                    relativePythonExecutable,
+                    relativeTrainerScript,
+                    trainSettings.replace("\"", "\\\"")
+            );
+
+            processBuilder = new ProcessBuilder(
+                    "cmd.exe",
+                    "/c",
+                    command
+            );
+        } else {
+            processBuilder = new ProcessBuilder(
+                    pythonExecutable,
+                    trainerScript.getAbsolutePath(),
+                    trainSettings
+            );
+        }
+
+        processBuilder.directory(projectDirectory);
+        processBuilder.redirectErrorStream(true);
+        processBuilder.redirectOutput(trainingLog);
+
+        PredictionLogger.info(
+                "LSTM trainer",
+                "Opening trainer"
+        );
+
+        return processBuilder.start();
+    }
+
+    private String resolvePythonExecutable(String... relativePaths) {
+        String projectLocation = getProjectLocation();
+
+        for (String relativePath : relativePaths) {
+            File candidate = new File(
+                    projectLocation,
+                    relativePath
+            );
+
+            if (candidate.isFile()) {
+                return candidate.getAbsolutePath();
+            }
+        }
+
+        throw new IllegalStateException(
+                "Python executable was not found. Checked paths: "
+                        + String.join(", ", relativePaths)
+        );
     }
 }

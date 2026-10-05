@@ -1,6 +1,9 @@
 package hu.u_szeged.inf.fog.simulator.prediction.lifecycle;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,12 +21,15 @@ public class LifecycleManager {
      */
     private final Map<String, String> activePredictors;
 
+    private final Map<String, String> baselinePredictors;
+
     /**
      * Creates an empty lifecycle manager.
      */
     private LifecycleManager() {
         coordinators = new HashMap<>();
         activePredictors = new HashMap<>();
+        baselinePredictors = new HashMap<>();
     }
 
     /**
@@ -151,6 +157,11 @@ public class LifecycleManager {
                 featureName,
                 predictorName
         );
+
+        baselinePredictors.put(
+                featureName,
+                predictorName
+        );
     }
 
     /**
@@ -202,7 +213,9 @@ public class LifecycleManager {
             );
 
             if (oldActiveCoordinator.getState()
-                    != LifecycleState.ACTIVE) {
+                    != LifecycleState.ACTIVE
+                    && oldActiveCoordinator.getState()
+                    != LifecycleState.DEGRADED) {
                 throw new IllegalStateException(
                         "The registered active predictor "
                                 + currentActivePredictor
@@ -213,7 +226,9 @@ public class LifecycleManager {
             }
         }
 
-        if (oldActiveCoordinator != null) {
+        if (oldActiveCoordinator != null
+                && oldActiveCoordinator.getState()
+                == LifecycleState.ACTIVE) {
             oldActiveCoordinator.deactivate();
         }
 
@@ -223,6 +238,152 @@ public class LifecycleManager {
                 featureName,
                 predictorName
         );
+    }
+
+    /**
+     * Promotes a READY predictor only when it is better than the
+     * currently active predictor.
+     *
+     * If the active predictor has not produced evaluation metrics yet,
+     * the first candidate satisfying every lifecycle threshold may replace it.
+     *
+     * @param predictorName the READY candidate predictor
+     * @param featureName the evaluated feature
+     * @return true when the candidate became ACTIVE
+     */
+    public boolean promoteIfBetter(
+            String predictorName,
+            String featureName
+    ) {
+        LifecycleCoordinator candidateCoordinator =
+                requireCoordinator(
+                        predictorName,
+                        featureName
+                );
+
+        String currentActivePredictor =
+                activePredictors.get(featureName);
+
+        if (predictorName.equals(currentActivePredictor)) {
+            return false;
+        }
+
+        if (candidateCoordinator.getState()
+                != LifecycleState.READY) {
+            throw new IllegalStateException(
+                    "Predictor "
+                            + predictorName
+                            + " for feature "
+                            + featureName
+                            + " cannot be compared while its state is "
+                            + candidateCoordinator.getState()
+                            + "."
+            );
+        }
+
+        if (currentActivePredictor == null) {
+            promote(predictorName, featureName);
+            return true;
+        }
+
+        LifecycleCoordinator activeCoordinator =
+                requireCoordinator(
+                        currentActivePredictor,
+                        featureName
+                );
+
+        if (isCandidateBetter(
+                candidateCoordinator,
+                activeCoordinator
+        )) {
+            promote(predictorName, featureName);
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean fallbackToBaseline(String featureName) {
+        String baselinePredictor =
+                baselinePredictors.get(featureName);
+
+        String currentActivePredictor =
+                activePredictors.get(featureName);
+
+        if (baselinePredictor == null
+                || baselinePredictor.equals(
+                        currentActivePredictor
+                )) {
+            return false;
+        }
+
+        LifecycleCoordinator baselineCoordinator =
+                requireCoordinator(
+                        baselinePredictor,
+                        featureName
+                );
+
+        if (currentActivePredictor != null) {
+            LifecycleCoordinator activeCoordinator =
+                    requireCoordinator(
+                            currentActivePredictor,
+                            featureName
+                    );
+
+            if (activeCoordinator.getState()
+                    == LifecycleState.ACTIVE) {
+                activeCoordinator.deactivate();
+            }
+        }
+
+        if (baselineCoordinator.getState()
+                == LifecycleState.READY) {
+            baselineCoordinator.activate();
+        } else if (baselineCoordinator.getState()
+                != LifecycleState.ACTIVE) {
+            throw new IllegalStateException(
+                    "Baseline predictor "
+                            + baselinePredictor
+                            + " cannot be restored while its state is "
+                            + baselineCoordinator.getState()
+                            + "."
+            );
+        }
+
+        activePredictors.put(
+                featureName,
+                baselinePredictor
+        );
+
+        return true;
+    }
+
+    public int fallbackPredictorToBaselines(
+            String predictorName
+    ) {
+        List<String> affectedFeatures =
+                new ArrayList<>();
+
+        for (Map.Entry<String, String> entry
+                : activePredictors.entrySet()) {
+            if (predictorName.equals(
+                    entry.getValue()
+            )) {
+                affectedFeatures.add(
+                        entry.getKey()
+                );
+            }
+        }
+
+        int fallbackCount = 0;
+
+        for (String featureName : affectedFeatures) {
+            if (fallbackToBaseline(featureName)) {
+                fallbackCount++;
+            }
+        }
+
+        return fallbackCount;
     }
 
     /**
@@ -268,17 +429,21 @@ public class LifecycleManager {
             );
         }
 
-        LifecycleCoordinator coordinator = requireCoordinator(
-                prediction.getPredictorName(),
-                prediction.getFeatureName()
-        );
+        LifecycleCoordinator coordinator =
+                requireCoordinator(
+                        prediction.getPredictorName(),
+                        prediction.getFeatureName()
+                );
 
-        coordinator.registerPrediction(prediction);
+        coordinator.registerPrediction(
+                prediction
+        );
     }
 
     /**
      * Registers a shadow prediction only when its coordinator exists
-     * and is currently evaluating.
+     * and can currently collect evaluation metrics. Both EVALUATING
+     * candidates and the ACTIVE predictor are eligible.
      *
      * @param prediction the shadow prediction
      * @return true when the prediction was registered;
@@ -293,28 +458,36 @@ public class LifecycleManager {
             );
         }
 
-        LifecycleCoordinator coordinator = getCoordinator(
-                prediction.getPredictorName(),
-                prediction.getFeatureName()
-        );
+        LifecycleCoordinator coordinator =
+                getCoordinator(
+                        prediction.getPredictorName(),
+                        prediction.getFeatureName()
+                );
 
         if (coordinator == null
-                || coordinator.getState()
-                != LifecycleState.EVALUATING) {
+                || (coordinator.getState()
+                != LifecycleState.EVALUATING
+                && coordinator.getState()
+                != LifecycleState.ACTIVE)) {
             return false;
         }
 
-        coordinator.registerPrediction(prediction);
+        coordinator.registerPrediction(
+                prediction
+        );
+
         return true;
     }
 
     /**
-     * Resolves an actual value in every evaluating coordinator
-     * registered for the feature. Each coordinator is evaluated
-     * automatically after at least one prediction is resolved.
+     * Resolves an actual value in every evaluation-capable coordinator
+     * registered for the feature. This includes EVALUATING candidates and
+     * the ACTIVE predictor. Each coordinator is evaluated automatically
+     * after at least one prediction is resolved.
      *
-     * When a candidate satisfies every lifecycle threshold and becomes
-     * READY, it is automatically promoted to ACTIVE for the feature.
+     * All matching metrics are refreshed before READY candidates are
+     * compared with the active predictor. This keeps model selection
+     * independent from map iteration order.
      *
      * @param featureName the observed feature
      * @param targetTimestamp the timestamp of the actual value
@@ -328,6 +501,9 @@ public class LifecycleManager {
     ) {
         int resolvedCount = 0;
 
+        List<String> readyPredictors =
+                new ArrayList<>();
+
         for (Map<String, LifecycleCoordinator>
                 featureCoordinators : coordinators.values()) {
 
@@ -335,27 +511,53 @@ public class LifecycleManager {
                     featureCoordinators.get(featureName);
 
             if (coordinator != null
-                    && coordinator.getState()
-                    == LifecycleState.EVALUATING) {
+                    && (coordinator.getState()
+                    == LifecycleState.EVALUATING
+                    || coordinator.getState()
+                    == LifecycleState.ACTIVE)) {
+
                 int coordinatorResolvedCount =
                         coordinator.resolveActualValue(
                                 targetTimestamp,
                                 actualValue
                         );
 
-                resolvedCount += coordinatorResolvedCount;
+                resolvedCount +=
+                        coordinatorResolvedCount;
 
                 if (coordinatorResolvedCount > 0) {
                     coordinator.evaluate();
 
                     if (coordinator.getState()
                             == LifecycleState.READY) {
-                        promote(
-                                coordinator.getPredictorName(),
-                                featureName
+                        readyPredictors.add(
+                                coordinator.getPredictorName()
                         );
                     }
                 }
+            }
+        }
+
+        Collections.sort(
+                readyPredictors
+        );
+
+        for (String predictorName
+                : readyPredictors) {
+
+            LifecycleCoordinator coordinator =
+                    getCoordinator(
+                            predictorName,
+                            featureName
+                    );
+
+            if (coordinator != null
+                    && coordinator.getState()
+                    == LifecycleState.READY) {
+                promoteIfBetter(
+                        predictorName,
+                        featureName
+                );
             }
         }
 
@@ -386,7 +588,9 @@ public class LifecycleManager {
      * change lifecycle state or trigger another evaluation.
      */
     public void printSummary() {
-        System.out.println("=== Lifecycle Summary ===");
+        System.out.println(
+                "=== Lifecycle Summary ==="
+        );
 
         if (coordinators.isEmpty()) {
             System.out.println(
@@ -397,8 +601,10 @@ public class LifecycleManager {
 
         for (Map<String, LifecycleCoordinator>
                 featureCoordinators : coordinators.values()) {
+
             for (LifecycleCoordinator coordinator
                     : featureCoordinators.values()) {
+
                 EvaluationMetrics metrics =
                         coordinator.getLatestMetrics();
 
@@ -406,14 +612,17 @@ public class LifecycleManager {
                         "Predictor: "
                                 + coordinator.getPredictorName()
                 );
+
                 System.out.println(
                         "Feature: "
                                 + coordinator.getFeatureName()
                 );
+
                 System.out.println(
                         "State: "
                                 + coordinator.getState()
                 );
+
                 System.out.println(
                         "Active predictor for feature: "
                                 + getActivePredictorName(
@@ -430,29 +639,36 @@ public class LifecycleManager {
                             "Matched samples: "
                                     + metrics.getMatchedSamples()
                     );
+
                     System.out.println(
                             "Accuracy: "
                                     + metrics.getAccuracy()
                     );
+
                     System.out.println(
                             "MAE: "
                                     + metrics.getMae()
                     );
+
                     System.out.println(
                             "MSE: "
                                     + metrics.getMse()
                     );
+
                     System.out.println(
                             "RMSE: "
                                     + metrics.getRmse()
                     );
+
                     System.out.println(
                             "SMAPE: "
                                     + metrics.getSmape()
                     );
                 }
 
-                System.out.println("-------------------------");
+                System.out.println(
+                        "-------------------------"
+                );
             }
         }
     }
@@ -464,6 +680,134 @@ public class LifecycleManager {
     public void reset() {
         coordinators.clear();
         activePredictors.clear();
+        baselinePredictors.clear();
+    }
+
+    /**
+     * Compares a READY candidate with the currently active predictor.
+     */
+    private boolean isCandidateBetter(
+            LifecycleCoordinator candidateCoordinator,
+            LifecycleCoordinator activeCoordinator
+    ) {
+        EvaluationMetrics candidateMetrics =
+                candidateCoordinator.getLatestMetrics();
+
+        EvaluationMetrics activeMetrics =
+                activeCoordinator.getLatestMetrics();
+
+        if (candidateMetrics == null) {
+            return false;
+        }
+
+        if (activeMetrics == null) {
+            return true;
+        }
+
+        int comparison = compareHigherIsBetter(
+                candidateMetrics.getAccuracy(),
+                activeMetrics.getAccuracy()
+        );
+
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+
+        comparison = compareLowerIsBetter(
+                candidateMetrics.getRmse(),
+                activeMetrics.getRmse()
+        );
+
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+
+        comparison = compareLowerIsBetter(
+                candidateMetrics.getMae(),
+                activeMetrics.getMae()
+        );
+
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+
+        comparison = compareLowerIsBetter(
+                candidateMetrics.getSmape(),
+                activeMetrics.getSmape()
+        );
+
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+
+        comparison = compareLowerIsBetter(
+                candidateMetrics.getMse(),
+                activeMetrics.getMse()
+        );
+
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+
+        return candidateCoordinator
+                .getPredictorName()
+                .compareTo(
+                        activeCoordinator.getPredictorName()
+                ) < 0;
+    }
+
+    /**
+     * Compares two metric values where a higher value is preferred.
+     */
+    private int compareHigherIsBetter(
+            double candidateValue,
+            double activeValue
+    ) {
+        boolean candidateFinite =
+                Double.isFinite(candidateValue);
+
+        boolean activeFinite =
+                Double.isFinite(activeValue);
+
+        if (candidateFinite && !activeFinite) {
+            return 1;
+        }
+
+        if (!candidateFinite && activeFinite) {
+            return -1;
+        }
+
+        return Double.compare(
+                candidateValue,
+                activeValue
+        );
+    }
+
+    /**
+     * Compares two metric values where a lower value is preferred.
+     */
+    private int compareLowerIsBetter(
+            double candidateValue,
+            double activeValue
+    ) {
+        boolean candidateFinite =
+                Double.isFinite(candidateValue);
+
+        boolean activeFinite =
+                Double.isFinite(activeValue);
+
+        if (candidateFinite && !activeFinite) {
+            return 1;
+        }
+
+        if (!candidateFinite && activeFinite) {
+            return -1;
+        }
+
+        return Double.compare(
+                activeValue,
+                candidateValue
+        );
     }
 
     /**
@@ -473,10 +817,11 @@ public class LifecycleManager {
             String predictorName,
             String featureName
     ) {
-        LifecycleCoordinator coordinator = getCoordinator(
-                predictorName,
-                featureName
-        );
+        LifecycleCoordinator coordinator =
+                getCoordinator(
+                        predictorName,
+                        featureName
+                );
 
         if (coordinator == null) {
             throw new IllegalArgumentException(

@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.application.strategy;
 
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -9,6 +10,8 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.util.ArrayList;
@@ -26,7 +29,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
     /**
      * Constructs a new strategy with the specified activation ratio and transfer divider.
      *
-     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio 
+     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio
      * @param transferDivider determining the ratio of the data to be transferred
      */
     public PliantApplicationStrategy(double activationRatio, double transferDivider) {
@@ -35,7 +38,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
     }
 
     /**
-     * If there are computing appliances available,it starts data transfer to the 
+     * If there are computing appliances available,it starts data transfer to the
      * appropriate application, which is determined by the decision maker method.
      *
      * @param dataForTransfer the data to be transferred
@@ -61,21 +64,31 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         List<Prediction> predictions = new ArrayList<>();
         if (PredictionConfigurator.PREDICTION_ENABLED) {
             List<Feature> predictedFeatures = new ArrayList<>();
+            List<String> invokedPredictors = new ArrayList<>();
             for (var predictor : SimulationSettings.get().getPredictionSettings()) {
                 List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
                         predictor.getPredictionSettings().getBatchSize()
                 );
+                if ("LSTM256".equals(predictor.getPredictorName())) {
+                    features.removeIf(feature -> !LifecycleManager.getInstance().isActive(
+                            predictor.getPredictorName(), feature.getName()));
+                }
                 if (!features.isEmpty()) {
                     try {
                         predictions.addAll(FeatureManager.getInstance().predict(
                                 features,
                                 predictor.getPredictorName()
                         ));
+                        invokedPredictors.add(predictor.getPredictorName());
                         predictedFeatures.addAll(features);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
+            }
+            if (!invokedPredictors.isEmpty()) {
+                PredictionLogger.info("Pliant formal prediction", "time=" + Timed.getFireCount()
+                        + " predictors=" + String.join(", ", invokedPredictors));
             }
             predictedFeatures.forEach(feature -> feature.setHasNewValue(false));
         }
@@ -115,7 +128,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             if (deviceSize > deviceMax) {
                 deviceMax = deviceSize;
             }
-                
+
             double priceperTick = ca.applications.get(0).instance.pricePerTick * 100000000;
             if (priceperTick < minPrice) {
                 minPrice = priceperTick;
@@ -123,7 +136,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             if (priceperTick > maxPrice) {
                 maxPrice = priceperTick;
             }
-               
+
             double latency = this.application.computingAppliance.iaas.repositories.get(0).getLatencies()
                     .get(availableCompAppliances.get(i).iaas.repositories.get(0).getName());
             if (latency < minLatency) {
@@ -189,7 +202,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                             }
                         }
                         tmpavg /= num;
-                        double actUd = (double) ((ca.applications.get(0).receivedData 
+                        double actUd = (double) ((ca.applications.get(0).receivedData
                                 - ca.applications.get(0).processedData)
                                 / ca.applications.get(0).tasksize);
                         //pred_unprocesseddata.add(p.getData().get(0));
@@ -259,7 +272,6 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         for (int j = 0; j < currentCaScore; j++) {
             finaldecision.add(-1);
         }
-          
 
         Collections.shuffle(finaldecision, SeedSyncer.centralRnd);
         int chooseIdx = SeedSyncer.centralRnd.nextInt(finaldecision.size());

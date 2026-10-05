@@ -30,13 +30,15 @@ public class LifecycleCoordinator {
             String featureName,
             LifecyclePolicy policy
     ) {
-        if (predictorName == null || predictorName.isBlank()) {
+        if (predictorName == null
+                || predictorName.isBlank()) {
             throw new IllegalArgumentException(
                     "Predictor name must not be blank."
             );
         }
 
-        if (featureName == null || featureName.isBlank()) {
+        if (featureName == null
+                || featureName.isBlank()) {
             throw new IllegalArgumentException(
                     "Feature name must not be blank."
             );
@@ -68,25 +70,57 @@ public class LifecycleCoordinator {
     }
 
     /**
-     * Moves the lifecycle from training to shadow evaluation.
+     * Moves a previously evaluated, failed or degraded predictor into
+     * retraining and clears metrics belonging to the previous model version.
+     */
+    public void startRetraining() {
+        boolean canStartRetraining =
+                state == LifecycleState.EVALUATING
+                        || state == LifecycleState.READY
+                        || state == LifecycleState.DEGRADED
+                        || state == LifecycleState.FAILED;
+
+        if (!canStartRetraining) {
+            throw new IllegalStateException(
+                    "Cannot start retraining while lifecycle state is "
+                            + state
+                            + "."
+            );
+        }
+
+        evaluator.clear();
+        latestMetrics = null;
+        state = LifecycleState.RETRAINING;
+    }
+
+    /**
+     * Moves the lifecycle from training or retraining to shadow evaluation.
      */
     public void startEvaluation() {
-        requireState(
-                LifecycleState.TRAINING,
-                "start evaluation"
-        );
+        boolean canStartEvaluation =
+                state == LifecycleState.TRAINING
+                        || state == LifecycleState.RETRAINING;
+
+        if (!canStartEvaluation) {
+            throw new IllegalStateException(
+                    "Cannot start evaluation while lifecycle state is "
+                            + state
+                            + "."
+            );
+        }
 
         state = LifecycleState.EVALUATING;
     }
 
     /**
-     * Registers a prediction during shadow evaluation.
+     * Registers a prediction for lifecycle metric evaluation.
      *
      * @param prediction the prediction to register
      */
-    public void registerPrediction(ShadowPrediction prediction) {
-        requireState(
-                LifecycleState.EVALUATING,
+    public void registerPrediction(
+            ShadowPrediction prediction
+    ) {
+        requireEvaluationState(
                 "register a shadow prediction"
         );
 
@@ -97,7 +131,9 @@ public class LifecycleCoordinator {
         }
 
         boolean belongsToCoordinator =
-                predictorName.equals(prediction.getPredictorName())
+                predictorName.equals(
+                        prediction.getPredictorName()
+                )
                         && featureName.equals(
                                 prediction.getFeatureName()
                         );
@@ -122,8 +158,7 @@ public class LifecycleCoordinator {
             int targetTimestamp,
             double actualValue
     ) {
-        requireState(
-                LifecycleState.EVALUATING,
+        requireEvaluationState(
                 "resolve an actual value"
         );
 
@@ -135,28 +170,72 @@ public class LifecycleCoordinator {
     }
 
     /**
-     * Calculates the latest metrics and moves to READY only when
-     * every policy condition is satisfied.
+     * Calculates the latest rolling metrics.
+     *
+     * An EVALUATING candidate moves to READY only when every lifecycle
+     * policy condition is satisfied.
+     *
+     * An ACTIVE predictor moves to DEGRADED when a complete monitoring
+     * window is available and at least one policy condition is no longer
+     * satisfied.
      *
      * @return the latest evaluation metrics
      */
     public EvaluationMetrics evaluate() {
-        requireState(
-                LifecycleState.EVALUATING,
+        LifecycleState evaluatedState = state;
+
+        requireEvaluationState(
                 "evaluate the predictor"
         );
 
         latestMetrics = evaluator.calculateMetrics(
                 predictorName,
                 featureName,
-                policy.getAccuracyTolerance()
+                policy.getAccuracyTolerance(),
+                policy.getMinimumMatchedSamples()
         );
 
-        if (policy.isSatisfiedBy(latestMetrics)) {
+        boolean completeEvaluationWindow =
+                latestMetrics.getMatchedSamples()
+                        >= policy.getMinimumMatchedSamples();
+
+        boolean policySatisfied =
+                policy.isSatisfiedBy(latestMetrics);
+
+        if (evaluatedState
+                == LifecycleState.EVALUATING
+                && policySatisfied) {
             state = LifecycleState.READY;
+        } else if (evaluatedState
+                == LifecycleState.ACTIVE
+                && completeEvaluationWindow
+                && !policySatisfied) {
+            state = LifecycleState.DEGRADED;
         }
 
         return latestMetrics;
+    }
+
+    /**
+     * Returns whether enough real future values have been matched to make
+     * a complete lifecycle decision.
+     *
+     * @return true when the minimum evaluation window is complete
+     */
+    public boolean hasCompleteEvaluationWindow() {
+        return latestMetrics != null
+                && latestMetrics.getMatchedSamples()
+                >= policy.getMinimumMatchedSamples();
+    }
+
+    /**
+     * Returns whether the latest metrics satisfy every lifecycle policy
+     * condition.
+     *
+     * @return true only when the latest metrics satisfy the policy
+     */
+    public boolean isPolicySatisfied() {
+        return policy.isSatisfiedBy(latestMetrics);
     }
 
     /**
@@ -175,10 +254,8 @@ public class LifecycleCoordinator {
     /**
      * Activates a configured trusted baseline predictor.
      *
-     * A baseline is trusted before this simulation starts, so it may
-     * begin serving from COLLECTING_DATA without shadow evaluation.
-     * This method is intentionally separate from activate(), which
-     * continues to protect ordinary candidate predictors.
+     * A baseline is trusted before the simulation starts, so it may begin
+     * serving directly from COLLECTING_DATA without shadow evaluation.
      */
     public void activateAsBaseline() {
         requireState(
@@ -190,8 +267,8 @@ public class LifecycleCoordinator {
     }
 
     /**
-     * Removes the predictor from active service while keeping it
-     * available as an already evaluated READY model.
+     * Removes the predictor from active service while keeping it available
+     * as an already evaluated READY model.
      */
     public void deactivate() {
         requireState(
@@ -220,6 +297,27 @@ public class LifecycleCoordinator {
             String operation
     ) {
         if (state != expectedState) {
+            throw new IllegalStateException(
+                    "Cannot "
+                            + operation
+                            + " while lifecycle state is "
+                            + state
+                            + "."
+            );
+        }
+    }
+
+    /**
+     * Allows metric collection while a predictor is undergoing shadow
+     * evaluation or serving as the active predictor.
+     *
+     * @param operation the requested evaluation operation
+     */
+    private void requireEvaluationState(
+            String operation
+    ) {
+        if (state != LifecycleState.EVALUATING
+                && state != LifecycleState.ACTIVE) {
             throw new IllegalStateException(
                     "Cannot "
                             + operation

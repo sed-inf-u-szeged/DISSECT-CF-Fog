@@ -166,6 +166,90 @@ class LifecycleManagerTest {
     }
 
     @Test
+    void shouldEvaluateActiveBaselinePrediction() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.activateBaseline("baseline", "fog-1::cpu");
+
+        boolean registered =
+                manager.registerPredictionIfEvaluating(
+                        new ShadowPrediction(
+                                "baseline",
+                                "fog-1::cpu",
+                                1,
+                                64,
+                                100.0
+                        )
+                );
+
+        int resolvedCount = manager.resolveActualValue(
+                "fog-1::cpu",
+                64,
+                100.0
+        );
+
+        assertTrue(registered);
+        assertEquals(1, resolvedCount);
+        assertEquals(
+                1,
+                baseline.getLatestMetrics().getMatchedSamples()
+        );
+        assertEquals(0.0, baseline.getLatestMetrics().getMae());
+        assertEquals(LifecycleState.ACTIVE, baseline.getState());
+    }
+
+    @Test
+    void shouldCompareCandidateWithUpdatedBaselineMetrics() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator candidate =
+                createCoordinator("candidate", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(candidate);
+        manager.activateBaseline("baseline", "fog-1::cpu");
+        startEvaluation(candidate);
+
+        manager.registerPredictionIfEvaluating(
+                new ShadowPrediction(
+                        "baseline",
+                        "fog-1::cpu",
+                        1,
+                        64,
+                        100.0
+                )
+        );
+
+        manager.registerPredictionIfEvaluating(
+                new ShadowPrediction(
+                        "candidate",
+                        "fog-1::cpu",
+                        1,
+                        64,
+                        105.0
+                )
+        );
+
+        manager.resolveActualValue(
+                "fog-1::cpu",
+                64,
+                100.0
+        );
+
+        assertEquals(LifecycleState.ACTIVE, baseline.getState());
+        assertEquals(LifecycleState.READY, candidate.getState());
+        assertEquals(
+                "baseline",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+        assertEquals(0.0, baseline.getLatestMetrics().getMae());
+        assertEquals(5.0, candidate.getLatestMetrics().getMae());
+    }
+
+    @Test
     void shouldIgnorePredictionWithoutCoordinator() {
         boolean registered =
                 manager.registerPredictionIfEvaluating(
@@ -298,6 +382,135 @@ class LifecycleManagerTest {
         );
     }
 
+    @Test
+    void shouldPromoteBetterCandidateOverCurrentActivePredictor() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator worseCandidate =
+                createCoordinator("worse", "fog-1::cpu");
+
+        LifecycleCoordinator betterCandidate =
+                createCoordinator("better", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(worseCandidate);
+        manager.registerCoordinator(betterCandidate);
+
+        manager.activateBaseline("baseline", "fog-1::cpu");
+
+        moveToReady(worseCandidate, 105.0, 100.0);
+
+        assertTrue(
+                manager.promoteIfBetter("worse", "fog-1::cpu")
+        );
+
+        moveToReady(betterCandidate, 101.0, 100.0);
+
+        assertTrue(
+                manager.promoteIfBetter("better", "fog-1::cpu")
+        );
+
+        assertEquals(
+                LifecycleState.READY,
+                worseCandidate.getState()
+        );
+        assertEquals(
+                LifecycleState.ACTIVE,
+                betterCandidate.getState()
+        );
+        assertEquals(
+                "better",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+    }
+
+    @Test
+    void shouldKeepCurrentActivePredictorWhenCandidateIsWorse() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator betterCandidate =
+                createCoordinator("better", "fog-1::cpu");
+
+        LifecycleCoordinator worseCandidate =
+                createCoordinator("worse", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(betterCandidate);
+        manager.registerCoordinator(worseCandidate);
+
+        manager.activateBaseline("baseline", "fog-1::cpu");
+
+        moveToReady(betterCandidate, 101.0, 100.0);
+
+        assertTrue(
+                manager.promoteIfBetter("better", "fog-1::cpu")
+        );
+
+        moveToReady(worseCandidate, 105.0, 100.0);
+
+        assertFalse(
+                manager.promoteIfBetter("worse", "fog-1::cpu")
+        );
+
+        assertEquals(
+                LifecycleState.ACTIVE,
+                betterCandidate.getState()
+        );
+        assertEquals(
+                LifecycleState.READY,
+                worseCandidate.getState()
+        );
+        assertEquals(
+                "better",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+    }
+
+    @Test
+    void shouldUsePredictorNameForDeterministicTieBreak() {
+        LifecycleCoordinator baseline =
+                createCoordinator("baseline", "fog-1::cpu");
+
+        LifecycleCoordinator zetaCandidate =
+                createCoordinator("zeta", "fog-1::cpu");
+
+        LifecycleCoordinator alphaCandidate =
+                createCoordinator("alpha", "fog-1::cpu");
+
+        manager.registerCoordinator(baseline);
+        manager.registerCoordinator(zetaCandidate);
+        manager.registerCoordinator(alphaCandidate);
+
+        manager.activateBaseline("baseline", "fog-1::cpu");
+
+        moveToReady(zetaCandidate, 100.0, 100.0);
+
+        assertTrue(
+                manager.promoteIfBetter("zeta", "fog-1::cpu")
+        );
+
+        moveToReady(alphaCandidate, 100.0, 100.0);
+
+        assertTrue(
+                manager.promoteIfBetter("alpha", "fog-1::cpu")
+        );
+
+        assertEquals(
+                LifecycleState.READY,
+                zetaCandidate.getState()
+        );
+        assertEquals(
+                LifecycleState.ACTIVE,
+                alphaCandidate.getState()
+        );
+        assertEquals(
+                "alpha",
+                manager.getActivePredictorName("fog-1::cpu")
+        );
+    }
+
     private LifecycleCoordinator createCoordinator(
             String predictorName,
             String featureName
@@ -327,6 +540,14 @@ class LifecycleManagerTest {
     private void moveToReady(
             LifecycleCoordinator coordinator
     ) {
+        moveToReady(coordinator, 100.0, 100.0);
+    }
+
+    private void moveToReady(
+            LifecycleCoordinator coordinator,
+            double predictedValue,
+            double actualValue
+    ) {
         startEvaluation(coordinator);
 
         coordinator.registerPrediction(new ShadowPrediction(
@@ -334,10 +555,10 @@ class LifecycleManagerTest {
                 coordinator.getFeatureName(),
                 1,
                 64,
-                100.0
+                predictedValue
         ));
 
-        coordinator.resolveActualValue(64, 100.0);
+        coordinator.resolveActualValue(64, actualValue);
         coordinator.evaluate();
     }
 }

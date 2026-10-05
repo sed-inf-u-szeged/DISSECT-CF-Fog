@@ -165,6 +165,31 @@ class LifecycleCoordinatorTest {
     }
 
     @Test
+    void shouldEvaluateActiveBaselineWithoutChangingItsState() {
+        LifecycleCoordinator coordinator =
+                createCoordinator(createPolicy());
+
+        coordinator.activateAsBaseline();
+        coordinator.registerPrediction(new ShadowPrediction(
+                "linear-regression",
+                "cpu",
+                1,
+                1000,
+                100.0
+        ));
+
+        coordinator.resolveActualValue(1000, 100.0);
+        EvaluationMetrics metrics = coordinator.evaluate();
+
+        assertEquals(1, metrics.getMatchedSamples());
+        assertEquals(0.0, metrics.getMae());
+        assertEquals(
+                LifecycleState.ACTIVE,
+                coordinator.getState()
+        );
+    }
+
+    @Test
     void shouldEnterFailedStateAfterTechnicalFailure() {
         LifecycleCoordinator coordinator =
                 createCoordinator(createPolicy());
