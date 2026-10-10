@@ -1,36 +1,89 @@
-import pandas as pd
 import numpy as np
-from sklearn import preprocessing
+import pandas as pd
 from scipy.signal import savgol_filter
+from sklearn.preprocessing import MinMaxScaler
 
 
 class Preprocessor:
 
     @staticmethod
+    def _values(data):
+        values = np.asarray(data, dtype=float)
+
+        if values.ndim != 1:
+            raise ValueError("Data must be a one-dimensional sequence")
+        if not np.all(np.isfinite(values)):
+            raise ValueError("Data must contain only finite values")
+
+        return values
+
+    @staticmethod
     def process(data, smoothing, scale):
-        timestamp = [i for i in range(0, len(data))]
-        dataframe = pd.DataFrame({"data": data, "timestamp": timestamp})
+        values = Preprocessor._values(data)
+
+        if len(values) == 0:
+            raise ValueError("Input data must not be empty")
 
         if smoothing is not None:
-            dataframe["data"] = savgol_filter(
-                dataframe["data"].values,
-                smoothing["windowSize"],
-                smoothing["polynomialDegree"]
-            )
+            window = int(smoothing["windowSize"])
+            degree = int(smoothing["polynomialDegree"])
+
+            if window < 1 or window > len(values):
+                raise ValueError(
+                    "Smoothing window must be between 1 and input length"
+                )
+            if degree < 0 or degree >= window:
+                raise ValueError(
+                    "Polynomial degree must be smaller than smoothing window"
+                )
+
+            values = savgol_filter(values, window, degree)
 
         scaler = None
         if scale:
-            scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
-            normed = scaler.fit_transform(np.array(dataframe["data"]).reshape(-1, 1))
-            dataframe["data"] = normed.flatten().tolist()
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            values = scaler.fit_transform(
+                values.reshape(-1, 1)
+            ).ravel()
 
-        dataframe.reset_index(drop=True, inplace=True)
+        dataframe = pd.DataFrame({
+            "data": values,
+            "timestamp": np.arange(len(values))
+        })
         return dataframe, scaler
 
     @staticmethod
-    def create_test_data(data, test_size):
-        return data.iloc[:len(data) - test_size], data.iloc[-test_size:]
+    def transform_targets(data, scaler):
+        values = Preprocessor._values(data)
+
+        if scaler is None or len(values) == 0:
+            return values.tolist()
+
+        return scaler.transform(
+            values.reshape(-1, 1)
+        ).ravel().tolist()
 
     @staticmethod
-    def get_data_inverse(data, scaler):  # TODO 50 - 49.99999999999999, 3147 - 3147.0000000000005
-        return scaler.inverse_transform(np.array(data).reshape(-1, 1)).flatten().tolist()
+    def create_test_data(data, test_size):
+        if (
+            isinstance(test_size, bool)
+            or not isinstance(test_size, (int, np.integer))
+            or not 0 < test_size < len(data)
+        ):
+            raise ValueError(
+                "Test size must be a positive integer smaller than data length"
+            )
+
+        split = len(data) - test_size
+        return data.iloc[:split].copy(), data.iloc[split:].copy()
+
+    @staticmethod
+    def get_data_inverse(data, scaler):
+        values = Preprocessor._values(data)
+
+        if scaler is None or len(values) == 0:
+            return values.tolist()
+
+        return scaler.inverse_transform(
+            values.reshape(-1, 1)
+        ).ravel().tolist()

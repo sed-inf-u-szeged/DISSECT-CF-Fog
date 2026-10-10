@@ -528,6 +528,14 @@ public class LifecycleManager {
                 if (coordinatorResolvedCount > 0) {
                     coordinator.evaluate();
 
+                    // Restore this feature's baseline as soon as a controlled
+                    // predictor degrades. The controller schedules retraining.
+                    if (!coordinator.isAutomaticPromotionAllowed()
+                            && coordinator.getState() == LifecycleState.DEGRADED
+                            && isActive(coordinator.getPredictorName(), featureName)) {
+                        fallbackToBaseline(featureName);
+                    }
+
                     if (coordinator.getState()
                             == LifecycleState.READY) {
                         readyPredictors.add(
@@ -552,6 +560,7 @@ public class LifecycleManager {
                     );
 
             if (coordinator != null
+                    && coordinator.isAutomaticPromotionAllowed()
                     && coordinator.getState()
                     == LifecycleState.READY) {
                 promoteIfBetter(

@@ -11,6 +11,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.PredictionSelector;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
@@ -19,30 +20,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.Vector;
 
 /**
- * This class represents an application strategy based on Fuzzy logic and Pliant system.
+ * Application strategy based on Fuzzy logic and Pliant scoring.
  */
 public class PliantApplicationStrategy extends ApplicationStrategy {
 
     /**
-     * Constructs a new strategy with the specified activation ratio and transfer divider.
+     * Constructs an application strategy.
      *
-     * @param activationRatio triggers offloading if it is larger than the unprocessed data / tasksize ratio
-     * @param transferDivider determining the ratio of the data to be transferred
+     * @param activationRatio the offloading activation ratio
+     * @param transferDivider the data transfer divider
      */
     public PliantApplicationStrategy(double activationRatio, double transferDivider) {
         this.activationRatio = activationRatio;
         this.transferDivider = transferDivider;
     }
 
-    /**
-     * If there are computing appliances available,it starts data transfer to the
-     * appropriate application, which is determined by the decision maker method.
-     *
-     * @param dataForTransfer the data to be transferred
-     */
     @Override
     public void findApplication(long dataForTransfer) {
         if (this.getComputingAppliances().size() > 0) {
@@ -51,34 +47,77 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
     }
 
     /**
-     * Makes a decision about which application to use based on the available computing appliances.
-     * It considers various metrics such as load of resource, cost, latency, unprocessed data, etc.
-     * It also integrates predictions.
+     * Averages up to the requested number of future values.
+     * Missing or invalid values make the prediction unusable for scoring.
      *
-     * @param availableCompAppliances the list of available computing appliances
-     * @return the chosen application based on the decision-making process
+     * @param prediction the prediction to read
+     * @param limit the maximum number of future values
+     * @return the average, or an empty result if unavailable
      */
+    static OptionalDouble averageFuture(Prediction prediction, int limit) {
+        if (prediction == null || limit <= 0
+                || prediction.getPredictionFuture() == null
+                || prediction.getPredictionFuture().getData() == null) {
+            return OptionalDouble.empty();
+        }
+
+        List<?> values = prediction.getPredictionFuture().getData();
+        if (values.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+
+        for (Object value : values) {
+            if (!(value instanceof Number)
+                    || !Double.isFinite(((Number) value).doubleValue())) {
+                return OptionalDouble.empty();
+            }
+        }
+
+        int count = Math.min(limit, values.size());
+        double average = 0.0;
+        for (int i = 0; i < count; i++) {
+            average += ((Number) values.get(i)).doubleValue() / count;
+        }
+
+        return Double.isFinite(average)
+                ? OptionalDouble.of(average) : OptionalDouble.empty();
+    }
+
+    /**
+     * Returns the node backlog in bytes, matching notYetProcessedData.
+     *
+     * @param appliance the node whose applications are counted
+     * @return the total unprocessed data in bytes
+     */
+    static double unprocessedBytes(ComputingAppliance appliance) {
+        double total = 0.0;
+        for (Application app : appliance.applications) {
+            total += app.receivedData - app.processedData;
+        }
+        return total;
+    }
+
     private Application decisionMaker(ArrayList<ComputingAppliance> availableCompAppliances) {
-        // TODO: reduce complexity of the method
         ComputingAppliance currentCa = this.application.computingAppliance;
         List<Prediction> predictions = new ArrayList<>();
+
         if (PredictionConfigurator.PREDICTION_ENABLED) {
             List<Feature> predictedFeatures = new ArrayList<>();
             List<String> invokedPredictors = new ArrayList<>();
+
             for (var predictor : SimulationSettings.get().getPredictionSettings()) {
                 List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
-                        predictor.getPredictionSettings().getBatchSize()
-                );
-                if ("LSTM256".equals(predictor.getPredictorName())) {
+                        predictor.getPredictionSettings().getBatchSize());
+
+                if (predictor.getPredictorName().matches("LSTM256(?:-v[0-9]+)?")) {
                     features.removeIf(feature -> !LifecycleManager.getInstance().isActive(
                             predictor.getPredictorName(), feature.getName()));
                 }
+
                 if (!features.isEmpty()) {
                     try {
                         predictions.addAll(FeatureManager.getInstance().predict(
-                                features,
-                                predictor.getPredictorName()
-                        ));
+                                features, predictor.getPredictorName()));
                         invokedPredictors.add(predictor.getPredictorName());
                         predictedFeatures.addAll(features);
                     } catch (Exception e) {
@@ -86,6 +125,7 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                     }
                 }
             }
+
             if (!invokedPredictors.isEmpty()) {
                 PredictionLogger.info("Pliant formal prediction", "time=" + Timed.getFireCount()
                         + " predictors=" + String.join(", ", invokedPredictors));
@@ -93,7 +133,17 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
             predictedFeatures.forEach(feature -> feature.setHasNewValue(false));
         }
 
-        PairPredictionSettings.increaseBestPredictorCounterFromPredictions(predictions);
+        String baselineName = null;
+        if (SimulationSettings.get() != null
+                && SimulationSettings.get().getLifecycleSettings() != null) {
+            baselineName = SimulationSettings.get()
+                    .getLifecycleSettings().getBaselinePredictorName();
+        }
+
+        Map<String, Prediction> selectedPredictions =
+                PredictionSelector.select(predictions, baselineName);
+        PairPredictionSettings.increaseBestPredictorCounterFromPredictions(
+                selectedPredictions.values());
 
         double minLoadOfResource = currentCa.getLoadOfResource();
         double maxLoadOfResource = currentCa.getLoadOfResource();
@@ -101,10 +151,10 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         int deviceMax = currentCa.applications.get(0).deviceList.size();
         double minPrice = currentCa.applications.get(0).instance.pricePerTick * 100000000;
         double maxPrice = currentCa.applications.get(0).instance.pricePerTick * 100000000;
-        double minLatency = currentCa.applications.get(0).computingAppliance.iaas.repositories.get(0).getLatencies()
-                .get(currentCa.iaas.repositories.get(0).getName());
-        double maxLatency = currentCa.applications.get(0).computingAppliance.iaas.repositories.get(0).getLatencies()
-                .get(currentCa.iaas.repositories.get(0).getName());
+        double minLatency = currentCa.applications.get(0).computingAppliance.iaas.repositories.get(0)
+                .getLatencies().get(currentCa.iaas.repositories.get(0).getName());
+        double maxLatency = currentCa.applications.get(0).computingAppliance.iaas.repositories.get(0)
+                .getLatencies().get(currentCa.iaas.repositories.get(0).getName());
         double minUnprocessedData = (currentCa.applications.get(0).receivedData
                 - currentCa.applications.get(0).processedData) / currentCa.applications.get(0).tasksize;
         double maxUnprocessedData = (currentCa.applications.get(0).receivedData
@@ -146,8 +196,8 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                 maxLatency = latency;
             }
 
-            double unprocesseddata = (ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
-                    / ca.applications.get(0).tasksize;
+            double unprocesseddata = (ca.applications.get(0).receivedData
+                    - ca.applications.get(0).processedData) / ca.applications.get(0).tasksize;
             if (unprocesseddata < minUnprocessedData) {
                 minUnprocessedData = unprocesseddata;
             }
@@ -162,56 +212,43 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         Map<String, Double> predUnprocesseddata = new HashMap<>();
 
         for (int i = 0; i < availableCompAppliances.size(); i++) {
-
             ComputingAppliance ca = availableCompAppliances.get(i);
             Sigmoid sig = new Sigmoid(Double.valueOf(-1.0 / 8.0),
                     Double.valueOf((maxLoadOfResource + minLoadOfResource) / 2.0));
             loadOfResource.add(sig.getAt(ca.getLoadOfResource()));
-            /*
-             * System.out.println(ca.name + " Load Resource " + ca.getLoadOfResource() +
-             * " Price: " + ca.applications.get(0).instance.pricePerTick * 100000000 +
-             * " UnprocessedData: " + (ca.applications.get(0).receivedData -
-             * ca.applications.get(0).receivedData) / ca.applications.get(0).tasksize);
-             */
-            sig = new Sigmoid(Double.valueOf(4.0 / 1.0), Double.valueOf((minPrice)));
+
+            sig = new Sigmoid(Double.valueOf(4.0 / 1.0), Double.valueOf(minPrice));
             price.add(sig.getAt(ca.applications.get(0).instance.pricePerTick * 100000000));
 
-            // System.out.println(ca.applications.get(0).instance.pricePerTick * 100000000);
+            sig = new Sigmoid(Double.valueOf(-1.0 / 8.0),
+                    Double.valueOf(Math.abs(maxLatency - minLatency) / 2.0));
 
-            sig = new Sigmoid(Double.valueOf(-1.0 / 8.0), Double.valueOf((Math.abs((maxLatency - minLatency)) / 2.0)));
+            sig = new Sigmoid(Double.valueOf(-1.0 / 4.0),
+                    Double.valueOf(maxUnprocessedData - minUnprocessedData));
+            unprocesseddata.add(sig.getAt(
+                    (double) ((ca.applications.get(0).receivedData
+                            - ca.applications.get(0).processedData) / ca.applications.get(0).tasksize)));
 
-            sig = new Sigmoid(Double.valueOf(-1.0 / 4.0), Double.valueOf((maxUnprocessedData - minUnprocessedData)));
-            unprocesseddata.add(
-                    sig.getAt((double) ((ca.applications.get(0).receivedData - ca.applications.get(0).processedData)
-                            / ca.applications.get(0).tasksize)));
-
-            //if we have prediction
-            //find the element from prediction.
-            if (!predictions.isEmpty()) {
-                for (Prediction prediction : Prediction.getBestPredictions(predictions).values()) {
-                    String[] name = prediction.getFeatureName().split("::");
-
-                    //Find the relevant compuerappliant
-                    if (name[0].equals(ca.name)) {
-                        double tmpavg = 0.0;
-                        int num = 0;
-                        if (prediction.getPredictionFuture() != null) {
-                            for (int k = 0; k < 10; k++) {
-                                tmpavg += prediction.getPredictionFuture().getData().get(k);
-                                num++;
-                            }
-                        }
-                        tmpavg /= num;
-                        double actUd = (double) ((ca.applications.get(0).receivedData
-                                - ca.applications.get(0).processedData)
-                                / ca.applications.get(0).tasksize);
-                        //pred_unprocesseddata.add(p.getData().get(0));
-                        sig = new Sigmoid(Double.valueOf(-1.0 / 32768.0), Double.valueOf(actUd));
-                        //unprocesseddata.add(sig.getAt((double) tmpavg));
-                        predUnprocesseddata.put(name[0], sig.getAt((double) tmpavg));
-
-                    }
+            String expectedFeature = ca.name + "::notYetProcessedData";
+            for (Prediction prediction : selectedPredictions.values()) {
+                if (!expectedFeature.equals(prediction.getFeatureName())) {
+                    continue;
                 }
+
+                OptionalDouble futureAverage = averageFuture(prediction, 10);
+                if (futureAverage.isEmpty()) {
+                    continue;
+                }
+
+                double currentBytes = unprocessedBytes(ca);
+                if (!Double.isFinite(currentBytes)) {
+                    continue;
+                }
+
+                // Both the prediction and the reference value are node totals in bytes.
+                sig = new Sigmoid(Double.valueOf(-1.0 / 32768.0),
+                        Double.valueOf(currentBytes));
+                predUnprocesseddata.put(ca.name, sig.getAt(futureAverage.getAsDouble()));
             }
         }
 
@@ -219,16 +256,14 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         for (int i = 0; i < availableCompAppliances.size(); ++i) {
             Vector<Double> temp = new Vector<Double>();
             temp.add(loadOfResource.get(i));
-
             temp.add(price.get(i));
-
             temp.add(unprocesseddata.get(i));
+
             if (predUnprocesseddata.containsKey(availableCompAppliances.get(i).name)) {
                 temp.add(predUnprocesseddata.get(availableCompAppliances.get(i).name));
             }
             score.add((int) (FuzzyIndicators.getAggregation(temp) * 100));
         }
-        // System.out.println("Pontozás: " + score);
 
         Vector<Double> temp = new Vector<Double>();
 
@@ -236,31 +271,24 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                 Double.valueOf((maxLoadOfResource + minLoadOfResource) / 2.0));
         temp.add(sig.getAt(currentCa.getLoadOfResource()));
 
-        sig = new Sigmoid(Double.valueOf(4.0 / 1.0), Double.valueOf((minPrice)));
+        sig = new Sigmoid(Double.valueOf(4.0 / 1.0), Double.valueOf(minPrice));
         temp.add(sig.getAt(currentCa.applications.get(0).instance.pricePerTick * 100000000));
 
-        sig = new Sigmoid(Double.valueOf(-1.0 / 8.0), Double.valueOf((Math.abs((maxLatency - minLatency)) / 2.0)));
+        sig = new Sigmoid(Double.valueOf(-1.0 / 8.0),
+                Double.valueOf(Math.abs(maxLatency - minLatency) / 2.0));
 
-        sig = new Sigmoid(Double.valueOf(-1.0 / 4.0), Double.valueOf((maxUnprocessedData - minUnprocessedData)));
+        sig = new Sigmoid(Double.valueOf(-1.0 / 4.0),
+                Double.valueOf(maxUnprocessedData - minUnprocessedData));
         temp.add(sig.getAt(
-                (double) ((currentCa.applications.get(0).receivedData - currentCa.applications.get(0).processedData)
-                        / currentCa.applications.get(0).tasksize)));
-        Integer currentCaScore;
-        currentCaScore = (int) (FuzzyIndicators.getAggregation(temp) * 100);
-        /*
-         * System.out.println(currentCA.name + " Load Resource " +
-         * currentCA.getLoadOfResource() + " Price: " +
-         * currentCA.applications.get(0).instance.pricePerTick * 100000000 +
-         * " UnprocessedData: " + (currentCA.applications.get(0).receivedData -
-         * currentCA.applications.get(0).processedData) /
-         * currentCA.applications.get(0).tasksize); System.out.println("Score " +
-         * currentCAscore);
-         */
+                (double) ((currentCa.applications.get(0).receivedData
+                        - currentCa.applications.get(0).processedData) / currentCa.applications.get(0).tasksize)));
+
+        Integer currentCaScore = (int) (FuzzyIndicators.getAggregation(temp) * 100);
         Vector<Integer> finaldecision = new Vector<Integer>();
+
         for (int i = 0; i < availableCompAppliances.size(); ++i) {
             finaldecision.add(i);
         }
-
         finaldecision.add(-1);
 
         for (int i = 0; i < score.size(); ++i) {
@@ -279,7 +307,6 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
         if (finaldecision.get(chooseIdx) != -1) {
             ComputingAppliance ca = availableCompAppliances.get(finaldecision.get(chooseIdx));
             return ca.applications.get(SeedSyncer.centralRnd.nextInt(ca.applications.size()));
-
         }
         return application;
     }

@@ -131,7 +131,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
             FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")) {
                 @Override
                 public double compute() {
-                    int result = 0;
+                    double result = 0.0;
                     for (Application application: computingAppliance.applications) {
                         result += (application.receivedData - application.processedData);
                     }
@@ -142,28 +142,20 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
 
         long starttime = System.nanoTime();
 
-        long lstmTrainingTime = 5 * 60 * 60 * 1000L;
-        long lifecycleMonitoringEndTime = 10 * 60 * 60 * 1000L;
-        long lifecycleCheckInterval = 1 * 60 * 1000L;
-
-        Timed.simulateUntil(lstmTrainingTime);
-
+        long lifecycleCheckInterval = 60 * 1000L;
         LstmOnlineLifecycleController lifecycleController =
                 LstmOnlineLifecycleController.getInstance();
-        lifecycleController.startTrainingAndShadowEvaluation();
 
-        while (Timed.getNextFire() >= 0
-                && Timed.getFireCount() < lifecycleMonitoringEndTime) {
-            long nextCheckTime = Math.min(
-                    Timed.getFireCount() + lifecycleCheckInterval,
-                    lifecycleMonitoringEndTime
-            );
-
+        // Check data readiness from the beginning and monitor until events end.
+        while (Timed.getNextFire() >= 0) {
+            long nextCheckTime = Timed.getFireCount() + lifecycleCheckInterval;
             Timed.simulateUntil(nextCheckTime);
-            lifecycleController.checkLifecycle();
-        }
 
-        Timed.simulateUntilLastEvent();
+            // Do not launch another training job after the final simulation event.
+            if (Timed.getNextFire() >= 0) {
+                lifecycleController.checkLifecycle();
+            }
+        }
         long stoptime = System.nanoTime();
 
         ScenarioBase.calculateIoTCost();

@@ -1,31 +1,32 @@
-#predictionCanvas {
+:host {
     width: 100%;
     height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
 }
 
+#predictionCanvas,
 #errorCanvas {
     width: 100%;
     height: 100%;
 }
 
-:host {
-    width: 100%;
-    height: 100%;
-    gap: 16px;
-    display: flex;
-    flex-direction: row;
-}
-
 .chart-prediction {
-    width: calc(100% - 190px - 16px);
+    flex: 1;
+    min-width: 0;
     height: 100%;
     border-radius: var(--border-radius);
     background-color: var(--color-foreground);
 }
 
 .chart-side {
-    width: 190px;
+    flex: 0 0 230px;
+    width: 230px;
     height: 100%;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -33,6 +34,8 @@
 
 .lifecycle-card,
 .chart-error {
+    flex-shrink: 0;
+    box-sizing: border-box;
     border-radius: var(--border-radius);
     background-color: var(--color-foreground);
 }
@@ -73,7 +76,8 @@
     color: #ffffff;
 }
 
-.state-badge.failed {
+.state-badge.failed,
+.state-badge.degraded {
     background-color: #ff5479;
     color: #ffffff;
 }
@@ -92,6 +96,8 @@
 .metric-row {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
     margin-top: 4px;
     color: #dddddd;
 }
@@ -99,6 +105,9 @@
 .metric-row span:last-child {
     color: #ffffff;
     font-family: monospace;
+    text-align: right;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .metrics-pending {
@@ -108,6 +117,6 @@
 }
 
 .chart-error {
-    width: 190px;
+    width: 100%;
     height: 150px;
 }

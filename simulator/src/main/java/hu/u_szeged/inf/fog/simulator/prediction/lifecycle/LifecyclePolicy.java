@@ -1,56 +1,47 @@
 package hu.u_szeged.inf.fog.simulator.prediction.lifecycle;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * Defines the acceptance thresholds used by the model lifecycle.
  */
 @Getter
-@AllArgsConstructor
 public class LifecyclePolicy {
 
-    /**
-     * Minimum number of matched predictions required for evaluation.
-     */
     private final int minimumMatchedSamples;
-
-    /**
-     * Maximum accepted Mean Absolute Error.
-     */
     private final double maximumMae;
-
-    /**
-     * Maximum accepted Mean Squared Error.
-     */
     private final double maximumMse;
-
-    /**
-     * Maximum accepted Root Mean Squared Error.
-     */
     private final double maximumRmse;
-
-    /**
-     * Maximum accepted SMAPE percentage.
-     */
     private final double maximumSmape;
-
-    /**
-     * Minimum required accuracy percentage.
-     */
     private final double minimumAccuracy;
-
-    /**
-     * Relative error tolerance used when calculating accuracy.
-     */
     private final double accuracyTolerance;
+    private final double absoluteTolerance;
 
     /**
-     * Checks whether all lifecycle acceptance requirements are satisfied.
-     *
-     * @param metrics the shadow evaluation results
-     * @return true only when every requirement is satisfied
+     * Preserves the original accuracy tolerance rule.
      */
+    public LifecyclePolicy(int minimumMatchedSamples, double maximumMae,
+            double maximumMse, double maximumRmse, double maximumSmape,
+            double minimumAccuracy, double accuracyTolerance) {
+        this(minimumMatchedSamples, maximumMae, maximumMse, maximumRmse,
+                maximumSmape, minimumAccuracy, accuracyTolerance,
+                accuracyTolerance);
+    }
+
+    public LifecyclePolicy(int minimumMatchedSamples, double maximumMae,
+            double maximumMse, double maximumRmse, double maximumSmape,
+            double minimumAccuracy, double accuracyTolerance,
+            double absoluteTolerance) {
+        this.minimumMatchedSamples = minimumMatchedSamples;
+        this.maximumMae = maximumMae;
+        this.maximumMse = maximumMse;
+        this.maximumRmse = maximumRmse;
+        this.maximumSmape = maximumSmape;
+        this.minimumAccuracy = minimumAccuracy;
+        this.accuracyTolerance = accuracyTolerance;
+        this.absoluteTolerance = absoluteTolerance;
+    }
+
     public boolean isSatisfiedBy(EvaluationMetrics metrics) {
         return metrics != null
                 && metrics.getMatchedSamples() >= minimumMatchedSamples

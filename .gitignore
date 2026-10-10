@@ -8,3 +8,6 @@ __pycache__/
 *.py[cod]
 
 predictor-ui/model_store/
+
+# Generated simulation output at repository root
+/sim_res/

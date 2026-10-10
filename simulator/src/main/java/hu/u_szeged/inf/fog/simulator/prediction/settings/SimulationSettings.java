@@ -42,9 +42,10 @@ public class SimulationSettings {
         Files.createDirectories(Paths.get(path));
         String fullPath = path + fileName;
         PredictionLogger.info("SimulationSettings-exportToJSON",
-               String.format("Exporting simulation settings to %s...", fullPath));
+                String.format("Exporting simulation settings to %s...", fullPath));
         try (FileWriter fileWriter = new FileWriter(fullPath)) {
-            fileWriter.write(JsonParser.toJson(this, SimulationSettings.class).toString());
+            fileWriter.write(JsonParser.toJson(
+                    this, SimulationSettings.class).toString());
             PredictionLogger.info("SimulationSettings-exportToJSON", "Export done!");
         } catch (Exception e) {
             e.printStackTrace();
@@ -52,20 +53,39 @@ public class SimulationSettings {
     }
 
     public void printInfo() throws Exception {
-        for (var predictionSetting : predictionSettings) {
+        for (var setting : predictionSettings) {
             TableBuilder table = new TableBuilder();
             table.addHeader("Name", "Value");
-            table.addRow("Batch size", predictionSetting.getPredictionSettings().getBatchSize());
-            table.addRow("Predictor model", predictionSetting.getPredictorSettings().getPredictor());
-            table.addRow("Test size", predictionSetting.getPredictionSettings().getTestSize());
-            table.addRow("Prediction size", predictionSetting.getPredictionSettings().getLength());
-            table.addRow("Smoothing", predictionSetting.getPredictionSettings().getSmoothing().getWindowSize()
-                    + ", " + predictionSetting.getPredictionSettings().getSmoothing().getPolynomialDegree());
-            table.addRow("Best prediction", predictionSetting.getBestPredictor());
-            table.addRow("Average sum of error metrics",
-                predictionSetting.getSumOfErrorMetrics() / predictionSetting.getNumberOfPredictions());
-            table.addRow("Number of predictions", predictionSetting.getNumberOfPredictions());
+            table.addRow("Predictor name", setting.getPredictorName());
+            table.addRow("Predictor model",
+                    setting.getPredictorSettings().getPredictor());
+            table.addRow("Batch size",
+                    setting.getPredictionSettings().getBatchSize());
+            table.addRow("Test size",
+                    setting.getPredictionSettings().getTestSize());
+            table.addRow("Prediction size",
+                    setting.getPredictionSettings().getLength());
+
+            var smoothing = setting.getPredictionSettings().getSmoothing();
+            table.addRow("Smoothing", smoothing == null ? "Disabled"
+                    : smoothing.getWindowSize() + ", "
+                    + smoothing.getPolynomialDegree());
+
+            table.addRow("Selection metric", "MAE (lower is better)");
+            table.addRow("Times selected by MAE", setting.getBestPredictor());
+            table.addRow("Metric source", "Historical test, raw units");
+            table.addRow("Aggregation", "Equal weight per valid prediction request");
+            table.addRow("Average MAE", displayMetric(setting.getAverageMae()));
+            table.addRow("Average MSE", displayMetric(setting.getAverageMse()));
+            table.addRow("Average RMSE", displayMetric(setting.getAverageRmse()));
+            table.addRow("Valid metric requests", setting.getValidMetricCount());
+            table.addRow("Invalid metric requests", setting.getInvalidMetricCount());
+            table.addRow("Number of predictions", setting.getNumberOfPredictions());
             System.out.println(table);
         }
+    }
+
+    private static String displayMetric(Double value) {
+        return value == null ? "N/A" : Double.toString(value);
     }
 }
