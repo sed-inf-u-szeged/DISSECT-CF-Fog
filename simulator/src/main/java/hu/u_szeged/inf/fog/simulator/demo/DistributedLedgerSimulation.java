@@ -14,9 +14,6 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.PoWCo
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.crypto_strategy.RSAStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.digest_strategy.SHA256Strategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.RandomNodeStrategy;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.ForkManager;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.ForkScenario;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.fork.NetworkLatencyFork;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.RandomStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.RandomizedValidation;
@@ -39,7 +36,7 @@ public class DistributedLedgerSimulation {
 
         ConsensusStrategy consensus = new PoWConsensusStrategy(5, 100, 25_000, 1_000, new RSAStrategy(4096), new SHA256Strategy());
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 3; i++) {
             String nodeName = "fog" + i;
 
             ComputingAppliance ca = new ComputingAppliance(
@@ -49,7 +46,7 @@ public class DistributedLedgerSimulation {
                             100L * 1_073_741_824L,
                             100L * 1_073_741_824L,
                             30, 180, 2200,
-                            125_500,
+                            125_000,
                             100,
                             sharedLatencyMap
                     ),
@@ -63,17 +60,32 @@ public class DistributedLedgerSimulation {
         }
 
 //        NetworkGenerator.smallWorldNetworkGenerator(ComputingAppliance.allComputingAppliances, 2, 0.3,30, 50);
-        ComputingAppliance.allComputingAppliances.get(0).addNeighbor(ComputingAppliance.allComputingAppliances.get(1), 30);
-        ComputingAppliance.allComputingAppliances.get(1).addNeighbor(ComputingAppliance.allComputingAppliances.get(0), 30);
+        ComputingAppliance.allComputingAppliances.get(0)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(1), 30);
+
+        ComputingAppliance.allComputingAppliances.get(1)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(0), 30);
+        ComputingAppliance.allComputingAppliances.get(0)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(2), 30);
+        ComputingAppliance.allComputingAppliances.get(2)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(0), 30);
+
+        ComputingAppliance.allComputingAppliances.get(1)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(2), 30);
+        ComputingAppliance.allComputingAppliances.get(2)
+                .addNeighbor(ComputingAppliance.allComputingAppliances.get(1), 30);
 
 
         new EnergyDataCollector("fog-0", ComputingAppliance.allComputingAppliances.get(0).iaas, true);
         new EnergyDataCollector("fog-1", ComputingAppliance.allComputingAppliances.get(1).iaas, true);
+        new EnergyDataCollector("fog-2", ComputingAppliance.allComputingAppliances.get(2).iaas, true);
 
+        /*
         ForkManager forkManager = new ForkManager(100L, 1_100_000L);
         ForkScenario forkScenario = new NetworkLatencyFork(true, 1, 100_000L, 0);
         forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
         forkManager.registerScenario(forkScenario, 1_000_000L);
+         */
 
         ArrayList<TransactionDevice> deviceList = new ArrayList<>();
         for (int i = 0; i < 50; i++) {
@@ -92,7 +104,8 @@ public class DistributedLedgerSimulation {
             deviceList.add(transactionDevice);
         }
 
-        Timed.simulateUntilLastEvent();
+        //Timed.simulateUntilLastEvent();
+        Timed.simulateUntil(3_000_001L);
         SimulationMetrics.getInstance().printFinalStats();
 
         double totalEnergy = 0;

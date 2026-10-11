@@ -121,7 +121,7 @@ public class ProofOfStakeSimulation {
             deviceList.add(transactionDevice);
         }
 
-        Timed.simulateUntilLastEvent();
+        Timed.simulateUntil(3_000_001L);
         SimulationMetrics.getInstance().printFinalStats();
 
         double totalEnergy = 0;
