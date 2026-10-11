@@ -14,10 +14,11 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser.TimelineEntry;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.ArrayList;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
 
 /**
  * This component represents the physical resources (fog and cloud nodes) in the system.
@@ -31,7 +32,7 @@ public class ComputingAppliance {
      * Ensures a common virtual image file with 1 GB of disk size requirement.
      */
     public static VirtualAppliance brokerVa = new VirtualAppliance("brokerVa", 1, 0, false, 1073741824L);
-    
+
     /**
      * Ensures a common resource (1 CPU core, 0.001 processing speed and 1 GB of memory) requirements for the broker VM.
      */
@@ -47,13 +48,13 @@ public class ComputingAppliance {
      * The physical position of the node.
      */
     public final GeoLocation geoLocation;
-    
+
     /**
      * This class represents a single IaaS service responsible for maintaining
      * physical machines and scheduling VM requests.
      */
     public IaaSService iaas;
-    
+
     /**
      * The covered physical neighborhood of the node from where it accepts IoT data (in km).
      */
@@ -61,7 +62,7 @@ public class ComputingAppliance {
 
     /**
      * The reference to the parent node, which is located higher in the hierarchy.
-     * It might have a null value. 
+     * It might have a null value.
      */
     public ComputingAppliance parent;
 
@@ -80,7 +81,7 @@ public class ComputingAppliance {
      * List of IoT applications deployed to this physical resources.
      */
     public ArrayList<Application> applications;
-    
+
     /**
      * The reference to the broker VM of this node, which is required to be
      * in RUNNING state to enable the data processing of IoT applications.
@@ -88,13 +89,13 @@ public class ComputingAppliance {
     public AppVm broker;
 
     /**
-     * A helper variable to store every important event of the runtime of 
+     * A helper variable to store every important event of the runtime of
      * this computing appliance.
      */
     public ArrayList<TimelineEntry> timelineList = new ArrayList<TimelineEntry>();
 
     public String provider;
-    
+
     public String location;
 
     /**
@@ -120,23 +121,24 @@ public class ComputingAppliance {
         this.modifyRepoName(this.iaas.repositories.get(0).getName() + "-" + this.name);
         ComputingAppliance.allComputingAppliances.add(this);
     }
-    
+
     public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
         this.iaas = iaas;
-        this.name = iaas.repositories.get(0).getName().contains("-") 
-                ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-')) 
+        this.name = iaas.repositories.get(0).getName().contains("-")
+                ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-'))
                 : iaas.repositories.get(0).getName();
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
         this.neighbors = new ArrayList<>();
+        this.applications = new ArrayList<>();
         this.range = Integer.MAX_VALUE;
         ComputingAppliance.allComputingAppliances.add(this);
     }
 
     /**
      * Calculates and returns the load of CPU resources for this computing appliance.
-     * The load is represented as a percentage of the used CPU capacity measured to 
+     * The load is represented as a percentage of the used CPU capacity measured to
      * the total CPU capacity.
      *
      * @return the load of CPU resources as a percentage
@@ -151,7 +153,7 @@ public class ComputingAppliance {
         double requiredCpus = this.iaas.getRunningCapacities().getRequiredCPUs();
         return requiredCpus > 0 ? usedCpu / requiredCpus * 100 : 0;
     }
-    
+
     public static void setConnection(ComputingAppliance that, int latency) {
         for (ComputingAppliance ca : ComputingAppliance.getAllComputingAppliances()) {
             if (ca != that) {
@@ -164,7 +166,7 @@ public class ComputingAppliance {
     public static void stopEnergyMetering() {
         boolean devicesDown = true;
         boolean applicationsDown = true;
-        
+
         for (Device device : Device.allDevices) {
             if (device.isSubscribed()) {
                 devicesDown = false;
@@ -175,7 +177,7 @@ public class ComputingAppliance {
                 applicationsDown = false;
             }
         }
-       
+
         if (devicesDown && applicationsDown) {
             for (EnergyDataCollector edc : EnergyDataCollector.energyCollectors) {
                 edc.stop();
@@ -185,7 +187,7 @@ public class ComputingAppliance {
 
     /**
      * It modifies name of the local storage. It is useful if multiple computing
-     *appliances read their resource definition from the same file.
+     * appliances read their resource definition from the same file.
      *
      * @param newName the new name of the repository
      */
@@ -213,7 +215,7 @@ public class ComputingAppliance {
             this.applications.add(app);
         }
         if (this.broker == null) {
-            this.startBroker(); 
+            this.startBroker();
         }
     }
 
@@ -227,11 +229,11 @@ public class ComputingAppliance {
         if (!this.neighbors.contains(that)) {
             this.neighbors.add(that);
         }
-            
+
         if (!that.neighbors.contains(this)) {
             that.neighbors.add(this);
         }
-            
+
         this.iaas.repositories.get(0).addLatencies(that.iaas.repositories.get(0).getName(), latency);
         that.iaas.repositories.get(0).addLatencies(this.iaas.repositories.get(0).getName(), latency);
     }
@@ -262,7 +264,7 @@ public class ComputingAppliance {
             e.printStackTrace();
         }
     }
-    
+
     /**
      * Returns with the list of all computing appliance instances.
      */

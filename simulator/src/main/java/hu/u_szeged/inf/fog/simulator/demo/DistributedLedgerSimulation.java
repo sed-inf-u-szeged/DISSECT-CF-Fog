@@ -34,22 +34,43 @@ public class DistributedLedgerSimulation {
     public static void main(String[] args) throws Exception {
         SimLogger.setLogging(1, true);
 
-        String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+
+        Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
         ConsensusStrategy consensus = new PoWConsensusStrategy(5, 100, 25_000, 1_000, new RSAStrategy(4096), new SHA256Strategy());
+
         for (int i = 0; i < 2; i++) {
-            ComputingAppliance ca = new ComputingAppliance(cloudfile, "fog" + i, new GeoLocation(47.6, 17.9), 50);
-            new Miner(consensus, new RandomStrategy(), ca, new RandomizedValidation(0.98, 0.95, SeedSyncer.centralRnd));
+            String nodeName = "fog" + i;
+
+            ComputingAppliance ca = new ComputingAppliance(
+                    Config.createNode(
+                            nodeName,
+                            100,
+                            100L * 1_073_741_824L,
+                            100L * 1_073_741_824L,
+                            30, 180, 2200,
+                            125_500,
+                            100,
+                            sharedLatencyMap
+                    ),
+                    new GeoLocation(47.6, 17.9),
+                    "HU",
+                    "Local"
+            );
+
+            new Miner(consensus, new RandomStrategy(), ca,
+                    new RandomizedValidation(0.98, 0.95, SeedSyncer.centralRnd));
         }
+
 //        NetworkGenerator.smallWorldNetworkGenerator(ComputingAppliance.allComputingAppliances, 2, 0.3,30, 50);
-        ComputingAppliance.allComputingAppliances.get(0).addNeighbor(ComputingAppliance.allComputingAppliances.get(1),30);
-        ComputingAppliance.allComputingAppliances.get(1).addNeighbor(ComputingAppliance.allComputingAppliances.get(0),30);
+        ComputingAppliance.allComputingAppliances.get(0).addNeighbor(ComputingAppliance.allComputingAppliances.get(1), 30);
+        ComputingAppliance.allComputingAppliances.get(1).addNeighbor(ComputingAppliance.allComputingAppliances.get(0), 30);
 
 
         new EnergyDataCollector("fog-0", ComputingAppliance.allComputingAppliances.get(0).iaas, true);
         new EnergyDataCollector("fog-1", ComputingAppliance.allComputingAppliances.get(1).iaas, true);
 
-        ForkManager forkManager = new ForkManager(100L,  1_100_000L);
+        ForkManager forkManager = new ForkManager(100L, 1_100_000L);
         ForkScenario forkScenario = new NetworkLatencyFork(true, 1, 100_000L, 0);
         forkScenario.setTargets(new ArrayList<>(Miner.miners.values()));
         forkManager.registerScenario(forkScenario, 1_000_000L);
@@ -67,7 +88,7 @@ public class DistributedLedgerSimulation {
             Repository repo = new Repository(4_294_967_296L, "mc-repo" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
             PhysicalMachine localMachine = new PhysicalMachine(2, 0.001, 2_147_483_648L, repo, 0, 0, cpuTransitions);
 
-            TransactionDevice transactionDevice = new TransactionDevice(900_000, 1_000_000L,100, 10_000L, localMachine, 0, new RandomNodeStrategy());
+            TransactionDevice transactionDevice = new TransactionDevice(900_000, 1_000_000L, 100, 10_000L, localMachine, 0, new RandomNodeStrategy());
             deviceList.add(transactionDevice);
         }
 

@@ -33,7 +33,7 @@ public class ProofOfStakeSimulation {
     public static void main(String[] args) throws Exception {
         SimLogger.setLogging(1, true);
 
-        String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
+        Map<String, Integer> sharedLatencyMap = new HashMap<>();
 
         ValidatorRegistry validatorRegistry = new ValidatorRegistry();
 
@@ -48,10 +48,26 @@ public class ProofOfStakeSimulation {
 
         long[] stakes = {10, 30, 60};
 
+
         for (int i = 0; i < 3; i++) {
+            String nodeName = "fog" + i;
+
             ComputingAppliance ca = new ComputingAppliance(
-                    cloudfile, "fog" + i, new GeoLocation(47.6, 17.9), 50
+                    Config.createNode(
+                            nodeName,
+                            100,
+                            100L * 1_073_741_824L,
+                            100L * 1_073_741_824L,
+                            30, 180, 2200,
+                            125_000,
+                            100,
+                            sharedLatencyMap
+                    ),
+                    new GeoLocation(47.6, 17.9),
+                    "HU",
+                    "Local"
             );
+
 
             Miner validator = new Miner(
                     consensus,
