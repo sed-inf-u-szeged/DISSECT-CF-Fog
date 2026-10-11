@@ -19,8 +19,6 @@ import java.util.stream.Collectors;
 public class Utils {
 
     private static final Random RANDOM = SeedSyncer.centralRnd;
-    private static final double VARIANCE_PROBABILITY = 0.01; // 1% chance to reduce effort
-    private static final double VARIANCE_FACTOR = 0.5; // Reduce to 50% of original
     private static final int FAKE_TRANSACTION_SIZE = 200; // Size of fake transactions
 
 
@@ -28,21 +26,31 @@ public class Utils {
     }
 
     /**
-     * Calculates the number of instructions required for proof of work based on the given difficulty.
+     * Estimates the computational cost of Proof of Work by sampling
+     * the number of hash attempts from a geometric distribution.
+     * <p>
+     * The probability of success per attempt is 16^(-difficulty),
+     * assuming difficulty represents leading hexadecimal zeros.
      *
      * @param difficulty     the difficulty level of the proof of work
-     * @param digestStrategy the strategy used to compute the hash
-     * @return the number of instructions required
+     * @param digestStrategy the strategy used to estimate the hash cost
+     * @return the estimated computational cost of mining
      */
     public static double instructionsPoW(long difficulty, DigestStrategy digestStrategy) {
-        double result = 0.991 * Math.pow(15.853, difficulty);
-
-        if (RANDOM.nextDouble() < VARIANCE_PROBABILITY) {
-            result = (result * VARIANCE_FACTOR);
+        if (difficulty < 0 || difficulty > 64) {
+            throw new IllegalArgumentException("Invalid PoW difficulty");
         }
 
-        return result * digestStrategy.hash(80L);
+        double probability = Math.pow(16.0, -difficulty);
+
+        double attempts = Math.floor(
+                Math.log1p(-RANDOM.nextDouble()) /
+                        Math.log1p(-probability)
+        ) + 1;
+
+        return attempts * digestStrategy.hash(80L);
     }
+
 
     /**
      * Calculates the number of nodes in a Merkle tree given the number of leaf nodes.

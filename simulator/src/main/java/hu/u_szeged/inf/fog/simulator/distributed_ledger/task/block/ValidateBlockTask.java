@@ -63,6 +63,7 @@ public class ValidateBlockTask implements MinerTask {
                         SimLogger.logRun(miner.name + " INVALID block: " + block.getId());
                     }
 
+                    miner.handleValidatedPoWBlock(block, accepted);
                     miner.finishTask(ValidateBlockTask.this);
                     SimulationMetrics.getInstance().recordBlockValidation(miner, accepted);
                 }

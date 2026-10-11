@@ -8,8 +8,11 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.ConsensusStrategy;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.consensus_strategy.PoWConsensusStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.BuildBlockTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.CalculateHeaderTask;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.FindNonceTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block.ValidateBlockTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.chain.SyncChainTask;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransactionTask;
@@ -51,6 +54,7 @@ public class Miner extends Timed {
     private final ValidationStrategy validationStrategy;
 
     private MinerTask activeTask = null;
+    private boolean miningInterruptedForValidation = false;
     public final Deque<MinerTask> tasksQueue = new ArrayDeque<>();
     private long lastActionTime = 0L;
     private static final long MAX_IDLE_TICKS = 50_000L; //this could be also configurable
@@ -323,18 +327,76 @@ public class Miner extends Timed {
     }
 
     /**
-     * Receives a block message and schedules a block validation task if the block is new.
+     * Receives a block and schedules its validation.
+     * If Proof of Work mining is active, interrupts the current
+     * computation so the incoming block can be validated.
      *
-     * @param blockMessage The block message to receive.
+     * @param blockMessage the received block message
      */
     public void receiveBlock(BlockMessage blockMessage) {
         Block block = blockMessage.getBlock();
+
         if (!localLedger.getChain().contains(block)) {
             this.getLocalRepo().registerObject(blockMessage);
+
             SimLogger.logRun(name + " received NEW block: " + block.getId());
+
             scheduleTask(new ValidateBlockTask(block), true);
+
+            if (consensusStrategy instanceof PoWConsensusStrategy
+                    && activeTask instanceof FindNonceTask) {
+
+                miningInterruptedForValidation = true;
+                ((FindNonceTask) activeTask).cancelMining();
+            }
         } else {
-            SimLogger.logRun(name + " received block already known: " + block.getId());
+            SimLogger.logRun(name + " received block already known: "
+                    + block.getId());
+        }
+    }
+
+    /**
+     * Handles the result of incoming PoW block validation.
+     * Accepted blocks invalidate the current mining candidate.
+     * Rejected blocks allow interrupted mining to restart.
+     *
+     * @param block    the validated block
+     * @param accepted whether the block was accepted
+     */
+    public void handleValidatedPoWBlock(Block block, boolean accepted) {
+        if (!(consensusStrategy instanceof PoWConsensusStrategy)) {
+            return;
+        }
+
+        if (accepted) {
+            if (nextBlock != null) {
+                for (Transaction tx : nextBlock.getTransactions()) {
+                    if (!block.getTransactions().contains(tx)) {
+                        mempool.addTransaction(tx);
+                    }
+                }
+
+                setNextBlock(null);
+            }
+
+            // Remove tasks belonging to the obsolete block candidate.
+            tasksQueue.removeIf(task ->
+                    task instanceof BuildBlockTask
+                            || task instanceof CalculateHeaderTask
+                            || task instanceof FindNonceTask
+            );
+
+            miningInterruptedForValidation = false;
+
+        } else if (miningInterruptedForValidation
+                && tasksQueue.stream()
+                .noneMatch(ValidateBlockTask.class::isInstance)) {
+
+            miningInterruptedForValidation = false;
+
+            if (nextBlock != null) {
+                scheduleTask(new FindNonceTask(), true);
+            }
         }
     }
 

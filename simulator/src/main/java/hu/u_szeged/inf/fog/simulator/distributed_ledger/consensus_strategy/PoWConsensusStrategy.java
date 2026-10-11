@@ -147,90 +147,123 @@ public class PoWConsensusStrategy implements ConsensusStrategy, DifficultyAdjust
     /**
      * Computes the next mining difficulty based on the recent block confirmation times
      * in the given {@link LocalLedger}.
+     *
      * <p>
-     * This method follows a basic difficulty adjustment mechanism similar to Bitcoin's,
-     * adjusting the difficulty every {@code difficultyAdjustmentBlock} blocks based on
-     * how long the last N blocks took to mine, compared to a target timespan.
+     * The difficulty is adjusted every {@code difficultyAdjustmentBlock} blocks
+     * by comparing the actual mining timespan with the expected timespan.
      * </p>
      *
      * <p><b>Adjustment Formula:</b><br>
-     * {@code newDifficulty = currentDifficulty * (expectedTimespan / actualTimespan)}</p>
+     * {@code difficultyChange = log(expectedTimespan / actualTimespan) / log(16)}
+     * </p>
      *
-     * <p>If blocks were mined faster than the expected rate (i.e., {@code actualTimespan < expectedTimespan}),
-     * the difficulty increases. If they were slower, the difficulty decreases. A minimum
-     * difficulty of 1 is enforced.</p>
+     * <p>
+     * Since each difficulty level represents a 16-fold increase in expected
+     * computational work, the adjustment is performed logarithmically rather
+     * than by directly multiplying the difficulty level.
+     * </p>
      *
-     * @param localLedger the miner’s local copy of the blockchain used to retrieve past block timestamps
-     * @return the new difficulty level to be used for the next block
+     * <p>
+     * The expected timespan is calculated using N - 1 block intervals,
+     * where N is the number of blocks in the adjustment window.
+     * The adjustment is limited to one difficulty level per interval,
+     * with a minimum difficulty of 1 and a maximum of 64.
+     * </p>
+     *
+     * @param localLedger the miner's local blockchain used to retrieve block timestamps
+     * @return the difficulty level to be used for the next block
      */
     @Override
     public long computeNextDifficulty(LocalLedger localLedger) {
 
         int chainSize = localLedger.size();
         if (chainSize == 0) {
-            // No blocks yet => use startDifficulty
             return startDifficulty;
         }
 
         Block lastBlock = localLedger.getChain().get(chainSize - 1);
         long currentDifficulty = lastBlock.getDifficulty();
 
-        // Check if we are at a retarget boundary:
+        // Difficulty adjustment requires at least two blocks per window.
+        if (difficultyAdjustmentBlock < 2) {
+            return currentDifficulty;
+        }
+
+        // Keep the current difficulty between adjustment boundaries.
         if (chainSize % difficultyAdjustmentBlock != 0) {
-            // Not time to recalc => use the same difficulty as the last block
             return currentDifficulty;
         }
 
-        if (chainSize < difficultyAdjustmentBlock) {
-            return currentDifficulty;
-        }
+        Block firstInWindow = localLedger.getChain().get(
+                chainSize - difficultyAdjustmentBlock
+        );
 
-        Block firstInWindow = localLedger.getChain().get(chainSize - difficultyAdjustmentBlock);
-        Block lastInWindow = localLedger.getChain().get(chainSize - 1);
+        long actualTimespan = Math.max(1L,
+                lastBlock.getTimestamp() - firstInWindow.getTimestamp());
 
-        long firstTime = firstInWindow.getTimestamp();
-        long lastTime = lastInWindow.getTimestamp();
-        long actualTimespan = lastTime - firstTime;
+        // N blocks contain N - 1 intervals between their timestamps.
+        double expectedTimespan =
+                (difficultyAdjustmentBlock - 1.0) * targetBlockTimespan;
 
-        // e.g. each block is targeted at 10_000 ticks =>
-        // expectedTimespan = difficultyAdjustmentBlock * 10_000
-        long expectedTimespan = difficultyAdjustmentBlock * targetBlockTimespan;
+        // Calculate the logarithmic difficulty adjustment.
+        double ratio = expectedTimespan / actualTimespan;
+        double change = Math.log(ratio) / Math.log(16.0);
 
-        boolean clampingUsed = false;
-        if (actualTimespan < expectedTimespan / 4) {
-            actualTimespan = expectedTimespan / 4;
-            clampingUsed = true;
-        }
+        // Limit the adjustment to one difficulty level per interval.
+        double clampedChange = Math.max(-1.0, Math.min(1.0, change));
 
-        if (actualTimespan > expectedTimespan * 4) {
-            actualTimespan = expectedTimespan * 4;
-            clampingUsed = true;
-        }
-
-        double ratio = (double) expectedTimespan / (double) actualTimespan;
-        long newDifficulty = Math.round(currentDifficulty * ratio);
-
-        if (newDifficulty < 1) newDifficulty = 1;
+        // Enforce the supported difficulty range.
+        long newDifficulty = Math.max(1L, Math.min(64L,
+                Math.round(currentDifficulty + clampedChange)));
 
         SimLogger.logRun("[PoWConsensusStrategy] Difficulty adjustment: " +
                 "currentDifficulty=" + currentDifficulty +
                 ", expectedTimespan=" + expectedTimespan +
                 ", actualTimespan=" + actualTimespan +
-                ", newDifficulty=" + newDifficulty +
-                ", clampingUsed=" + clampingUsed);
+                ", newDifficulty=" + newDifficulty);
 
         return newDifficulty;
     }
 
+
     /**
-     * Checks whether the block contains a valid Proof of Work result.
+     * Validates a simulated Proof of Work result.
+     *
+     * <p>
+     * The block must have a completed nonce search and a valid
+     * 64-character hexadecimal identifier containing at least
+     * the required number of leading zeros.
+     * </p>
+     *
+     * <p>
+     * This checks the simulator's synthetic block identifier.
+     * It does not perform cryptographic nonce verification.
+     * </p>
      *
      * @param block the block to validate
-     * @return true if the nonce has been found
+     * @return true if the simulated Proof of Work requirements are met
      */
     @Override
     public boolean isConsensusValid(Block block) {
-        return block != null && block.isNonceFound();
+        if (block == null || !block.isNonceFound()) {
+            return false;
+        }
+
+        long difficulty = block.getDifficulty();
+
+        // SHA-256 hashes contain 64 hexadecimal characters.
+        if (difficulty < 1 || difficulty > 64) {
+            return false;
+        }
+
+        String blockId = block.getId();
+
+        if (blockId == null || !blockId.matches("[0-9a-f]{64}")) {
+            return false;
+        }
+
+        // Check whether the block ID satisfies the difficulty target.
+        return blockId.startsWith("0".repeat((int) difficulty));
     }
 
     /**
