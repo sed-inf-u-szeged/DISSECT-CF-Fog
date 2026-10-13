@@ -1,6 +1,116 @@
 <div class="chart-prediction">
     <canvas #predictionCanvas></canvas>
 </div>
-<div class="chart-error">
-    <canvas #errorCanvas></canvas>
+
+<div class="chart-side">
+    <div class="lifecycle-card" *ngIf="prediction.run_info as run">
+        <div class="lifecycle-title">Run: {{ run.id }}</div>
+
+        <details>
+            <summary style="cursor: pointer;">Run settings</summary>
+
+            <div class="metric-row">
+                <span>Profile</span>
+                <span>{{ run.profile }}</span>
+            </div>
+
+            <div class="metric-row" *ngFor="let item of run.thresholds">
+                <span>{{ item.label }}</span>
+                <span>{{ item.value }}</span>
+            </div>
+
+            <div
+                *ngIf="run.settings_file"
+                style="margin-top: 10px; color: #aaa; overflow-wrap: anywhere;">
+                Source: {{ run.settings_file }}
+            </div>
+
+            <div
+                *ngIf="run.note"
+                style="margin-top: 10px; color: #ffd174; line-height: 1.4;">
+                {{ run.note }}
+            </div>
+        </details>
+    </div>
+
+    <div class="lifecycle-card">
+        <div class="lifecycle-title">Latest online evaluation</div>
+
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 12px;">
+            Latest saved state, not the state at this replay frame.
+        </div>
+
+        <div class="state-badge" [ngClass]="getLifecycleClass()">
+            {{ getLifecycleState() }}
+        </div>
+
+        <div
+            class="active-label"
+            [class.active]="prediction.lifecycle?.is_active">
+            {{ getActiveLabel() }}
+        </div>
+
+        <ng-container *ngIf="prediction.lifecycle?.metrics as metrics">
+            <div class="metric-row">
+                <span>Matched samples</span>
+                <span>{{ metrics.matched_samples }}</span>
+            </div>
+
+            <div class="metric-row">
+                <span>Within tolerance (%)</span>
+                <span>{{ formatMetric(metrics.accuracy) }}</span>
+            </div>
+
+            <div class="metric-row">
+                <span>MAE</span>
+                <span>{{ formatMetric(metrics.mae) }}</span>
+            </div>
+
+            <div class="metric-row">
+                <span>MSE</span>
+                <span>{{ formatMetric(metrics.mse) }}</span>
+            </div>
+
+            <div class="metric-row">
+                <span>RMSE</span>
+                <span>{{ formatMetric(metrics.rmse) }}</span>
+            </div>
+
+            <div class="metric-row">
+                <span>SMAPE (%)</span>
+                <span>{{ formatMetric(metrics.smape) }}</span>
+            </div>
+        </ng-container>
+
+        <div
+            class="metrics-pending"
+            *ngIf="!prediction.lifecycle?.metrics">
+            No saved online evaluation.
+        </div>
+    </div>
+
+    <div class="lifecycle-card">
+        <div class="lifecycle-title">This frame: test errors</div>
+
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 12px;">
+            Test prediction compared with actual test data.
+        </div>
+
+        <ng-container *ngIf="prediction.error_metrics as errors">
+            <div
+                class="metric-row"
+                *ngFor="let metric of errors | keyvalue">
+                <span>{{ metric.key }}</span>
+                <span>{{ formatMetric($any(metric.value)) }}</span>
+            </div>
+        </ng-container>
+
+        <div class="metrics-pending" *ngIf="!prediction.error_metrics">
+            No test errors available.
+        </div>
+    </div>
+
+    <div class="chart-error" style="display: none;">
+        <canvas #errorCanvas></canvas>
+    </div>
 </div>

@@ -17,6 +17,7 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
+import hu.u_szeged.inf.fog.simulator.prediction.LstmOnlineLifecycleController;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -32,7 +33,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
 
         /** SETTINGS **/
         int device_multiplier = 30;
-        long tasksize = 5120; 
+        long tasksize = 5120;
         double instructions = 480; // 1 minute on a1.2xlarge
         String applicationStrategy = "Pliant"; // PushUp HoldDown Random RuntimeAware
         double activationRatio = 0.9;
@@ -130,7 +131,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
             FeatureManager.getInstance().addFeature(new Feature(String.format("%s::%s", computingAppliance.name, "notYetProcessedData")) {
                 @Override
                 public double compute() {
-                    int result = 0;
+                    double result = 0.0;
                     for (Application application: computingAppliance.applications) {
                         result += (application.receivedData - application.processedData);
                     }
@@ -140,7 +141,21 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
         }
 
         long starttime = System.nanoTime();
-        Timed.simulateUntilLastEvent();
+
+        long lifecycleCheckInterval = 60 * 1000L;
+        LstmOnlineLifecycleController lifecycleController =
+                LstmOnlineLifecycleController.getInstance();
+
+        // Check data readiness from the beginning and monitor until events end.
+        while (Timed.getNextFire() >= 0) {
+            long nextCheckTime = Timed.getFireCount() + lifecycleCheckInterval;
+            Timed.simulateUntil(nextCheckTime);
+
+            // Do not launch another training job after the final simulation event.
+            if (Timed.getNextFire() >= 0) {
+                lifecycleController.checkLifecycle();
+            }
+        }
         long stoptime = System.nanoTime();
 
         ScenarioBase.calculateIoTCost();
@@ -163,7 +178,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
         }
         return null;
     }
-    
+
     private static double[] generatePosition() {
         // double maxLatitude = 48.3; diff: 2.5
         // double maxLongitude = 22.3; diff: 5.9
@@ -274,7 +289,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
 
         }
-        // 4-5 hours: 2
+        // 4-10 hours: 2
         for(int i = 0; i<2*multiplier; i++) {
             HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
             EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = null;
@@ -294,7 +309,32 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
 
             double[] pos = generatePosition();
 
-            new SmartDevice(4 * 60 * 60 * 1000, 5 * 60 * 60 * 1000, 50, 1 * 60 * 1000, 
+            new SmartDevice(4 * 60 * 60 * 1000, 10 * 60 * 60 * 1000, 50, 1 * 60 * 1000,
+                    new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
+                    new LoadBalancedDeviceStrategy(), localMachine, 50, false);
+        }
+
+        // 6-10 hours: 5 additional devices per multiplier for serving predictions
+        for(int i = 0; i<5*multiplier; i++) {
+            HashMap<String, Integer> latencyMap = new HashMap<String, Integer>();
+            EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions = null;
+
+            try {
+                transitions = PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            final Map<String, PowerState> cpuTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.host);
+            final Map<String, PowerState> stTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.storage);
+            final Map<String, PowerState> nwTransitions = transitions.get(PowerTransitionGenerator.PowerStateKind.network);
+
+            Repository repo = new Repository(4294967296L, "device-serving-" + i, 3250, 3250, 3250, latencyMap, stTransitions, nwTransitions); // 26 Mbit/s
+            PhysicalMachine localMachine = new PhysicalMachine(1, 0.001, 1073741824L, repo, 0, 0, cpuTransitions);
+
+            double[] pos = generatePosition();
+
+            new SmartDevice(6 * 60 * 60 * 1000, 10 * 60 * 60 * 1000, 50, 1 * 60 * 1000,
                     new StaticMobilityStrategy(new GeoLocation(pos[0], pos[1])),
                     new LoadBalancedDeviceStrategy(), localMachine, 50, false);
         }
