@@ -13,7 +13,7 @@ public class PredictionSimulation {
 
     public static void main(String[] args) throws Exception {
         boolean predictionOnly = false;
-        String lifecycleProfile = "candidate";
+        String lifecycleProfile = "observe";
 
         for (String argument : args) {
             if ("--prediction-only".equalsIgnoreCase(argument)) {
@@ -34,6 +34,7 @@ public class PredictionSimulation {
                 new PredictionSimulationDefinition());
 
         List<PairPredictionSettings> predictionSettings = new ArrayList<>();
+
         predictionSettings.add(new PairPredictionSettings(
                 "Arima128",
                 new PredictionSettings(
@@ -51,6 +52,33 @@ public class PredictionSimulation {
                         true, 0),
                 PredictorSettings.getPredictorSettings(
                         PredictorSettings.PredictorEnum.LINEAR_REGRESSION)));
+
+        predictionSettings.add(new PairPredictionSettings(
+                "SVR256",
+                new PredictionSettings(
+                        64, 64, 256,
+                        new PredictionSettings.SmoothingSettings(48, 5),
+                        true, 0),
+                PredictorSettings.getPredictorSettings(
+                        PredictorSettings.PredictorEnum.SVR)));
+
+        predictionSettings.add(new PairPredictionSettings(
+                "RandomForest256",
+                new PredictionSettings(
+                        64, 64, 256,
+                        new PredictionSettings.SmoothingSettings(48, 5),
+                        true, 0),
+                PredictorSettings.getPredictorSettings(
+                        PredictorSettings.PredictorEnum.RANDOM_FOREST)));
+
+        predictionSettings.add(new PairPredictionSettings(
+                "HoltWinters256",
+                new PredictionSettings(
+                        64, 64, 256,
+                        new PredictionSettings.SmoothingSettings(48, 5),
+                        true, 0),
+                PredictorSettings.getPredictorSettings(
+                        PredictorSettings.PredictorEnum.HOLT_WINTERS)));
 
         configurator.addSimulationSettings(new SimulationSettings(
                 new ExportSettings(
