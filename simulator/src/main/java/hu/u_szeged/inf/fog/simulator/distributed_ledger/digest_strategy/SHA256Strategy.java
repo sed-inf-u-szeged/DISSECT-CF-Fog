@@ -28,18 +28,41 @@ public class SHA256Strategy extends AbstractDigestStrategy {
         setKeySize(256);
     }
 
+
     /**
-     * Computes the hash time for the given input size using interpolation.
+     * Estimates the normalized computational cost of SHA-256 hashing.
+     * Preserves the relative benchmark costs for different input sizes
+     * and calibrates them using a measured desktop CPU throughput of
+     * 7,068,143 hashes of 80-byte inputs in 3 seconds (single-threaded).
      *
-     * @param inputSize the size of the input to hash
-     * @return the computed hash time
-     * @throws IllegalArgumentException if the input size is out of the interpolation range
+     * @param inputSize the input size in bytes
+     * @return the estimated computational cost in normalized work units
+     * @throws IllegalArgumentException if the input size is out of range
      */
     @Override
     public double hash(long inputSize) {
         if (inputSize < 16 || inputSize > 16384) {
-            throw new IllegalArgumentException("Block size out of interpolation range for SHA-256.");
+            throw new IllegalArgumentException(
+                    "Block size out of interpolation range for SHA-256."
+            );
         }
-        return interpolate(createSplineFunction(BLOCK_SIZES, TIMES), inputSize, BLOCK_SIZES[0], BLOCK_SIZES[BLOCK_SIZES.length - 1]);
+
+        var spline = createSplineFunction(BLOCK_SIZES, TIMES);
+
+        double benchmarkCost = interpolate(
+                spline, inputSize,
+                BLOCK_SIZES[0], BLOCK_SIZES[BLOCK_SIZES.length - 1]
+        );
+
+        double benchmarkCost80 = interpolate(
+                spline, 80L,
+                BLOCK_SIZES[0], BLOCK_SIZES[BLOCK_SIZES.length - 1]
+        );
+
+        double measuredTime80Seconds = 3.0 / 7_068_143.0;
+
+        return (benchmarkCost / benchmarkCost80)
+                * measuredTime80Seconds;
     }
+
 }
