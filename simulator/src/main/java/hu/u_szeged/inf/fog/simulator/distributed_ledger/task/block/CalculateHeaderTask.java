@@ -39,8 +39,12 @@ public class CalculateHeaderTask implements MinerTask {
         miner.setState(Miner.MinerState.CALCULATING_HEADER);
 
         Block block = miner.getNextBlock();
-        SimLogger.logRun(miner.name + " Calculating header for block with " + block.getTransactions().size() + " tx.");
         double instructions = Utils.merkleRoot(block, miner.consensusStrategy.getDigestStrategy());
+
+        SimLogger.logRun(miner.name
+                + " [CalculateHeaderTask] Calculating header: block=" + block.getId()
+                + ", transactions=" + block.getTransactions().size()
+                + ", estimatedInstructions=" + instructions);
 
         try {
             miner.localVm.newComputeTask(instructions, ResourceConsumption.unlimitedProcessing, new ConsumptionEventAdapter() {

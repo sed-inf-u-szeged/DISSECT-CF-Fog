@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.task.block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.MinerTask;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 /**
  * Finalizes a block created by a Proof of Stake validator.
@@ -37,6 +38,15 @@ public class FinalizePoSBlockTask implements MinerTask {
 
         block.finalizeBlock();
         miner.getLocalLedger().addBlock(block);
+
+        SimLogger.logRun(miner.name
+                + " [PoS] Block finalized: id=" + block.getId()
+                + ", slot=" + block.getSlot()
+                + ", proposer=" + block.getProposerId()
+                + ", transactions=" + block.getTransactions().size()
+                + ", size=" + block.size() + " bytes"
+                + ", chainHeight=" + miner.getLocalLedger().size()
+                + ", timestamp=" + block.getTimestamp());
 
         miner.finishTask(this);
         miner.scheduleTask(new PropagateBlockTask(block), true);

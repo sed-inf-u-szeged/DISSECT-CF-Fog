@@ -57,6 +57,11 @@ public class FindNonceTask implements MinerTask {
         completedAttempts = 0L;
         cancelled = false;
 
+        SimLogger.logRun(miner.name
+                + " [PoW] Mining started: block=" + block.getId()
+                + ", difficulty=" + block.getDifficulty()
+                + ", attemptsPerBatch=" + ATTEMPTS_PER_BATCH);
+
         startNextBatch(miner, block);
     }
 
@@ -106,10 +111,11 @@ public class FindNonceTask implements MinerTask {
 
                             if (successInBatch) {
                                 SimLogger.logRun(miner.name
-                                        + " Nonce found with difficulty "
-                                        + block.getDifficulty()
-                                        + " after " + completedAttempts
-                                        + " attempts");
+                                        + " [PoW] Nonce found: block=" + block.getId()
+                                        + ", difficulty=" + block.getDifficulty()
+                                        + ", totalAttempts=" + completedAttempts
+                                        + ", estimatedInstructions=" + (completedAttempts
+                                        * miner.consensusStrategy.getDigestStrategy().hash(80L)));
 
                                 block.setNonceFound(true);
                                 miner.getLocalLedger().addBlock(block);
@@ -138,9 +144,9 @@ public class FindNonceTask implements MinerTask {
                             cancelled = true;
 
                             SimLogger.logRun(miner.name
-                                    + " PoW mining cancelled after "
-                                    + completedAttempts
-                                    + " completed attempts.");
+                                    + " [PoW] Mining cancelled: block=" + block.getId()
+                                    + ", difficulty=" + block.getDifficulty()
+                                    + ", completedAttempts=" + completedAttempts);
 
                             miner.finishTask(FindNonceTask.this);
                         }

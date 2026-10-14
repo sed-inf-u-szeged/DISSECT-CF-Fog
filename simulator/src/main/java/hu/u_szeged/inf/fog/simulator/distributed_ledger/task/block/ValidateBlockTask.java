@@ -54,6 +54,14 @@ public class ValidateBlockTask implements MinerTask {
                     boolean consensusValid = miner.consensusStrategy.isConsensusValid(block);
                     boolean accepted = consensusValid && miner.getValidationStrategy().isValidBlock(block);
 
+                    SimLogger.logRun(miner.name
+                            + " [ValidateBlockTask] Validation result: block=" + block.getId()
+                            + ", consensusValid=" + consensusValid
+                            + ", result=" + (accepted ? "ACCEPTED" : "REJECTED")
+                            + ", reason=" + (accepted ? "VALID"
+                            : !consensusValid ? "CONSENSUS_FAILED"
+                            : "VALIDATION_STRATEGY_REJECTED"));
+
                     if (accepted) {
                         SimLogger.logRun(miner.name + " VALID block: " + block.getId());
                         miner.getLocalLedger().addBlock(block);

@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.validator;
 
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -25,6 +26,12 @@ public class ValidatorRegistry {
         }
 
         validators.put(miner, stake);
+
+        SimLogger.logRun("[PoS][ValidatorRegistry] Validator registered: "
+                + miner.getName()
+                + ", stake=" + stake
+                + ", totalStake=" + getTotalStake()
+                + ", validatorCount=" + validators.size());
     }
 
     /**

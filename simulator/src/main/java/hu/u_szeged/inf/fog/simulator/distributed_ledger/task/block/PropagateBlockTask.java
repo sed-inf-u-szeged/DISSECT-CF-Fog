@@ -45,7 +45,11 @@ public class PropagateBlockTask implements MinerTask {
      */
     @Override
     public void execute(Miner miner) {
-        SimLogger.logRun(miner.name + " Propagating block with " + block.getTransactions().size() + " transactions...");
+        SimLogger.logRun(miner.name
+                + " [PropagateBlockTask] Propagating block: id=" + block.getId()
+                + ", consensus=" + (block.getSlot() >= 0 ? "PoS" : "PoW")
+                + ", transactions=" + block.getTransactions().size()
+                + ", size=" + block.size() + " bytes");
         miner.setState(Miner.MinerState.PROPAGATING_BLOCK);
 
         BlockMessage message = new BlockMessage(block);

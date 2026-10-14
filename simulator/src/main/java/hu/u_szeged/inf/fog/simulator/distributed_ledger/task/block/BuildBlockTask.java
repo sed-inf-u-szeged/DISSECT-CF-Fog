@@ -45,6 +45,11 @@ public class BuildBlockTask implements MinerTask {
         miner.setState(Miner.MinerState.BUILDING_BLOCK);
         if (currentState == State.NEW) {
             buildingBlock = miner.consensusStrategy.createBlock(miner);
+            if (buildingBlock.getSlot() < 0) {
+                SimLogger.logRun(miner.getName()
+                        + " [PoW] New block difficulty: "
+                        + buildingBlock.getDifficulty());
+            }
             miner.setNextBlock(buildingBlock);
             currentState = State.IN_PROGRESS;
         }

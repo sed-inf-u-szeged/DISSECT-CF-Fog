@@ -125,10 +125,16 @@ public class PoSConsensusStrategy implements ConsensusStrategy {
             throw new IllegalStateException("Miner is not selected for the current slot");
         }
 
+        long stake = validatorRegistry.getStake(miner);
+        long totalStake = validatorRegistry.getTotalStake();
+        double stakeShare = 100.0 * stake / totalStake;
+
         SimLogger.logRun(
                 "[PoSConsensusStrategy] Slot " + slot
                         + " selected validator: " + miner.getName()
-                        + ", stake: " + validatorRegistry.getStake(miner)
+                        + ", stake=" + stake
+                        + ", totalStake=" + totalStake
+                        + ", stakeShare=" + String.format(java.util.Locale.ROOT, "%.2f", stakeShare) + "%"
         );
 
         Block block = new Block(this, 0);
@@ -170,7 +176,16 @@ public class PoSConsensusStrategy implements ConsensusStrategy {
                 block.getSlot()
         );
 
-        return selected.getName().equals(block.getProposerId());
+        boolean valid = selected.getName().equals(block.getProposerId());
+
+        SimLogger.logRun("[PoSConsensusStrategy] Proposer validation: "
+                + "block=" + block.getId()
+                + ", slot=" + block.getSlot()
+                + ", expectedProposer=" + selected.getName()
+                + ", actualProposer=" + block.getProposerId()
+                + ", result=" + (valid ? "VALID" : "INVALID"));
+
+        return valid;
     }
 
     /**

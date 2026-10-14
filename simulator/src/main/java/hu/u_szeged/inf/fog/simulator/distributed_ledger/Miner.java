@@ -347,6 +347,13 @@ public class Miner extends Timed {
                     && activeTask instanceof FindNonceTask) {
 
                 miningInterruptedForValidation = true;
+
+                SimLogger.logRun(name
+                        + " [PoW] Mining interrupted by incoming block: "
+                        + block.getId()
+                        + ", localCandidate="
+                        + (nextBlock == null ? "none" : nextBlock.getId()));
+
                 ((FindNonceTask) activeTask).cancelMining();
             }
         } else {
@@ -370,6 +377,11 @@ public class Miner extends Timed {
 
         if (accepted) {
             if (nextBlock != null) {
+                SimLogger.logRun(name
+                        + " [PoW] Abandoning local block candidate: "
+                        + nextBlock.getId()
+                        + ", acceptedPeerBlock=" + block.getId());
+
                 for (Transaction tx : nextBlock.getTransactions()) {
                     if (!block.getTransactions().contains(tx)) {
                         mempool.addTransaction(tx);
@@ -395,6 +407,11 @@ public class Miner extends Timed {
             miningInterruptedForValidation = false;
 
             if (nextBlock != null) {
+                SimLogger.logRun(name
+                        + " [PoW] Peer block rejected, restarting mining: block="
+                        + nextBlock.getId()
+                        + ", difficulty=" + nextBlock.getDifficulty());
+
                 scheduleTask(new FindNonceTask(), true);
             }
         }
