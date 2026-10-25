@@ -1,11 +1,13 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics;
 
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
-import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * SimulationMetrics class is a singleton that collects and stores various statistics.
@@ -295,6 +297,17 @@ public class SimulationMetrics {
         SimLogger.logRun("Transactions rejected: " + globalTransactionsRejected);
         SimLogger.logRun("Blocks accepted:       " + globalBlocksAccepted);
         SimLogger.logRun("Blocks rejected:       " + globalBlocksRejected);
+        SimLogger.logRun("Blocks produced:       " + blockCreationTime.size());
+        double avgTransactionsPerBlock = blockCreationTime.isEmpty()
+                ? 0.0
+                : (double) globalTransactionsOnChain / blockCreationTime.size();
+
+        SimLogger.logRun("Avg Transactions per Block: " + avgTransactionsPerBlock);
+        double blocksPerMinute = simEndTime > 0
+                ? blockCreationTime.size() * 60000.0 / simEndTime
+                : 0.0;
+
+        SimLogger.logRun("Blocks per Minute: " + blocksPerMinute);
 
         // per-miner acceptance
         for (Map.Entry<Miner, MinerStats> e : statsPerMiner.entrySet()) {
