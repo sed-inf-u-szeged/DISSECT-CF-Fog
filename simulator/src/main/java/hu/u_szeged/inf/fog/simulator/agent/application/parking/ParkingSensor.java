@@ -6,12 +6,12 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
+import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.dt.ParkingCsvData;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
-import java.util.ArrayList;
-import java.util.Deque;
+import java.util.*;
 
 public class ParkingSensor extends Timed {
 
@@ -24,7 +24,7 @@ public class ParkingSensor extends Timed {
 
         BLE_POLL(1);
 
-        final int batteryCost;
+        public final int batteryCost;
 
         ParkingMode(int batteryCost) {
             this.batteryCost = batteryCost;
@@ -69,6 +69,11 @@ public class ParkingSensor extends Timed {
     public final Repository nbiotRepository;
     public final Repository bleRepository;
 
+    public record ParkingObservation(long simulationTimeMs, boolean occupied) {
+    }
+
+    public final Deque<ParkingObservation> observationHistory = new ArrayDeque<>();
+
     public boolean isTaken = false;
     public int eventCount = 0;
 
@@ -77,6 +82,10 @@ public class ParkingSensor extends Timed {
     public int batteryLevel;
 
     public long stopTime;
+
+    public int orchestrationIntervalEventCount = 0;
+
+    public int modeSwitchCount = 0;
 
     private Deque<ParkingCsvData.ParkingEvent> parkingEvents;
 
@@ -120,7 +129,12 @@ public class ParkingSensor extends Timed {
     public void tick(long fires) {
         this.isTaken = !this.isTaken;
         eventCount++;
+        orchestrationIntervalEventCount++;
         totalParkingEvents++;
+
+        if ("forecast".equals(Config.PARKING_CONFIGURATION.get("orchestrationStrategy"))) {
+            addObservation(Timed.getFireCount(), isTaken);
+        }
 
         StorageObject so = new StorageObject(id + "-" + fires, 50, false);
         PlatformService.networkTimePerFile.put(so.id, Timed.getFireCount());
@@ -203,6 +217,48 @@ public class ParkingSensor extends Timed {
         );
     }
 
+    public void addObservation(long simulationTimeMs, boolean occupied) {
+        observationHistory.addLast(new ParkingObservation(simulationTimeMs, occupied));
+        long historyStartTimeMs = simulationTimeMs - 24 * 60 * 60_000L;
+
+        while (observationHistory.size() > 1) {
+            Iterator<ParkingObservation> iterator = observationHistory.iterator();
+            iterator.next();
+            ParkingObservation second = iterator.next();
+
+            if (second.simulationTimeMs() <= historyStartTimeMs) {
+                observationHistory.removeFirst();
+            } else {
+                break;
+            }
+        }
+    }
+
+    public boolean getOccupancyAt(long simulationTimeMs) {
+        boolean occupancy = observationHistory.peekFirst().occupied();
+
+        for (ParkingObservation observation : observationHistory) {
+            if (observation.simulationTimeMs() > simulationTimeMs) {
+                break;
+            }
+            occupancy = observation.occupied();
+        }
+
+        return occupancy;
+    }
+
+    public List<ParkingObservation> getObservationsBetween(long fromTimeMs, long toTimeMs) {
+        List<ParkingObservation> observations = new ArrayList<>();
+
+        for (ParkingObservation observation : observationHistory) {
+            if (observation.simulationTimeMs() > fromTimeMs && observation.simulationTimeMs() < toTimeMs) {
+                observations.add(observation);
+            }
+        }
+
+        return observations;
+    }
+
     public void stop(){
         unsubscribe();
     }
@@ -266,6 +322,7 @@ public class ParkingSensor extends Timed {
             ParkingMode previousMode = mode;
             mode = pendingMode;
             pendingMode = null;
+            modeSwitchCount++;
             SimLogger.logRun( "Sensor " + id + " switched from " + previousMode + " to " + mode
                             + " at " + Timed.getFireCount() / ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
         }

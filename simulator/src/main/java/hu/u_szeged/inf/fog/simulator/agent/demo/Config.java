@@ -14,6 +14,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealin
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -139,7 +140,7 @@ public class Config {
 
     public static final Map<String, Object> PARKING_CONFIGURATION =
             new HashMap<>(Map.ofEntries(
-                    Map.entry("simLength",24 * 60 * 60 * 1000L), // 1 day
+                    Map.entry("simLength",30 * 24 * 60 * 60 * 1000L), // 30 day
                     //Map.entry("simLength",5 * 365 * 24 * 60 * 60 * 1000L), // 5 years
 
                     Map.entry("submissionDelay", List.of(0)), // 1 app
@@ -148,7 +149,7 @@ public class Config {
                     Map.entry("sensorsPerGateway", 15), // pc.
                     Map.entry("batteryCapacity", 600_000), // unit
 
-                    Map.entry("cooldownFreq", 60_000L), // 1 min.
+                    Map.entry("cooldownFreq", 15 * 60_000L), // 15 min.
                     Map.entry("gatewayFreq", 60_000L), // 1 min.
 
                     Map.entry("nbiotSensorToPlatformLatencyMs", 3_000),
@@ -167,9 +168,47 @@ public class Config {
                     //Map.entry( "parkingScenario", ParkingScenario.RESIDENTIAL_ONLY),
                     //Map.entry( "parkingScenario", ParkingScenario.BALANCED),
                     Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_HEAVY),
-                    //Map.entry("orchestrationEnabled", true),
-                    Map.entry("orchestrationEnabled", false),
+
+                    Map.entry("predictorDir", "D:\\Documents\\git-projects\\Swarmchestrate-parking-forecast"),
+                    Map.entry("predictorModelPath", "D:/Documents/git-projects/Swarmchestrate-parking-forecast/checkpoints/chania_itransformer_wide"),
+                    Map.entry("forecastHistoryWindowMs", 24 * 60 * 60_000L), // 24 hours
+
+                    //Map.entry("workloadSource", "synthetic"),
+                    Map.entry("workloadSource", "trace"),
+                    Map.entry("traceStatePath", Path.of("D:\\Documents\\git-projects\\Swarmchestrate-parking-forecast\\data\\processed\\chania\\state_test.csv")),
+                    Map.entry("tracePath", Path.of("D:\\Documents\\git-projects\\Swarmchestrate-parking-forecast\\data\\processed\\chania\\sensors_test.csv")),
+                    Map.entry("traceStartTime", "2026-08-10T21:00:00Z"), // +24 hours, due to the forecasting model's requirement for historical data
+                    //Map.entry("traceStartTime", "2026-08-09T21:00:00Z"), // original start time for the trace data
+
+                    // CURRENT
+                    //Map.entry("orchestrationStrategy", "reactive"),
+                    //Map.entry("orchestrationEnabled", false),
+                    //Map.entry("initialParkingMode", "random"),
+
+                    // NB-IOT-ONLY
+                    //Map.entry("orchestrationStrategy", "reactive"),
+                    //Map.entry("orchestrationEnabled", false),
+                    //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
+
+                    // REACTIVE
+                    Map.entry("orchestrationStrategy", "reactive"),
+                    Map.entry("orchestrationEnabled", true),
                     Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
+
+                    // GROUP-LEVEL
+                    //Map.entry("orchestrationStrategy", "group-level"),
+                    //Map.entry("orchestrationEnabled", true),
+                    //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
+
+                    // TIME-BASED
+                    //Map.entry("orchestrationStrategy", "time-based"),
+                    //Map.entry("orchestrationEnabled", true),
+                    //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
+
+                    // FORECAST-BASED
+                    //Map.entry("orchestrationStrategy", "forecast"),
+                    //Map.entry("orchestrationEnabled", true),
+                    //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.NBIOT_PUSH),
                     //Map.entry("initialParkingMode", ParkingSensor.ParkingMode.BLE_POLL),
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),

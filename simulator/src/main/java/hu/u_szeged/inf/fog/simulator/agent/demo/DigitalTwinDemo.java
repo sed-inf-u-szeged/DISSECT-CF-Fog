@@ -115,6 +115,7 @@ public class DigitalTwinDemo {
         long totalRemainingBattery = 0;
         long initialTotalBattery = 0;
         Map<String, Integer> initialBatteryBySensor = new LinkedHashMap<>();
+        int totalModeSwitchCount = 0;
 
         for (ParkingDigitalTwinRequest.Component component : request.application.components) {
             if (component.properties != null && "parking-sensor".equals(component.properties.componentType)) {
@@ -130,12 +131,15 @@ public class DigitalTwinDemo {
                         "mode: " + sensor.mode
                                 + ", battery: " + sensor.batteryLevel
                                 + ", event-count: " + sensor.eventCount
+                                + ", mode-switch-count: " + sensor.modeSwitchCount
                                 //+ ", zone: " + sensor.zone
                 );
                 totalRemainingBattery += sensor.batteryLevel;
+                totalModeSwitchCount += sensor.modeSwitchCount;
             }
         }
         SimLogger.logRes("parking-sensors", parkingSensorGroup);
+        SimLogger.logRes("total-mode-switch-count", totalModeSwitchCount);
 
         long totalBatteryConsumed = initialTotalBattery - totalRemainingBattery;
         SimLogger.logRes("total-battery-consumed", totalBatteryConsumed);

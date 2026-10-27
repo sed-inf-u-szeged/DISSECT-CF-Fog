@@ -31,6 +31,22 @@ public class ForecasterWorker {
         return process;
     }
 
+    public String predict(String json) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://127.0.0.1:" + port + "/predict"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException("Worker on port " + port + " returned HTTP " + response.statusCode() + " body: " + response.body());
+        }
+
+        return response.body();
+    }
+
     public void predict(String inputPath, String outputPath) throws IOException, InterruptedException {
 
         String json = "{"

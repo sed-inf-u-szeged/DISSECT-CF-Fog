@@ -72,8 +72,15 @@ public class ForecasterManager {
             try {
                 ForecasterWorker w = f.get();
                 workers.add(w);
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                executor.shutdownNow();
+                shutdownAll();
+                throw new IllegalStateException("Forecaster initialization interrupted", e);
+            } catch (ExecutionException e) {
+                executor.shutdownNow();
+                shutdownAll();
+                throw new IllegalStateException("Failed to initialize forecaster worker", e.getCause());
             }
         }
         executor.shutdown();
@@ -81,6 +88,7 @@ public class ForecasterManager {
     }
 
     private ForecasterWorker startWorker(String predictorScriptDir, String modelPath, int port) {
+        Process process = null;
         try {
             ProcessBuilder pb = null;
             if (SystemUtils.IS_OS_LINUX) {
@@ -91,10 +99,8 @@ public class ForecasterManager {
                 );
                 pb.directory(new File(predictorScriptDir));
             } else if (SystemUtils.IS_OS_WINDOWS) {
-                String cmd = "cd " + predictorScriptDir + " && uv run forecaster_service.py --model_path "
-                        + modelPath + " --port " + port;
-
-                pb = new ProcessBuilder("wsl.exe", "bash", "-lc", cmd);
+                pb = new ProcessBuilder("uv", "run", "forecaster_service.py", "--model_path", modelPath, "--port", String.valueOf(port));
+                pb.directory(new File(predictorScriptDir));
             } else {
                 SimLogger.logError("Unsupported OS: " + SystemUtils.OS_NAME);
             }
@@ -102,12 +108,13 @@ public class ForecasterManager {
             pb.redirectErrorStream(true);
             pb.environment().put("PYTHONUNBUFFERED", "1");
 
-            Process process = pb.start();
+            process = pb.start();
+            final Process runningProcess = process;
 
             CountDownLatch readyLatch = new CountDownLatch(1);
 
             Thread logger = new Thread(() -> {
-                try (BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                try (BufferedReader r = new BufferedReader(new InputStreamReader(runningProcess.getInputStream()))) {
                     String line;
                     while ((line = r.readLine()) != null) {
                         if (line.contains("NNPACK.cpp") || line.contains("Use CPU")) {
@@ -130,23 +137,35 @@ public class ForecasterManager {
             logger.setDaemon(true);
             logger.start();
 
-            boolean success = readyLatch.await(20, TimeUnit.SECONDS);
+            boolean success = readyLatch.await(120, TimeUnit.SECONDS);
             if (!success) {
+                process.destroy();
+                if (!process.waitFor(3, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    process.waitFor();
+                }
                 throw new IllegalStateException("Worker on port " + port + " not ready in time");
             }
-            
             return new ForecasterWorker(port, process);
         } catch (IOException e) {
             throw new RuntimeException("Failed to start forecaster on port " + port, e);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            if (process != null) {
+                process.destroyForcibly();
+            }
+            throw new IllegalStateException("Worker startup interrupted on port " + port, e);
         }
-        return null;
     }
 
     private ForecasterWorker nextWorker() {
         int index = Math.floorMod(rr.getAndIncrement(), workers.size());
         return workers.get(index);
+    }
+
+    public String predict(String json) throws IOException, InterruptedException {
+        ForecasterWorker worker = nextWorker();
+        return worker.predict(json);
     }
 
     public void predict(String inputPath, String outputPath) throws IOException, InterruptedException {
