@@ -8,6 +8,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.StorageObject;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.agent.demo.Config;
 import hu.u_szeged.inf.fog.simulator.agent.dt.ParkingCsvData;
+import hu.u_szeged.inf.fog.simulator.agent.util.ParkingTraceExporter;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
@@ -67,7 +68,10 @@ public class ParkingSensor extends Timed {
     public final ParkingZone zone;
 
     public final Repository nbiotRepository;
+
     public final Repository bleRepository;
+
+    private final ParkingTraceExporter traceExporter;
 
     public record ParkingObservation(long simulationTimeMs, boolean occupied) {
     }
@@ -90,7 +94,7 @@ public class ParkingSensor extends Timed {
     private Deque<ParkingCsvData.ParkingEvent> parkingEvents;
 
     public ParkingSensor(String id, PlatformService platformService, Repository nbiotRepository, Repository bleRepository, int batteryLevel,
-                         ParkingMode mode, ParkingZone zone) {
+                         ParkingMode mode, ParkingZone zone, ParkingTraceExporter traceExporter) {
         this.id = id;
         this.nbiotRepository = nbiotRepository;
         this.bleRepository = bleRepository;
@@ -100,6 +104,12 @@ public class ParkingSensor extends Timed {
         this.zone = zone;
         this.platformService = platformService;
         this.stopTime = 0;
+        this.traceExporter = traceExporter;
+        String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
+        if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
+            long historyWindowMs = (long) Config.PARKING_CONFIGURATION.get("forecastHistoryWindowMs");
+            addObservation(-historyWindowMs, isTaken);
+        }
         subscribe(sampleNextEventDelay(getCurrentProfile().meanInterval));
         allParkingSensors.add(this);
         //this.batteryLevel = Config.PARKING_CONFIGURATION.get("batteryCapacity") instanceof Long capacity ? capacity : 0L; TODO:!!
@@ -116,6 +126,7 @@ public class ParkingSensor extends Timed {
         this.zone = zone;
         this.platformService = platformService;
         this.stopTime = 0;
+        this.traceExporter = null;
         this.parkingEvents = parkingEvents;
 
         if (!parkingEvents.isEmpty()) {
@@ -128,11 +139,15 @@ public class ParkingSensor extends Timed {
     @Override
     public void tick(long fires) {
         this.isTaken = !this.isTaken;
+        if (traceExporter != null) {
+            traceExporter.logEvent(this);
+        }
         eventCount++;
         orchestrationIntervalEventCount++;
         totalParkingEvents++;
 
-        if ("forecast".equals(Config.PARKING_CONFIGURATION.get("orchestrationStrategy"))) {
+        String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
+        if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
             addObservation(Timed.getFireCount(), isTaken);
         }
 
@@ -219,7 +234,8 @@ public class ParkingSensor extends Timed {
 
     public void addObservation(long simulationTimeMs, boolean occupied) {
         observationHistory.addLast(new ParkingObservation(simulationTimeMs, occupied));
-        long historyStartTimeMs = simulationTimeMs - 24 * 60 * 60_000L;
+        long historyWindowMs = (long) Config.PARKING_CONFIGURATION.get("forecastHistoryWindowMs");
+        long historyStartTimeMs = simulationTimeMs - historyWindowMs;
 
         while (observationHistory.size() > 1) {
             Iterator<ParkingObservation> iterator = observationHistory.iterator();
@@ -257,6 +273,23 @@ public class ParkingSensor extends Timed {
         }
 
         return observations;
+    }
+
+    public int getTraceEventCountBetween(long fromTimeMs, long toTimeMs) {
+        if (parkingEvents == null) {
+            throw new IllegalStateException("Oracle forecasting requires trace workload");
+        }
+        int count = 0;
+        for (ParkingCsvData.ParkingEvent event : parkingEvents) {
+            if (event.simulationTimeMs() < fromTimeMs) {
+                continue;
+            }
+            if (event.simulationTimeMs() >= toTimeMs) {
+                break;
+            }
+            count++;
+        }
+        return count;
     }
 
     public void stop(){

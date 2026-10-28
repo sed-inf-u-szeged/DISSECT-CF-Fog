@@ -9,6 +9,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -58,7 +60,7 @@ public class ForecasterManager {
      */
 
     private ForecasterManager(String predictorScriptDir, int workerCount, int basePort, String modelPath) {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(2); // threads for workers, used only the beginning to make the AI services startup faster
         List<Future<ForecasterWorker>> futures = new ArrayList<>();
         
         for (int i = 0; i < workerCount; i++) {
@@ -88,6 +90,9 @@ public class ForecasterManager {
     }
 
     private ForecasterWorker startWorker(String predictorScriptDir, String modelPath, int port) {
+        if (isPortReachable(port)) {
+            throw new IllegalStateException("Forecaster port " + port + " is already in use");
+        }
         Process process = null;
         try {
             ProcessBuilder pb = null;
@@ -111,8 +116,6 @@ public class ForecasterManager {
             process = pb.start();
             final Process runningProcess = process;
 
-            CountDownLatch readyLatch = new CountDownLatch(1);
-
             Thread logger = new Thread(() -> {
                 try (BufferedReader r = new BufferedReader(new InputStreamReader(runningProcess.getInputStream()))) {
                     String line;
@@ -120,10 +123,7 @@ public class ForecasterManager {
                         if (line.contains("NNPACK.cpp") || line.contains("Use CPU")) {
                             continue;
                         }
-                        
-                        if (line.contains("startup complete")) {
-                            readyLatch.countDown();
-                        }
+
                         SimLogger.logRun("\t[forecaster " + port + "] " + line + " ("
                                 + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.)");
                     }
@@ -137,24 +137,57 @@ public class ForecasterManager {
             logger.setDaemon(true);
             logger.start();
 
-            boolean success = readyLatch.await(120, TimeUnit.SECONDS);
-            if (!success) {
-                process.destroy();
-                if (!process.waitFor(3, TimeUnit.SECONDS)) {
-                    process.destroyForcibly();
-                    process.waitFor();
-                }
-                throw new IllegalStateException("Worker on port " + port + " not ready in time");
-            }
+            waitUntilReady(process, port, 120_000);
             return new ForecasterWorker(port, process);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
+            stopProcess(process);
             throw new RuntimeException("Failed to start forecaster on port " + port, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            if (process != null) {
+        }
+    }
+
+    private void stopProcess(Process process) {
+        if (process == null) {
+            return;
+        }
+
+        var descendants = process.descendants().toList();
+
+        descendants.forEach(child -> {
+            if (child.isAlive()) {
+                child.destroy();
+            }
+        });
+
+        if (process.isAlive()) {
+            process.destroy();
+        }
+
+        try {
+            if (process.isAlive()) {
+                process.waitFor(3, TimeUnit.SECONDS);
+            }
+
+            descendants.forEach(child -> {
+                if (child.isAlive()) {
+                    child.destroyForcibly();
+                }
+            });
+
+            if (process.isAlive()) {
                 process.destroyForcibly();
             }
-            throw new IllegalStateException("Worker startup interrupted on port " + port, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            descendants.forEach(child -> {
+                if (child.isAlive()) {
+                    child.destroyForcibly();
+                }
+            });
+
+            if (process.isAlive()) {
+                process.destroyForcibly();
+            }
         }
     }
 
@@ -174,24 +207,58 @@ public class ForecasterManager {
         worker.predict(inputPath, outputPath);
     }
 
-    public void shutdownAll() {
-        for (ForecasterWorker w : workers) {
-            System.out.println("Shutting down worker on port " + w.getPort());
-            Process p = w.getProcess();
-            shuttingDown = true;
+    private void waitUntilReady(Process process, int port, long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
 
-            p.destroy();
-            try {
-                if (!p.waitFor(3, TimeUnit.SECONDS)) {
-                    System.out.println("Worker on port " + w.getPort() + " did not stop in time, force-destroying..");
-                    p.destroyForcibly();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                p.destroyForcibly();
+        while (System.currentTimeMillis() < deadline) {
+            if (!process.isAlive()) {
+                throw new IllegalStateException("Forecaster process terminated during startup on port " + port);
             }
+
+            if (isPortReachable(port)) {
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while validating forecaster startup", e);
+                }
+
+                if (!process.isAlive()) {
+                    throw new IllegalStateException("Forecaster process terminated after startup on port " + port);
+                }
+
+                return;
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for forecaster on port " + port, e);
+            }
+        }
+
+        throw new IllegalStateException("Forecaster did not become ready on port " + port + " within " + timeoutMs + " ms");
+    }
+
+    private boolean isPortReachable(int port) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress("127.0.0.1", port), 500);
+            return true;
+        } catch (IOException e) {
+            return false;
         }
     }
 
-}
+    public void shutdownAll() {
+        if (shuttingDown) {
+            return;
+        }
+        shuttingDown = true;
 
+        for (ForecasterWorker w : workers) {
+            System.out.println("Shutting down worker on port " + w.getPort());
+            stopProcess(w.getProcess());
+        }
+    }
+}

@@ -15,6 +15,7 @@ import hu.u_szeged.inf.fog.simulator.agent.dt.ParkingTraceData;
 import hu.u_szeged.inf.fog.simulator.agent.management.parking.*;
 import hu.u_szeged.inf.fog.simulator.agent.forecast.ForecasterManager;
 import hu.u_szeged.inf.fog.simulator.agent.util.ParkingAppCsvExporter;
+import hu.u_szeged.inf.fog.simulator.agent.util.ParkingTraceExporter;
 import hu.u_szeged.inf.fog.simulator.common.util.CsvVisualiser;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
 
@@ -47,10 +48,19 @@ public class ParkingAppDemo {
         long traceLength = 0;
 
         String workloadSource = Config.PARKING_CONFIGURATION.get("workloadSource").toString();
+        ParkingTraceExporter traceExporter = null;
         if ("synthetic".equalsIgnoreCase(workloadSource)) {
             // parking sensors
             Config.ParkingScenario parkingScenario = (Config.ParkingScenario) Config.PARKING_CONFIGURATION.get("parkingScenario");
             int sensorCount = (int) Config.PARKING_CONFIGURATION.get("sensorCount");
+
+            boolean traceExportEnabled = (boolean) Config.PARKING_CONFIGURATION.get("syntheticTraceExportEnabled");
+            traceExporter = null;
+
+            if (traceExportEnabled) {
+                traceExporter = new ParkingTraceExporter(OffsetDateTime.parse((String) Config.PARKING_CONFIGURATION.get("traceStartTime"))
+                );
+            }
 
             for (int i = 0; i < sensorCount; i++) {
                 Map<String, Integer> nbiotLatencyMap = new HashMap<>();
@@ -97,29 +107,33 @@ public class ParkingAppDemo {
                         (ParkingSensor.ParkingMode) Config.PARKING_CONFIGURATION.get(
                                 "initialParkingMode"
                         ),
-                        zone
+                        zone,
+                        traceExporter
                 );
+                if (traceExporter != null) {
+                    traceExporter.registerSensor(parkingSensor);
+                }
             }
 
             // gateways
             int sensorsPerGateway = (int) Config.PARKING_CONFIGURATION.get("sensorsPerGateway");
 
-            int reqGateways = (int) Math.ceil( ParkingSensor.allParkingSensors.size() / (double) sensorsPerGateway);
+            int reqGateways = (int) Math.ceil(ParkingSensor.allParkingSensors.size() / (double) sensorsPerGateway);
 
             for (int i = 0; i < reqGateways; i++) {
                 Map<String, Integer> gatewayLatencyMap = new HashMap<>();
-                gatewayLatencyMap.put("platformRepo",  (int) Config.PARKING_CONFIGURATION.get("gatewayToPlatformLatencyMs"));
+                gatewayLatencyMap.put("platformRepo", (int) Config.PARKING_CONFIGURATION.get("gatewayToPlatformLatencyMs"));
 
                 long bleBandwidth = (long) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayBandwidthBytesPerMs");
                 long gatewayToPlatformBandwidth = (long) Config.PARKING_CONFIGURATION.get("gatewayToPlatformBandwidthBytesPerMs");
 
-                Repository gatewayRepo = new Repository(8_388_608,"gatewayRepo-" + i,bleBandwidth,gatewayToPlatformBandwidth,gatewayToPlatformBandwidth,
-                        gatewayLatencyMap,transitions.get(PowerTransitionGenerator.PowerStateKind.storage),transitions.get(PowerTransitionGenerator.PowerStateKind.network));
+                Repository gatewayRepo = new Repository(8_388_608, "gatewayRepo-" + i, bleBandwidth, gatewayToPlatformBandwidth, gatewayToPlatformBandwidth,
+                        gatewayLatencyMap, transitions.get(PowerTransitionGenerator.PowerStateKind.storage), transitions.get(PowerTransitionGenerator.PowerStateKind.network));
                 gatewayRepo.setState(NetworkNode.State.RUNNING);
 
                 ParkingGateway gateway = new ParkingGateway("parking-gateway-" + i, gatewayRepo, platformService, new ArrayList<>());
 
-                for (int j = 0; j < sensorsPerGateway && i * sensorsPerGateway + j < ParkingSensor.allParkingSensors.size();j++) {
+                for (int j = 0; j < sensorsPerGateway && i * sensorsPerGateway + j < ParkingSensor.allParkingSensors.size(); j++) {
                     ParkingSensor sensor = ParkingSensor.allParkingSensors.get(i * sensorsPerGateway + j);
 
                     sensor.bleRepository.getLatencies().put(gatewayRepo.getName(), (int) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayLatencyMs"));
@@ -129,7 +143,10 @@ public class ParkingAppDemo {
             }
         } else if ("trace".equalsIgnoreCase(workloadSource)) {
             try {
-                ParkingTraceData traceData = ParkingTraceData.load((Path) Config.PARKING_CONFIGURATION.get("traceStatePath"), (Path) Config.PARKING_CONFIGURATION.get("tracePath"), OffsetDateTime.parse((String) Config.PARKING_CONFIGURATION.get("traceStartTime")));
+                ParkingTraceData traceData = ParkingTraceData.load((Path) Config.PARKING_CONFIGURATION.get("traceStatePath"),
+                        (Path) Config.PARKING_CONFIGURATION.get("tracePath"),
+                        OffsetDateTime.parse((String) Config.PARKING_CONFIGURATION.get("traceStartTime")),
+                        (long) Config.PARKING_CONFIGURATION.get("forecastHistoryWindowMs"));
                 List<ParkingTraceData.SensorState> sensorStates = new ArrayList<>(traceData.sensors.values());
                 Random coordinateRandom = SeedSyncer.centralRnd;
 
@@ -173,7 +190,9 @@ public class ParkingAppDemo {
 
                     ParkingSensor parkingSensor = new ParkingSensor(sensorState.id(), platformService, nbiotRepo, bleRepo, (int) Config.PARKING_CONFIGURATION.get("batteryCapacity"), initialParkingMode, ParkingSensor.ParkingZone.COMMERCIAL, traceData.eventsBySensor.get(sensorState.id()));
                     parkingSensor.isTaken = sensorState.occupied();
-                    if ("forecast".equals(Config.PARKING_CONFIGURATION.get("orchestrationStrategy"))) {
+
+                    String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
+                    if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
                         for (ParkingSensor.ParkingObservation observation : traceData.warmupObservationsBySensor.get(sensorState.id())) {
                             parkingSensor.addObservation(observation.simulationTimeMs(), observation.occupied());
                         }
@@ -216,7 +235,8 @@ public class ParkingAppDemo {
             throw new IllegalArgumentException("Unknown workload source: " + workloadSource);
         }
 
-        if ("forecast".equals(Config.PARKING_CONFIGURATION.get("orchestrationStrategy"))) {
+        String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
+        if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
             ForecasterManager.getInstance((String) Config.PARKING_CONFIGURATION.get("predictorDir"), 1, 1337, (String) Config.PARKING_CONFIGURATION.get("predictorModelPath"));
         }
 
@@ -224,12 +244,14 @@ public class ParkingAppDemo {
         AgentApplication app = new AgentApplication();
         app.name = "parking-app";
         ParkingSwarmAgent sa;
-        String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
         switch (orchestrationStrategy) {
             case "reactive" -> sa = new ParkingReactiveSwarmAgent(app);
             case "group-level" -> sa = new ParkingGroupLevelSwarmAgent(app);
             case "time-based" -> sa = new ParkingTimeBasedSwarmAgent(app);
             case "forecast" -> sa = new ParkingForecastSwarmAgent(app);
+            case "forecast-2h" -> sa = new ParkingForecast2hSwarmAgent(app);
+            case "forecast-lookahead" -> sa = new ParkingForecastLookAheadSwarmAgent(app);
+            case "oracle" -> sa = new ParkingOracleSwarmAgent(app);
             default -> throw new IllegalArgumentException("Unknown parking orchestration strategy: " + orchestrationStrategy);
         }
         sa.observedAppComponents.addAll(ParkingSensor.allParkingSensors);
@@ -237,10 +259,18 @@ public class ParkingAppDemo {
 
         final long starttime = System.nanoTime();
         Timed.simulateUntil(simulationLength);
+
+        if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
+            ForecasterManager.getInstance().shutdownAll();
+        }
+        if (traceExporter != null) {
+            traceExporter.close();
+        }
+
         final long stoptime = System.nanoTime();
 
         // CSV visualisation
-        for (ParkingAppCsvExporter parkingAppCsvExporter : ParkingAppCsvExporter.allParkingAppCsvExporters.values()){
+        for (ParkingAppCsvExporter parkingAppCsvExporter : ParkingAppCsvExporter.allParkingAppCsvExporters.values()) {
             CsvVisualiser.visualise(
                     parkingAppCsvExporter.swarmAgent.app.name,
                     parkingAppCsvExporter.parkingSpotStatusPath,
@@ -336,6 +366,9 @@ public class ParkingAppDemo {
             for (ParkingGateway gateway : ParkingGateway.allParkingGateways) {
                 SimLogger.logRes("Gateway " + gateway.id + " sensors: " + gateway.observedSensors.size());
             }
+        }
+        if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
+            SimLogger.logRes("\tForecast threshold factor: " + Config.PARKING_CONFIGURATION.get("forecastThresholdFactor"));
         }
         // savingPercent = (baselineConsumed - timeBasedConsumed) / baselineConsumed * 100
     }

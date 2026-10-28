@@ -34,7 +34,7 @@ public class ParkingTraceData {
         this.warmupObservationsBySensor = warmupObservationsBySensor;
     }
 
-    public static ParkingTraceData load(Path statePath, Path tracePath, OffsetDateTime simulationStartTime) throws IOException {
+    public static ParkingTraceData load(Path statePath, Path tracePath, OffsetDateTime simulationStartTime, long historyWindowMs) throws IOException {
 
         Map<String, SensorState> sensors = loadInitialState(statePath);
         Map<String, Boolean> currentOccupancy = new LinkedHashMap<>();
@@ -47,7 +47,7 @@ public class ParkingTraceData {
             simulationStartOccupancy.put(sensor.id(), sensor.occupied());
             eventsBySensor.put(sensor.id(), new ArrayDeque<>());
             warmupObservationsBySensor.put(sensor.id(), new ArrayDeque<>());
-            warmupObservationsBySensor.get(sensor.id()).add(new ParkingSensor.ParkingObservation(-24 * 60 * 60_000L, sensor.occupied()));
+            warmupObservationsBySensor.get(sensor.id()).add(new ParkingSensor.ParkingObservation(-historyWindowMs, sensor.occupied()));
         }
 
         long maxSimulationTimeMs = 0;
@@ -77,9 +77,11 @@ public class ParkingTraceData {
                 boolean previousOccupancy = currentOccupancy.get(sensorId);
 
                 if (simulationTimeMs < 0) {
-                    warmupObservationsBySensor.get(sensorId).add(new ParkingSensor.ParkingObservation(simulationTimeMs, occupied));
-                    currentOccupancy.put(sensorId, occupied);
-                    simulationStartOccupancy.put(sensorId, occupied);
+                    if (occupied != previousOccupancy) {
+                        warmupObservationsBySensor.get(sensorId).add(new ParkingSensor.ParkingObservation(simulationTimeMs, occupied));
+                        currentOccupancy.put(sensorId, occupied);
+                    }
+                    simulationStartOccupancy.put(sensorId, currentOccupancy.get(sensorId));
                     continue;
                 }
 
