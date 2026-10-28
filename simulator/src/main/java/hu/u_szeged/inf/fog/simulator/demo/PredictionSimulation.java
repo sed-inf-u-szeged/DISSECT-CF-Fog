@@ -87,16 +87,16 @@ public class PredictionSimulation {
                         true, true, true, true),
                 predictionSettings,
                 new TrainSettings(
-                        "model_i192_o64.h5",
+                        "model_i192_o64.keras",
                         ScenarioBase.resultDirectory + File.separator + "..",
                         ScenarioBase.resultDirectory,
-                        true,
-                        new PredictionSettings.SmoothingSettings(48, 5),
+                        false,
+                        null,
                         192,
                         64,
-                        "mean_squared_error",
+                        "combined_mae_mean10",
                         "Adam",
-                        20,
+                        40,
                         true),
                 lifecycleSettings));
 

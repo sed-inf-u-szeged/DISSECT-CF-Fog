@@ -197,7 +197,11 @@ def register_candidate(settings, model_path):
         preprocessing={
             "scale": settings["scale"],
             "smoothing": settings.get("smoothing"),
-            "strategy": "input_window_v1",
+            "strategy": (
+                "embedded_train_standardization_v1"
+                if settings.get("lossFunction") == "combined_mae_mean10"
+                else "input_window_v1"
+            ),
             "target_smoothing": False
         },
         activate=False
@@ -237,6 +241,24 @@ def register_candidate(settings, model_path):
 
 
 def main(settings):
+    # Opt-in optimized training; existing settings keep the original flow.
+    if settings.get("lossFunction") == "combined_mae_mean10":
+        from lstm_optimized_training import run
+        result = run(settings, (
+            load_file_paths,
+            load_dataframes,
+            prepare_dataframes,
+            make_data,
+            get_model,
+            save_model,
+            register_candidate,
+        ))
+        send_to_pyshell({
+            "progress": 8,
+            "message": "Done",
+            "model": result,
+        })
+        return
     send_to_pyshell({
         "progress": 1, "message": "Loading file paths"
     })
