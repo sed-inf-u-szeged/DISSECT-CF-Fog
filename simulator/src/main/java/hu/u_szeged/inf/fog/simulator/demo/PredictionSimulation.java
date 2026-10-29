@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
+import hu.u_szeged.inf.fog.simulator.prediction.OnlineModelLifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.ElectronLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.PredictorLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.*;
@@ -14,10 +15,15 @@ public class PredictionSimulation {
     public static void main(String[] args) throws Exception {
         boolean predictionOnly = false;
         String lifecycleProfile = "observe";
+        String onlineModels = "ALL";
 
         for (String argument : args) {
             if ("--prediction-only".equalsIgnoreCase(argument)) {
                 predictionOnly = true;
+            } else if (argument.startsWith("--online-models=")) {
+                onlineModels = argument.substring("--online-models=".length());
+            } else if (argument.startsWith("--online-model=")) {
+                onlineModels = argument.substring("--online-model=".length());
             } else if (argument.startsWith("--lifecycle-profile=")) {
                 lifecycleProfile = argument.substring(
                         "--lifecycle-profile=".length());
@@ -29,6 +35,10 @@ public class PredictionSimulation {
 
         LifecycleSettings lifecycleSettings =
                 createLifecycleSettings(lifecycleProfile);
+
+        OnlineModelLifecycleManager online = OnlineModelLifecycleManager.getInstance();
+        online.configure(onlineModels);
+        System.out.println("Online models: " + String.join(", ", online.getModelTypes()));
 
         PredictionConfigurator configurator = new PredictionConfigurator(
                 new PredictionSimulationDefinition());
@@ -87,7 +97,7 @@ public class PredictionSimulation {
                         true, true, true, true),
                 predictionSettings,
                 new TrainSettings(
-                        "model_i192_o64.keras",
+                        "online_model.keras",
                         ScenarioBase.resultDirectory + File.separator + "..",
                         ScenarioBase.resultDirectory,
                         false,

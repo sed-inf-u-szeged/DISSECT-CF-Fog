@@ -415,6 +415,17 @@ public class LifecycleManager {
                 );
     }
 
+    /** Controlled models may predict only after their feature passes shadow evaluation. */
+    public boolean isPredictionAllowed(String predictorName, String featureName) {
+        LifecycleCoordinator coordinator = getCoordinator(predictorName, featureName);
+        return coordinator != null
+                && ((coordinator.getState() == LifecycleState.ACTIVE
+                        && isActive(predictorName, featureName))
+                    || (coordinator.getState() == LifecycleState.READY
+                        && coordinator.isMonitorWhileReady()
+                        && coordinator.isPolicySatisfied()));
+    }
+
     /**
      * Registers a shadow prediction with its matching coordinator.
      *
@@ -443,7 +454,7 @@ public class LifecycleManager {
     /**
      * Registers a shadow prediction only when its coordinator exists
      * and can currently collect evaluation metrics. Both EVALUATING
-     * candidates and the ACTIVE predictor are eligible.
+     * candidates, the ACTIVE predictor and opted-in READY candidates are eligible.
      *
      * @param prediction the shadow prediction
      * @return true when the prediction was registered;
@@ -464,11 +475,7 @@ public class LifecycleManager {
                         prediction.getFeatureName()
                 );
 
-        if (coordinator == null
-                || (coordinator.getState()
-                != LifecycleState.EVALUATING
-                && coordinator.getState()
-                != LifecycleState.ACTIVE)) {
+        if (coordinator == null || !coordinator.canCollectEvaluation()) {
             return false;
         }
 
@@ -482,7 +489,7 @@ public class LifecycleManager {
     /**
      * Resolves an actual value in every evaluation-capable coordinator
      * registered for the feature. This includes EVALUATING candidates and
-     * the ACTIVE predictor. Each coordinator is evaluated automatically
+     * the ACTIVE predictor and opted-in READY candidates. Each is evaluated automatically
      * after at least one prediction is resolved.
      *
      * All matching metrics are refreshed before READY candidates are
@@ -510,11 +517,7 @@ public class LifecycleManager {
             LifecycleCoordinator coordinator =
                     featureCoordinators.get(featureName);
 
-            if (coordinator != null
-                    && (coordinator.getState()
-                    == LifecycleState.EVALUATING
-                    || coordinator.getState()
-                    == LifecycleState.ACTIVE)) {
+            if (coordinator != null && coordinator.canCollectEvaluation()) {
 
                 int coordinatorResolvedCount =
                         coordinator.resolveActualValue(

@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionSelector;
+import hu.u_szeged.inf.fog.simulator.prediction.OnlineModelLifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
@@ -109,9 +110,10 @@ public class PliantApplicationStrategy extends ApplicationStrategy {
                 List<Feature> features = FeatureManager.getInstance().getFeaturesWithEnoughData(
                         predictor.getPredictionSettings().getBatchSize());
 
-                if (predictor.getPredictorName().matches("LSTM256(?:-v[0-9]+)?")) {
-                    features.removeIf(feature -> !LifecycleManager.getInstance().isActive(
-                            predictor.getPredictorName(), feature.getName()));
+                String modelType = predictor.getPredictorSettings().getPredictor();
+                if (OnlineModelLifecycleManager.getInstance().isManagedModelType(modelType)) {
+                    features.removeIf(feature -> !LifecycleManager.getInstance()
+                            .isPredictionAllowed(predictor.getPredictorName(), feature.getName()));
                 }
 
                 if (!features.isEmpty()) {

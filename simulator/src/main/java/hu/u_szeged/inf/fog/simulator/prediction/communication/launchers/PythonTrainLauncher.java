@@ -1,6 +1,5 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
-import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.TrainSettings;
@@ -63,7 +62,8 @@ public class PythonTrainLauncher extends Launcher {
                     "Trainer script was not found: " + script.getAbsolutePath());
         }
 
-        File trainingLog = new File(ScenarioBase.resultDirectory, logFileName);
+        File trainingLog = new File(settings.getModelOutputLocation(), logFileName);
+        java.nio.file.Files.createDirectories(trainingLog.toPath().toAbsolutePath().getParent());
         String settingsJson = JsonParser.toJson(
                 settings, TrainSettings.class).toString();
 

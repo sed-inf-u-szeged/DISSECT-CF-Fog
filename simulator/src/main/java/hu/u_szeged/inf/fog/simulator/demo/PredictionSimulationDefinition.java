@@ -17,7 +17,7 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.LoadBalancedDeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
-import hu.u_szeged.inf.fog.simulator.prediction.LstmOnlineLifecycleController;
+import hu.u_szeged.inf.fog.simulator.prediction.OnlineModelLifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
@@ -143,8 +143,6 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
         long starttime = System.nanoTime();
 
         long lifecycleCheckInterval = 60 * 1000L;
-        LstmOnlineLifecycleController lifecycleController =
-                LstmOnlineLifecycleController.getInstance();
 
         // Check data readiness from the beginning and monitor until events end.
         while (Timed.getNextFire() >= 0) {
@@ -153,7 +151,7 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
 
             // Do not launch another training job after the final simulation event.
             if (Timed.getNextFire() >= 0) {
-                lifecycleController.checkLifecycle();
+                OnlineModelLifecycleManager.getInstance().checkLifecycle();
             }
         }
         long stoptime = System.nanoTime();

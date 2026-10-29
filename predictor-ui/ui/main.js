@@ -136,6 +136,7 @@ function readRunInfo(databasePath) {
     profile: 'Not recorded',
     settings_file: null,
     note: '',
+    tolerance: null,
     thresholds: []
   };
 
@@ -177,6 +178,11 @@ function readRunInfo(databasePath) {
     const absolute = inheritedAbsolute
       ? relative
       : lifecycle.absoluteTolerance;
+
+    if (typeof relative === 'number' && Number.isFinite(relative) && relative >= 0
+        && typeof absolute === 'number' && Number.isFinite(absolute) && absolute >= 0) {
+      info.tolerance = { relative, absolute };
+    }
 
     const relativeText =
       typeof relative === 'number' && Number.isFinite(relative)

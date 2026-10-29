@@ -1,122 +1,22 @@
-:host {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
-}
-
-#predictionCanvas,
-#errorCanvas {
-    width: 100%;
-    height: 100%;
-}
-
-.chart-prediction {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    border-radius: var(--border-radius);
-    background-color: var(--color-foreground);
-}
-
-.chart-side {
-    flex: 0 0 230px;
-    width: 230px;
-    height: 100%;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.lifecycle-card,
-.chart-error {
-    flex-shrink: 0;
-    box-sizing: border-box;
-    border-radius: var(--border-radius);
-    background-color: var(--color-foreground);
-}
-
-.lifecycle-card {
-    padding: 10px;
-    font-size: 11px;
-}
-
-.lifecycle-title {
-    margin-bottom: 8px;
-    color: #ffd174;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.state-badge {
-    width: fit-content;
-    margin-bottom: 6px;
-    padding: 3px 7px;
-    border-radius: 10px;
-    color: #111111;
-    background-color: #b8b8b8;
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.state-badge.active {
-    background-color: #98ff54;
-}
-
-.state-badge.evaluating {
-    background-color: #fcff54;
-}
-
-.state-badge.ready {
-    background-color: #546eff;
-    color: #ffffff;
-}
-
-.state-badge.failed,
-.state-badge.degraded {
-    background-color: #ff5479;
-    color: #ffffff;
-}
-
-.active-label {
-    margin-bottom: 8px;
-    color: #aaaaaa;
-    font-size: 10px;
-    font-weight: 600;
-}
-
-.active-label.active {
-    color: #98ff54;
-}
-
-.metric-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 8px;
-    margin-top: 4px;
-    color: #dddddd;
-}
-
-.metric-row span:last-child {
-    color: #ffffff;
-    font-family: monospace;
-    text-align: right;
-    overflow-wrap: anywhere;
-    min-width: 0;
-}
-
-.metrics-pending {
-    color: #aaaaaa;
-    font-size: 10px;
-    line-height: 1.35;
-}
-
-.chart-error {
-    width: 100%;
-    height: 150px;
-}
+:host { display: flex; gap: 12px; width: 100%; min-width: 0; min-height: 250px; align-items: stretch; }
+.chart-prediction { flex: 1; min-width: 0; min-height: 250px; position: relative; background: var(--color-foreground); border-radius: 3px; }
+.chart-heading { display: flex; gap: 12px; align-items: baseline; padding: 12px 16px 0; height: 28px; overflow: hidden; }
+.chart-heading strong { color: #ffd174; font-size: 12px; white-space: nowrap; }
+.chart-heading span { color: #b9bdc7; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-container { position: absolute; inset: 44px 12px 8px; }
+.chart-side { flex: 0 0 224px; min-width: 0; align-self: flex-start; }
+.frame-summary, .metric-details { padding: 10px; background: var(--color-foreground); border-radius: 3px; margin-bottom: 8px; }
+.card-title { color: #c9cdd7; font-size: 11px; margin-bottom: 10px; }
+.primary-metrics { display: flex; flex-direction: column; gap: 8px; }
+.primary-metrics > div { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.metric-label { color: #bec2cc; font-size: 11px; max-width: 120px; }
+.primary-metrics strong { color: #fff; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.primary-metrics small { font-size: 10px; padding-left: 2px; }
+.sample-note, p { font-size: 10px; color: #afb3bf; line-height: 1.5; margin-top: 8px; overflow-wrap: anywhere; }
+summary { cursor: pointer; font-size: 11px; color: #d3d6df; }
+summary:focus-visible { outline: 2px solid #ffd174; outline-offset: 3px; }
+.metric-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; margin-top: 8px; }
+.metric-row span:last-child { text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.state-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #89909e; margin-left: 6px; }
+.state-dot.active { background: #98ff54; }
+@media (max-width: 850px) { :host { flex-direction: column; } .chart-side { width: 100%; flex-basis: auto; } }

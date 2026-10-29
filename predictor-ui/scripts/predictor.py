@@ -6,11 +6,14 @@ import pandas as pd
 from app_utils.preprocessor import Preprocessor
 from error_metrics import ErrorMetrics
 from predictor_models.arima_model import ArimaModel
+from predictor_models.gru_model import GRUModel
 from predictor_models.holt_winters_model import HoltWintersModel
 from predictor_models.linear_regression_model import LinearRegressionModel
 from predictor_models.lstm_model import LSTMModel
+from predictor_models.patchtst_model import PatchTSTModel
 from predictor_models.random_forest_model import RandomForestModel
 from predictor_models.svr_model import SVRModel
+from predictor_models.tcn_model import TCNModel
 
 
 class Predictor:
@@ -204,6 +207,12 @@ class Predictor:
             )
         if name == "LSTM":
             return LSTMModel(predictor_settings=prediction_settings)
+        if name == "TCN":
+            return TCNModel(predictor_settings=prediction_settings)
+        if name == "GRU":
+            return GRUModel(predictor_settings=prediction_settings)
+        if name == "PATCHTST":
+            return PatchTSTModel(predictor_settings=prediction_settings)
         if name == "LINEAR_REGRESSION":
             return LinearRegressionModel(
                 predictor_settings=prediction_settings

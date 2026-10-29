@@ -7,6 +7,7 @@ import { Stopwatch } from 'src/app/shared/Stopwatch';
 import { PredictorModel } from '../../shared/PredictorModel';
 import { Parameter } from '../../shared/Parameter';
 import { Prediction } from '../../shared/Prediction';
+import { ChartBounds, displayBounds } from '../../shared/prediction-display';
 import {
   BATCH_SIZES,
   SMOOTHING_POLYNOMIAL_DEGREES,
@@ -32,8 +33,8 @@ export class ScenarioComponent implements OnInit, OnDestroy {
   form = new FormGroup({});
   formChartFilters = new FormGroup({
     original: new FormControl(true),
-    preprocessedBeginning: new FormControl(true),
-    preprocessedEnd: new FormControl(true),
+    preprocessedBeginning: new FormControl(false),
+    commonY: new FormControl(true),
     predictionTest: new FormControl(true),
     predictionFuture: new FormControl(true)
   });
@@ -44,6 +45,13 @@ export class ScenarioComponent implements OnInit, OnDestroy {
   predictionIndexMoved = false;
   simulationStarted = false;
   predictions: Map<number, Prediction[]> = new Map();
+  chartBounds = new Map<string, ChartBounds>();
+
+  get runInfo() { return this.predictions.get(this.currentPredictionIndex)?.[0]?.run_info; }
+
+  private refreshBounds(): void {
+    this.chartBounds = displayBounds(this.predictions.get(this.currentPredictionIndex) ?? []);
+  }
 
   private predictionNumbers: number[] = [];
   private currentRunId: string | null = null;
@@ -129,6 +137,7 @@ export class ScenarioComponent implements OnInit, OnDestroy {
           );
     }
 
+    this.refreshBounds();
     this.changeDetectorRef.detectChanges();
   }
 
@@ -138,7 +147,8 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     }
     this.modalService.create(SimulationViewModalComponent, {
       title: 'Simulation view',
-      predictions: this.getGrouppedPredictions()
+      predictions: this.getGrouppedPredictions(),
+      chartFilters: this.formChartFilters.value
     });
   }
 
@@ -181,6 +191,7 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     if (this.currentPredictionIndex < this.predictions.size - 1) {
       this.currentPredictionIndex++;
       this.predictionIndexMoved = true;
+      this.refreshBounds();
     }
   }
 
@@ -188,11 +199,13 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     if (this.currentPredictionIndex > 0) {
       this.currentPredictionIndex--;
       this.predictionIndexMoved = true;
+      this.refreshBounds();
     }
   }
 
   onCurrentPrediction(): void {
     this.currentPredictionIndex = this.predictions.size - 1;
     this.predictionIndexMoved = false;
+    this.refreshBounds();
   }
 }

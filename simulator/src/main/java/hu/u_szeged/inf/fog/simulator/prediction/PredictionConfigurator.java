@@ -125,7 +125,7 @@ public class PredictionConfigurator {
 
         simulationDefinition.simulation();
 
-        LstmOnlineLifecycleController.getInstance().finish();
+        OnlineModelLifecycleManager.getInstance().finish();
         LifecycleManager.getInstance().printSummary();
 
         for (BufferedReader reader : predictor_reader.values()) {

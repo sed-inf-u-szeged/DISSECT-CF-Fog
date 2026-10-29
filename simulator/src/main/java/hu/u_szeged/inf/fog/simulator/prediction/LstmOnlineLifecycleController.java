@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 /**
  * Manages versioned models and promotes them independently per feature.
+ * One instance manages one adapter, regardless of model family.
+ * The historical class name is retained for source compatibility.
  * Paired comparisons are diagnostic and do not change promotion policy.
  */
 public class LstmOnlineLifecycleController {
@@ -44,9 +46,8 @@ public class LstmOnlineLifecycleController {
         IDLE, TRAINING, EVALUATING, ACTIVE, FAILED
     }
 
-    private static final LstmOnlineLifecycleController INSTANCE =
-            new LstmOnlineLifecycleController();
-
+    private final boolean coexistenceMode;
+    private TrainSettings currentTrainingSettings;
     private final OnlineModelAdapter modelAdapter;
     private final OnlineTrainingSettings onlineSettings;
     private final Map<String, ModelVersion> versions = new LinkedHashMap<>();
@@ -106,16 +107,47 @@ public class LstmOnlineLifecycleController {
 
     LstmOnlineLifecycleController(OnlineModelAdapter modelAdapter,
             OnlineTrainingSettings onlineSettings) {
+        this(modelAdapter, onlineSettings, false);
+    }
+
+    LstmOnlineLifecycleController(OnlineModelAdapter modelAdapter,
+            OnlineTrainingSettings onlineSettings, boolean coexistenceMode) {
         if (modelAdapter == null || onlineSettings == null) {
             throw new IllegalArgumentException(
                     "Model adapter and online training settings are required.");
         }
+        this.coexistenceMode = coexistenceMode;
         this.modelAdapter = modelAdapter;
         this.onlineSettings = onlineSettings;
     }
 
+    /** Compatibility accessor. New callers should use OnlineModelLifecycleManager. */
     public static LstmOnlineLifecycleController getInstance() {
-        return INSTANCE;
+        return getControllers().get(0);
+    }
+
+    public static void configureModel(String selection) {
+        OnlineModelLifecycleManager.getInstance().configure(selection);
+    }
+
+    public static List<LstmOnlineLifecycleController> getControllers() {
+        return OnlineModelLifecycleManager.getInstance().getControllers();
+    }
+
+    public static void checkAllLifecycles() throws Exception {
+        OnlineModelLifecycleManager.getInstance().checkLifecycle();
+    }
+
+    public static void finishAll() throws Exception {
+        OnlineModelLifecycleManager.getInstance().finish();
+    }
+
+    boolean hasStarted() {
+        return phase != Phase.IDLE || versionNumber != 0 || trainingWindowPoints != 0;
+    }
+
+    public String getModelType() {
+        return modelAdapter.getModelType();
     }
 
     public Phase getPhase() {
@@ -162,7 +194,7 @@ public class LstmOnlineLifecycleController {
 
         for (Feature feature : FeatureManager.getInstance().getFeatures()) {
             String name = feature.getName();
-            if (!hasServingModel(name) && !hasPendingEvaluation(name)
+            if (!hasUsableModel(name) && !hasPendingEvaluation(name)
                     && (latestVersion == null
                     || latestVersion.features.containsKey(name))) {
                 retryFeatures.add(name);
@@ -204,14 +236,22 @@ public class LstmOnlineLifecycleController {
 
         ModelVersion version = null;
         try {
-            Path directory = new File(ScenarioBase.resultDirectory,
-                    "online-training-data").toPath().toAbsolutePath().normalize();
+            settings = prepareTrainingSettings(name);
+            currentTrainingSettings = settings;
+            Path directory = Path.of(settings.getDatasetsDirectory());
             FeatureManager.getInstance().exportTrainingWindowToCsv(
                     directory.toString(), "dataset.csv",
                     trainingFeatures, trainingWindowPoints);
             settings.setDatasetsDirectory(directory.toString());
             settings.setCollectAllCsvAndTrainOnIt(false);
 
+            if (coexistenceMode) {
+                Path output = Path.of(settings.getModelOutputLocation());
+                Files.createDirectories(output);
+                Files.writeString(output.resolve("training_settings.json"),
+                        JsonParser.toJson(settings, TrainSettings.class).toString(2),
+                        StandardCharsets.UTF_8);
+            }
             JSONObject result = runTrainer();
             Files.writeString(new File(ScenarioBase.resultDirectory,
                     name + "-training-result.json").toPath(),
@@ -245,7 +285,7 @@ public class LstmOnlineLifecycleController {
 
     private boolean needsTraining(Feature feature) {
         String name = feature.getName();
-        if (hasServingModel(name) || hasPendingEvaluation(name)
+        if (hasUsableModel(name) || hasPendingEvaluation(name)
                 || (versionNumber != 0 && !retryFeatures.contains(name))) {
             return false;
         }
@@ -305,6 +345,7 @@ public class LstmOnlineLifecycleController {
                 manager.registerCoordinator(coordinator);
             }
             coordinator.setAutomaticPromotionAllowed(false);
+            coordinator.setMonitorWhileReady(coexistenceMode);
             coordinator.startTraining();
             coordinator.startEvaluation();
 
@@ -366,16 +407,20 @@ public class LstmOnlineLifecycleController {
                     SimulationSettings.get().getPredictionSettings().add(version.settings);
                 }
                 String previous = manager.getActivePredictorName(name);
-                manager.promote(version.name, name);
+                if (coexistenceMode) {
+                    manager.promoteIfBetter(version.name, name);
+                } else {
+                    manager.promote(version.name, name);
+                }
                 version.pending.remove(name);
                 retryFeatures.remove(name);
-                logLifecycle("Feature entered ACTIVE: " + name
+                logLifecycle("Feature entered " + coordinator.getState() + ": " + name
                         + "; previous=" + previous + "; version=" + version.name);
             } else if (coordinator.getState() == LifecycleState.EVALUATING
                     && !coordinator.isPolicySatisfied()) {
                 version.pending.remove(name);
                 coordinator.markFailed();
-                if (!hasServingModel(name)) {
+                if (!hasUsableModel(name)) {
                     retryFeatures.add(name);
                     growWindow(version);
                 }
@@ -390,10 +435,11 @@ public class LstmOnlineLifecycleController {
                     manager.getCoordinator(version.name, name);
             if (coordinator.getState() == LifecycleState.DEGRADED
                     && version.handledDegradation.add(name)) {
+                version.pending.remove(name);
                 if (manager.isActive(version.name, name)) {
                     manager.fallbackToBaseline(name);
                 }
-                if (!hasServingModel(name)) {
+                if (!hasUsableModel(name)) {
                     retryFeatures.add(name);
                 }
                 syncFeature(name);
@@ -413,13 +459,16 @@ public class LstmOnlineLifecycleController {
         }
     }
 
-    private boolean hasServingModel(String featureName) {
+    private boolean hasUsableModel(String featureName) {
         LifecycleManager manager = LifecycleManager.getInstance();
         for (ModelVersion version : versions.values()) {
             LifecycleCoordinator coordinator =
                     manager.getCoordinator(version.name, featureName);
-            if (coordinator != null && coordinator.getState() == LifecycleState.ACTIVE
-                    && manager.isActive(version.name, featureName)) {
+            if (coordinator != null
+                    && ((coordinator.getState() == LifecycleState.ACTIVE
+                        && manager.isActive(version.name, featureName))
+                    || (coexistenceMode && coordinator.getState() == LifecycleState.READY
+                        && coordinator.isPolicySatisfied()))) {
                 return true;
             }
         }
@@ -476,7 +525,7 @@ public class LstmOnlineLifecycleController {
             latestVersion = null;
         }
         for (String name : version.features.keySet()) {
-            if (!hasServingModel(name)) {
+            if (!hasUsableModel(name)) {
                 retryFeatures.add(name);
             }
         }
@@ -494,10 +543,29 @@ public class LstmOnlineLifecycleController {
         }
     }
 
+    /** Each family/version owns its snapshot, output, report and log. */
+    TrainSettings prepareTrainingSettings(String name) {
+        TrainSettings template = SimulationSettings.get().getTrainSettings();
+        Path root = Path.of(ScenarioBase.resultDirectory).toAbsolutePath().normalize();
+        if (!coexistenceMode) {
+            template.setDatasetsDirectory(root.resolve("online-training-data").toString());
+            return template;
+        }
+        Path output = root.resolve("online-models").resolve(getModelType()).resolve(name);
+        Path input = root.resolve("online-training-data").resolve(getModelType()).resolve(name);
+        return new TrainSettings(
+                getModelType().toLowerCase(java.util.Locale.ROOT) + "_i"
+                        + template.getInputSize() + "_o" + template.getOutputSize() + ".keras",
+                input.toString(), output.toString(), template.getScale(),
+                template.getSmoothingSettings(), template.getInputSize(),
+                template.getOutputSize(), template.getLossFunction(),
+                template.getOptimizer(), template.getEpochs(), false);
+    }
+
     private JSONObject runTrainer() throws Exception {
-        return modelAdapter.train(
-                SimulationSettings.get().getTrainSettings(),
-                new File(ScenarioBase.resultDirectory).toPath());
+        return modelAdapter.train(currentTrainingSettings,
+                coexistenceMode ? Path.of(currentTrainingSettings.getModelOutputLocation())
+                        : new File(ScenarioBase.resultDirectory).toPath());
     }
 
     private PairPredictionSettings createSettings(String name, String modelPath) {

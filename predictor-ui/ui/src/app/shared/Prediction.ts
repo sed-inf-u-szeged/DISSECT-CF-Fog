@@ -19,6 +19,8 @@ export type RunInfo = {
   profile: string;
   settings_file: string | null;
   note: string;
+  // Numeric run settings; absent for older exports with no recorded policy.
+  tolerance?: { relative: number; absolute: number } | null;
   thresholds: {
     label: string;
     value: string;

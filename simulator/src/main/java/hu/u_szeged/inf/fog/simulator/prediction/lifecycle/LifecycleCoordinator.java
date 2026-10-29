@@ -26,6 +26,7 @@ public class LifecycleCoordinator {
     private LifecycleState state;
     private EvaluationMetrics latestMetrics;
     private boolean automaticPromotionAllowed = true;
+    private boolean monitorWhileReady;
     private boolean trustedBaseline;
     private boolean shadowDecisionLogged;
 
@@ -53,6 +54,20 @@ public class LifecycleCoordinator {
 
     public boolean isAutomaticPromotionAllowed() {
         return automaticPromotionAllowed;
+    }
+
+    /** Keep metrics fresh for an eligible, currently unselected model family. */
+    public void setMonitorWhileReady(boolean enabled) {
+        monitorWhileReady = enabled;
+    }
+
+    public boolean isMonitorWhileReady() {
+        return monitorWhileReady;
+    }
+
+    public boolean canCollectEvaluation() {
+        return state == LifecycleState.EVALUATING || state == LifecycleState.ACTIVE
+                || (monitorWhileReady && state == LifecycleState.READY);
     }
 
     public void startTraining() {
@@ -134,7 +149,8 @@ public class LifecycleCoordinator {
         boolean policySatisfied = policy.isSatisfiedBy(latestMetrics);
         if (state == LifecycleState.EVALUATING && policySatisfied) {
             state = LifecycleState.READY;
-        } else if (state == LifecycleState.ACTIVE
+        } else if ((state == LifecycleState.ACTIVE
+                || (monitorWhileReady && state == LifecycleState.READY))
                 && !trustedBaseline
                 && hasCompleteEvaluationWindow()
                 && !policySatisfied) {
@@ -147,8 +163,8 @@ public class LifecycleCoordinator {
             shadowDecisionLogged = true;
             logEvaluation(policySatisfied ? "SHADOW_PASS" : "SHADOW_FAIL",
                     previousState);
-        } else if (previousState == LifecycleState.ACTIVE
-                && state == LifecycleState.DEGRADED) {
+        } else if (state == LifecycleState.DEGRADED
+                && previousState != LifecycleState.DEGRADED) {
             logEvaluation("DEGRADED", previousState);
         }
         return latestMetrics;
@@ -245,7 +261,7 @@ public class LifecycleCoordinator {
     }
 
     private void requireEvaluationState(String operation) {
-        if (state != LifecycleState.EVALUATING && state != LifecycleState.ACTIVE) {
+        if (!canCollectEvaluation()) {
             throw new IllegalStateException(
                     "Cannot " + operation + " while lifecycle state is " + state + ".");
         }
