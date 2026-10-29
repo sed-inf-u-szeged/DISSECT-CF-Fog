@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { Prediction } from 'src/app/shared/Prediction';
 
@@ -14,21 +14,22 @@ export class ElectronService {
   private errorSubject = new Subject<string>();
   public errorUpdates$: Observable<string> = this.errorSubject.asObservable();
 
-  constructor() {
+  constructor(private zone: NgZone) {
     if (!this.hasApi()) {
       this.errorSubject.next('Electron API is not supported in Browser!')
       throw Error('[readData] Electron API is not supported in Browser!');
     }
     (window as any)[this.api].onDataUpdated((data: Map<string, Prediction[]>) => {
-        this.dataSubject.next(data)
+        // Electron contextBridge callbacks can arrive outside Angular's zone.
+        this.zone.run(() => this.dataSubject.next(data));
     });
     (window as any)[this.api].onDataError((data: string) => {
-        this.errorSubject.next(data)
+        this.zone.run(() => this.errorSubject.next(data));
     });
   }
 
   cleanupListeners(): void {
-    if ((window as any)[this.api].electronAPI) {
+    if ((window as any)[this.api]?.removeAllListeners) {
       (window as any)[this.api].removeAllListeners();
     }
   }

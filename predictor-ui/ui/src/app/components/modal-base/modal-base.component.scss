@@ -15,7 +15,7 @@
         width: 75%;
         height: 75%;
         background-color: var(--color-background);
-        transition: 500ms;
+        transition: 150ms;
         margin-top: -400px;
         box-shadow: -10px 0px 20px 0px rgba(0, 0, 0, 0.15);
         opacity: 0;
@@ -47,3 +47,5 @@
         }
     }
 }
+.modal-close { border: 0; background: transparent; color: #b8bec9; cursor: pointer; width: 32px; height: 32px; font-size: 20px; font-weight: 400; }
+.modal-close:focus-visible { outline: 1px solid #ffd174; }

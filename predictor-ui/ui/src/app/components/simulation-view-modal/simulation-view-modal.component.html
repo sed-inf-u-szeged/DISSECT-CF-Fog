@@ -1,25 +1,32 @@
-<app-toolbar class="border-bottom">
-    <div start style="display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; padding-right: 16px; gap: 8px;" [formGroup]="form">
-        <app-input-container orientation="horizontal">
-            <label>Feature</label>
-            <select formControlName="feature" (change)="onChangeFeature($event)" [attr.disabled]="playing ? '' : null">
-                <option [value]="featureName" *ngFor="let featureName of getFeatureNames()">{{ featureName }}
-                </option>
-            </select>
-        </app-input-container>
-
-        <app-input-container orientation="horizontal">
-            <label>Speed (ms)<app-required-symbol></app-required-symbol></label>
-            <input type="text" formControlName="speed" [readonly]="playing"
-                [attr.disabled]="playing ? '' : null">
-        </app-input-container>
-    </div>
-    <div end style="display: flex; align-items: center; justify-content: flex-end; padding-left: 16px; padding-right: 16px; gap: 8px;">
-        <span>{{ currentPredictionIndex + 1 }} / {{ getPredictions().length }}</span>
-        <div style="transform: scale(0.5)">●</div>
-        <app-button-icon [icon]="playing ? 'fa fa-stop' : 'fa fa-play'" [color]="playing ? 'error' : 'primary'" [disabled]="form.invalid" (click)="togglePlay()"></app-button-icon>
-    </div>
-</app-toolbar>
+<div class="replay-toolbar" [formGroup]="form">
+  <label class="series-picker">Series
+    <select formControlName="feature" (change)="onChangeFeature()" aria-label="Prediction series">
+      <option *ngFor="let option of seriesOptions" [value]="option.key">{{ option.label }}</option>
+    </select>
+  </label>
+  <label class="speed-picker">Step (ms)
+    <input type="number" min="100" max="60000" step="100" formControlName="speed" (change)="stop()" aria-label="Playback interval in milliseconds">
+  </label>
+  <div class="playback-controls">
+    <button type="button" (click)="goTo(currentPredictionIndex - 1)" [disabled]="!frames.length || currentPredictionIndex === 0" aria-label="Previous frame">‹</button>
+    <span class="frame-counter">{{ frames.length ? currentPredictionIndex + 1 : 0 }} / {{ frames.length }}</span>
+    <button type="button" (click)="goTo(currentPredictionIndex + 1)" [disabled]="!frames.length || currentPredictionIndex >= frames.length - 1" aria-label="Next frame">›</button>
+    <button type="button" class="play-toggle" (click)="togglePlay()" [disabled]="form.invalid || frames.length < 2">{{ playing ? 'Pause' : 'Play' }}</button>
+  </div>
+</div>
+<div class="replay-navigation">
+  <input class="frame-slider" type="range" min="0" [max]="frames.length ? frames.length - 1 : 0" [value]="currentPredictionIndex" [disabled]="!frames.length" (input)="goTo(+$any($event.target).value)" aria-label="Replay frame">
+  <div class="replay-filters">
+    <label><input type="checkbox" [(ngModel)]="chartFilters.original" (ngModelChange)="updateFilters()"> Actual</label>
+    <label><input type="checkbox" [(ngModel)]="chartFilters.preprocessedBeginning" (ngModelChange)="updateFilters()"> Processed input</label>
+    <label><input type="checkbox" [(ngModel)]="chartFilters.predictionTest" (ngModelChange)="updateFilters()"> Backtest</label>
+    <label><input type="checkbox" [(ngModel)]="chartFilters.predictionFuture" (ngModelChange)="updateFilters()"> Future</label>
+  </div>
+</div>
 <div class="elements">
-    <app-prediction-chart [prediction]="currentPrediction" *ngIf="currentPrediction"></app-prediction-chart>
+  <ng-container *ngIf="currentPrediction as prediction; else noFrames">
+    <app-run-summary [run]="prediction.run_info"></app-run-summary>
+    <app-prediction-chart [prediction]="prediction" [chartFilters]="chartFilters" [bounds]="bounds"></app-prediction-chart>
+  </ng-container>
+  <ng-template #noFrames><p class="empty-state">No prediction frames are available for replay.</p></ng-template>
 </div>

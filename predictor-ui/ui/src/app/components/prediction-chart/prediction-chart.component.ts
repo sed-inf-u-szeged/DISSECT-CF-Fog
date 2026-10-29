@@ -1,7 +1,9 @@
-import { AfterViewInit, Component, Input, OnChanges, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Input, OnChanges, OnDestroy, ViewChild } from '@angular/core';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { Prediction } from "../../shared/Prediction";
+import { Prediction } from '../../shared/Prediction';
+import { ChartBounds, displayBounds, forecastOrigin, FrameMetrics, frameMetrics, relativePoints } from '../../shared/prediction-display';
+
 Chart.register(annotationPlugin);
 
 @Component({
@@ -9,281 +11,118 @@ Chart.register(annotationPlugin);
   templateUrl: './prediction-chart.component.html',
   styleUrls: ['./prediction-chart.component.scss']
 })
-export class PredictionChartComponent implements OnInit, AfterViewInit, OnChanges {
+export class PredictionChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() prediction: Prediction;
   @Input() chartFilters: any;
-
-  @ViewChild('predictionCanvas') predictionCanvas!: { nativeElement: any };
-  ctxPrediction: any;
+  @Input() bounds?: ChartBounds;
+  @ViewChild('predictionCanvas') predictionCanvas!: { nativeElement: HTMLCanvasElement };
   chartPrediction: any;
+  metrics: FrameMetrics;
 
-  @ViewChild('errorCanvas') errorCanvas!: { nativeElement: any };
-  ctxError: any;
-  chartError: any;
-  errorColors: string[] = ['#ff5479', '#98ff54', '#546eff', '#fcff54', '#f154ff'] // TODO add more colors
-
-  ngOnInit() {
-
-  }
-
-  ngOnChanges(changes: any) {
-    if (changes?.chartFilters?.currentValue) {
-      if (this.chartPrediction && this.chartFilters) {
-        const filters = changes.chartFilters.currentValue;
-        this.filterDataset('original_data').hidden = !filters.original;
-        this.filterDataset('test_data_beginning').hidden = !filters.preprocessedBeginning;
-        this.filterDataset('test_data_end').hidden = !filters.preprocessedEnd;
-        this.filterDataset('prediction_test').hidden = !filters.predictionTest;
-        this.filterDataset('prediction_future').hidden = !filters.predictionFuture;
-        this.chartPrediction.update();
-      }
-    }
-
-    if (changes.prediction && this.chartPrediction) {
+  ngOnChanges(): void {
+    if (!this.prediction) { return; }
+    this.metrics = frameMetrics(this.prediction);
+    if (this.chartPrediction) {
       this.chartPrediction.data.datasets = this.createPredictionDatasets();
-      this.chartPrediction.options.plugins.title.text = this.getName();
-      this.chartPrediction.update();
-    }
-
-    if (changes.prediction && this.chartError) {
-      this.chartError.data.datasets = this.createErrorDatasets();
-      this.chartError.update();
+      this.chartPrediction.options.scales = this.createScales();
+      this.chartPrediction.options.plugins.annotation.annotations = this.createAnnotations();
+      this.chartPrediction.update('none');
     }
   }
 
-  ngAfterViewInit() {
-    this.createPredictionChart();
-    this.createErrorChart();
+  ngAfterViewInit(): void {
+    if (!this.prediction) { return; }
+    this.metrics = frameMetrics(this.prediction);
+    this.chartPrediction = new Chart(this.predictionCanvas.nativeElement, {
+      type: 'line',
+      data: { datasets: this.createPredictionDatasets() },
+      options: {
+        animation: false, responsive: true, maintainAspectRatio: false,
+        elements: { point: { radius: 0, hitRadius: 5 } },
+        scales: this.createScales(),
+        plugins: {
+          annotation: { annotations: this.createAnnotations() },
+          legend: { display: false },
+          tooltip: { callbacks: { title: items => `Step ${items[0]?.parsed.x ?? ''} from this forecast origin` } }
+        }
+      }
+    });
   }
 
-  getName() {
-    return `Feature: ${this.prediction.feature_name}\npredicted with: ${this.prediction.predictor_settings.predictor_name}`;
+  ngOnDestroy(): void { this.chartPrediction?.destroy(); }
+
+  get modelName(): string {
+    return this.prediction.predictor_settings?.predictor_name ?? 'Unknown model';
   }
 
-  getId() {
-    return this.getName()
-      .replaceAll(' ', '_')
-      .replaceAll('(', '')
-      .replaceAll(')', '');
+  get featureName(): string {
+    return this.prediction.feature_name.replace(/_feature_prediction$/, '').replace(/_{2,}/g, '::');
   }
 
-  filterDataset(label: string) {
-    return this.chartPrediction.data.datasets.find((dataset: any) => dataset.label === label)
+  get smoothingLabel(): string {
+    return this.prediction.predictor_settings?.prediction?.smoothing ? 'Enabled' : 'Disabled';
   }
+
+  formatMetric(value: number | null | undefined): string {
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+  }
+
+  get toleranceLabel(): string {
+    const tolerance = this.prediction.run_info?.tolerance;
+    return tolerance ? `±${this.formatMetric(tolerance.relative * 100)}% / ±${tolerance.absolute} absolute`
+      : 'Tolerance not recorded';
+  }
+
+  getLifecycleState(): string { return this.prediction.lifecycle?.state || 'NOT AVAILABLE'; }
 
   createPredictionDatasets() {
-    let datasets = [];
-
-    if (this.prediction.test_data_beginning) {
-      datasets.push({
-        label: 'test_data_beginning',
-        data: this.createCoordinateArray(
-          this.prediction.test_data_beginning.timestamp,
-          this.prediction.test_data_beginning.data
-        ),
-        borderColor: '#ffd174',
-        borderWidth: 1,
-        hidden: this.chartFilters ? !this.chartFilters.preprocessedBeginning : false
-      });
-    }
-
-    if (this.prediction.test_data_end) {
-      datasets.push({
-        label: 'test_data_end',
-        data: this.createCoordinateArray(
-          this.prediction.test_data_end.timestamp,
-          this.prediction.test_data_end.data
-        ),
-        borderColor: '#caa65c',
-        borderWidth: 1,
-        hidden: this.chartFilters ? !this.chartFilters.preprocessedEnd : false
-      });
-    }
-
-    if (this.prediction.prediction_test) {
-      datasets.push({
-        label: 'prediction_test',
-        data: this.createCoordinateArray(
-          this.prediction.prediction_test.timestamp,
-          this.prediction.prediction_test.data
-        ),
-        borderColor: '#546eff',
-        borderWidth: 1,
-        hidden: this.chartFilters ? !this.chartFilters?.predictionTest : false,
-        backgroundColor: '#0000001A',
-        fill: '-1'
-      });
-    }
-
-    if (this.prediction.prediction_future) {
-      datasets.push({
-        label: 'prediction_future',
-        data: this.createCoordinateArray(
-          this.prediction.prediction_future.timestamp,
-          this.prediction.prediction_future.data
-        ),
-        borderColor: '#ff5479',
-        borderWidth: 1,
-        hidden: this.chartFilters ? !this.chartFilters?.predictionFuture : false
-      });
-    }
-
-    if (this.prediction.original_data) {
-      datasets.push({
-        label: 'original_data',
-        data: this.createCoordinateArray(
-          this.prediction.original_data.timestamp,
-          this.prediction.original_data.data
-        ),
-        borderColor: '#ffd17417',
-        borderWidth: 1,
-        hidden: this.chartFilters ? !this.chartFilters?.original : false
-      });
-    }
-
-    return datasets;
-  }
-
-  createPredictionChart() {
-    this.ctxPrediction = this.predictionCanvas.nativeElement.getContext('2d');
-
-    this.chartPrediction = new Chart(this.ctxPrediction, {
-      type: 'line',
-      data: {
-        labels: this.createLabels(),
-        datasets: this.createPredictionDatasets()
-      },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        layout: {
-          padding: 8
-        },
-        elements: {
-          point: {
-            radius: 0
-          }
-        },
-        plugins: {
-          annotation: {
-            annotations: {
-              line1: {
-                type: 'line',
-                xMin: this.prediction.test_data_beginning.timestamp.length,
-                xMax: this.prediction.test_data_beginning.timestamp.length,
-                borderColor: '#ffd17444',
-                borderDash: [5, 5]
-              },
-              line2: {
-                type: 'line',
-                xMin: this.prediction.original_data.timestamp.length,
-                xMax: this.prediction.original_data.timestamp.length,
-                borderColor: '#ffd17444',
-                borderDash: [5, 5]
-              }
-            }
-          },
-          title: {
-            display: true,
-            text: this.getName(),
-            color: '#ffd174'
-          },
-          legend: {
-            display: false
-          }
-        },
-      }
+    const origin = forecastOrigin(this.prediction);
+    const raw = new Map(relativePoints(this.prediction.original_data, origin).map(point => [point.x, point.y]));
+    const processed = relativePoints(this.prediction.test_data_beginning, origin);
+    const duplicatesRaw = processed.length > 0 && processed.every(point => point.y === raw.get(point.x));
+    const dataset = (label: string, series: any, color: string, hidden: boolean, dashed = false) => ({
+      label, data: relativePoints(series, origin), borderColor: color,
+      borderWidth: 1, borderDash: dashed ? [4, 3] : [],
+      hidden, fill: false, spanGaps: false
     });
+    return [
+      dataset('Actual data', this.prediction.original_data, '#e8be6d', this.chartFilters?.original === false),
+      dataset('Backtest input (processed)', this.prediction.test_data_beginning, '#55cfb9aa',
+        this.chartFilters?.preprocessedBeginning !== true || (duplicatesRaw && this.chartFilters?.original !== false), true),
+      dataset('Backtest prediction', this.prediction.prediction_test, '#7185ef', this.chartFilters?.predictionTest === false),
+      dataset('Future prediction', this.prediction.prediction_future, '#ef5b7d', this.chartFilters?.predictionFuture === false)
+    ];
   }
 
-  createErrorDatasets() {
-    const data: number[] = [];
-    const backgroundColor: string[] = [];
-
-    if (this.prediction.error_metrics) {
-      Object.keys(this.prediction.error_metrics).forEach((key, i) => {
-        data.push(this.prediction.error_metrics[key]);
-        backgroundColor.push(this.errorColors[i]);
-      });
-    }
-
-    return [{ data, backgroundColor }];
-  }
-
-  createErrorChart() {
-    this.ctxError = this.errorCanvas.nativeElement.getContext('2d');
-
-    
-
-    this.chartError = new Chart(this.ctxError, {
-      type: 'bar',
-      data: {
-        labels: this.prediction.error_metrics ? Object.keys(this.prediction.error_metrics) : ['No error metrics'],
-        datasets: this.createErrorDatasets()
+  createScales() {
+    const bounds = this.bounds ?? displayBounds([this.prediction]).get(this.prediction.feature_name)!;
+    const commonY = this.chartFilters?.commonY !== false;
+    return {
+      x: {
+        type: 'linear' as const, min: -bounds.history, max: bounds.future - 1,
+        title: { display: true, text: 'Relative steps · 0 = this forecast origin', color: '#aeb2bc', font: { size: 10 } },
+        ticks: { color: '#969ba6', font: { size: 10 }, maxTicksLimit: 11, maxRotation: 0 },
+        grid: { color: '#ffffff08' }
       },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            ticks: {
-              font: {
-                size: 9,
-              }
-            }
-          }
-        },
-        layout: {
-          padding: 8
-        },
-        elements: {
-          point: {
-            radius: 0
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: 'Error metrics'
-          },
-          legend: {
-            display: false
-          }
-        },
+      y: {
+        min: commonY ? bounds.min : undefined, max: commonY ? bounds.max : undefined,
+        ticks: { color: '#969ba6', font: { size: 10 }, maxTicksLimit: 6 }, grid: { color: '#ffffff0b' }
       }
-    });
+    };
   }
 
-  createLabels() {
-    const labels: string[] = [];
-    const len = this.prediction.predictor_settings['prediction']['batchSize'] + this.prediction.predictor_settings['prediction']['length'];
-    for (let i = 0; i < len; i++) {
-      labels.push(i.toString());
+  createAnnotations() {
+    const origin = forecastOrigin(this.prediction);
+    const times = this.prediction.prediction_test?.timestamp?.filter(Number.isFinite) ?? [];
+    const annotations: any = {
+      forecast: { type: 'line', xMin: 0, xMax: 0, borderColor: '#b4b7c1', borderWidth: 1, borderDash: [5, 5] }
+    };
+    if (times.length) {
+      const start = Math.min(...times) - origin;
+      annotations.backtest = { type: 'line', xMin: start, xMax: start,
+        borderColor: '#8498ff88', borderWidth: 1, borderDash: [5, 5] };
     }
-    return labels;
-  }
-
-  createCoordinateArray(x: number[], y: number[]) {
-    const res: { x: number, y: number | null }[] = [];
-
-    if (x[0] > 0) {
-      for (let i = 0; i < x[0]; i++) {
-        res.push({
-          x: i,
-          y: null
-        });
-      }
-    }
-
-    for (let i = 0; i < x.length; i++) {
-      res.push({
-        x: x[i],
-        y: y[i]
-      });
-    }
-
-    return res;
+    return annotations;
   }
 }

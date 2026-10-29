@@ -26,6 +26,9 @@ public class PredictorSettings {
         RANDOM_FOREST("RANDOM_FOREST"),
         HOLT_WINTERS("HOLT_WINTERS"),
         LSTM("LSTM"),
+        TCN("TCN"),
+        GRU("GRU"),
+        PATCHTST("PATCHTST"),
         LINEAR_REGRESSION("LINEAR_REGRESSION"),
         ONLY_SIMULATION("ONLY_SIMULATION");
 
@@ -88,6 +91,33 @@ public class PredictorSettings {
                         Map.of(
                                 "future_model_location", "<path_to_h5>",
                                 "test_model_location", "<path_to_h5>"
+                        ),
+                        null
+                );
+          case TCN:
+              return new PredictorSettings(
+                        PredictorEnum.TCN.value,
+                        Map.of(
+                                "future_model_location", "<path_to_keras>",
+                                "test_model_location", "<path_to_keras>"
+                        ),
+                        null
+                );
+          case GRU:
+              return new PredictorSettings(
+                        PredictorEnum.GRU.value,
+                        Map.of(
+                                "future_model_location", "<path_to_keras>",
+                                "test_model_location", "<path_to_keras>"
+                        ),
+                        null
+                );
+          case PATCHTST:
+              return new PredictorSettings(
+                        PredictorEnum.PATCHTST.value,
+                        Map.of(
+                                "future_model_location", "<path_to_keras>",
+                                "test_model_location", "<path_to_keras>"
                         ),
                         null
                 );

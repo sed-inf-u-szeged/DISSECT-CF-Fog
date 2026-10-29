@@ -1,7 +1,7 @@
-numpy==2.5.3
+numpy==2.4.6
 pandas==2.3.3
 scikit-learn==1.9.1
-scipy==1.18.1
+scipy==1.17.1
 skforecast==0.25.0
 statsmodels==0.15.0
 tensorflow==2.21.0
