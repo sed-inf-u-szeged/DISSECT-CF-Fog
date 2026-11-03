@@ -1,75 +1,35 @@
 package hu.u_szeged.inf.fog.simulator.prediction.communication.launchers;
 
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
-import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
-import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import hu.u_szeged.inf.fog.simulator.prediction.settings.TrainSettings;
 import java.io.File;
 import java.io.IOException;
 
 /**
- * The class provides implementations for starting the Python-based LSTM trainer application.
+ * Configures the shared Python launcher for LSTM training.
  */
-public class LSTMTrainLauncher extends Launcher {
+public class LSTMTrainLauncher extends PythonTrainLauncher {
 
     public LSTMTrainLauncher() throws IOException {
-        if (SimulationSettings.get().getTrainSettings().isCollectAllCsvAndTrainOnIt()) {
-            TrainSettings.copyCSVFromDatasetDirToPath(
-                    SimulationSettings.get().getTrainSettings().getDatasetsDirectory(),
-                    ScenarioBase.resultDirectory + File.separator + "datasets"
-            );
+        super("predictor_models/lstm_trainer.py", "lstm_training.log",
+                prepareSettings());
+    }
 
-            SimulationSettings.get().getTrainSettings().setDatasetsDirectory(
-                    ScenarioBase.resultDirectory + File.separator + "datasets"
-            );
+    private static TrainSettings prepareSettings() throws IOException {
+        TrainSettings settings = SimulationSettings.get().getTrainSettings();
+        if (settings == null) {
+            throw new IllegalArgumentException("Training settings must not be null.");
         }
-    }
 
-    @Override
-    public String getProjectLocation() {
-        String parentPath = new File(System.getProperty("user.dir")).getParentFile().getAbsolutePath();
+        if (settings.isCollectAllCsvAndTrainOnIt()) {
+            String datasetsDirectory = ScenarioBase.resultDirectory
+                    + File.separator + "datasets";
 
-        String str = new StringBuilder(parentPath).append(File.separator)
-                .append("predictor-ui").append(File.separator).append("scripts").toString();
-
-        return str;
-    }
-
-    @Override
-    public Process openWindows() throws Exception {
-        String command = "cd /d " + getProjectLocation() 
-                          + String.format(
-                        " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
-                        getProjectLocation(),
-                        getProjectLocation(),
-                        JsonParser.toJson(
-                            SimulationSettings.get().getTrainSettings(), TrainSettings.class
-                        ).toString().replace("\"", "\\\"")
-                );
-
-        ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
-        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
-
-        PredictionLogger.info("LSTM trainer", "Opening trainer");
-        return pb.start();
-    }
-
-    @Override
-    public Process openLinux() throws Exception {
-        String command = "cd /d " + getProjectLocation() + String.format(
-                        " && start cmd.exe /k %s/venv/Scripts/python.exe %s/predictor_models/lstm_trainer.py %s",
-                        getProjectLocation(),
-                        getProjectLocation(),
-                        JsonParser.toJson(
-                                SimulationSettings.get().getTrainSettings(), TrainSettings.class
-                        ).toString().replace("\"", "\\\"")
-                );
-
-        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
-        // pb.redirectError(new File(String.format("%s\\train_error_logs.txt", ScenarioBase.resultDirectory)));
-
-        PredictionLogger.info("LSTM trainer", "Opening trainer");
-        return pb.start();
+            TrainSettings.copyCSVFromDatasetDirToPath(
+                    settings.getDatasetsDirectory(), datasetsDirectory);
+            settings.setDatasetsDirectory(datasetsDirectory);
+        }
+        return settings;
     }
 }

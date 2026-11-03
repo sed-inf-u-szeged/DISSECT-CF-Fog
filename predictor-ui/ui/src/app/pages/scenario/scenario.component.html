@@ -5,7 +5,7 @@
         </div>
     </app-toolbar>
 
-    <form [formGroup]="form" class="page-content">
+    <div class="page-content">
         <div class="output" style="width: 100vw;">
             <app-toolbar class="border-bottom">
                 <div start
@@ -31,22 +31,22 @@
             <app-toolbar class="border-bottom">
                 <div start style="width: 100%;">
                     <form
-                        style="display: flex; align-items: center; justify-content: flex-start; padding-left: 16px; padding-right: 16px; gap: 16px;"
+                        style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; padding-left: 16px; padding-right: 16px; gap: 16px;"
                         [formGroup]="formChartFilters">
                         <app-checkbox-container>
-                            <label style="margin-right: 8px; font-size: 10px;">Original data</label>
+                            <label style="margin-right: 8px; font-size: 10px;">Actual data</label>
                             <input type="checkbox" formControlName="original">
                         </app-checkbox-container>
                         <app-checkbox-container>
-                            <label style="margin-right: 8px; font-size: 10px">Preprocessed start</label>
+                            <label style="margin-right: 8px; font-size: 10px">Processed input</label>
                             <input type="checkbox" formControlName="preprocessedBeginning">
                         </app-checkbox-container>
                         <app-checkbox-container>
-                            <label style="margin-right: 8px; font-size: 10px">Prepocessed end</label>
-                            <input type="checkbox" formControlName="preprocessedEnd">
+                            <label style="margin-right: 8px; font-size: 10px">Common Y scale</label>
+                            <input type="checkbox" formControlName="commonY">
                         </app-checkbox-container>
                         <app-checkbox-container>
-                            <label style="margin-right: 8px; font-size: 10px">Test prediction</label>
+                            <label style="margin-right: 8px; font-size: 10px">Backtest prediction</label>
                             <input type="checkbox" formControlName="predictionTest">
                         </app-checkbox-container>
                         <app-checkbox-container>
@@ -60,9 +60,10 @@
                     <app-button-icon icon="fa fa-chart-line" color="normal" (click)="onViewSimulation()"></app-button-icon>
                 </div>
             </app-toolbar>
+            <app-run-summary [run]="runInfo" *ngIf="predictions.size > 0"></app-run-summary>
             <div class="output-container" *ngIf="predictions.size > 0">
                 <div class="item" *ngFor="let prediction of predictions.get(currentPredictionIndex)">
-                    <app-prediction-chart [prediction]="prediction" [chartFilters]="formChartFilters.value">
+                    <app-prediction-chart [prediction]="prediction" [chartFilters]="formChartFilters.value" [bounds]="chartBounds.get(prediction.feature_name)">
                     </app-prediction-chart>
                 </div>
             </div>
@@ -76,7 +77,7 @@
                 <app-loading-circle></app-loading-circle>
             </div>
         </div>
-    </form>
+    </div>
 
     <app-toolbar class="border-top">
         <div start style="display: flex; gap: 8px; align-items: center; padding-left: 16px;">
