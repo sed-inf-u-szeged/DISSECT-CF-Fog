@@ -8,7 +8,8 @@ nodeInfo = sys.argv[1].split(";")
 
 # set the map zoom based on the first node's info
 map = folium.Map(
-    location=[nodeInfo[0].split(",")[1], nodeInfo[0].split(",")[2]], zoom_start=5
+    location=[nodeInfo[0].split(",")[1], nodeInfo[0].split(",")[2]], zoom_start=5, tiles="https://tile.openstreetmap.de/{z}/{x}/{y}.png", attr="&copy; OpenStreetMap contributors"
+    # location=[nodeInfo[0].split(",")[1], nodeInfo[0].split(",")[2]], zoom_start=5, tiles="OpenTopoMap" ?? kerdes melyik a jobb
 )
 
 # iterating the nodes and separating the name[0], latitude[1], longitude[2] and parent[3] and range[4]
