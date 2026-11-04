@@ -148,15 +148,23 @@ public class Block {
         return getTransactions();
     }
 
+
     /**
-     * Finalizes the block by setting its timestamp and recording metrics.
+     * Finalizes the block and records its creation time
+     * and the first inclusion of its transactions.
      */
     public void finalizeBlock() {
+        if (finalized) {
+            return;
+        }
+
         this.finalized = true;
         this.timestamp = Timed.getFireCount();
+
         SimulationMetrics.getInstance().markBlockCreated(this, timestamp);
-        SimulationMetrics.getInstance().recordTransactionOnChain(transactions.size());
+        SimulationMetrics.getInstance().recordBlockTransactions(this);
     }
+
 
     /**
      * Returns the ID of the block.

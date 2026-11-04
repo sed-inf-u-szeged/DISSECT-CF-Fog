@@ -3,11 +3,10 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Block;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.Miner;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.Transaction;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SimulationMetrics class is a singleton that collects and stores various statistics.
@@ -38,6 +37,47 @@ public class SimulationMetrics {
      */
     private SimulationMetrics() {
     }
+
+    /**
+     * Stores the simulation time when each transaction was generated.
+     */
+    private final Map<String, Long> transactionCreationTimes = new HashMap<>();
+
+    /**
+     * Stores the first block inclusion time of each transaction.
+     */
+    private final Map<String, Long> transactionInclusionTimes = new HashMap<>();
+
+    /**
+     * Stores the pending transaction count at each change.
+     */
+    private final NavigableMap<Long, Integer> pendingTransactionsHistory =
+            new TreeMap<>();
+
+    /**
+     * Maximum number of pending transactions observed.
+     */
+    private int peakPendingTransactions = 0;
+
+    /**
+     * Stores the latest active blockchain snapshot of each miner.
+     */
+    private final Map<Miner, Set<Block>> activeLedgerBlocks = new HashMap<>();
+
+    /**
+     * Counts local ledger reorganization operations.
+     */
+    private int localReorganizationCount = 0;
+
+    /**
+     * Stores the first majority acceptance time of each transaction.
+     */
+    private final Map<String, Long> transactionMajorityAcceptanceTimes = new HashMap<>();
+
+    /**
+     * Stores the total infrastructure energy consumption in kWh.
+     */
+    private double totalEnergyKWh = Double.NaN;
 
     // ----------------------------------------------------------------
     // Inner class to store each miner's statistics
@@ -169,14 +209,74 @@ public class SimulationMetrics {
     // 2) Throughput
     // ----------------------------------------------------------------
 
+
     /**
-     * Whenever a transaction is successfully added to a block
-     * and accepted on-chain. This increments the global count of
-     * “transactions on chain,” used for throughput calculations.
+     * Records the creation time of a transaction.
+     *
+     * @param transaction the newly generated transaction
      */
-    public void recordTransactionOnChain(int n) {
-        globalTransactionsOnChain += n;
+    public void recordTransactionCreated(Transaction transaction) {
+        if (transactionCreationTimes.putIfAbsent(
+                transaction.getId(), Timed.getFireCount()) == null) {
+            recordPendingTransactions();
+        }
     }
+
+    /**
+     * Records the first inclusion of transactions in a produced block.
+     * Each transaction is counted only once.
+     *
+     * @param block the produced block
+     */
+    public void recordBlockTransactions(Block block) {
+        boolean changed = false;
+
+        for (Transaction transaction : block.getTransactions()) {
+            if (transactionInclusionTimes.putIfAbsent(
+                    transaction.getId(), Timed.getFireCount()) == null) {
+                globalTransactionsOnChain++;
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            recordPendingTransactions();
+        }
+    }
+
+    /**
+     * Calculates the average time between transaction creation
+     * and its first inclusion in a block.
+     *
+     * @return the average inclusion delay in milliseconds
+     */
+    public double getAverageTransactionInclusionTime() {
+        long totalDelay = 0;
+        int count = 0;
+
+        for (Map.Entry<String, Long> entry : transactionInclusionTimes.entrySet()) {
+            Long createdAt = transactionCreationTimes.get(entry.getKey());
+
+            if (createdAt != null) {
+                totalDelay += entry.getValue() - createdAt;
+                count++;
+            }
+        }
+
+        return count == 0 ? 0.0 : (double) totalDelay / count;
+    }
+
+    /**
+     * Returns the number of generated transactions that have
+     * not yet been included in a produced block.
+     *
+     * @return the number of transactions without block inclusion
+     */
+    public int getUnincludedTransactionCount() {
+        return transactionCreationTimes.size()
+                - transactionInclusionTimes.size();
+    }
+
 
     // ----------------------------------------------------------------
     // 3) Result of block and transaction validations
@@ -252,6 +352,226 @@ public class SimulationMetrics {
 
 
     // ----------------------------------------------------------------
+    // 5) Transaction Majority Acceptance
+    // ----------------------------------------------------------------
+
+    /**
+     * Updates a miner's active blockchain snapshot and records
+     * transactions that reach majority acceptance.
+     *
+     * @param miner the miner owning the ledger
+     * @param chain the current active chain
+     */
+    public void recordLedgerSnapshot(Miner miner, List<Block> chain) {
+        activeLedgerBlocks.put(miner, new HashSet<>(chain));
+
+        int majority = Miner.miners.size() / 2 + 1;
+        long currentTime = Timed.getFireCount();
+
+        for (Block block : chain) {
+            if (countActiveLedgersContaining(block) < majority) {
+                continue;
+            }
+
+            for (Transaction transaction : block.getTransactions()) {
+                String transactionId = transaction.getId();
+
+                if (transactionCreationTimes.containsKey(transactionId)) {
+                    transactionMajorityAcceptanceTimes.putIfAbsent(
+                            transactionId, currentTime);
+                }
+            }
+        }
+    }
+
+    /**
+     * Calculates the average delay between transaction creation
+     * and its first majority acceptance.
+     *
+     * @return the average majority acceptance delay in milliseconds
+     */
+    public double getAverageTransactionMajorityAcceptanceTime() {
+        long totalDelay = 0;
+        int count = 0;
+
+        for (Map.Entry<String, Long> entry :
+                transactionMajorityAcceptanceTimes.entrySet()) {
+
+            Long createdAt = transactionCreationTimes.get(entry.getKey());
+
+            if (createdAt != null) {
+                totalDelay += entry.getValue() - createdAt;
+                count++;
+            }
+        }
+
+        return count == 0 ? 0.0 : (double) totalDelay / count;
+    }
+
+    // ----------------------------------------------------------------
+    // 6) Energy Efficiency
+    // ----------------------------------------------------------------
+
+    /**
+     * Records the total energy consumption of the simulation.
+     *
+     * @param energyKWh total energy consumption in kWh
+     */
+    public void recordTotalEnergyKWh(double energyKWh) {
+        if (!Double.isFinite(energyKWh) || energyKWh < 0) {
+            throw new IllegalArgumentException(
+                    "Energy consumption must be finite and non-negative.");
+        }
+
+        this.totalEnergyKWh = energyKWh;
+    }
+
+    /**
+     * Calculates the energy consumption per majority-accepted transaction.
+     *
+     * @return energy consumption in Wh/transaction,
+     * or NaN if the value cannot be calculated
+     */
+    public double getEnergyPerMajorityAcceptedTransactionWh() {
+        int acceptedTransactions = transactionMajorityAcceptanceTimes.size();
+
+        if (Double.isNaN(totalEnergyKWh) || acceptedTransactions == 0) {
+            return Double.NaN;
+        }
+
+        return totalEnergyKWh * 1000.0 / acceptedTransactions;
+    }
+
+    // ----------------------------------------------------------------
+    // 7) Pending Transactions Over Time
+    // ----------------------------------------------------------------
+
+    /**
+     * Records the current number of pending transactions.
+     */
+    private void recordPendingTransactions() {
+        int pending = getUnincludedTransactionCount();
+
+        pendingTransactionsHistory.put(Timed.getFireCount(), pending);
+        peakPendingTransactions = Math.max(peakPendingTransactions, pending);
+    }
+
+    /**
+     * Calculates the time-weighted average pending transaction count.
+     *
+     * @return average number of pending transactions
+     */
+    public double getAveragePendingTransactions() {
+        long previousTime = 0;
+        int previousCount = 0;
+        double weightedSum = 0.0;
+
+        for (Map.Entry<Long, Integer> entry :
+                pendingTransactionsHistory.entrySet()) {
+
+            long currentTime = entry.getKey();
+
+            weightedSum += (currentTime - previousTime)
+                    * (double) previousCount;
+
+            previousTime = currentTime;
+            previousCount = entry.getValue();
+        }
+
+        long endTime = Timed.getFireCount();
+
+        weightedSum += Math.max(0, endTime - previousTime)
+                * (double) previousCount;
+
+        return endTime == 0 ? 0.0 : weightedSum / endTime;
+    }
+
+    /**
+     * Returns the recorded pending transaction timeline.
+     *
+     * @return unmodifiable timeline indexed by simulation time
+     */
+    public NavigableMap<Long, Integer> getPendingTransactionsHistory() {
+        return Collections.unmodifiableNavigableMap(
+                pendingTransactionsHistory);
+    }
+
+    // ----------------------------------------------------------------
+    // 8) Fork and Orphan Block Metrics
+    // ----------------------------------------------------------------
+
+    /**
+     * Counts the active local ledgers containing a block.
+     */
+    private int countActiveLedgersContaining(Block block) {
+        int count = 0;
+
+        for (Set<Block> blocks : activeLedgerBlocks.values()) {
+            if (blocks.contains(block)) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Records a local blockchain reorganization.
+     */
+    public void recordLocalReorganization() {
+        localReorganizationCount++;
+    }
+
+    /**
+     * Counts produced blocks not present in any final local ledger.
+     */
+    public int getBlocksAbsentFromAllLedgers() {
+        int count = 0;
+
+        for (Block block : blockCreationTime.keySet()) {
+            if (countActiveLedgersContaining(block) == 0) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Counts produced blocks that do not have majority support
+     * among the final local blockchain snapshots.
+     */
+    public int getBlocksWithoutFinalMajority() {
+        int majority = Miner.miners.size() / 2 + 1;
+        int count = 0;
+
+        for (Block block : blockCreationTime.keySet()) {
+            if (countActiveLedgersContaining(block) < majority) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Calculates the percentage of produced blocks without
+     * majority support at the end of the simulation.
+     *
+     * @return percentage of blocks without final majority support
+     */
+    public double getNonMajorityBlockRate() {
+        int produced = blockCreationTime.size();
+
+        if (produced == 0) {
+            return 0.0;
+        }
+
+        return 100.0 * getBlocksWithoutFinalMajority() / produced;
+    }
+
+
+    // ----------------------------------------------------------------
     // Print / finalize stats at end of simulation
     // ----------------------------------------------------------------
 
@@ -288,8 +608,12 @@ public class SimulationMetrics {
         // 2) Throughput
         double totalSimTime = simEndTime;
         double tps = (double) globalTransactionsOnChain / (totalSimTime > 0 ? totalSimTime / 1000 : 1.0);
-        SimLogger.logRun("Transactions On-Chain: " + globalTransactionsOnChain);
-        SimLogger.logRun("Throughput (TPS):      " + tps);
+        SimLogger.logRun("Transactions generated: " + transactionCreationTimes.size());
+        SimLogger.logRun("Transactions first included: " + globalTransactionsOnChain);
+        SimLogger.logRun("Transactions not included: " + getUnincludedTransactionCount());
+        SimLogger.logRun("Avg Transaction Inclusion Time (ms): "
+                + getAverageTransactionInclusionTime());
+        SimLogger.logRun("First-Inclusion Throughput (TPS):      " + tps);
 
 
         // 3) Validation results
@@ -346,6 +670,57 @@ public class SimulationMetrics {
                 );
             }
         }
+
+        // 5) Transaction Majority Acceptance
+        SimLogger.logRun("Transactions majority accepted: "
+                + transactionMajorityAcceptanceTimes.size());
+
+        SimLogger.logRun("Transactions awaiting majority acceptance: "
+                + (transactionCreationTimes.size()
+                - transactionMajorityAcceptanceTimes.size()));
+
+        SimLogger.logRun("Avg Transaction Majority Acceptance Time (ms): "
+                + getAverageTransactionMajorityAcceptanceTime());
+
+        // 6) Energy efficiency
+        if (!Double.isNaN(totalEnergyKWh)) {
+            SimLogger.logRun("Total energy (kWh): " + totalEnergyKWh);
+
+            double energyPerTransaction =
+                    getEnergyPerMajorityAcceptedTransactionWh();
+
+            if (Double.isNaN(energyPerTransaction)) {
+                SimLogger.logRun(
+                        "Energy per majority-accepted transaction (Wh/tx): N/A");
+            } else {
+                SimLogger.logRun(
+                        "Energy per majority-accepted transaction (Wh/tx): "
+                                + energyPerTransaction);
+            }
+        }
+
+        // 7) Pending transactions
+        SimLogger.logRun("Peak pending transactions: "
+                + peakPendingTransactions);
+
+        SimLogger.logRun("Avg pending transactions (time-weighted): "
+                + getAveragePendingTransactions());
+
+        SimLogger.logRun("Pending timeline data points: "
+                + pendingTransactionsHistory.size());
+
+        // 8) Fork and orphan block metrics
+        SimLogger.logRun("Local ledger reorganizations: "
+                + localReorganizationCount);
+
+        SimLogger.logRun("Blocks absent from all final ledgers: "
+                + getBlocksAbsentFromAllLedgers());
+
+        SimLogger.logRun("Blocks without final majority: "
+                + getBlocksWithoutFinalMajority());
+
+        SimLogger.logRun("Non-majority block rate (%): "
+                + getNonMajorityBlockRate());
 
         SimLogger.logRun("=== END OF METRICS ===");
     }

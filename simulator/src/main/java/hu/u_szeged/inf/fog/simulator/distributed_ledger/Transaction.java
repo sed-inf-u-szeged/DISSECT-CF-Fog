@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.utils.Utils;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class Transaction {
         this.data = data;
         this.size = size;
         transactions.add(this);
+        SimulationMetrics.getInstance().recordTransactionCreated(this);
     }
 
     /**

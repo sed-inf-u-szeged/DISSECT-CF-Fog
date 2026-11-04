@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.demo;
 
 
+import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
@@ -121,14 +122,29 @@ public class ProofOfStakeSimulation {
             deviceList.add(transactionDevice);
         }
 
+        // Keep the simulation active until the common measurement horizon.
+        new DeferredEvent(3_000_000L) {
+            @Override
+            protected void eventAction() {
+                // No additional action is required.
+            }
+        };
+
         Timed.simulateUntil(3_000_001L);
+
+        // Calculate total energy consumption.
+        double totalEnergy = 0.0;
+
+        for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
+            totalEnergy += ec.energyConsumption / 1000.0 / 3_600_000.0;
+        }
+
+        // Record energy before printing the metrics.
+        SimulationMetrics.getInstance().recordTotalEnergyKWh(totalEnergy);
+
+        // Print all metrics, including energy per transaction.
         SimulationMetrics.getInstance().printFinalStats();
 
-        double totalEnergy = 0;
-        for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
-            totalEnergy += ec.energyConsumption / 1000 / 3_600_000;
-        }
-        SimLogger.logRes("Total energy (kWh): " + totalEnergy);
         EnergyDataCollector.writeToFile(ScenarioBase.resultDirectory);
 
     }

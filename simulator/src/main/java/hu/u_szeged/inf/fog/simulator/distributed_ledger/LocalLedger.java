@@ -3,6 +3,7 @@ package hu.u_szeged.inf.fog.simulator.distributed_ledger;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.BlockMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.MessageInterface;
+import hu.u_szeged.inf.fog.simulator.distributed_ledger.metrics.SimulationMetrics;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class LocalLedger {
 
     /**
      * Returns size of the local ledger.
+     *
      * @return the number of blocks in the chain
      */
     public int size() {
@@ -33,6 +35,7 @@ public class LocalLedger {
 
     /**
      * Returns the chin of blocks.
+     *
      * @return the list of blocks in the chain
      */
     public List<Block> getChain() {
@@ -41,13 +44,15 @@ public class LocalLedger {
 
     /**
      * Adds a block to the local ledger.
+     *
      * @param block the block to be added
      */
     public void addBlock(Block block) {
         BlockMessage blockMessage = new BlockMessage(block);
         this.owner.getLocalRepo().registerObject(blockMessage);
         this.chain.add(block);
-        if(size() > 1) {
+        SimulationMetrics.getInstance().recordLedgerSnapshot(owner, chain);
+        if (size() > 1) {
             long previousDifficulty = chain.get(size() - 2).getDifficulty();
             long currentDifficulty = chain.get(size() - 1).getDifficulty();
             if (previousDifficulty != currentDifficulty) {
@@ -58,6 +63,7 @@ public class LocalLedger {
 
     /**
      * Reorganizes the local ledger by replacing the last blocks with the given fork blocks.
+     *
      * @param forkBlocks the list of blocks to replace the last blocks in the chain
      */
     public void resolveReorg(List<Block> forkBlocks) {
@@ -71,10 +77,13 @@ public class LocalLedger {
             replaceBlockInRepo(chain.get(targetIndex), forkBlocks.get(i));
             chain.set(targetIndex, forkBlocks.get(i));
         }
+        SimulationMetrics.getInstance().recordLocalReorganization();
+        SimulationMetrics.getInstance().recordLedgerSnapshot(owner, chain);
     }
 
     /**
      * Replaces a block in the repository with a new block.
+     *
      * @param oldBlock the block to be replaced
      * @param newBlock the new block to be added
      */
@@ -88,6 +97,7 @@ public class LocalLedger {
 
     /**
      * Synchronizes the local ledger with another local ledger.
+     *
      * @param otherLedger the other local ledger to synchronize from
      */
     public void syncChainFrom(LocalLedger otherLedger) {
@@ -101,6 +111,7 @@ public class LocalLedger {
             }
         });
         this.chain.clear();
+        SimulationMetrics.getInstance().recordLedgerSnapshot(owner, chain);
         for (Block block : otherLedger.getChain()) {
             addBlock(block);
         }
