@@ -18,14 +18,17 @@ public class ParkingForecastLookAheadSwarmAgent extends ParkingForecastSwarmAgen
     @Override
     protected void evaluateReconfiguration(long simulationTimeMs) {
         List<Map<String, Double>> forecastSlots;
+        String requestJson = null;
 
         try {
-            String requestJson = buildForecastRequest(simulationTimeMs);
+            requestJson = buildForecastRequest(simulationTimeMs);
             String responseJson = ForecasterManager.getInstance().predict(requestJson);
             forecastSlots = parseAllSlotPredictions(responseJson);
             SimLogger.logRun("Parking look-ahead forecast received at " + simulationTimeMs / 60_000.0 + " min for " + forecastSlots.get(0).size() + " sensors.");
         } catch (Exception e) {
             throw new RuntimeException("Parking look-ahead forecast request failed", e);
+        } finally {
+            deleteForecastFiles(requestJson);
         }
 
         if (forecastSlots.size() < 2) {

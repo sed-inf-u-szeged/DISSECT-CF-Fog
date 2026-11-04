@@ -33,20 +33,24 @@ public class ParkingForecastSwarmAgent extends ParkingSwarmAgent {
     @Override
     protected void evaluateReconfiguration(long simulationTimeMs) {
         Map<String, Double> predictedEvents;
+        String requestJson = null;
 
         try {
-            String requestJson = buildForecastRequest(simulationTimeMs);
+            requestJson = buildForecastRequest(simulationTimeMs);
             if (!forecastRequestSaved) {
                 JsonNode requestNode = objectMapper.readTree(requestJson);
                 String formattedRequestJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestNode);
                 Files.writeString(Path.of(ScenarioBase.RESULT_DIRECTORY, "parking-forecast-request.json"), formattedRequestJson);
                 forecastRequestSaved = true;
             }
+
             String responseJson = ForecasterManager.getInstance().predict(requestJson);
             predictedEvents = parseFirstSlotPredictions(responseJson);
             SimLogger.logRun("Parking forecast received at " + simulationTimeMs / 60_000.0 + " min for " + predictedEvents.size() + " sensors.");
         } catch (Exception e) {
             throw new RuntimeException("Parking forecast request failed", e);
+        } finally {
+            deleteForecastFiles(requestJson);
         }
 
         long blePollingIntervalMs = (long) Config.PARKING_CONFIGURATION.get("gatewayFreq");
@@ -73,19 +77,50 @@ public class ParkingForecastSwarmAgent extends ParkingSwarmAgent {
         }
     }
 
+    protected void deleteForecastFiles(String requestJson) {
+        if (requestJson == null) {
+            return;
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(requestJson);
+            Files.deleteIfExists(Path.of(root.get("state_path").asText()));
+            Files.deleteIfExists(Path.of(root.get("messages_path").asText()));
+            Files.deleteIfExists(Path.of(root.get("output_path").asText()));
+        } catch (Exception e) {
+            SimLogger.logError("Failed to delete temporary parking forecast files: " + e.getMessage());
+        }
+    }
+
     protected List<Map<String, Double>> parseAllSlotPredictions(String responseJson) throws Exception {
         JsonNode root = objectMapper.readTree(responseJson);
-        JsonNode forecast = root.get("forecast");
-        if (forecast == null || !forecast.isArray()) {
-            throw new IllegalStateException("Invalid forecast response: missing forecast array");
+        JsonNode outputPathNode = root.get("output_path");
+
+        if (outputPathNode == null) {
+            throw new IllegalStateException("Invalid forecast response: missing output_path");
+        }
+
+        Path outputPath = Path.of(outputPathNode.asText());
+        List<String> lines = Files.readAllLines(outputPath);
+
+        if (lines.size() < 2) {
+            throw new IllegalStateException("Forecast output is empty: " + outputPath);
         }
 
         List<Map<String, Double>> slots = new ArrayList<>();
         String currentTime = null;
         Map<String, Double> currentSlot = null;
 
-        for (JsonNode prediction : forecast) {
-            String predictionTime = prediction.get("time").asText();
+        for (int i = 1; i < lines.size(); i++) {
+            String[] cells = lines.get(i).split(",", -1);
+
+            if (cells.length < 4) {
+                throw new IllegalStateException("Invalid forecast CSV row: " + lines.get(i));
+            }
+
+            String predictionTime = cells[0];
+            String sensorId = cells[1];
+            double events = Double.parseDouble(cells[2]);
 
             if (!predictionTime.equals(currentTime)) {
                 currentTime = predictionTime;
@@ -93,7 +128,7 @@ public class ParkingForecastSwarmAgent extends ParkingSwarmAgent {
                 slots.add(currentSlot);
             }
 
-            currentSlot.put(prediction.get("id").asText(), prediction.get("events").asDouble());
+            currentSlot.put(sensorId, events);
         }
 
         return slots;
@@ -101,56 +136,91 @@ public class ParkingForecastSwarmAgent extends ParkingSwarmAgent {
 
     protected Map<String, Double> parseFirstSlotPredictions(String responseJson) throws Exception {
         JsonNode root = objectMapper.readTree(responseJson);
-        JsonNode forecast = root.get("forecast");
+        JsonNode outputPathNode = root.get("output_path");
 
-        if (forecast == null || !forecast.isArray()) {
-            throw new IllegalStateException("Invalid forecast response: missing forecast array");
+        if (outputPathNode == null) {
+            throw new IllegalStateException("Invalid forecast response: missing output_path");
+        }
+
+        Path outputPath = Path.of(outputPathNode.asText());
+        List<String> lines = Files.readAllLines(outputPath);
+
+        if (lines.size() < 2) {
+            throw new IllegalStateException("Forecast output is empty: " + outputPath);
         }
 
         Map<String, Double> predictedEvents = new HashMap<>();
+        String firstPredictionTime = null;
 
-        for (JsonNode prediction : forecast) {
-            String sensorId = prediction.get("id").asText();
-            double events = prediction.get("events").asDouble();
-            predictedEvents.putIfAbsent(sensorId, events);
+        for (int i = 1; i < lines.size(); i++) {
+            String[] cells = lines.get(i).split(",", -1);
+
+            if (cells.length < 4) {
+                throw new IllegalStateException("Invalid forecast CSV row: " + lines.get(i));
+            }
+
+            String predictionTime = cells[0];
+
+            if (firstPredictionTime == null) {
+                firstPredictionTime = predictionTime;
+            } else if (!predictionTime.equals(firstPredictionTime)) {
+                break;
+            }
+
+            String sensorId = cells[1];
+            double events = Double.parseDouble(cells[2]);
+            predictedEvents.put(sensorId, events);
         }
 
         return predictedEvents;
     }
 
-    protected String buildForecastRequest(long simulationTimeMs) {
+    protected String buildForecastRequest(long simulationTimeMs) throws Exception {
         long windowStartTimeMs = simulationTimeMs - (long) Config.PARKING_CONFIGURATION.get("forecastHistoryWindowMs");
         OffsetDateTime simulationStartTime = OffsetDateTime.parse((String) Config.PARKING_CONFIGURATION.get("traceStartTime"));
+        long windowStartEpochSecond = simulationStartTime.plus(Duration.ofMillis(windowStartTimeMs)).toEpochSecond();
 
-        ObjectNode root = objectMapper.createObjectNode();
-        ObjectNode state = root.putObject("state");
-        state.put("time", simulationStartTime.plus(Duration.ofMillis(windowStartTimeMs)).toString());
+        Path resultDirectory = Path.of(ScenarioBase.RESULT_DIRECTORY);
+        Files.createDirectories(resultDirectory);
 
-        ArrayNode stateSensors = state.putArray("sensors");
-        ArrayNode messages = root.putArray("messages");
+        Path statePath = Files.createTempFile(resultDirectory, "parking-forecast-state-", ".csv");
+        Path messagesPath = Files.createTempFile(resultDirectory, "parking-forecast-messages-", ".csv");
+        Path outputPath = Files.createTempFile(resultDirectory, "parking-forecast-output-", ".csv");
+
+        StringBuilder stateCsv = new StringBuilder("id,oc\n");
+        StringBuilder messagesCsv = new StringBuilder("id,ts,oc\n");
 
         for (Object component : observedAppComponents) {
             if (!(component instanceof ParkingSensor sensor)) {
                 continue;
             }
 
-            ObjectNode stateSensor = stateSensors.addObject();
-            stateSensor.put("id", sensor.id);
-            stateSensor.putNull("type");
-            stateSensor.putNull("latitude");
-            stateSensor.putNull("longitude");
-            stateSensor.put("oc", sensor.getOccupancyAt(windowStartTimeMs));
+            stateCsv.append(sensor.id)
+                    .append(",")
+                    .append(sensor.getOccupancyAt(windowStartTimeMs))
+                    .append("\n");
 
             for (ParkingSensor.ParkingObservation observation : sensor.getObservationsBetween(windowStartTimeMs, simulationTimeMs)) {
-                ObjectNode message = messages.addObject();
-                message.put("id", sensor.id);
-                message.putNull("type");
-                message.putNull("latitude");
-                message.putNull("longitude");
-                message.put("ts", simulationStartTime.plus(Duration.ofMillis(observation.simulationTimeMs())).toString());
-                message.put("oc", observation.occupied());
+                long observationEpochSecond = simulationStartTime.plus(Duration.ofMillis(observation.simulationTimeMs())).toEpochSecond();
+
+                messagesCsv.append(sensor.id)
+                        .append(",")
+                        .append(observationEpochSecond)
+                        .append(",")
+                        .append(observation.occupied())
+                        .append("\n");
             }
         }
+
+        Files.writeString(statePath, stateCsv.toString());
+        Files.writeString(messagesPath, messagesCsv.toString());
+
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("model", (String) Config.PARKING_CONFIGURATION.get("predictorModel"));
+        root.put("time", windowStartEpochSecond);
+        root.put("state_path", statePath.toAbsolutePath().normalize().toString());
+        root.put("messages_path", messagesPath.toAbsolutePath().normalize().toString());
+        root.put("output_path", outputPath.toAbsolutePath().normalize().toString());
 
         return root.toString();
     }

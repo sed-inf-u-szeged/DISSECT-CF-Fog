@@ -34,11 +34,15 @@ public class ForecasterManager {
     public static ForecasterManager getInstance() {
         return instance;
     }
-    
+
     public static ForecasterManager getInstance(String predictorScriptDir, int workerCount, int basePort, String modelPath) {
+        return getInstance(predictorScriptDir, workerCount, basePort, modelPath, null);
+    }
+
+    public static ForecasterManager getInstance(String predictorScriptDir, int workerCount, int basePort, String modelPath, String city) {
         if (instance == null) {
-            instance = new ForecasterManager(predictorScriptDir, workerCount, basePort, modelPath);
-        } 
+            instance = new ForecasterManager(predictorScriptDir, workerCount, basePort, modelPath, city);
+        }
         return instance;
     }
 
@@ -59,17 +63,17 @@ public class ForecasterManager {
     }
      */
 
-    private ForecasterManager(String predictorScriptDir, int workerCount, int basePort, String modelPath) {
+    private ForecasterManager(String predictorScriptDir, int workerCount, int basePort, String modelPath, String city) {
         ExecutorService executor = Executors.newFixedThreadPool(2); // threads for workers, used only the beginning to make the AI services startup faster
         List<Future<ForecasterWorker>> futures = new ArrayList<>();
-        
+
         for (int i = 0; i < workerCount; i++) {
             final int port = basePort + i;
             futures.add(executor.submit(() ->
-                    startWorker(predictorScriptDir, modelPath, port)
+                    startWorker(predictorScriptDir, modelPath, city, port)
             ));
         }
-        
+
         for (Future<ForecasterWorker> f : futures) {
             try {
                 ForecasterWorker w = f.get();
@@ -85,26 +89,38 @@ public class ForecasterManager {
                 throw new IllegalStateException("Failed to initialize forecaster worker", e.getCause());
             }
         }
+
         executor.shutdown();
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownAll));
     }
 
-    private ForecasterWorker startWorker(String predictorScriptDir, String modelPath, int port) {
+    private ForecasterWorker startWorker(String predictorScriptDir, String modelPath, String city, int port) {
         if (isPortReachable(port)) {
             throw new IllegalStateException("Forecaster port " + port + " is already in use");
         }
+
         Process process = null;
+
         try {
+            List<String> command = new ArrayList<>();
+            command.add("uv");
+            command.add("run");
+            command.add("forecaster_service.py");
+            command.add("--model_path");
+            command.add(modelPath);
+
+            if (city != null) {
+                command.add("--city");
+                command.add(city);
+            }
+
+            command.add("--port");
+            command.add(String.valueOf(port));
+
             ProcessBuilder pb = null;
-            if (SystemUtils.IS_OS_LINUX) {
-                pb = new ProcessBuilder(
-                        "uv", "run", "forecaster_service.py",
-                        "--model_path", modelPath,
-                        "--port", String.valueOf(port)
-                );
-                pb.directory(new File(predictorScriptDir));
-            } else if (SystemUtils.IS_OS_WINDOWS) {
-                pb = new ProcessBuilder("uv", "run", "forecaster_service.py", "--model_path", modelPath, "--port", String.valueOf(port));
+
+            if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_WINDOWS) {
+                pb = new ProcessBuilder(command);
                 pb.directory(new File(predictorScriptDir));
             } else {
                 SimLogger.logError("Unsupported OS: " + SystemUtils.OS_NAME);
@@ -119,6 +135,7 @@ public class ForecasterManager {
             Thread logger = new Thread(() -> {
                 try (BufferedReader r = new BufferedReader(new InputStreamReader(runningProcess.getInputStream()))) {
                     String line;
+
                     while ((line = r.readLine()) != null) {
                         if (line.contains("NNPACK.cpp") || line.contains("Use CPU")) {
                             continue;
@@ -138,6 +155,7 @@ public class ForecasterManager {
             logger.start();
 
             waitUntilReady(process, port, 120_000);
+
             return new ForecasterWorker(port, process);
         } catch (IOException | RuntimeException e) {
             stopProcess(process);

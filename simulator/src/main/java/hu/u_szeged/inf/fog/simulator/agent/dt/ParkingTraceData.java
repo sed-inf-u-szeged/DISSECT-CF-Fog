@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -68,7 +70,8 @@ public class ParkingTraceData {
                 }
                 String[] cells = line.split(",", -1);
                 String sensorId = cells[idIndex].trim();
-                OffsetDateTime timestamp = OffsetDateTime.parse(cells[timestampIndex].trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX"));
+                long epochSecond = Long.parseLong(cells[timestampIndex].trim());
+                OffsetDateTime timestamp = Instant.ofEpochSecond(epochSecond).atOffset(ZoneOffset.UTC);
                 boolean occupied = Boolean.parseBoolean(cells[occupancyIndex].trim());
                 if (!currentOccupancy.containsKey(sensorId)) {
                     throw new IllegalArgumentException("Sensor not found in initial state: " + sensorId);

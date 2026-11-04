@@ -21,8 +21,10 @@ public class ParkingForecast2hSwarmAgent extends ParkingForecastSwarmAgent {
     @Override
     protected void evaluateReconfiguration(long simulationTimeMs) {
         if (cachedForecastSlots == null || currentSlotIndex >= cachedForecastSlots.size()) {
+            String requestJson = null;
+
             try {
-                String requestJson = buildForecastRequest(simulationTimeMs);
+                requestJson = buildForecastRequest(simulationTimeMs);
                 String responseJson = ForecasterManager.getInstance().predict(requestJson);
                 cachedForecastSlots = parseAllSlotPredictions(responseJson);
                 currentSlotIndex = 0;
@@ -34,6 +36,8 @@ public class ParkingForecast2hSwarmAgent extends ParkingForecastSwarmAgent {
                 SimLogger.logRun("Parking 2h forecast received at " + simulationTimeMs / 60_000.0 + " min.");
             } catch (Exception e) {
                 throw new RuntimeException("Parking 2h forecast request failed", e);
+            } finally {
+                deleteForecastFiles(requestJson);
             }
         }
 

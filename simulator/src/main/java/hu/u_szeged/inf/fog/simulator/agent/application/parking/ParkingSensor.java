@@ -91,6 +91,8 @@ public class ParkingSensor extends Timed {
 
     public int modeSwitchCount = 0;
 
+    public final String startMode;
+
     private Deque<ParkingCsvData.ParkingEvent> parkingEvents;
 
     public ParkingSensor(String id, PlatformService platformService, Repository nbiotRepository, Repository bleRepository, int batteryLevel,
@@ -99,6 +101,7 @@ public class ParkingSensor extends Timed {
         this.nbiotRepository = nbiotRepository;
         this.bleRepository = bleRepository;
         this.mode = mode;
+        this.startMode = this.mode.toString();
         this.pendingMode = null;
         this.batteryLevel = batteryLevel;
         this.zone = zone;
@@ -122,6 +125,7 @@ public class ParkingSensor extends Timed {
         this.nbiotRepository = nbiotRepository;
         this.bleRepository = bleRepository;
         this.mode = mode;
+        this.startMode = this.mode.toString();
         this.batteryLevel = batteryLevel;
         this.zone = zone;
         this.platformService = platformService;

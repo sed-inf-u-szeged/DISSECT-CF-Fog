@@ -49,6 +49,10 @@ public class ParkingAppDemo {
 
         String workloadSource = Config.PARKING_CONFIGURATION.get("workloadSource").toString();
         ParkingTraceExporter traceExporter = null;
+
+        Object initialParkingModeConfig = Config.PARKING_CONFIGURATION.get("initialParkingMode");
+        ParkingSensor.ParkingMode initialParkingMode;
+
         if ("synthetic".equalsIgnoreCase(workloadSource)) {
             // parking sensors
             Config.ParkingScenario parkingScenario = (Config.ParkingScenario) Config.PARKING_CONFIGURATION.get("parkingScenario");
@@ -98,15 +102,19 @@ public class ParkingAppDemo {
 
                 ParkingSensor.ParkingZone zone = getZoneForSensor(i, sensorCount, parkingScenario);
 
+                if ("random".equals(initialParkingModeConfig)) {
+                    initialParkingMode = SeedSyncer.centralRnd.nextBoolean() ? ParkingSensor.ParkingMode.NBIOT_PUSH : ParkingSensor.ParkingMode.BLE_POLL;
+                } else {
+                    initialParkingMode = (ParkingSensor.ParkingMode) initialParkingModeConfig;
+                }
+
                 ParkingSensor parkingSensor = new ParkingSensor(
                         id,
                         platformService,
                         nbiotRepo,
                         bleRepo,
                         (int) Config.PARKING_CONFIGURATION.get("batteryCapacity"),
-                        (ParkingSensor.ParkingMode) Config.PARKING_CONFIGURATION.get(
-                                "initialParkingMode"
-                        ),
+                        initialParkingMode,
                         zone,
                         traceExporter
                 );
@@ -180,8 +188,6 @@ public class ParkingAppDemo {
                     nbiotRepo.setState(NetworkNode.State.RUNNING);
                     bleRepo.setState(NetworkNode.State.RUNNING);
 
-                    Object initialParkingModeConfig = Config.PARKING_CONFIGURATION.get("initialParkingMode");
-                    ParkingSensor.ParkingMode initialParkingMode;
                     if ("random".equals(initialParkingModeConfig)) {
                         initialParkingMode = SeedSyncer.centralRnd.nextBoolean() ? ParkingSensor.ParkingMode.NBIOT_PUSH : ParkingSensor.ParkingMode.BLE_POLL;
                     } else {
@@ -237,7 +243,12 @@ public class ParkingAppDemo {
 
         String orchestrationStrategy = (String) Config.PARKING_CONFIGURATION.get("orchestrationStrategy");
         if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
-            ForecasterManager.getInstance((String) Config.PARKING_CONFIGURATION.get("predictorDir"), 1, 1337, (String) Config.PARKING_CONFIGURATION.get("predictorModelPath"));
+            ForecasterManager.getInstance(
+                    (String) Config.PARKING_CONFIGURATION.get("predictorDir"),
+                    1, 1337,
+                    (String) Config.PARKING_CONFIGURATION.get("predictorModelPath"),
+                    (String) Config.PARKING_CONFIGURATION.get("predictorCity")
+            );
         }
 
         // swarm agent
@@ -293,7 +304,7 @@ public class ParkingAppDemo {
             SimLogger.logRes("Gateway ID: " + parkingGateway.id);
             for (ParkingSensor sensor : parkingGateway.observedSensors) {
                 SimLogger.logRes("\tSensor ID: " + sensor.id + ", Battery Level: " + sensor.batteryLevel + ", Event Count: " + sensor.eventCount +
-                        ", Mode Switch Count: " + sensor.modeSwitchCount + ", " + sensor.zone.toString());
+                        ", Mode Switch Count: " + sensor.modeSwitchCount + ", " + sensor.zone.toString() + ", Start Mode: " + sensor.startMode);
                 totalRemainingBattery += sensor.batteryLevel;
                 totalModeSwitchCount += sensor.modeSwitchCount;
             }
@@ -369,6 +380,8 @@ public class ParkingAppDemo {
         }
         if ("forecast".equals(orchestrationStrategy) || "forecast-2h".equals(orchestrationStrategy) || "forecast-lookahead".equals(orchestrationStrategy)) {
             SimLogger.logRes("\tForecast threshold factor: " + Config.PARKING_CONFIGURATION.get("forecastThresholdFactor"));
+            SimLogger.logRes("\tPredictor model: " + Config.PARKING_CONFIGURATION.get("predictorModel"));
+            SimLogger.logRes("\tPredictor dataset: " + Config.PARKING_CONFIGURATION.get("predictorCity"));
         }
         // savingPercent = (baselineConsumed - timeBasedConsumed) / baselineConsumed * 100
     }
