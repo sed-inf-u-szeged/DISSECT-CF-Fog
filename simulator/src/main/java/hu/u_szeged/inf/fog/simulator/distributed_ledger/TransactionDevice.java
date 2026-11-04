@@ -8,16 +8,13 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.NetworkNode;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionMessage;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.communication.TransactionPublishEvent;
-import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.find_node_strategy.FindNodeStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.StaticMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +31,11 @@ public class TransactionDevice extends Device {
     private final String name;
     private Miner connectedNode;
     public Set<TransactionMessage> pendingTransactions;
+
+    /**
+     * Controls automatic generation of synthetic transactions.
+     */
+    private boolean autoGenerateTransactions = true;
 
     /**
      * Constructs a TransactionDevice with the specified parameters.
@@ -65,6 +67,7 @@ public class TransactionDevice extends Device {
 
     /**
      * Sets the maximum number of retries for connecting to a node.
+     *
      * @param maxRetries the maximum number of retries
      */
     public void setMaxRetries(int maxRetries) {
@@ -73,6 +76,7 @@ public class TransactionDevice extends Device {
 
     /**
      * Returns the maximum number of retries for connecting to a node.
+     *
      * @return the maximum number of retries
      */
     public int getMaxRetries() {
@@ -88,6 +92,35 @@ public class TransactionDevice extends Device {
         return name;
     }
 
+
+    /**
+     * Enables or disables automatic synthetic transaction generation.
+     *
+     * @param enabled whether automatic generation is enabled
+     */
+    public void setAutoGenerateTransactions(boolean enabled) {
+        this.autoGenerateTransactions = enabled;
+    }
+
+    /**
+     * Queues an externally generated transaction for publication
+     * through the existing simulated network.
+     *
+     * @param transaction the transaction to publish
+     */
+    public void submitExternalTransaction(Transaction transaction) {
+        Objects.requireNonNull(transaction, "Transaction is required.");
+
+        TransactionMessage message = new TransactionMessage(transaction);
+
+        if (!this.localMachine.localDisk.registerObject(message)) {
+            throw new IllegalStateException(
+                    "Could not store transaction on the device: "
+                            + transaction.getId());
+        }
+    }
+
+
     /**
      * Generates transactions and publishes them at each tick.
      *
@@ -95,8 +128,9 @@ public class TransactionDevice extends Device {
      */
     @Override
     public void tick(long fires) {
-        if (Timed.getFireCount() < stopTime && Timed.getFireCount() >= startTime) {
-//            new Sensor(this, 1);
+        if (autoGenerateTransactions
+                && Timed.getFireCount() < stopTime
+                && Timed.getFireCount() >= startTime) {
             generateTransaction();
         }
 

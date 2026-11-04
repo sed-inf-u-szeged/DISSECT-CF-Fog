@@ -13,12 +13,13 @@ import java.util.Locale;
  * <p>
  * The scenario contains three trips, two of which complete
  * successfully, while one is interrupted after its first segment.
+ * It also verifies live conversion of trip events into transactions.
  */
 public class TripSimulatorSmokeTest {
 
     /**
-     * Creates the test trips, schedules an interruption
-     * and validates the simulation results.
+     * Creates the test trips, schedules an interruption,
+     * and validates the simulation and transaction results.
      *
      * @param args command-line arguments
      */
@@ -56,6 +57,19 @@ public class TripSimulatorSmokeTest {
 
         TripSimulator simulator = new TripSimulator(
                 List.of(trip1, trip2, trip3));
+
+        // Convert trip events into transactions when they occur.
+        TripEventTransactionMapper mapper =
+                new TripEventTransactionMapper();
+
+        simulator.setEventListener(event -> {
+            if (event.getTimestampMs() != Timed.getFireCount()) {
+                throw new AssertionError(
+                        "Transaction mapping must occur at the event timestamp.");
+            }
+
+            mapper.toTransaction(event);
+        });
 
         simulator.scheduleTrips();
 
@@ -121,6 +135,23 @@ public class TripSimulatorSmokeTest {
         System.out.println("Recorded trip events: " + events.size());
         System.out.println("PASS | Trip event recording successful");
 
+        // Verify that each event generated exactly one transaction.
+        if (mapper.getTransactionCount() != events.size()) {
+            throw new AssertionError(
+                    "The number of transactions does not match the event count.");
+        }
+
+        if (mapper.getTransactionCount() != 10) {
+            throw new AssertionError(
+                    "Expected 10 transactions, got "
+                            + mapper.getTransactionCount());
+        }
+
+        System.out.println("Generated blockchain transactions: "
+                + mapper.getTransactionCount());
+
+        System.out.println(
+                "PASS | Live trip event transaction generation successful");
         System.out.println("PASS | Trip simulation successful");
     }
 }

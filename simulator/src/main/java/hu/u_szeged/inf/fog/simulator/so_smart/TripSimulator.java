@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Simulates the execution of planned SO-SMART trips.
@@ -53,6 +54,11 @@ public class TripSimulator {
      * Stores all events generated during the simulation.
      */
     private final List<TripEvent> events = new ArrayList<>();
+
+    /**
+     * Optional listener notified when a trip event occurs.
+     */
+    private Consumer<TripEvent> eventListener;
 
     /**
      * Creates a simulator for the specified trip plans.
@@ -220,6 +226,16 @@ public class TripSimulator {
     }
 
     /**
+     * Registers a listener for trip events.
+     *
+     * @param listener listener to notify when an event occurs
+     */
+    public void setEventListener(Consumer<TripEvent> listener) {
+        this.eventListener = Objects.requireNonNull(
+                listener, "Event listener is required.");
+    }
+
+    /**
      * Records a trip event at the current simulation time.
      */
     private void recordEvent(
@@ -237,6 +253,10 @@ public class TripSimulator {
         );
 
         events.add(event);
+
+        if (eventListener != null) {
+            eventListener.accept(event);
+        }
     }
 
     /**
