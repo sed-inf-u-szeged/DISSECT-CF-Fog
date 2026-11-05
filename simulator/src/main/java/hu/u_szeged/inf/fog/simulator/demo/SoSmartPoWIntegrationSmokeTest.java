@@ -31,7 +31,7 @@ import java.util.*;
 public class SoSmartPoWIntegrationSmokeTest {
 
     public static void main(String[] args) throws Exception {
-        SimLogger.setLogging(1, true);
+        SimLogger.setLogging(2, false);
 
         // Create the PoW blockchain network.
         Map<String, Integer> sharedLatencyMap = new HashMap<>();

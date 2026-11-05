@@ -1,7 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.so_smart;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
-import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -96,8 +95,7 @@ public class TripFogMobilityManager {
                 MobileTraveler traveler = new MobileTraveler(trip);
                 travelers.put(trip.getId(), traveler);
 
-                SimLogger.logRun(Timed.getFireCount()
-                        + " ms | FOG_ASSIGNED " + trip.getId()
+                SimLogger.logRun("FOG_ASSIGNED " + trip.getId()
                         + " -> " + traveler.servingFog.name);
 
                 traveler.startMovement();
@@ -234,8 +232,7 @@ public class TripFogMobilityManager {
 
             handoverPending = true;
 
-            SimLogger.logRun(Timed.getFireCount()
-                    + " ms | HANDOVER_STARTED "
+            SimLogger.logRun("HANDOVER_STARTED "
                     + trip.getId()
                     + " | " + previousFog.name
                     + " -> " + targetFog.name);
@@ -254,8 +251,7 @@ public class TripFogMobilityManager {
                     handoverPending = false;
                     handoverEvent = null;
 
-                    SimLogger.logRun(Timed.getFireCount()
-                            + " ms | HANDOVER_COMPLETED "
+                    SimLogger.logRun("HANDOVER_COMPLETED "
                             + trip.getId()
                             + " | " + targetFog.name);
                 }

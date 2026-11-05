@@ -125,8 +125,7 @@ public class TripSimulator {
 
         recordEvent(TripEventType.TRIP_STARTED, progress, -1, null);
 
-        SimLogger.logRun(Timed.getFireCount()
-                + " ms | TRIP_STARTED " + progress.trip.getId());
+        SimLogger.logRun("TRIP_STARTED " + progress.trip.getId());
 
         scheduleNextSegment(progress);
     }
@@ -186,8 +185,7 @@ public class TripSimulator {
 
             recordEvent(TripEventType.TRIP_COMPLETED, progress, -1, null);
 
-            SimLogger.logRun(Timed.getFireCount()
-                    + " ms | TRIP_COMPLETED " + progress.trip.getId());
+            SimLogger.logRun("TRIP_COMPLETED " + progress.trip.getId());
         } else {
             scheduleNextSegment(progress);
         }
@@ -219,8 +217,7 @@ public class TripSimulator {
 
         recordEvent(TripEventType.TRIP_INTERRUPTED, progress, -1, null);
 
-        SimLogger.logRun(Timed.getFireCount()
-                + " ms | TRIP_INTERRUPTED " + tripId);
+        SimLogger.logRun("TRIP_INTERRUPTED " + tripId);
 
         return true;
     }
