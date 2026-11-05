@@ -2,6 +2,7 @@ package hu.u_szeged.inf.fog.simulator.so_smart;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -124,7 +125,7 @@ public class TripSimulator {
 
         recordEvent(TripEventType.TRIP_STARTED, progress, -1, null);
 
-        System.out.println(Timed.getFireCount()
+        SimLogger.logRun(Timed.getFireCount()
                 + " ms | TRIP_STARTED " + progress.trip.getId());
 
         scheduleNextSegment(progress);
@@ -172,13 +173,12 @@ public class TripSimulator {
 
         progress.completedSegmentCount++;
 
-        System.out.printf(Locale.US,
-                "%d ms | SEGMENT_COMPLETED %s | %s | %.2f km | %.2f HUF%n",
-                Timed.getFireCount(),
+        SimLogger.logRun(String.format(Locale.US,
+                "SEGMENT_COMPLETED %s | %s | %.2f km | %.2f HUF",
                 progress.trip.getId(),
                 segment.getOperator().getName(),
                 segment.getDistanceKm(),
-                segment.getCost());
+                segment.getCost()));
 
         if (progress.nextSegmentIndex == progress.trip.getSegments().size()) {
             progress.status = TripStatus.COMPLETED;
@@ -186,7 +186,7 @@ public class TripSimulator {
 
             recordEvent(TripEventType.TRIP_COMPLETED, progress, -1, null);
 
-            System.out.println(Timed.getFireCount()
+            SimLogger.logRun(Timed.getFireCount()
                     + " ms | TRIP_COMPLETED " + progress.trip.getId());
         } else {
             scheduleNextSegment(progress);
@@ -219,7 +219,7 @@ public class TripSimulator {
 
         recordEvent(TripEventType.TRIP_INTERRUPTED, progress, -1, null);
 
-        System.out.println(Timed.getFireCount()
+        SimLogger.logRun(Timed.getFireCount()
                 + " ms | TRIP_INTERRUPTED " + tripId);
 
         return true;

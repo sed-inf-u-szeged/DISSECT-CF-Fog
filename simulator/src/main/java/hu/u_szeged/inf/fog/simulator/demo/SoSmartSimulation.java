@@ -82,7 +82,7 @@ public final class SoSmartSimulation {
         }
 
         // Print results and warnings without detailed miner logs.
-        SimLogger.setLogging(2, false);
+        SimLogger.setLogging(1, true);
 
         ValidatorRegistry validatorRegistry =
                 consensusType.equals("POS")
@@ -145,6 +145,9 @@ public final class SoSmartSimulation {
                     fog,
                     new AlwaysAcceptValidation()
             );
+
+            // Keep miners active throughout the SO-SMART workload.
+            miner.setAutoShutdownOnIdle(false);
 
             if (validatorRegistry != null) {
                 validatorRegistry.register(miner, stakes[i]);
@@ -257,15 +260,15 @@ public final class SoSmartSimulation {
             device.submitExternalTransaction(transaction);
         });
 
-        System.out.println("\n=== SO-SMART CONFIGURATION ===");
-        System.out.println("Consensus: " + consensusType);
-        System.out.println("Mode: "
+        SimLogger.logRun("\n=== SO-SMART CONFIGURATION ===");
+        SimLogger.logRun("Consensus: " + consensusType);
+        SimLogger.logRun("Mode: "
                 + (smokeMode ? "SMOKE" : "GENERATED"));
-        System.out.println("Travelers: " + trips.size());
-        System.out.println("Seed: " + seed);
-        System.out.println("Fog nodes: " + fogNodes.size());
-        System.out.println("Expected events: " + expectedEvents);
-        System.out.println("Simulation end (ms): " + simulationEndMs);
+        SimLogger.logRun("Travelers: " + trips.size());
+        SimLogger.logRun("Seed: " + seed);
+        SimLogger.logRun("Fog nodes: " + fogNodes.size());
+        SimLogger.logRun("Expected events: " + expectedEvents);
+        SimLogger.logRun("Simulation end (ms): " + simulationEndMs);
 
         simulator.scheduleTrips();
 
@@ -295,31 +298,31 @@ public final class SoSmartSimulation {
                                                         .contains(tx))))
                 .count();
 
-        System.out.println("\n=== SO-SMART SIMULATION SUMMARY ===");
-        System.out.println("Consensus: " + consensusType);
-        System.out.println("Total trips: " + trips.size());
-        System.out.println("Transaction devices: " + devices.size());
-        System.out.println("Trip events: "
+        SimLogger.logRun("\n=== SO-SMART SIMULATION SUMMARY ===");
+        SimLogger.logRun("Consensus: " + consensusType);
+        SimLogger.logRun("Total trips: " + trips.size());
+        SimLogger.logRun("Transaction devices: " + devices.size());
+        SimLogger.logRun("Trip events: "
                 + simulator.getEvents().size());
-        System.out.println("Generated transactions: "
+        SimLogger.logRun("Generated transactions: "
                 + mapper.getTransactionCount());
-        System.out.println("Transactions received: "
+        SimLogger.logRun("Transactions received: "
                 + receivedTransactions);
-        System.out.println("Transactions included: "
+        SimLogger.logRun("Transactions included: "
                 + includedTransactions);
-        System.out.println("Completed trips: "
+        SimLogger.logRun("Completed trips: "
                 + simulator.getCompletedTrips());
-        System.out.println("Completed segments: "
+        SimLogger.logRun("Completed segments: "
                 + simulator.getCompletedSegments());
-        System.out.println("Completed handovers: "
+        SimLogger.logRun("Completed handovers: "
                 + mobility.getTotalHandovers());
-        System.out.println("Completed trip cost (HUF): "
+        SimLogger.logRun("Completed trip cost (HUF): "
                 + simulator.getCompletedCost());
 
         // Retain the exact routing checks of the old smoke tests.
         if (smokeMode) {
             for (Trip trip : trips) {
-                System.out.println(
+                SimLogger.logRun(
                         trip.getId() + " routing: "
                                 + routeNames(routes.get(trip.getId())));
             }
@@ -383,17 +386,17 @@ public final class SoSmartSimulation {
                         "Smoke test blockchain integration failed.");
             }
 
-            System.out.println(
+            SimLogger.logRun(
                     "PASS | SO-SMART " + consensusType
                             + " smoke test successful");
         } else if (receivedTransactions == expectedEvents
                 && includedTransactions == expectedEvents) {
 
-            System.out.println(
+            SimLogger.logRun(
                     "PASS | SO-SMART " + consensusType
                             + " workload fully included");
         } else {
-            System.out.println(
+            SimLogger.logRun(
                     "WARNING | Workload finished with "
                             + (expectedEvents - includedTransactions)
                             + " transactions not included "
@@ -523,7 +526,7 @@ public final class SoSmartSimulation {
             selectedRoute.add(miner.computingAppliance);
 
             if (verboseRouting) {
-                System.out.println(Timed.getFireCount()
+                SimLogger.logRun(Timed.getFireCount()
                         + " ms | " + trip.getId()
                         + " | TRANSACTION_ROUTED -> "
                         + miner.computingAppliance.name);

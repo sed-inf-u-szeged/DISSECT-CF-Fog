@@ -7,6 +7,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
+import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +96,7 @@ public class TripFogMobilityManager {
                 MobileTraveler traveler = new MobileTraveler(trip);
                 travelers.put(trip.getId(), traveler);
 
-                System.out.println(Timed.getFireCount()
+                SimLogger.logRun(Timed.getFireCount()
                         + " ms | FOG_ASSIGNED " + trip.getId()
                         + " -> " + traveler.servingFog.name);
 
@@ -233,7 +234,7 @@ public class TripFogMobilityManager {
 
             handoverPending = true;
 
-            System.out.println(Timed.getFireCount()
+            SimLogger.logRun(Timed.getFireCount()
                     + " ms | HANDOVER_STARTED "
                     + trip.getId()
                     + " | " + previousFog.name
@@ -253,7 +254,7 @@ public class TripFogMobilityManager {
                     handoverPending = false;
                     handoverEvent = null;
 
-                    System.out.println(Timed.getFireCount()
+                    SimLogger.logRun(Timed.getFireCount()
                             + " ms | HANDOVER_COMPLETED "
                             + trip.getId()
                             + " | " + targetFog.name);

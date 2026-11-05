@@ -58,6 +58,7 @@ public class Miner extends Timed {
     public final Deque<MinerTask> tasksQueue = new ArrayDeque<>();
     private long lastActionTime = 0L;
     private static final long MAX_IDLE_TICKS = 50_000L; //this could be also configurable
+    private boolean autoShutdownOnIdle = true;
 
     private Block nextBlock;
     private final LocalLedger localLedger;
@@ -266,8 +267,12 @@ public class Miner extends Timed {
             }
         }
 
-        if (state == MinerState.IDLE && tasksQueue.isEmpty() && nextBlock == null && mempool.isEmpty() && (Timed.getFireCount() - lastActionTime) > MAX_IDLE_TICKS) {
-            setState(MinerState.OFF);
+        if (autoShutdownOnIdle
+                && state == MinerState.IDLE
+                && tasksQueue.isEmpty()
+                && nextBlock == null
+                && mempool.isEmpty()
+                && (Timed.getFireCount() - lastActionTime) > MAX_IDLE_TICKS) {
             try {
                 SimLogger.logRun(this.name + " Idle for too long, shutting down");
                 stopVm();
@@ -468,6 +473,15 @@ public class Miner extends Timed {
     public void setState(MinerState newState) {
         SimLogger.logRun(name + " State changed: " + state + " -> " + newState);
         this.state = newState;
+    }
+
+    /**
+     * Enables or disables automatic miner shutdown after inactivity.
+     *
+     * @param enabled whether idle shutdown is enabled
+     */
+    public void setAutoShutdownOnIdle(boolean enabled) {
+        this.autoShutdownOnIdle = enabled;
     }
 
     /**
