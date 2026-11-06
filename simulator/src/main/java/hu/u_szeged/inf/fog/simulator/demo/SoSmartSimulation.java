@@ -25,14 +25,16 @@ import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.so_smart.*;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Configurable SO-SMART simulation supporting PoW and PoS.
  * <p>
- * Each traveler owns an independent transaction device and
- * publishes trip events through its currently assigned Fog node.
+ * Each traveler has an independent transaction device.
+ * Trip events are converted into transactions and routed
+ * through the serving Fog node at publication time.
  * <p>
  * Usage:
  * SoSmartSimulation PoW smoke
@@ -81,7 +83,7 @@ public final class SoSmartSimulation {
                     "Traveler count must be positive.");
         }
 
-        // Print results and warnings without detailed miner logs.
+        // Print results and warnings with detailed miner logs.
         SimLogger.setLogging(1, true);
 
         ValidatorRegistry validatorRegistry =
@@ -157,12 +159,9 @@ public final class SoSmartSimulation {
         // Connect all Fog nodes bidirectionally.
         for (int i = 0; i < fogNodes.size(); i++) {
             for (int j = i + 1; j < fogNodes.size(); j++) {
+                fogNodes.get(i).addNeighbor(fogNodes.get(j), FOG_LATENCY_MS);
 
-                fogNodes.get(i).addNeighbor(
-                        fogNodes.get(j), FOG_LATENCY_MS);
-
-                fogNodes.get(j).addNeighbor(
-                        fogNodes.get(i), FOG_LATENCY_MS);
+                fogNodes.get(j).addNeighbor(fogNodes.get(i), FOG_LATENCY_MS);
             }
         }
 
@@ -265,7 +264,7 @@ public final class SoSmartSimulation {
         SimLogger.logRun("Mode: "
                 + (smokeMode ? "SMOKE" : "GENERATED"));
         SimLogger.logRun("Travelers: " + trips.size());
-        SimLogger.logRun("Seed: " + seed);
+        SimLogger.logRun("Trip generation seed: " + seed);
         SimLogger.logRun("Fog nodes: " + fogNodes.size());
         SimLogger.logRun("Expected events: " + expectedEvents);
         SimLogger.logRun("Simulation end (ms): " + simulationEndMs);
@@ -281,6 +280,14 @@ public final class SoSmartSimulation {
         };
 
         Timed.simulateUntil(simulationEndMs + 1L);
+
+        // Generate the map after all trip and handover events have completed.
+        SoSmartTripMapVisualiser.generateMap(
+                trips,
+                fogNodes,
+                mobility.getCompletedHandovers(),
+                Paths.get(ScenarioBase.resultDirectory, "so_smart_map.html")
+        );
 
         long receivedTransactions = transactions.stream()
                 .filter(tx -> Miner.miners.values().stream()
@@ -526,8 +533,7 @@ public final class SoSmartSimulation {
             selectedRoute.add(miner.computingAppliance);
 
             if (verboseRouting) {
-                SimLogger.logRun(Timed.getFireCount()
-                        + " ms | " + trip.getId()
+                SimLogger.logRun(trip.getId()
                         + " | TRANSACTION_ROUTED -> "
                         + miner.computingAppliance.name);
             }

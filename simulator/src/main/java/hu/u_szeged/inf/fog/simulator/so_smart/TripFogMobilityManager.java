@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.so_smart;
 
 import hu.mta.sztaki.lpds.cloud.simulator.DeferredEvent;
+import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.u_szeged.inf.fog.simulator.iot.Device;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
@@ -8,10 +9,7 @@ import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Manages traveler mobility and logical handovers between Fog nodes.
@@ -25,6 +23,8 @@ public class TripFogMobilityManager {
 
     private final List<ComputingAppliance> fogNodes;
     private final long movementIntervalMs;
+
+    private final List<HandoverRecord> completedHandovers = new ArrayList<>();
 
     private int totalHandovers;
 
@@ -166,8 +166,8 @@ public class TripFogMobilityManager {
 
             this.servingFog = findNearestFog(geoLocation);
 
-            // Use the planned trip duration for uniform movement
-            // along a straight line between origin and destination.
+            // Model constant-speed movement over the entire trip.
+            // Individual segment durations do not affect movement speed.
             double distanceMeters =
                     origin.calculateDistance(trip.getDestination());
 
@@ -248,6 +248,14 @@ public class TripFogMobilityManager {
                     handovers++;
                     totalHandovers++;
 
+                    completedHandovers.add(new HandoverRecord(
+                            trip.getId(),
+                            previousFog.name,
+                            targetFog.name,
+                            Timed.getFireCount(),
+                            MobileTraveler.this.geoLocation
+                    ));
+
                     handoverPending = false;
                     handoverEvent = null;
 
@@ -325,5 +333,9 @@ public class TripFogMobilityManager {
      */
     public int getTotalHandovers() {
         return totalHandovers;
+    }
+
+    public List<HandoverRecord> getCompletedHandovers() {
+        return List.copyOf(completedHandovers);
     }
 }
