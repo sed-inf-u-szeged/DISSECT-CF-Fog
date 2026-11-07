@@ -25,6 +25,7 @@ import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.MobilityUiLauncher;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -312,11 +313,18 @@ public class MobilityPredictionSimulation {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 0 && args.length != 2) {
-            throw new IllegalArgumentException("Use no arguments, or <node-xml> <output-parent>");
+        boolean openUi = true;
+        ArrayList<String> positional = new ArrayList<>();
+        for (String arg : args) {
+            if ("--no-ui".equals(arg)) { openUi = false; }
+            else if (arg.startsWith("--")) { throw new IllegalArgumentException("Unknown option: " + arg); }
+            else { positional.add(arg); }
         }
-        Path xml = args.length == 2 ? Path.of(args[0]) : Path.of(ScenarioBase.resourcePath, "LPDS_original.xml");
-        Path parent = args.length == 2 ? Path.of(args[1]) : Path.of(ScenarioBase.resultDirectory);
+        if (positional.size() != 0 && positional.size() != 2) {
+            throw new IllegalArgumentException("Use [--no-ui] [<node-xml> <output-parent>]");
+        }
+        Path xml = positional.size() == 2 ? Path.of(positional.get(0)) : Path.of(ScenarioBase.resourcePath, "LPDS_original.xml");
+        Path parent = positional.size() == 2 ? Path.of(positional.get(1)) : Path.of(ScenarioBase.resultDirectory);
         if (!Files.isRegularFile(xml)) {
             throw new IllegalArgumentException("Missing node configuration: " + xml);
         }
@@ -395,5 +403,7 @@ public class MobilityPredictionSimulation {
             System.out.println("MOBILITY_SIMULATION_OK");
             System.out.println("Results: " + output);
         }
+        // All CSV writers are closed before the UI reads this exact run.
+        if (openUi) { MobilityUiLauncher.open(output); }
     }
 }

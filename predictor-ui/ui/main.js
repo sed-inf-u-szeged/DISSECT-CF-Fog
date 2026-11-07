@@ -9,7 +9,9 @@ const {
   readFileSync
 } = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const mobilityRunDirectory = process.env.DISSECT_MOBILITY_RUN_DIR?.trim();
+const sqlite3 = mobilityRunDirectory ? null : require('sqlite3').verbose();
+const { readMobilityRun } = require('./mobility-results');
 
 let win;
 let db = null;
@@ -47,6 +49,14 @@ const createWindow = () => {
 
   win.webContents.once('did-finish-load', () => {
     lastSentData = '';
+    if (mobilityRunDirectory) {
+      try {
+        win.webContents.send('mobility-updated', readMobilityRun(mobilityRunDirectory));
+      } catch (error) {
+        win.webContents.send('data-error', 'Mobility: ' + error.message);
+      }
+      return;
+    }
     fetchAndSendData();
     if (refreshTimer) {
       clearInterval(refreshTimer);

@@ -1,3 +1,4 @@
+import { MobilityViewComponent } from './components/mobility-view/mobility-view.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -25,6 +26,7 @@ import { RunSummaryComponent } from './components/run-summary/run-summary.compon
 @NgModule({
   declarations: [
     AppComponent,
+    MobilityViewComponent,
     ButtonFabComponent,
     ToolbarComponent,
     ScenarioComponent,

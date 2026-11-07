@@ -3,6 +3,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ElectronService } from 'src/app/services/electron/electron.service';
+import { MobilityRun } from 'src/app/shared/MobilityRun';
 import { Stopwatch } from 'src/app/shared/Stopwatch';
 import { PredictorModel } from '../../shared/PredictorModel';
 import { Parameter } from '../../shared/Parameter';
@@ -40,6 +41,9 @@ export class ScenarioComponent implements OnInit, OnDestroy {
   });
   stopWatch = new Stopwatch();
 
+  mobilityRun?: MobilityRun;
+  private mobilitySubscription?: Subscription;
+  private errorSubscription?: Subscription;
   statusText = '-';
   currentPredictionIndex = -1;
   predictionIndexMoved = false;
@@ -67,6 +71,15 @@ export class ScenarioComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.electron.hasApi()) {
+      this.mobilitySubscription = this.electron.mobilityUpdates$?.subscribe(run => {
+        this.mobilityRun = run;
+        this.statusText = 'Mobility run complete · shadow forecasts · ' + run.label;
+        this.changeDetectorRef.detectChanges();
+      });
+      this.errorSubscription = this.electron.errorUpdates$?.subscribe(error => {
+        this.statusText = error;
+        this.changeDetectorRef.detectChanges();
+      });
       this.dataSubscription = this.electron.dataUpdates$.subscribe(
         data => this.updatePredictions(data)
       );
@@ -75,6 +88,8 @@ export class ScenarioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.dataSubscription?.unsubscribe();
+    this.mobilitySubscription?.unsubscribe();
+    this.errorSubscription?.unsubscribe();
     if (this.statusTimer !== undefined) {
       clearTimeout(this.statusTimer);
     }

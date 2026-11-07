@@ -5,7 +5,8 @@
         </div>
     </app-toolbar>
 
-    <div class="page-content">
+    <app-mobility-view *ngIf="mobilityRun" [run]="mobilityRun"></app-mobility-view>
+    <div class="page-content" *ngIf="!mobilityRun">
         <div class="output" style="width: 100vw;">
             <app-toolbar class="border-bottom">
                 <div start
