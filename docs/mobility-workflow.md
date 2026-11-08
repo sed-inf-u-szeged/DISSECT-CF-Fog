@@ -3,8 +3,8 @@
 Status as of 2026-11-08: the pilot workflow has completed data generation,
 offline learning, held-out testing, simulator-connected frozen inference, and
 evaluation when the target observation arrives. Repository closeout is pending.
-This document is the consolidated description; the earlier step HTML files are
-historical installation and experiment notes.
+This document is the consolidated workflow description. Earlier experiment notes are
+archived separately outside the repository.
 
 ## Scope and progress
 
@@ -17,7 +17,7 @@ historical installation and experiment notes.
 | Independent test evaluation | Complete | Frozen model and preprocessing; 672 windows from six cases / two routes |
 | Simulator-connected shadow inference | Complete | 121 observations; 112 prediction origins; three methods |
 | Target-time evaluation and audit | Complete | 336 evaluation rows; zero pending forecasts; ordering, error and accounting checks passed |
-| Consolidated documentation | Supplied | This document and the Chinese reading version |
+| Consolidated documentation | Supplied | This English workflow document |
 | Final repository checks, commit and push | Pending | Must be confirmed on the Windows working tree |
 
 No additional research feature is required to close this week's workflow scope.

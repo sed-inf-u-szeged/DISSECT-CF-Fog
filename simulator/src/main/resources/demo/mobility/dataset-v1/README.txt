@@ -4,7 +4,7 @@ Status: CONFIGURATION ONLY. No simulation data or trained model is included.
 12 routes, 36 cases; train=24, validation=6, test=6.
 Speeds: 2.0, 4.1, 6.0 m/s. Seed=42.
 
-Read docs/mobility-dataset-v1-zh.html for the Chinese plan and progress table.
+Read docs/mobility-workflow.md for the dataset protocol and workflow.
 The checker uses only the Python standard library (Python >=3.8).
 Run from the project root:
 python predictor-ui/scripts/mobility/check_dataset_plan.py
