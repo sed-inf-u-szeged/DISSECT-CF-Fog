@@ -18,6 +18,9 @@ public class LifecycleCoordinator {
     private final String featureName;
     private final LifecyclePolicy policy;
     private final ShadowEvaluator evaluator;
+    private final LifecycleAssessmentSource assessmentSource;
+    private LifecycleAssessment latestAssessment;
+    private boolean domainPolicySatisfied;
 
     // Keep the first registered forecast for each target in both phases.
     private final Set<Integer> evaluationTargets = new HashSet<>();
@@ -32,6 +35,16 @@ public class LifecycleCoordinator {
 
     public LifecycleCoordinator(String predictorName, String featureName,
             LifecyclePolicy policy) {
+        this(predictorName, featureName, policy, null);
+    }
+
+    /**
+     * Reuses lifecycle transitions with a domain-specific evaluator. The source owns
+     * its target matching; this coordinator still enforces the minimum sample count.
+     * Domain adapters must explicitly ask LifecycleManager to promote or fall back.
+     */
+    public LifecycleCoordinator(String predictorName, String featureName,
+            LifecyclePolicy policy, LifecycleAssessmentSource assessmentSource) {
         if (predictorName == null || predictorName.isBlank()) {
             throw new IllegalArgumentException("Predictor name must not be blank.");
         }
@@ -44,11 +57,21 @@ public class LifecycleCoordinator {
         this.predictorName = predictorName;
         this.featureName = featureName;
         this.policy = policy;
+        this.assessmentSource = assessmentSource;
+        if (assessmentSource != null) {
+            if (policy.getMinimumMatchedSamples() < 1) {
+                throw new IllegalArgumentException("Domain evaluation requires a positive sample count.");
+            }
+            automaticPromotionAllowed = false;
+        }
         evaluator = new ShadowEvaluator();
         state = LifecycleState.COLLECTING_DATA;
     }
 
     public void setAutomaticPromotionAllowed(boolean allowed) {
+        if (assessmentSource != null && allowed) {
+            throw new IllegalStateException("Domain evaluation requires explicit promotion ownership.");
+        }
         automaticPromotionAllowed = allowed;
     }
 
@@ -84,6 +107,9 @@ public class LifecycleCoordinator {
                     "Cannot start retraining while lifecycle state is " + state + ".");
         }
         evaluator.clear();
+        if (assessmentSource != null) { assessmentSource.clear(); }
+        latestAssessment = null;
+        domainPolicySatisfied = false;
         evaluationTargets.clear();
         pendingShadowTargets.clear();
         latestMetrics = null;
@@ -102,6 +128,7 @@ public class LifecycleCoordinator {
     }
 
     public void registerPrediction(ShadowPrediction prediction) {
+        requireScalarEvaluation();
         requireEvaluationState("register a shadow prediction");
         if (prediction == null) {
             throw new IllegalArgumentException("Prediction must not be null.");
@@ -126,6 +153,7 @@ public class LifecycleCoordinator {
     }
 
     public int resolveActualValue(int targetTimestamp, double actualValue) {
+        requireScalarEvaluation();
         requireEvaluationState("resolve an actual value");
         int resolved = evaluator.resolveActualValue(
                 featureName, targetTimestamp, actualValue);
@@ -142,11 +170,21 @@ public class LifecycleCoordinator {
     public EvaluationMetrics evaluate() {
         requireEvaluationState("evaluate the predictor");
         LifecycleState previousState = state;
-        latestMetrics = evaluator.calculateMetrics(predictorName, featureName,
-                policy.getAccuracyTolerance(), policy.getAbsoluteTolerance(),
-                policy.getMinimumMatchedSamples());
+        if (assessmentSource == null) {
+            latestMetrics = evaluator.calculateMetrics(predictorName, featureName,
+                    policy.getAccuracyTolerance(), policy.getAbsoluteTolerance(),
+                    policy.getMinimumMatchedSamples());
+        } else {
+            LifecycleAssessment assessment = assessmentSource.assess();
+            if (assessment == null) {
+                throw new IllegalStateException("Domain evaluator returned no assessment.");
+            }
+            latestAssessment = assessment;
+            latestMetrics = assessment.getMetrics();
+            domainPolicySatisfied = hasCompleteEvaluationWindow() && assessment.isSatisfied();
+        }
 
-        boolean policySatisfied = policy.isSatisfiedBy(latestMetrics);
+        boolean policySatisfied = isPolicySatisfied();
         if (state == LifecycleState.EVALUATING && policySatisfied) {
             state = LifecycleState.READY;
         } else if ((state == LifecycleState.ACTIVE
@@ -177,7 +215,7 @@ public class LifecycleCoordinator {
     }
 
     public boolean isPolicySatisfied() {
-        return policy.isSatisfiedBy(latestMetrics);
+        return assessmentSource == null ? policy.isSatisfiedBy(latestMetrics) : domainPolicySatisfied;
     }
 
     public void activate() {
@@ -222,6 +260,16 @@ public class LifecycleCoordinator {
                 + "; absoluteTolerance=" + policy.getAbsoluteTolerance()
                 + "; reason=" + evaluationReason();
 
+        if (latestAssessment != null) {
+            entry = "time=" + Timed.getFireCount() + "; event=" + event
+                    + "; predictor=" + predictorName + "; feature=" + featureName
+                    + "; state=" + previousState + "->" + state
+                    + "; matched=" + latestMetrics.getMatchedSamples()
+                    + "; required=" + policy.getMinimumMatchedSamples()
+                    + "; domain=" + latestAssessment.getDomain()
+                    + "; MAE=" + latestMetrics.getMae() + "; RMSE=" + latestMetrics.getRmse()
+                    + "; reason=" + latestAssessment.getReason();
+        }
         PredictionLogger.info("Lifecycle evaluation", entry);
         if (ScenarioBase.resultDirectory != null) {
             SimLogger.logRun("Lifecycle evaluation " + entry);
@@ -251,6 +299,12 @@ public class LifecycleCoordinator {
         return reasons.isEmpty()
                 ? "all configured thresholds satisfied"
                 : String.join(", ", reasons);
+    }
+
+    private void requireScalarEvaluation() {
+        if (assessmentSource != null) {
+            throw new IllegalStateException("Submit domain observations through the assessment source.");
+        }
     }
 
     private void requireState(LifecycleState expectedState, String operation) {

@@ -94,9 +94,10 @@ def audit_batch(batch):
     return state, plan, sources
 
 
-def windows_for_run(run, samples, reference):
+def windows_for_run(run, samples, reference, *, expected_observations=121):
     """No input access after origin. Labels are constructed separately."""
-    require(len(samples) == 121, 'Pilot requires 121 samples')
+    require(type(expected_observations) is int and 11 <= expected_observations <= 1441
+            and len(samples) == expected_observations, 'Configured observation count differs')
     for i, row in enumerate(samples):
         require(row['run_id'] == run['run_id'] and row['device_id'] == '0', 'Mixed run/device')
         require(i == 0 or int(row['time_ms']) - int(samples[i-1]['time_ms']) == STEP, 'Sampling gap')

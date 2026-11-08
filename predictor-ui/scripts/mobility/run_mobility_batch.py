@@ -21,7 +21,10 @@ BASE = "simulator/src/main/java/hu/u_szeged/inf/fog/simulator/"
 SOURCES = [BASE + name + ".java" for name in (
     "demo/simple/MobilityPredictionSimulation", "demo/simple/MobilityScenarioConfig",
     "iot/mobility/MobilitySampleRecorder", "application/MobilityTaskMetrics",
-    "iot/MobilityDeviceMetrics", "prediction/communication/launchers/MobilityUiLauncher")]
+    "iot/MobilityDeviceMetrics", "prediction/communication/launchers/MobilityUiLauncher",
+    "prediction/lifecycle/LifecycleAssessment", "prediction/lifecycle/LifecycleAssessmentSource",
+    "prediction/lifecycle/LifecycleCoordinator", "prediction/lifecycle/LifecycleManager",
+    "prediction/mobility/MobilityLifecycleAdapter", "prediction/OnlineTrainingSchedule")]
 PLAN = "simulator/src/main/resources/demo/mobility/dataset-v1/dataset-plan.json"
 JAR = "simulator/target/dissect-cf-fog-1.0.0-SNAPSHOT-jar-with-dependencies.jar"
 XML = "simulator/src/main/resources/demo/LPDS_original.xml"

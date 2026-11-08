@@ -21,7 +21,7 @@ class MobilityScenarioConfigTest {
         MobilityScenarioConfig config = MobilityScenarioConfig.defaults();
         assertEquals(42, config.seed());
         assertEquals(4.1, config.speedMetersPerSecond());
-        NomadicMobilityStrategy movement = config.movement(14_400_000);
+        NomadicMobilityStrategy movement = (NomadicMobilityStrategy) config.movement(14_400_000);
         assertEquals(0.0041, movement.speed);
         assertEquals(128, movement.destinations.size());
         GeoLocation first = movement.destinations.peek();
@@ -55,18 +55,18 @@ class MobilityScenarioConfigTest {
 
     @Test void waypointsAndRunsDoNotShareMutableLocations() {
         MobilityScenarioConfig config = MobilityScenarioConfig.defaults();
-        NomadicMobilityStrategy first = config.movement(14_400_000);
+        NomadicMobilityStrategy first = (NomadicMobilityStrategy) config.movement(14_400_000);
         GeoLocation[] points = first.destinations.toArray(new GeoLocation[0]);
         double original = points[4].latitude;
         points[0].latitude = -80;
         assertEquals(original, points[4].latitude);
-        assertEquals(original, config.movement(14_400_000).destinations.peek().latitude);
+        assertEquals(original, ((NomadicMobilityStrategy) config.movement(14_400_000)).destinations.peek().latitude);
         assertNotSame(first.currentPosition, config.start());
     }
 
     @Test void shortFastRoutesHaveEnoughWaypointsForWholeRun() throws Exception {
         MobilityScenarioConfig config = read("speed_m_s=50\nwaypoints_m=0,0;60,0;0,0\n");
-        NomadicMobilityStrategy movement = config.movement(14_400_000);
+        NomadicMobilityStrategy movement = (NomadicMobilityStrategy) config.movement(14_400_000);
         double length = 0;
         GeoLocation previous = config.start();
         for (GeoLocation next : movement.destinations) { length += previous.calculateDistance(next); previous = next; }

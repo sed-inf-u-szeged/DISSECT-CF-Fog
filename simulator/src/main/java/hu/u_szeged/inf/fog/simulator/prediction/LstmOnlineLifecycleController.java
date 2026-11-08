@@ -285,23 +285,18 @@ public class LstmOnlineLifecycleController {
 
     private boolean needsTraining(Feature feature) {
         String name = feature.getName();
-        if (hasUsableModel(name) || hasPendingEvaluation(name)
-                || (versionNumber != 0 && !retryFeatures.contains(name))) {
-            return false;
-        }
-        int previous = Math.max(lastAttemptSizes.getOrDefault(name, -1),
-                lastEvaluationSizes.getOrDefault(name, -1));
-        return previous < 0 || (long) feature.getValues().size() - previous
-                >= onlineSettings.getMinimumNewDataPoints();
+        return OnlineTrainingSchedule.needsTraining(feature.getValues().size(),
+                lastAttemptSizes.getOrDefault(name, -1), lastEvaluationSizes.getOrDefault(name, -1),
+                versionNumber != 0, retryFeatures.contains(name), hasUsableModel(name),
+                hasPendingEvaluation(name), onlineSettings);
     }
 
     private List<Feature> getReadyTrainingFeatures() {
         List<Feature> result = new ArrayList<>();
         for (Feature feature : FeatureManager.getInstance().getFeatures()) {
             int size = feature.getValues().size();
-            Integer previous = lastAttemptSizes.get(feature.getName());
-            if (previous != null && (long) size - previous
-                    < onlineSettings.getMinimumNewDataPoints()) {
+            int previous = lastAttemptSizes.getOrDefault(feature.getName(), -1);
+            if (!OnlineTrainingSchedule.hasNewData(size, previous, onlineSettings)) {
                 continue;
             }
             if (hasFiniteWindow(feature, trainingWindowPoints)) {
@@ -451,9 +446,7 @@ public class LstmOnlineLifecycleController {
 
     private void growWindow(ModelVersion version) {
         if (!version.windowGrown) {
-            trainingWindowPoints = (int) Math.min(
-                    onlineSettings.getMaximumWindowPoints(),
-                    (long) trainingWindowPoints + onlineSettings.getWindowGrowthPoints());
+            trainingWindowPoints = OnlineTrainingSchedule.afterRejection(trainingWindowPoints, onlineSettings);
             version.windowGrown = true;
             logLifecycle("Next training window=" + trainingWindowPoints);
         }

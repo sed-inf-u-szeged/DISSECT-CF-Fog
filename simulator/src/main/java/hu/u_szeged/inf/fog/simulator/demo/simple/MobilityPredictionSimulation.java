@@ -21,12 +21,14 @@ import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilitySampleRecorder;
-import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.MobilityUiLauncher;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
+import hu.u_szeged.inf.fog.simulator.prediction.mobility.MobilityLifecycleAdapter;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -41,8 +43,6 @@ import java.util.Map;
 public class MobilityPredictionSimulation {
     private static final long STEP = 60_000;
     private static final long START = 2 * STEP;
-    private static final long STOP = START + 120 * STEP;
-    private static final long LIMIT = 240 * STEP;
 
     /** Retain a ready connection; wake a covered application if all covered brokers are stopped. */
     static final class StableConnection extends DeviceStrategy implements VirtualMachine.StateChange {
@@ -223,7 +223,7 @@ public class MobilityPredictionSimulation {
         }
     }
 
-    /** Synchronous shadow worker: wall-clock inference never advances simulated time. */
+    /** Synchronous shadow worker: wall-clock computation never advances simulated time. */
     private static final class ShadowBridge implements AutoCloseable {
         private final Process process;
         private final java.io.BufferedReader replies;
@@ -232,8 +232,19 @@ public class MobilityPredictionSimulation {
         private long predictions;
         private long observations;
         private final BufferedWriter receipts;
+        private final int replyTimeoutSeconds;
+        private final int expectedObservations;
+        private MobilityLifecycleAdapter lifecycle;
+        private final String runId;
 
-        private ShadowBridge(String python, String script, String model, Path output) throws Exception {
+        private ShadowBridge(String python, String script, String model, Path output, int expectedObservations) throws Exception {
+            this.expectedObservations = expectedObservations;
+            runId = output.getFileName().toString();
+            String timeout = System.getenv("MOBILITY_SHADOW_REPLY_TIMEOUT_SECONDS");
+            replyTimeoutSeconds = timeout == null ? 30 : Integer.parseInt(timeout);
+            if (replyTimeoutSeconds < 1 || replyTimeoutSeconds > 300) {
+                throw new IllegalArgumentException("Shadow reply timeout must be between 1 and 300 seconds");
+            }
             process = new ProcessBuilder(python, "-u", script, "--training", model,
                     "--output", output.toString()).redirectError(output.resolve("shadow-worker.log").toFile()).start();
             replies = new java.io.BufferedReader(new java.io.InputStreamReader(
@@ -248,7 +259,14 @@ public class MobilityPredictionSimulation {
                 opened = Files.newBufferedWriter(output.resolve("shadow_receipts.csv"),
                         java.nio.file.StandardOpenOption.CREATE_NEW);
                 opened.write("origin_ms,target_ms,received_at_sim_ms,predicted_latitude,predicted_longitude\n");
-                if (!"READY".equals(receive(120))) { throw new IOException("Shadow worker did not become ready"); }
+                String ready = receive(120);
+                if (("READY\t" + MobilityLifecycleAdapter.PROTOCOL).equals(ready)
+                        || ("READY\t" + MobilityLifecycleAdapter.CLOSED_LOOP_PROTOCOL).equals(ready)) {
+                    lifecycle = new MobilityLifecycleAdapter(LifecycleManager.getInstance(), output, runId, "0", expectedObservations,
+                            ready.endsWith(MobilityLifecycleAdapter.CLOSED_LOOP_PROTOCOL));
+                } else if (!"READY".equals(ready)) {
+                    throw new IOException("Shadow worker did not become ready");
+                }
             } catch (Exception error) {
                 if (opened != null) { opened.close(); }
                 process.destroyForcibly(); reader.shutdownNow(); throw error;
@@ -256,7 +274,7 @@ public class MobilityPredictionSimulation {
             receipts = opened;
         }
 
-        static ShadowBridge open(Path output) throws Exception {
+        static ShadowBridge open(Path output, int expectedObservations) throws Exception {
             String python = System.getenv("MOBILITY_SHADOW_PYTHON");
             String script = System.getenv("MOBILITY_SHADOW_SCRIPT");
             String model = System.getenv("MOBILITY_SHADOW_MODEL");
@@ -264,7 +282,7 @@ public class MobilityPredictionSimulation {
             if (python == null || script == null || model == null) {
                 throw new IllegalArgumentException("All three MOBILITY_SHADOW settings are required");
             }
-            return new ShadowBridge(python, script, model, output);
+            return new ShadowBridge(python, script, model, output, expectedObservations);
         }
 
         private String receive(int seconds) throws Exception {
@@ -278,11 +296,28 @@ public class MobilityPredictionSimulation {
             }
         }
 
-        void observe(String sample, long now, boolean forecastAllowed) throws IOException {
+        void observe(String sample, long now, boolean forecastAllowed, GeoLocation actual) throws IOException {
             try {
-                requests.write("OBS\t" + forecastAllowed + "\t" + sample); requests.newLine(); requests.flush();
-                String response = receive(30); observations++;
-                if (response.equals("WAIT\t" + now)) { return; }
+                if (lifecycle != null) {
+                    lifecycle.observe(runId, "0", now, actual.latitude, actual.longitude, forecastAllowed);
+                }
+                requests.write("OBS\t" + forecastAllowed + "\t" + sample); requests.newLine();
+                if (lifecycle != null && lifecycle.isClosedLoop()) {
+                    requests.write("CONTROL\t" + lifecycle.control()); requests.newLine();
+                }
+                requests.flush();
+                String response = receive(replyTimeoutSeconds);
+                int frames = 0;
+                while (lifecycle != null && response.startsWith("LIFECYCLE\t")) {
+                    if (++frames > 3) { throw new IOException("Too many lifecycle frames per observation"); }
+                    lifecycle.accept(response.substring("LIFECYCLE\t".length()));
+                    response = receive(replyTimeoutSeconds);
+                }
+                observations++;
+                if (response.equals("WAIT\t" + now)) {
+                    if (lifecycle != null) { lifecycle.endObservation(); }
+                    return;
+                }
                 String[] fields = response.split("\t");
                 if (fields.length != 5 || !fields[0].equals("PRED") || Long.parseLong(fields[1]) != now
                         || Long.parseLong(fields[2]) != now + STEP || !forecastAllowed) {
@@ -295,27 +330,34 @@ public class MobilityPredictionSimulation {
                 }
                 receipts.write(now + "," + (now + STEP) + "," + Timed.getFireCount() + ","
                         + latitude + "," + longitude); receipts.newLine(); receipts.flush(); predictions++;
-            } catch (Exception error) { throw new IOException("Shadow inference failed; retain run logs", error); }
+                if (lifecycle != null) { lifecycle.endObservation(); }
+            } catch (Exception error) {
+                if (lifecycle != null) { lifecycle.fail(error.toString()); }
+                throw new IOException("Shadow inference failed; retain run logs", error);
+            }
         }
 
         void finish() throws Exception {
             requests.write("END"); requests.newLine(); requests.flush();
             String result = receive(30);
             if (!result.equals("DONE\t" + observations + "\t" + predictions)
-                    || observations != 121 || predictions != 112) {
+                    || observations != expectedObservations || predictions != expectedObservations - 9) {
                 throw new IOException("Incomplete shadow prediction stream: " + result);
             }
             requests.close();
             if (!process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS) || process.exitValue() != 0) {
                 throw new IOException("Shadow worker did not exit successfully");
             }
+            if (lifecycle != null) { lifecycle.finish(); }
             System.out.println("MOBILITY_SHADOW_INFERENCE_OK observations=" + observations + " predictions=" + predictions);
         }
 
         @Override
         public void close() throws IOException {
             if (process.isAlive()) { process.destroyForcibly(); }
-            reader.shutdownNow(); requests.close(); replies.close(); receipts.close();
+            reader.shutdownNow();
+            try { if (lifecycle != null) { lifecycle.close(); } }
+            finally { requests.close(); replies.close(); receipts.close(); }
         }
     }
 
@@ -337,10 +379,10 @@ public class MobilityPredictionSimulation {
         private long observationCount;
         private String previousObservedNode = "NONE";
 
-        ObservedDevice(NomadicMobilityStrategy movement, PhysicalMachine machine,
+        ObservedDevice(MobilityStrategy movement, PhysicalMachine machine, long stop,
                 BufferedWriter observations, BufferedWriter predictions,
                 BufferedWriter evaluations, BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, ShadowBridge shadow) {
-            super(START, STOP, 100, STEP, movement, new StableConnection(), machine, 50, false);
+            super(START, stop, 100, STEP, movement, new StableConnection(), machine, 50, false);
             this.observations = observations;
             this.samples = samples;
             this.shadow = shadow;
@@ -359,11 +401,11 @@ public class MobilityPredictionSimulation {
             GeoLocation current = copy(geoLocation);
             String currentNode = nodeName(application);
             try {
-                // Keep a fixed 120-minute observation span, including its two endpoints.
+                // Keep the configured observation span, including its two endpoints.
                 // Later movement used to drain buffered uploads remains in observations.csv.
                 if (now <= stopTime + STEP) {
                     String sample = samples.recordAndGet("0", now, current.latitude, current.longitude, currentNode);
-                    if (shadow != null) { shadow.observe(sample, now, now < stopTime + STEP); }
+                    if (shadow != null) { shadow.observe(sample, now, now < stopTime + STEP, current); }
                 }
             } catch (IOException error) {
                 throw new UncheckedIOException(error);
@@ -477,7 +519,7 @@ public class MobilityPredictionSimulation {
         VirtualAppliance va = new VirtualAppliance("mobility-va", 100, 0, false, 1_073_741_824L);
         AlterableResourceConstraints resources = new AlterableResourceConstraints(2, 0.001, 4_294_967_296L);
         Instance instance = new Instance("mobility-instance", va, resources, 0.0255 / 3_600_000);
-        try (ShadowBridge shadow = ShadowBridge.open(output);
+        try (ShadowBridge shadow = ShadowBridge.open(output, config.observationCount());
              BufferedWriter observations = Files.newBufferedWriter(output.resolve("observations.csv"));
              BufferedWriter predictions = Files.newBufferedWriter(output.resolve("predictions.csv"));
              BufferedWriter evaluations = Files.newBufferedWriter(output.resolve("evaluations.csv"));
@@ -501,9 +543,9 @@ public class MobilityPredictionSimulation {
                     + "assigned_to_compute_bytes,waiting_assignment_bytes,running_tasks,completed_tasks,"
                     + "incoming_offload_transfers,connected_devices,device_generated_bytes,"
                     + "device_upload_completed_bytes_total,offload_in_flight_bytes_total,offload_event_sequence");
-            ObservedDevice device = new ObservedDevice(config.movement(LIMIT), deviceMachine(),
+            ObservedDevice device = new ObservedDevice(config.movement(config.simulationLimitMillis()), deviceMachine(), START + config.durationMillis(),
                     observations, predictions, evaluations, loads, ledger, samples, shadow);
-            Timed.simulateUntil(LIMIT);
+            Timed.simulateUntil(config.simulationLimitMillis());
             if (Timed.getNextFire() != -1 || device.isSubscribed() || device.pending != null
                     || device.issued != device.matched) {
                 throw new IllegalStateException("Incomplete simulation or unmatched forecasts. Results: " + output);
@@ -529,12 +571,11 @@ public class MobilityPredictionSimulation {
                     + "\n" + device.velocityCounts.row("ConstantVelocity") + "\n";
             Files.writeString(output.resolve("coverage_summary.csv"), summary);
             String run = "schema_version=2\nseed=" + config.seed() + "\ninterval_ms=" + STEP
-                    + "\nspeed_m_s=" + config.speedMetersPerSecond() + "\nnode_radius_m=1000\n"
+                    + "\nnode_radius_m=1000\n"
                     + "route_width_m=" + config.widthMeters() + "\nroute_height_m=" + config.heightMeters()
                     + "\nscenario_name=" + config.name()
-                    + "\nscenario_config_file=scenario-effective.properties\nroute_file=route_waypoints.csv"
-                    + "\nroute_strategy=NomadicMobilityStrategy\nroute_repeats=true"
-                    + "\nnode_separation_m=1600\nnominal_generation_duration_ms=7200000"
+                    + "\nscenario_config_file=scenario-effective.properties" + config.metadata()
+                    + "\nnode_separation_m=1600\nnominal_generation_duration_ms=" + config.durationMillis()
                     + "\nissued=" + device.issued
                     + "\nmatched=" + device.matched + "\nnode_changes=" + MobilityEvent.changeNodeEventCounter
                     + "\nconnects=" + MobilityEvent.connectToNodeEventCounter
@@ -549,7 +590,7 @@ public class MobilityPredictionSimulation {
                     + ((StableConnection) device.deviceStrategy).wakeRequests
                     + "\nobservation_rows=" + device.observationCount
                     + "\ndrain_observation_rows=" + (device.observationCount - samples.getSampleCount())
-                    + "\nsample_window_policy=fixed_121_observations"
+                    + "\nsample_window_policy=fixed_" + config.observationCount() + "_observations"
                     + "\nsample_window_start_ms=" + (device.startTime + STEP)
                     + "\nsample_window_end_ms=" + (device.stopTime + STEP)
                     + "\nsample_schema_version=1\nsample_file=mobility_samples.csv\nsample_rows=" + samples.getSampleCount()
