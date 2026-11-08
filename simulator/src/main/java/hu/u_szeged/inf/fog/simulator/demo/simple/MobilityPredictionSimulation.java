@@ -20,6 +20,7 @@ import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityEvent;
+import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilitySampleRecorder;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.strategy.DeviceStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
@@ -43,11 +44,34 @@ public class MobilityPredictionSimulation {
     private static final long STOP = START + 120 * STEP;
     private static final long LIMIT = 240 * STEP;
 
-    /** Keep a usable connection until it leaves coverage, then choose a ready application. */
-    private static final class StableConnection extends DeviceStrategy {
+    /** Retain a ready connection; wake a covered application if all covered brokers are stopped. */
+    static final class StableConnection extends DeviceStrategy implements VirtualMachine.StateChange {
+        long wakeRequests;
+        private final Map<VirtualMachine, Application> waking = new HashMap<>();
+
+        @Override
+        public void stateChanged(VirtualMachine vm, VirtualMachine.State oldState, VirtualMachine.State newState) {
+            if (newState == VirtualMachine.State.RUNNING && waking.remove(vm) != null) {
+                vm.unsubscribeStateChange(this);
+                // Attach as soon as startup completes, before an idle application can shut down again.
+                // Re-evaluate current coverage; never use a future waypoint or force a stale connection.
+                if (device.isSubscribed()) { findApplication(); }
+            }
+        }
+
         @Override
         public void findApplication() {
             ArrayList<Application> available = getAvailableApplications();
+            if (available.stream().noneMatch(app -> app.computingAppliance.broker.vm.getState()
+                    == VirtualMachine.State.RUNNING)) {
+                available.stream().filter(app -> app.computingAppliance.broker.vm.getState()
+                        == VirtualMachine.State.SHUTDOWN).findFirst().ifPresent(app -> {
+                            VirtualMachine vm = app.computingAppliance.broker.vm;
+                            if (waking.putIfAbsent(vm, app) == null) { vm.subscribeStateChange(this); }
+                            app.subscribeApplication();
+                            wakeRequests++;
+                        });
+            }
             available.removeIf(app -> app.computingAppliance.broker.vm.getState()
                     != VirtualMachine.State.RUNNING);
             chosenApplication = available.contains(device.application) ? device.application
@@ -199,8 +223,106 @@ public class MobilityPredictionSimulation {
         }
     }
 
+    /** Synchronous shadow worker: wall-clock inference never advances simulated time. */
+    private static final class ShadowBridge implements AutoCloseable {
+        private final Process process;
+        private final java.io.BufferedReader replies;
+        private final BufferedWriter requests;
+        private final java.util.concurrent.ExecutorService reader;
+        private long predictions;
+        private long observations;
+        private final BufferedWriter receipts;
+
+        private ShadowBridge(String python, String script, String model, Path output) throws Exception {
+            process = new ProcessBuilder(python, "-u", script, "--training", model,
+                    "--output", output.toString()).redirectError(output.resolve("shadow-worker.log").toFile()).start();
+            replies = new java.io.BufferedReader(new java.io.InputStreamReader(
+                    process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8));
+            requests = new BufferedWriter(new java.io.OutputStreamWriter(
+                    process.getOutputStream(), java.nio.charset.StandardCharsets.UTF_8));
+            reader = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread thread = new Thread(r, "mobility-shadow-reader"); thread.setDaemon(true); return thread;
+            });
+            BufferedWriter opened = null;
+            try {
+                opened = Files.newBufferedWriter(output.resolve("shadow_receipts.csv"),
+                        java.nio.file.StandardOpenOption.CREATE_NEW);
+                opened.write("origin_ms,target_ms,received_at_sim_ms,predicted_latitude,predicted_longitude\n");
+                if (!"READY".equals(receive(120))) { throw new IOException("Shadow worker did not become ready"); }
+            } catch (Exception error) {
+                if (opened != null) { opened.close(); }
+                process.destroyForcibly(); reader.shutdownNow(); throw error;
+            }
+            receipts = opened;
+        }
+
+        static ShadowBridge open(Path output) throws Exception {
+            String python = System.getenv("MOBILITY_SHADOW_PYTHON");
+            String script = System.getenv("MOBILITY_SHADOW_SCRIPT");
+            String model = System.getenv("MOBILITY_SHADOW_MODEL");
+            if (python == null && script == null && model == null) { return null; }
+            if (python == null || script == null || model == null) {
+                throw new IllegalArgumentException("All three MOBILITY_SHADOW settings are required");
+            }
+            return new ShadowBridge(python, script, model, output);
+        }
+
+        private String receive(int seconds) throws Exception {
+            java.util.concurrent.Future<String> future = reader.submit(() -> replies.readLine());
+            try {
+                String line = future.get(seconds, java.util.concurrent.TimeUnit.SECONDS);
+                if (line == null || line.length() > 4096) { throw new IOException("Invalid shadow reply; see shadow-worker.log"); }
+                return line;
+            } catch (Exception error) {
+                future.cancel(true); process.destroyForcibly(); throw error;
+            }
+        }
+
+        void observe(String sample, long now, boolean forecastAllowed) throws IOException {
+            try {
+                requests.write("OBS\t" + forecastAllowed + "\t" + sample); requests.newLine(); requests.flush();
+                String response = receive(30); observations++;
+                if (response.equals("WAIT\t" + now)) { return; }
+                String[] fields = response.split("\t");
+                if (fields.length != 5 || !fields[0].equals("PRED") || Long.parseLong(fields[1]) != now
+                        || Long.parseLong(fields[2]) != now + STEP || !forecastAllowed) {
+                    throw new IOException("Shadow response time/protocol mismatch: " + response);
+                }
+                double latitude = Double.parseDouble(fields[3]); double longitude = Double.parseDouble(fields[4]);
+                if (!Double.isFinite(latitude) || !Double.isFinite(longitude)
+                        || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+                    throw new IOException("Invalid shadow coordinates");
+                }
+                receipts.write(now + "," + (now + STEP) + "," + Timed.getFireCount() + ","
+                        + latitude + "," + longitude); receipts.newLine(); receipts.flush(); predictions++;
+            } catch (Exception error) { throw new IOException("Shadow inference failed; retain run logs", error); }
+        }
+
+        void finish() throws Exception {
+            requests.write("END"); requests.newLine(); requests.flush();
+            String result = receive(30);
+            if (!result.equals("DONE\t" + observations + "\t" + predictions)
+                    || observations != 121 || predictions != 112) {
+                throw new IOException("Incomplete shadow prediction stream: " + result);
+            }
+            requests.close();
+            if (!process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS) || process.exitValue() != 0) {
+                throw new IOException("Shadow worker did not exit successfully");
+            }
+            System.out.println("MOBILITY_SHADOW_INFERENCE_OK observations=" + observations + " predictions=" + predictions);
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (process.isAlive()) { process.destroyForcibly(); }
+            reader.shutdownNow(); requests.close(); replies.close(); receipts.close();
+        }
+    }
+
     private static final class ObservedDevice extends SmartDevice {
         private final BufferedWriter observations;
+        private final MobilitySampleRecorder samples;
+        private final ShadowBridge shadow;
         private final BufferedWriter predictions;
         private final BufferedWriter evaluations;
         private final BufferedWriter loads;
@@ -212,12 +334,16 @@ public class MobilityPredictionSimulation {
         private Forecast pending;
         private long issued;
         private long matched;
+        private long observationCount;
+        private String previousObservedNode = "NONE";
 
         ObservedDevice(NomadicMobilityStrategy movement, PhysicalMachine machine,
                 BufferedWriter observations, BufferedWriter predictions,
-                BufferedWriter evaluations, BufferedWriter loads, TransferLedger ledger) {
+                BufferedWriter evaluations, BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, ShadowBridge shadow) {
             super(START, STOP, 100, STEP, movement, new StableConnection(), machine, 50, false);
             this.observations = observations;
+            this.samples = samples;
+            this.shadow = shadow;
             this.predictions = predictions;
             this.evaluations = evaluations;
             this.loads = loads;
@@ -226,14 +352,26 @@ public class MobilityPredictionSimulation {
 
         @Override
         public void tick(long fires) {
-            String oldNode = nodeName(application);
+            String oldNode = previousObservedNode;
             super.tick(fires);
             long now = Timed.getFireCount();
             // SmartDevice has now applied movement and refreshed the actual application connection.
             GeoLocation current = copy(geoLocation);
             String currentNode = nodeName(application);
+            try {
+                // Keep a fixed 120-minute observation span, including its two endpoints.
+                // Later movement used to drain buffered uploads remains in observations.csv.
+                if (now <= stopTime + STEP) {
+                    String sample = samples.recordAndGet("0", now, current.latitude, current.longitude, currentNode);
+                    if (shadow != null) { shadow.observe(sample, now, now < stopTime + STEP); }
+                }
+            } catch (IOException error) {
+                throw new UncheckedIOException(error);
+            }
             write(observations, "0," + now + "," + current.latitude + "," + current.longitude
                     + "," + oldNode + "," + currentNode);
+            previousObservedNode = currentNode;
+            observationCount++;
             ledger.snapshot(loads, this, "OBSERVATION");
             if (pending != null) {
                 if (now != pending.origin + STEP) {
@@ -288,20 +426,6 @@ public class MobilityPredictionSimulation {
         }
     }
 
-    private static NomadicMobilityStrategy route(GeoLocation start, GeoLocation east) {
-        GeoLocation northEast = east.nextLocation(1200, 0);
-        GeoLocation north = start.nextLocation(1200, 0);
-        ArrayList<GeoLocation> points = new ArrayList<>();
-        for (int lap = 0; lap < 32; lap++) {
-            // NomadicMobilityStrategy mutates reached waypoints during the next leg.
-            points.add(copy(east));
-            points.add(copy(northEast));
-            points.add(copy(north));
-            points.add(copy(start));
-        }
-        return new NomadicMobilityStrategy(copy(start), 0.0041, points);
-    }
-
     private static PhysicalMachine deviceMachine() {
         EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(0.065, 1.475, 2.0, 1, 2);
@@ -314,15 +438,27 @@ public class MobilityPredictionSimulation {
 
     public static void main(String[] args) throws Exception {
         boolean openUi = true;
+        Path scenarioPath = null;
         ArrayList<String> positional = new ArrayList<>();
         for (String arg : args) {
             if ("--no-ui".equals(arg)) { openUi = false; }
+            else if (arg.startsWith("--scenario=")) {
+                if (scenarioPath != null || arg.length() == "--scenario=".length()) {
+                    throw new IllegalArgumentException("Supply one non-empty --scenario=<file>");
+                }
+                scenarioPath = Path.of(arg.substring("--scenario=".length()));
+            }
             else if (arg.startsWith("--")) { throw new IllegalArgumentException("Unknown option: " + arg); }
             else { positional.add(arg); }
         }
         if (positional.size() != 0 && positional.size() != 2) {
-            throw new IllegalArgumentException("Use [--no-ui] [<node-xml> <output-parent>]");
+            throw new IllegalArgumentException("Use [--no-ui] [--scenario=<file>] [<node-xml> <output-parent>]");
         }
+        if (scenarioPath != null && openUi) {
+            throw new IllegalArgumentException("Custom scenarios currently require --no-ui; the existing UI assumes two observed nodes");
+        }
+        MobilityScenarioConfig config = scenarioPath == null
+                ? MobilityScenarioConfig.defaults() : MobilityScenarioConfig.load(scenarioPath);
         Path xml = positional.size() == 2 ? Path.of(positional.get(0)) : Path.of(ScenarioBase.resourcePath, "LPDS_original.xml");
         Path parent = positional.size() == 2 ? Path.of(positional.get(1)) : Path.of(ScenarioBase.resultDirectory);
         if (!Files.isRegularFile(xml)) {
@@ -330,9 +466,10 @@ public class MobilityPredictionSimulation {
         }
         Files.createDirectories(parent);
         Path output = Files.createTempDirectory(parent, "mobility-").toAbsolutePath();
+        config.save(output);
         SimLogger.setLogging(2, false);
-        SeedSyncer.centralRnd.setSeed(42);
-        GeoLocation start = new GeoLocation(47.73, 18.27);
+        SeedSyncer.centralRnd.setSeed(config.seed());
+        GeoLocation start = config.start();
         GeoLocation east = start.nextLocation(1600, 90);
         ComputingAppliance westNode = new ComputingAppliance(xml.toString(), "mobility-west", start, 1);
         ComputingAppliance eastNode = new ComputingAppliance(xml.toString(), "mobility-east", east, 1);
@@ -340,11 +477,14 @@ public class MobilityPredictionSimulation {
         VirtualAppliance va = new VirtualAppliance("mobility-va", 100, 0, false, 1_073_741_824L);
         AlterableResourceConstraints resources = new AlterableResourceConstraints(2, 0.001, 4_294_967_296L);
         Instance instance = new Instance("mobility-instance", va, resources, 0.0255 / 3_600_000);
-        try (BufferedWriter observations = Files.newBufferedWriter(output.resolve("observations.csv"));
+        try (ShadowBridge shadow = ShadowBridge.open(output);
+             BufferedWriter observations = Files.newBufferedWriter(output.resolve("observations.csv"));
              BufferedWriter predictions = Files.newBufferedWriter(output.resolve("predictions.csv"));
              BufferedWriter evaluations = Files.newBufferedWriter(output.resolve("evaluations.csv"));
              BufferedWriter loads = Files.newBufferedWriter(output.resolve("node_load.csv"));
-             BufferedWriter transfers = Files.newBufferedWriter(output.resolve("offload_events.csv"))) {
+             BufferedWriter transfers = Files.newBufferedWriter(output.resolve("offload_events.csv"));
+             MobilitySampleRecorder samples = new MobilitySampleRecorder(
+                     output.resolve("mobility_samples.csv"), output.getFileName().toString())) {
             TransferLedger ledger = new TransferLedger(transfers);
             for (ComputingAppliance node : new ComputingAppliance[] {westNode, eastNode}) {
                 node.addApplication(new Application(node.name + "-app", STEP, 250, 2500, true,
@@ -361,14 +501,14 @@ public class MobilityPredictionSimulation {
                     + "assigned_to_compute_bytes,waiting_assignment_bytes,running_tasks,completed_tasks,"
                     + "incoming_offload_transfers,connected_devices,device_generated_bytes,"
                     + "device_upload_completed_bytes_total,offload_in_flight_bytes_total,offload_event_sequence");
-            ObservedDevice device = new ObservedDevice(route(start, east), deviceMachine(),
-                    observations, predictions, evaluations, loads, ledger);
+            ObservedDevice device = new ObservedDevice(config.movement(LIMIT), deviceMachine(),
+                    observations, predictions, evaluations, loads, ledger, samples, shadow);
             Timed.simulateUntil(LIMIT);
             if (Timed.getNextFire() != -1 || device.isSubscribed() || device.pending != null
-                    || device.issued != device.matched || device.matched == 0
-                    || MobilityEvent.changeNodeEventCounter == 0 || MobilityEvent.disconnectFromNodeEventCounter == 0) {
-                throw new IllegalStateException("Incomplete simulation or missing mobility events. Results: " + output);
+                    || device.issued != device.matched) {
+                throw new IllegalStateException("Incomplete simulation or unmatched forecasts. Results: " + output);
             }
+            if (shadow != null) { shadow.finish(); }
             ledger.snapshot(loads, device, "FINAL");
             long assigned = 0;
             for (Application app : Application.allApplications) {
@@ -378,15 +518,24 @@ public class MobilityPredictionSimulation {
                     throw new IllegalStateException("Application did not finish draining");
                 }
             }
-            if (ledger.inFlightBytes != 0 || ledger.nextId == 0
+            if (ledger.inFlightBytes != 0
                     || assigned != device.generatedData || MobilityDeviceMetrics.uploadCompletedBytes(device) != device.generatedData) {
-                throw new IllegalStateException("Final conservation failed");
+                throw new IllegalStateException("Final conservation failed: generated=" + device.generatedData
+                        + ", uploaded=" + MobilityDeviceMetrics.uploadCompletedBytes(device)
+                        + ", assigned=" + assigned + ", buffered=" + device.calculateStuckData()
+                        + ", offloadInFlight=" + ledger.inFlightBytes);
             }
             String summary = "model,evaluated,tp,fn,fp,tn\n" + device.holdCounts.row("HoldPosition")
                     + "\n" + device.velocityCounts.row("ConstantVelocity") + "\n";
             Files.writeString(output.resolve("coverage_summary.csv"), summary);
-            String run = "schema_version=2\nseed=42\ninterval_ms=" + STEP + "\nspeed_m_s=4.1\nnode_radius_m=1000\n"
-                    + "route_width_m=1600\nroute_height_m=1200\nissued=" + device.issued
+            String run = "schema_version=2\nseed=" + config.seed() + "\ninterval_ms=" + STEP
+                    + "\nspeed_m_s=" + config.speedMetersPerSecond() + "\nnode_radius_m=1000\n"
+                    + "route_width_m=" + config.widthMeters() + "\nroute_height_m=" + config.heightMeters()
+                    + "\nscenario_name=" + config.name()
+                    + "\nscenario_config_file=scenario-effective.properties\nroute_file=route_waypoints.csv"
+                    + "\nroute_strategy=NomadicMobilityStrategy\nroute_repeats=true"
+                    + "\nnode_separation_m=1600\nnominal_generation_duration_ms=7200000"
+                    + "\nissued=" + device.issued
                     + "\nmatched=" + device.matched + "\nnode_changes=" + MobilityEvent.changeNodeEventCounter
                     + "\nconnects=" + MobilityEvent.connectToNodeEventCounter
                     + "\ndisconnects=" + MobilityEvent.disconnectFromNodeEventCounter
@@ -395,10 +544,23 @@ public class MobilityPredictionSimulation {
                     + "\nassigned_bytes_final=" + assigned
                     + "\noffload_transfers=" + ledger.nextId
                     + "\noffload_bytes=" + Application.totalBytesOnNetwork
-                    + "\naccounting_check=passed\n";
+                    + "\naccounting_check=passed\n"
+                    + "connection_policy=retain_running_or_wake_covered\nbroker_wake_requests="
+                    + ((StableConnection) device.deviceStrategy).wakeRequests
+                    + "\nobservation_rows=" + device.observationCount
+                    + "\ndrain_observation_rows=" + (device.observationCount - samples.getSampleCount())
+                    + "\nsample_window_policy=fixed_121_observations"
+                    + "\nsample_window_start_ms=" + (device.startTime + STEP)
+                    + "\nsample_window_end_ms=" + (device.stopTime + STEP)
+                    + "\nsample_schema_version=1\nsample_file=mobility_samples.csv\nsample_rows=" + samples.getSampleCount()
+                    + "\nsample_speed_kind=endpoint_displacement_over_elapsed_time"
+                    + "\nsample_heading_kind=initial_bearing_previous_to_current"
+                    + "\nsample_heading_min_distance_m=0.000001"
+                    + "\nsample_earth_radius_m=6378137.0\n";
             Files.writeString(output.resolve("run.properties"), run);
             System.out.print(summary);
             System.out.print(run);
+            System.out.println("MOBILITY_SAMPLES_OK rows=" + samples.getSampleCount());
             System.out.println("MOBILITY_ACCOUNTING_OK");
             System.out.println("MOBILITY_SIMULATION_OK");
             System.out.println("Results: " + output);

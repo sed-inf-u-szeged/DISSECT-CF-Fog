@@ -1,0 +1,772 @@
+{
+  "dataset_id": "mobility-pilot-v1",
+  "schema_version": 1,
+  "status": "configuration_only_not_generated",
+  "seed": 42,
+  "speeds_m_s": [
+    2.0,
+    4.1,
+    6.0
+  ],
+  "split_policy": "route_family_holdout",
+  "protocol": {
+    "history_points": 8,
+    "horizon_ms": 60000,
+    "interval_ms": 60000,
+    "nominal_generation_duration_ms": 7200000,
+    "device_count": 1,
+    "node_count": 2,
+    "node_separation_m": 1600,
+    "node_radius_m": 1000,
+    "start_latitude_deg": 47.73,
+    "start_longitude_deg": 18.27
+  },
+  "excluded_development_routes_m": [
+    [
+      [
+        0,
+        0
+      ],
+      [
+        1600,
+        0
+      ],
+      [
+        1600,
+        1200
+      ],
+      [
+        0,
+        1200
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    [
+      [
+        0,
+        0
+      ],
+      [
+        1600,
+        0
+      ],
+      [
+        800,
+        1500
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    [
+      [
+        0,
+        0
+      ],
+      [
+        1600,
+        0
+      ],
+      [
+        1600,
+        700
+      ],
+      [
+        600,
+        700
+      ],
+      [
+        600,
+        1400
+      ],
+      [
+        0,
+        1400
+      ],
+      [
+        0,
+        0
+      ]
+    ]
+  ],
+  "routes": [
+    {
+      "route_id": "rect_01",
+      "family": "rectangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1200,
+          0
+        ],
+        [
+          1200,
+          900
+        ],
+        [
+          0,
+          900
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "rect_02",
+      "family": "rectangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1800,
+          0
+        ],
+        [
+          1800,
+          1300
+        ],
+        [
+          0,
+          1300
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "rect_03",
+      "family": "rectangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1400,
+          0
+        ],
+        [
+          1400,
+          1700
+        ],
+        [
+          0,
+          1700
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "rect_04",
+      "family": "rectangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          2000,
+          0
+        ],
+        [
+          2000,
+          1100
+        ],
+        [
+          0,
+          1100
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "tri_01",
+      "family": "triangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1000,
+          0
+        ],
+        [
+          550,
+          1000
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "tri_02",
+      "family": "triangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1900,
+          0
+        ],
+        [
+          650,
+          1600
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "tri_03",
+      "family": "triangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1400,
+          0
+        ],
+        [
+          1000,
+          1900
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "tri_04",
+      "family": "triangle",
+      "split": "train",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          2100,
+          0
+        ],
+        [
+          900,
+          1200
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "zig_01",
+      "family": "zigzag",
+      "split": "validation",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1800,
+          0
+        ],
+        [
+          1800,
+          500
+        ],
+        [
+          900,
+          500
+        ],
+        [
+          900,
+          1300
+        ],
+        [
+          0,
+          1300
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "zig_02",
+      "family": "zigzag",
+      "split": "validation",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1400,
+          0
+        ],
+        [
+          1400,
+          900
+        ],
+        [
+          400,
+          900
+        ],
+        [
+          400,
+          1700
+        ],
+        [
+          0,
+          1700
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "poly_01",
+      "family": "irregular_polygon",
+      "split": "test",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1850,
+          250
+        ],
+        [
+          1550,
+          1500
+        ],
+        [
+          650,
+          1800
+        ],
+        [
+          -250,
+          800
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "route_id": "poly_02",
+      "family": "irregular_polygon",
+      "split": "test",
+      "waypoints_m": [
+        [
+          0,
+          0
+        ],
+        [
+          1000,
+          -400
+        ],
+        [
+          2100,
+          450
+        ],
+        [
+          1500,
+          1700
+        ],
+        [
+          300,
+          1400
+        ],
+        [
+          -350,
+          500
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "case_id": "rect_01_s20",
+      "route_id": "rect_01",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/rect_01_s20.properties",
+      "config_text_sha256": "85b92a733d1196d65d44ac7e0db5f2681c79688cac150d89ae92a49c1d549773"
+    },
+    {
+      "case_id": "rect_01_s41",
+      "route_id": "rect_01",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/rect_01_s41.properties",
+      "config_text_sha256": "51c2713fe5fb56d0a387459ebea58fe6d552e514339bd7307be508508ebc140f"
+    },
+    {
+      "case_id": "rect_01_s60",
+      "route_id": "rect_01",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/rect_01_s60.properties",
+      "config_text_sha256": "91b0b79867c2591305500dd470230cafb58f05da80c27106bcced41d1f62f96c"
+    },
+    {
+      "case_id": "rect_02_s20",
+      "route_id": "rect_02",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/rect_02_s20.properties",
+      "config_text_sha256": "c6055b60832223650669fa6813526833a5ca51243edd3956100a60a5c974c33f"
+    },
+    {
+      "case_id": "rect_02_s41",
+      "route_id": "rect_02",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/rect_02_s41.properties",
+      "config_text_sha256": "1ec9e5705ca85c7ac28c0d5554854a48d79dd7b6a13f9968bfc9a5f5ba3f569f"
+    },
+    {
+      "case_id": "rect_02_s60",
+      "route_id": "rect_02",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/rect_02_s60.properties",
+      "config_text_sha256": "e1b1d909f8662169a632c2cc138e69f298715d3db4a9e275c84301fbffc1ad02"
+    },
+    {
+      "case_id": "rect_03_s20",
+      "route_id": "rect_03",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/rect_03_s20.properties",
+      "config_text_sha256": "68957b3b91991ec6f33b2068c617c98381365543cd15df0b196ee63f93503010"
+    },
+    {
+      "case_id": "rect_03_s41",
+      "route_id": "rect_03",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/rect_03_s41.properties",
+      "config_text_sha256": "40c3759b59a8f1595b1d8f089208ca2758de1793cb95f0b706ecac2472708c18"
+    },
+    {
+      "case_id": "rect_03_s60",
+      "route_id": "rect_03",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/rect_03_s60.properties",
+      "config_text_sha256": "bc36ea44f7e3f1d0e23baacd4c1a04372e10377e01d8da85d2282de983deb238"
+    },
+    {
+      "case_id": "rect_04_s20",
+      "route_id": "rect_04",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/rect_04_s20.properties",
+      "config_text_sha256": "d3db958111d723fa873de1333f3bdf8f382f1758a7da9e308a21fcae0c5b671d"
+    },
+    {
+      "case_id": "rect_04_s41",
+      "route_id": "rect_04",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/rect_04_s41.properties",
+      "config_text_sha256": "a7f3267f902cb3270964548f9112933c1e03f7ed2a46aa7a7325ff23648b9c21"
+    },
+    {
+      "case_id": "rect_04_s60",
+      "route_id": "rect_04",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/rect_04_s60.properties",
+      "config_text_sha256": "fc6b54c48ef44eb95fec4345276e194041799f9f9f1e79a980f58d2ee33baae6"
+    },
+    {
+      "case_id": "tri_01_s20",
+      "route_id": "tri_01",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/tri_01_s20.properties",
+      "config_text_sha256": "40c75c7daf2703e13966398d35ec197e4a77ce03f9555a3f10aafdcbab372da1"
+    },
+    {
+      "case_id": "tri_01_s41",
+      "route_id": "tri_01",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/tri_01_s41.properties",
+      "config_text_sha256": "cd142f7d71fe9a6d19ec121b25894d23675dfc3b0340a4497a437bf98338f8d6"
+    },
+    {
+      "case_id": "tri_01_s60",
+      "route_id": "tri_01",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/tri_01_s60.properties",
+      "config_text_sha256": "df4ca17ce3feacb5d9e0418a84031035ed12e6e4ba021eb6842e2b782b8b2a0d"
+    },
+    {
+      "case_id": "tri_02_s20",
+      "route_id": "tri_02",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/tri_02_s20.properties",
+      "config_text_sha256": "72137c53167fadc75bf4ac6ec9ce14e785af464af9032bf0d38738e2fcf4fc48"
+    },
+    {
+      "case_id": "tri_02_s41",
+      "route_id": "tri_02",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/tri_02_s41.properties",
+      "config_text_sha256": "532622a09d40f68c795744eb66b11496e3af8d3c94fa7b85f63cdea3379b4775"
+    },
+    {
+      "case_id": "tri_02_s60",
+      "route_id": "tri_02",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/tri_02_s60.properties",
+      "config_text_sha256": "8eb7a74c1eaf667f861f1d5409a01b3616af26d429a8f21e682d3a6533ccbb69"
+    },
+    {
+      "case_id": "tri_03_s20",
+      "route_id": "tri_03",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/tri_03_s20.properties",
+      "config_text_sha256": "378ea9197ab6748acfb9bdc7303f2382d534a99a155fbe18d7cafe95f2864ac8"
+    },
+    {
+      "case_id": "tri_03_s41",
+      "route_id": "tri_03",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/tri_03_s41.properties",
+      "config_text_sha256": "3ddb79f06fa1a9aa50b2c267e547da272292c80640ddc5e3bf00a8fe0e364c11"
+    },
+    {
+      "case_id": "tri_03_s60",
+      "route_id": "tri_03",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/tri_03_s60.properties",
+      "config_text_sha256": "d4f61f49d6d6ab4b9eaf577164a8b052f25954167fdc84354d5f4e94a46f3bb3"
+    },
+    {
+      "case_id": "tri_04_s20",
+      "route_id": "tri_04",
+      "split": "train",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "train/tri_04_s20.properties",
+      "config_text_sha256": "e7ee436dda045900abb80e95938a8d095889b92a62f54f8974a0c2ddf18a765f"
+    },
+    {
+      "case_id": "tri_04_s41",
+      "route_id": "tri_04",
+      "split": "train",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "train/tri_04_s41.properties",
+      "config_text_sha256": "3f7aeec9285a6385470f3befaa05df92d8c738fcf6b3810c4dcb549035eb2762"
+    },
+    {
+      "case_id": "tri_04_s60",
+      "route_id": "tri_04",
+      "split": "train",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "train/tri_04_s60.properties",
+      "config_text_sha256": "5ed110493c6419bec91139d21692561b5ba3ade59bee3c22d2ed70da6cc5a064"
+    },
+    {
+      "case_id": "zig_01_s20",
+      "route_id": "zig_01",
+      "split": "validation",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "validation/zig_01_s20.properties",
+      "config_text_sha256": "66b9f386018036987dc9b7d638ae42753044bf810bf0f18fb3f4dcf16ef052e1"
+    },
+    {
+      "case_id": "zig_01_s41",
+      "route_id": "zig_01",
+      "split": "validation",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "validation/zig_01_s41.properties",
+      "config_text_sha256": "61f8e39bae18dc2c5b2353cbe6966dbc959195e52e433de8cbd52753dc496834"
+    },
+    {
+      "case_id": "zig_01_s60",
+      "route_id": "zig_01",
+      "split": "validation",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "validation/zig_01_s60.properties",
+      "config_text_sha256": "7b1acb534d535da089cebc40d0eb5726c0352901887942e4a0dec952b896b8cd"
+    },
+    {
+      "case_id": "zig_02_s20",
+      "route_id": "zig_02",
+      "split": "validation",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "validation/zig_02_s20.properties",
+      "config_text_sha256": "b5d4455b8228725396fb29d1333d478102aa6e7110394b614f828ae0230c55ef"
+    },
+    {
+      "case_id": "zig_02_s41",
+      "route_id": "zig_02",
+      "split": "validation",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "validation/zig_02_s41.properties",
+      "config_text_sha256": "f137e08fd3c4121dc383a0d7dd43233d278edbe11262818d8d593793282eaa3d"
+    },
+    {
+      "case_id": "zig_02_s60",
+      "route_id": "zig_02",
+      "split": "validation",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "validation/zig_02_s60.properties",
+      "config_text_sha256": "897889ba4c4a5219fdd12ead33b95aa5ff7ea899cc5d40e15066580bdb3db0e7"
+    },
+    {
+      "case_id": "poly_01_s20",
+      "route_id": "poly_01",
+      "split": "test",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "test/poly_01_s20.properties",
+      "config_text_sha256": "e98a3a06bff1dfe54a37e6794fc9d352450343f32b5b1e910ca135682fe09d65"
+    },
+    {
+      "case_id": "poly_01_s41",
+      "route_id": "poly_01",
+      "split": "test",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "test/poly_01_s41.properties",
+      "config_text_sha256": "2817e437984e02dcf83edf0d627ba899b76f8b85d8517153866209ae0f16252a"
+    },
+    {
+      "case_id": "poly_01_s60",
+      "route_id": "poly_01",
+      "split": "test",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "test/poly_01_s60.properties",
+      "config_text_sha256": "01d340abd5ab0099bed58b36aacfb98d6ad43cc80d60b2a06f11125c45bfd8fd"
+    },
+    {
+      "case_id": "poly_02_s20",
+      "route_id": "poly_02",
+      "split": "test",
+      "speed_m_s": 2.0,
+      "seed": 42,
+      "config_path": "test/poly_02_s20.properties",
+      "config_text_sha256": "6c5031f81264748d92c9e7ff27b95424952a0bf01913bc77a398794f02ef2b94"
+    },
+    {
+      "case_id": "poly_02_s41",
+      "route_id": "poly_02",
+      "split": "test",
+      "speed_m_s": 4.1,
+      "seed": 42,
+      "config_path": "test/poly_02_s41.properties",
+      "config_text_sha256": "ef14c2dca50de434ea8c7f3b7f7d78fd82edddf75eee538a9c3982c856a395a5"
+    },
+    {
+      "case_id": "poly_02_s60",
+      "route_id": "poly_02",
+      "split": "test",
+      "speed_m_s": 6.0,
+      "seed": 42,
+      "config_path": "test/poly_02_s60.properties",
+      "config_text_sha256": "aaa9167571b69514710f13bcf866fa02daf826f2203159d352babb2a9846a906"
+    }
+  ],
+  "notes": [
+    "All speed variants and repetitions of a route remain in its assigned split.",
+    "Training sees rectangles and triangles; validation sees new zigzags; test sees irregular polygons. This is a small route-family generalization pilot, not an IID accuracy estimate.",
+    "Do not use route waypoints or future connection states as model features.",
+    "Observed speed is endpoint displacement divided by elapsed time; heading is previous-to-current bearing.",
+    "Split before constructing windows. Fit scaling and any imputation only on training data.",
+    "8 samples at 60-second intervals span 7 minutes. Target is 60 seconds after the last input.",
+    "4356 raw rows is an estimate (36 x 121), not an observed result or an independent sample count.",
+    "Fixed seed makes runs reproducible; changing only the seed is not a new route.",
+    "Test configurations may be checked for mechanical validity and data integrity, but prediction quality must not guide route selection or tuning.",
+    "Any failed run must be retained in the batch log. Do not silently drop it; repair infrastructure and rerun the same configuration or explicitly version the plan."
+  ]
+}

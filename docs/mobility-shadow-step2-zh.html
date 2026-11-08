@@ -1,0 +1,64 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<title>Mobility workflow：目标时刻到期评估</title>
+<style>body{font:16px/1.8 system-ui,sans-serif;max-width:980px;margin:36px auto;padding:0 24px;color:#223344}h1,h2{color:#17496c}table{border-collapse:collapse;width:100%;margin:18px 0}td,th{border:1px solid #ccd4df;padding:9px;text-align:left}pre{background:#f1f4f7;padding:16px;white-space:pre-wrap}code{background:#f1f4f7}</style>
+<h1>Mobility workflow：目标时刻到期评估</h1>
+<p>本周第二个收尾步骤：为模拟器运行中的影子预测加入真实目标匹配和位置误差计算。第一步已经在 Windows 通过：121 条观测、112 个预测起点、三种方法，输入一致性和记账检查通过。本文件说明第一步之后新增的评估行为。</p>
+<h2>范围与当前入口</h2>
+<p>加载既有 LSTM 和固定预处理参数，运行已有开发场景 triangle.properties，不重新训练、不调参，不改变连接策略，不启动 UI。Java 接入沿用第一步版本。本包更新两个 Python 文件，新增评估模块、测试和本说明，共五个文件。</p>
+<p>当前必须通过 run_mobility_shadow.py 启用这一流程。普通 Java Run 按钮仍是原有演示入口，不会自动启用新的 LSTM 影子流程。UI 中也尚未加入本次 LSTM 评分结果。</p>
+<h2>一次预测如何完成</h2>
+<ol><li>模拟器推进到时刻 t，Java 发送此时的实际观测。</li>
+<li>Python 收到当前观测后，检查是否存在目标时间为 t 的待评估预测。如果存在，用本条观测中的经纬度计算三种方法的误差，并写入评分文件。不会以当前连接节点筛掉未连接状态的样本。</li>
+<li>如果历史窗口有效且尚未到最后一条采样，使用截至 t 的最近 8 个有效历史点，生成目标为 t+60 秒的三种预测。保存原始预测，加入待评估队列；向 Java 返回 LSTM 预测。</li>
+<li>Java 检查回复并继续推进模拟时间。Python 不能预先读取未来轨迹或真实目标文件。</li>
+<li>最后一条位置观测只结算上一分钟的预测，不再向采样范围之外发出新预测。正常结束时待评估数量必须为 0。</li></ol>
+<p>这是同步影子推理。等待 Python 只消耗真实时间，未建模推理耗时、网络延迟或预测驱动的节点切换。</p>
+<h2>具体时间例子</h2>
+<table><tr><th>模拟时刻</th><th>已经收到的数据</th><th>行为</th></tr>
+<tr><td>11.22 分钟（673000 ms）</td><td>原始观测索引 0～8</td><td>首次用索引 1～8 构造窗口，预测 12.22 分钟的位置。此时不评分。</td></tr>
+<tr><td>12.22 分钟（733000 ms）</td><td>新收到索引 9 的真实位置</td><td>结算前一次预测，再预测 13.22 分钟的位置。</td></tr>
+<tr><td>123.22 分钟（7393000 ms）</td><td>最后一条位置观测，索引 120</td><td>结算索引 119 发出的预测，不发出新预测。</td></tr></table>
+<p>上述时间对应 seed=42 的默认开发运行。名义生成时长为 120 分钟；启动延迟使采样时间从 3.22 分钟开始。评分使用精确毫秒时间戳，展示中的分钟数经过四舍五入。</p>
+<h2>对齐和评分规则</h2>
+<ul><li>三种方法固定为 HoldPosition、ConstantVelocity、LSTM；在同一批 112 个起点生成预测，共 336 条。</li>
+<li>匹配身份为本次运行、设备、预测方法、发出时间和目标时间。目标必须等于发出时间加 60000 ms。</li>
+<li>实际观测的时间必须恰好等于目标时间。遇到重复、跳过目标时间、设备身份改变或无效坐标，运行失败，保留日志；不使用后来的位置补配。</li>
+<li>误差为预测经纬度与真实经纬度之间的大圆距离，单位为米，地球半径 6378137 m，与离线评估约定一致。</li>
+<li>汇总 count、平均位置误差、RMSE、中位数和 P90。RMSE 是各次位置距离平方平均后的平方根，不是容忍度命中率。</li>
+<li>不在本步骤添加覆盖范围分类评分、模型接管或回退。现有模拟器原来的覆盖评估导出继续保留。</li></ul>
+<h2>运行命令</h2><p>在项目根目录、已激活的 dissect-fog 环境运行。沿用已训练的模型目录：</p>
+<pre>python predictor-ui/scripts/mobility/test_mobility_shadow.py
+python predictor-ui/scripts/mobility/test_mobility_shadow_evaluation.py
+python predictor-ui/scripts/mobility/run_mobility_shadow.py --training "D:\Github\DISSECT-CF-Fog\simulator\sim_res\mobility-training\20261108T012017Z-4ef98cf1652c"</pre>
+<p>两组测试分别为 7 项和 11 项。运行入口复用现有 JDK、Python、target/classes 和依赖 JAR，不升级依赖。每次创建新的唯一结果目录，保留旧运行。</p>
+<pre>observations=121 prediction_origins=112 methods=3
+feature_parity=EXACT reply_timing=SAME_SIMULATION_TICK accounting=PASSED
+matched_origins=112 evaluation_rows=336 pending_forecasts=0
+evaluation=TARGET_TIME_MATCH event_order=PASSED error_recomputation=PASSED
+training=DISABLED connection_control=DISABLED
+...
+MOBILITY_SHADOW_STEP2_OK</pre>
+<h2>输出与审计</h2>
+<p>总目录为 simulator/sim_res/mobility-shadow/时间戳-唯一编号。具体数据文件位于 output/mobility-* 子目录。</p>
+<table><tr><th>文件</th><th>作用</th></tr>
+<tr><td>shadow_predictions.csv</td><td>发出时保存的三种方法预测，不包含未来真实目标。</td></tr>
+<tr><td>shadow_evaluations.csv（新增）</td><td>336 条到期评分：运行和设备身份、方法、原预测时间/坐标、评估时间、到期真实经纬度和位置误差。</td></tr>
+<tr><td>shadow_events.jsonl（新增）</td><td>345 条事件：121 次接收观测、112 次发出预测、112 次到期评估；含顺序号和模拟时间。它用于程序行为审计，不是独立的防篡改日志。</td></tr>
+<tr><td>shadow_metrics.json（新增）</td><td>开发场景汇总指标、评估定义、匹配数量和未结算数量。</td></tr>
+<tr><td>shadow_inputs.jsonl / shadow_received_samples.csv</td><td>实际推理输入和流式收到的观测；保留第一步的输入一致性验证。</td></tr>
+<tr><td>shadow_receipts.csv</td><td>Java 收到的 LSTM 预测及接收时的模拟时间。</td></tr>
+<tr><td>shadow-worker.json / shadow-session.json</td><td>进程与运行总状态、冻结模型校验、到期匹配和独立误差复算检查。</td></tr>
+<tr><td>model/、scripts/、runtime/</td><td>模型、Python 和 Java 运行快照；不修改原始训练结果。</td></tr></table>
+<p>实时评分只使用流中刚到达的观测。仿真结束后，运行入口才读取完整输出作独立审计：逐条匹配原预测和实际观测，用 NumPy 版本距离公式复算误差及汇总，检查事件顺序和输入一致性。事后审计不参与模型输入构造。</p>
+<h2>验证结果与解释边界</h2>
+<p>本地 Linux 上，11 项新增测试和 7 项原输入测试通过。使用用户此前上传的 Windows 训练模型完成一次真实 Java→Python→Java 仿真：112 个预测起点全部完成评分；336 条误差独立复算通过；未结算预测为 0；原模拟数据记账通过。Windows 的本次运行仍待用户执行和反馈。</p>
+<p>另将第一步的推理版本作为对照，在相同场景重新运行：10 个原模拟导出文件、推理输入、三种方法预测和 Java 接收记录均一致（只归一化每次不同的 run_id）。新增评分没有改变轨迹、预测或记账结果。</p>
+<p>本开发三角形场景的数值只用于流程检查，不替代之前已完成的 672 窗口独立测试，也不用于再次选择模型或调参。LSTM 在某些指标或路径上优于基线，不代表它在所有情况下都更好。</p>
+<h2>本周剩余范围</h2>
+<table><tr><th>任务</th><th>进度</th></tr>
+<tr><td>采样、场景批量生成、窗口构建、训练与独立测试</td><td>已完成。</td></tr>
+<tr><td>模拟器内冻结模型影子推理</td><td>Windows 输出通过。</td></tr>
+<tr><td>目标时刻到期评估</td><td>本包实现及本地验证完成，等待 Windows 结果。</td></tr>
+<tr><td>完整 workflow 验收</td><td>下一步；复核本次输出和流程边界。</td></tr>
+<tr><td>流程图、运行说明、本周总结、代码提交归档</td><td>最后收尾。</td></tr></table>
+<p>本周不扩展模型、数据集、UI、多语言或主动切换功能。</p></html>
