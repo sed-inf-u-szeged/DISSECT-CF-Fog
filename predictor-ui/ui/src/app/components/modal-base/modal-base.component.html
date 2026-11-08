@@ -5,7 +5,7 @@
                 <span class="title">{{ modalService.data?.title || '' }}</span>
             </div>
             <div end style="display: flex; gap: 8px; align-items: center; padding-right: 8px;">
-                <app-button-icon color="normal" icon="fa fa-close" (click)="close()"></app-button-icon>
+                <button type="button" class="modal-close" (click)="close()" aria-label="Close simulation view">×</button>
             </div>
         </app-toolbar>
     </div>

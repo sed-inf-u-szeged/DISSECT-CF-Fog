@@ -1,0 +1,57 @@
+<app-toolbar class="border-bottom">
+  <div start class="controls navigation">
+    <app-button-icon color="normal" icon="fa fa-chevron-left" [disabled]="index === 0" (click)="choose(index - 1)"></app-button-icon>
+    <app-button-icon color="normal" icon="fa fa-chevron-right" [disabled]="index === run.frames.length - 1" (click)="choose(index + 1)"></app-button-icon>
+    <span>{{ index + 1 }} / {{ run.frames.length }} mobility frame</span><span>•</span>
+    <span>{{ minutes(frame.time_ms) }} min</span>
+    <app-button color="normal" (click)="play()">{{ timer ? 'Pause' : 'Play' }}</app-button>
+    <app-button color="normal" (click)="nextConnection()">Next connection</app-button>
+    <app-button color="normal" (click)="choose(run.frames.length - 1)">Final settlement</app-button>
+  </div>
+</app-toolbar>
+<div class="filters border-bottom controls">
+  <app-checkbox-container><label>Actual path</label><input type="checkbox" [(ngModel)]="showActual"></app-checkbox-container>
+  <app-checkbox-container><label>Future prediction</label><input type="checkbox" [(ngModel)]="showFuture"></app-checkbox-container>
+  <app-checkbox-container><label>Target actual (retrospective)</label><input type="checkbox" [(ngModel)]="showTruth" [disabled]="!evaluation"></app-checkbox-container>
+  <label for="mobility-model">Predictor</label><select id="mobility-model" [(ngModel)]="model"><option value="velocity">ConstantVelocity</option><option value="hold">HoldPosition</option></select>
+</div>
+<div class="content">
+  <details class="settings"><summary>Run {{ run.label }} · Mobility settings</summary><p>Device {{ observation.device_id }} · seed {{ run.props['seed'] }} · {{ run.props['speed_m_s'] }} m/s · observation interval {{ +run.props['interval_ms'] / 1000 }} s. Shadow prediction only; forecasts do not trigger handovers.</p></details>
+  <input class="timeline" aria-label="Mobility frame" type="range" min="0" [max]="run.frames.length - 1" [value]="index" (input)="seek($event)">
+  <p *ngIf="final">Final settlement. Position remains at the last observation ({{ minutes(observation.time_ms) }} min); no new forecast.</p>
+  <div class="chart-row">
+    <section class="chart"><div class="heading"><strong>{{ model === 'velocity' ? 'ConstantVelocity' : 'HoldPosition' }}</strong><span>Device {{ observation.device_id }} · trajectory and node coverage</span></div>
+      <div class="legend"><span class="actual">— Actual</span><span class="future">— Future</span><span *ngFor="let n of run.nodes; index as i" [style.color]="colors[i]">— {{ n.name }}</span></div>
+      <svg viewBox="0 0 900 430" role="img" aria-label="Historical device path, node coverage and future position">
+        <g *ngFor="let t of xTicks"><line [attr.x1]="axisX(t)" [attr.x2]="axisX(t)" y1="20" y2="370" class="grid"/><text [attr.x]="axisX(t)" y="390" text-anchor="middle">{{ t | number:'1.0-0' }}</text></g>
+        <g *ngFor="let t of yTicks"><line x1="50" x2="865" [attr.y1]="axisY(t)" [attr.y2]="axisY(t)" class="grid"/><text x="43" [attr.y]="axisY(t)+4" text-anchor="end">{{ t | number:'1.0-0' }}</text></g>
+        <g *ngFor="let ring of rings; index as i"><polygon [attr.points]="ring.points" [attr.stroke]="colors[i]" [attr.fill]="colors[i]" fill-opacity="0.05"/><rect [attr.x]="ring.x-4" [attr.y]="ring.y-4" width="8" height="8" [attr.fill]="colors[i]"/><text [attr.x]="ring.x" [attr.y]="ring.y+21" text-anchor="middle">{{ ring.node.name }}</text></g>
+        <polyline *ngIf="showActual" [attr.points]="trajectory" fill="none" stroke="#ffd174" stroke-width="1.7"/>
+        <circle [attr.cx]="currentPoint[0]" [attr.cy]="currentPoint[1]" r="5" fill="#ffd174"><title>Current observed position</title></circle>
+        <g *ngIf="forecast && showFuture"><line [attr.x1]="currentPoint[0]" [attr.y1]="currentPoint[1]" [attr.x2]="futurePoint[0]" [attr.y2]="futurePoint[1]" stroke="#ff5479" stroke-dasharray="5 4"/><path [attr.d]="'M'+futurePoint[0]+','+(futurePoint[1]-6)+'l6,6 -6,6 -6,-6Z'" fill="#ff5479"><title>Predicted future position</title></path></g>
+        <g *ngIf="showTruth && evaluation"><path [attr.d]="'M'+(truthPoint[0]-6)+','+(truthPoint[1]-6)+'l12,12m0,-12l-12,12'" stroke="#ebebeb" stroke-width="2"><title>Retrospective target observation</title></path></g>
+        <text x="450" y="420" text-anchor="middle">East from first node / m (local coordinates)</text><text transform="translate(12 200) rotate(-90)" text-anchor="middle">North / m</text>
+      </svg>
+    </section>
+    <aside class="side">
+      <div class="card"><div class="card-title">This frame · coverage forecast</div><div class="pair"><span>Connection</span><strong>{{ name(observation.current_node) }}</strong></div>
+        <ng-container *ngIf="forecast as p; else noForecast"><p [class.warning]="exitWarning">{{ exitWarning ? 'Expected to leave origin coverage' : 'Expected to remain in origin coverage' }}</p><div class="pair"><span>Horizon</span><strong>{{ (p.target_ms-p.origin_ms)/1000 }} s</strong></div><div class="pair"><span>Distance / radius</span><strong>{{ distance | number:'1.0-1' }} / {{ p.radius_m }} m</strong></div><p>Origin: {{ p.origin_node }} · target {{ minutes(p.target_ms) }} min.</p><p *ngIf="showTruth && evaluation">Retrospective target: {{ evaluation.actual_exit ? 'outside' : 'inside' }} origin coverage.</p></ng-container>
+        <ng-template #noForecast><p>{{ final ? 'Final settlement; no new forecast.' : 'No forecast at this frame (disconnected or insufficient history).' }}</p></ng-template>
+      </div>
+      <details class="card" open><summary>Latest matured evaluation</summary><p *ngIf="matured as e; else noEvaluation">Target {{ minutes(e.target_ms) }} min · {{ e.origin_node }} · {{ correctMatured() ? 'Correct' : 'Incorrect' }}. Actual: {{ e.actual_exit ? 'outside' : 'inside' }} origin coverage.</p><ng-template #noEvaluation><p>No target observations matched yet.</p></ng-template></details>
+      <div class="card"><span class="card-title">Run status · COMPLETE</span><p>Viewing {{ final ? 'final settlement' : 'a historical frame' }}. Connection changes use the existing reactive strategy.</p></div>
+    </aside>
+  </div>
+  <div class="chart-row" *ngFor="let key of $any(['waiting_assignment_bytes','running_tasks'])">
+    <section class="chart"><div class="heading"><strong>{{ key === 'running_tasks' ? 'Running tasks' : 'Waiting data / B' }}</strong><span>Observed node load</span></div>
+      <svg viewBox="0 0 900 225" role="img" [attr.aria-label]="key"><g *ngFor="let t of ticks"><line x1="60" x2="860" [attr.y1]="chartY(maximum(key)*t/3,key)" [attr.y2]="chartY(maximum(key)*t/3,key)" class="grid"/><text x="50" [attr.y]="chartY(maximum(key)*t/3,key)+4" text-anchor="end">{{ maximum(key)*t/3 | number:'1.0-0' }}</text><text [attr.x]="chartX(chartTime(t))" y="200" text-anchor="middle">{{ chartTime(t)/60000 | number:'1.0-0' }}</text></g>
+        <g *ngFor="let node of frame.nodes"><path [attr.d]="chartPath(node.node,key)" fill="none" [attr.stroke]="colors[run.nodes[0].name === node.node ? 0 : 1]" stroke-width="1.5"/><circle [attr.cx]="chartX(frame.time_ms)" [attr.cy]="chartY($any(node)[key],key)" r="3" [attr.fill]="colors[run.nodes[0].name === node.node ? 0 : 1]"/></g>
+        <line [attr.x1]="chartX(frame.time_ms)" [attr.x2]="chartX(frame.time_ms)" y1="25" y2="180" stroke="#ffd174" stroke-dasharray="4 4"/><text x="450" y="222" text-anchor="middle">Simulation time / min</text>
+      </svg></section>
+    <aside class="side"><div class="card"><div class="card-title">This frame · {{ key === 'running_tasks' ? 'tasks' : 'waiting bytes' }}</div><div class="pair" *ngFor="let node of frame.nodes"><span>{{ node.node }}</span><strong>{{ number($any(node)[key]) }}</strong></div><p>{{ key === 'running_tasks' ? 'Tasks currently executing. Assigned data is not completed work.' : 'Data waiting for assignment; excludes work already assigned to tasks.' }}</p></div></aside>
+  </div>
+  <p>Curves stop at the selected frame. No intermediate load snapshots exist between the last position observation and final settlement; this gap is left blank.</p>
+  <details class="card" open><summary>Node accounting · selected frame</summary><div class="table-wrap"><table><thead><tr><th>Metric</th><th *ngFor="let n of frame.nodes">{{ n.node }}</th></tr></thead><tbody><tr *ngFor="let m of metrics"><td>{{ m.label }}</td><td *ngFor="let n of frame.nodes">{{ number(n[m.key]) }}</td></tr></tbody></table></div><p>Device uploads are derived from node byte accounting. Offloads move existing data; they do not create additional bytes.</p></details>
+  <div class="events"><details class="card" open><summary>Recent connection changes</summary><p *ngFor="let e of connectionEvents">{{ minutes(e.time_ms) }} min · {{ name(e.previous_node) }} → {{ name(e.current_node) }}</p><p *ngIf="!connectionEvents.length">No connection changes yet.</p></details><details class="card" open><summary>Recent offloads</summary><p *ngFor="let e of transferEvents">{{ minutes(e.time_ms) }} min · #{{ e.transfer_id }} {{ e.event }} · {{ e.bytes }} B · {{ e.source_node }} → {{ e.destination_node }}</p><p *ngIf="!transferEvents.length">No offload events yet.</p></details></div>
+  <details class="card"><summary>Whole-run metrics (retrospective)</summary><div class="table-wrap"><table><thead><tr><th>Baseline</th><th>Evaluated</th><th>TP</th><th>FN</th><th>FP</th><th>TN</th></tr></thead><tbody><tr *ngFor="let s of run.summary"><td>{{ s.model }}</td><td>{{ s.evaluated }}</td><td>{{ s.tp }}</td><td>{{ s.fn }}</td><td>{{ s.fp }}</td><td>{{ s.tn }}</td></tr></tbody></table></div><p>Generated / uploaded: {{ run.props['generated_bytes'] }} / {{ run.props['upload_completed_bytes'] }} B · offloads: {{ run.props['offload_transfers'] }} / {{ run.props['offload_bytes'] }} B · completed tasks: {{ finalCompleted }}.</p><p>Matched forecasts: {{ run.evaluations.length }} / {{ run.predictions.length }}. Unmatched targets are not scored. These results describe this scenario only; they are not evidence of improved task performance.</p></details>
+</div>

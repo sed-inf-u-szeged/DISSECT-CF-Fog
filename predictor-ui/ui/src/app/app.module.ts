@@ -1,3 +1,4 @@
+import { MobilityViewComponent } from './components/mobility-view/mobility-view.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -20,10 +21,12 @@ import { ProgressBarComponent } from './components/progress-bar/progress-bar.com
 import { LoadingCircleComponent } from './components/loading-circle/loading-circle.component';
 import { ModalBaseComponent } from './components/modal-base/modal-base.component';
 import { SimulationViewModalComponent } from './components/simulation-view-modal/simulation-view-modal.component';
+import { RunSummaryComponent } from './components/run-summary/run-summary.component';
 
 @NgModule({
   declarations: [
     AppComponent,
+    MobilityViewComponent,
     ButtonFabComponent,
     ToolbarComponent,
     ScenarioComponent,
@@ -45,7 +48,8 @@ import { SimulationViewModalComponent } from './components/simulation-view-modal
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    RunSummaryComponent
   ],
   providers: [],
   bootstrap: [AppComponent]
