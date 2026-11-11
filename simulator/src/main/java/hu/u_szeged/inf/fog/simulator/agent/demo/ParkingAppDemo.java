@@ -124,6 +124,9 @@ public class ParkingAppDemo {
             }
 
             // gateways
+            List<ParkingSensor> shuffledSensors = new ArrayList<>(ParkingSensor.allParkingSensors);
+            Collections.shuffle(shuffledSensors, new Random(Config.RANDOM_SEED + 1000L));
+
             int sensorsPerGateway = (int) Config.PARKING_CONFIGURATION.get("sensorsPerGateway");
 
             int reqGateways = (int) Math.ceil(ParkingSensor.allParkingSensors.size() / (double) sensorsPerGateway);
@@ -142,7 +145,7 @@ public class ParkingAppDemo {
                 ParkingGateway gateway = new ParkingGateway("parking-gateway-" + i, gatewayRepo, platformService, new ArrayList<>());
 
                 for (int j = 0; j < sensorsPerGateway && i * sensorsPerGateway + j < ParkingSensor.allParkingSensors.size(); j++) {
-                    ParkingSensor sensor = ParkingSensor.allParkingSensors.get(i * sensorsPerGateway + j);
+                    ParkingSensor sensor = shuffledSensors.get(i * sensorsPerGateway + j);
 
                     sensor.bleRepository.getLatencies().put(gatewayRepo.getName(), (int) Config.PARKING_CONFIGURATION.get("bleSensorToGatewayLatencyMs"));
 

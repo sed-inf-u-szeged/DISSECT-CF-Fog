@@ -172,8 +172,8 @@ public class Config {
                     //Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_ONLY),
                     //Map.entry( "parkingScenario", ParkingScenario.LOADING_ONLY),
                     //Map.entry( "parkingScenario", ParkingScenario.RESIDENTIAL_ONLY),
-                    Map.entry( "parkingScenario", ParkingScenario.BALANCED),
-                    //Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_HEAVY),
+                    //Map.entry( "parkingScenario", ParkingScenario.BALANCED),
+                    Map.entry( "parkingScenario", ParkingScenario.COMMERCIAL_HEAVY),
 
                     //Map.entry("workloadSource", "trace"),
                     //Map.entry("predictorCity", "chania"),
@@ -204,16 +204,16 @@ public class Config {
                     //Map.entry("orchestrationEnabled", true),
 
                     // REACTIVE
-                    //Map.entry("orchestrationStrategy", "reactive"),
-                    //Map.entry("orchestrationEnabled", true),
+                    Map.entry("orchestrationStrategy", "reactive"),
+                    Map.entry("orchestrationEnabled", true),
 
                     // TIME-BASED
                     //Map.entry("orchestrationStrategy", "time-based"),
                     //Map.entry("orchestrationEnabled", true),
 
                     // FORECAST-BASED
-                    Map.entry("orchestrationStrategy", "forecast"),
-                    Map.entry("orchestrationEnabled", true),
+                    //Map.entry("orchestrationStrategy", "forecast"),
+                    //Map.entry("orchestrationEnabled", true),
 
                     // 2H-FORECAST-BASED
                     //Map.entry("orchestrationStrategy", "forecast-2h"),
@@ -228,7 +228,7 @@ public class Config {
                     //Map.entry("orchestrationEnabled", true),
 
                     //Map.entry("predictorModel", "wide"),
-                    //Map.entry("predictorModel", "sensor_cluster"),
+                    // Map.entry("predictorModel", "sensor_cluster"),
                     Map.entry("predictorModel", "behavior_cluster"),
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples")),
