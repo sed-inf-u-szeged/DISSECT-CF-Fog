@@ -23,6 +23,7 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.validator.selection.Stak
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.so_smart.*;
+import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 
 import java.nio.file.Paths;
@@ -156,6 +157,15 @@ public final class SoSmartSimulation {
             }
         }
 
+        // Start energy monitoring for all Fog nodes.
+        List<EnergyDataCollector> energyCollectors = new ArrayList<>();
+
+        for (ComputingAppliance fog : fogNodes) {
+            energyCollectors.add(
+                    new EnergyDataCollector(fog.name, fog.iaas, false)
+            );
+        }
+
         // Connect all Fog nodes bidirectionally.
         for (int i = 0; i < fogNodes.size(); i++) {
             for (int j = i + 1; j < fogNodes.size(); j++) {
@@ -280,6 +290,18 @@ public final class SoSmartSimulation {
         };
 
         Timed.simulateUntil(simulationEndMs + 1L);
+
+        // Finalize energy measurements and calculate total Fog energy in kWh.
+        double totalEnergyKWh = 0.0;
+
+        for (EnergyDataCollector collector : energyCollectors) {
+            collector.stop();
+            collector.tick(0L);
+
+            totalEnergyKWh += collector.energyConsumption / 3_600_000_000.0;
+        }
+
+        SimulationMetrics.getInstance().recordTotalEnergyKWh(totalEnergyKWh);
 
         // Generate the map after all trip and handover events have completed.
         SoSmartTripMapVisualiser.generateMap(
