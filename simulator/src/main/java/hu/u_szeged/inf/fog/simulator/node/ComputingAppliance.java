@@ -122,17 +122,28 @@ public class ComputingAppliance {
         ComputingAppliance.allComputingAppliances.add(this);
     }
 
-    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation, String location, String provider) {
+    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation,
+                              String location, String provider) {
+        this(iaas, geoLocation, location, provider, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Creates a computing appliance with an optional range in kilometers.
+     * Non-positive values represent unlimited range.
+     */
+    public ComputingAppliance(IaaSService iaas, GeoLocation geoLocation,
+                              String location, String provider, long range) {
         this.iaas = iaas;
         this.name = iaas.repositories.get(0).getName().contains("-")
-                ? iaas.repositories.get(0).getName().substring(0, iaas.repositories.get(0).getName().indexOf('-'))
+                ? iaas.repositories.get(0).getName().substring(
+                0, iaas.repositories.get(0).getName().indexOf('-'))
                 : iaas.repositories.get(0).getName();
         this.geoLocation = geoLocation;
         this.location = location;
         this.provider = provider;
         this.neighbors = new ArrayList<>();
         this.applications = new ArrayList<>();
-        this.range = Integer.MAX_VALUE;
+        this.range = range <= 0 ? Integer.MAX_VALUE : range;
         ComputingAppliance.allComputingAppliances.add(this);
     }
 

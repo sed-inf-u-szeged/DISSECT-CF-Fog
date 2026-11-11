@@ -52,6 +52,7 @@ public final class SoSmartSimulation {
 
     private static final int BLOCK_SIZE = 10_000;
     private static final int FOG_LATENCY_MS = 33;
+    private static final long FOG_RANGE_KM = 5L;
 
     private SoSmartSimulation() {
     }
@@ -137,7 +138,8 @@ public final class SoSmartSimulation {
                     ),
                     locations[i],
                     "HU",
-                    "Local"
+                    "Local",
+                    FOG_RANGE_KM
             );
 
             fogNodes.add(fog);

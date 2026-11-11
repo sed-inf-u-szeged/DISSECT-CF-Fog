@@ -10,16 +10,11 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Visualizes planned SO-SMART trips and completed Fog handovers
- * on an interactive Leaflet map.
- * <p>
- * Segment boundaries are approximated using planned distances.
- * Fog service regions represent approximate nearest-node areas,
- * not physical network coverage.
+ * Renders all planned SO-SMART trips and completed handovers on a Leaflet map.
+ * Segment boundaries are approximated along straight origin-destination lines.
+ * Fog circles show the configured ComputingAppliance range in kilometers.
  */
 public final class SoSmartTripMapVisualiser {
-
-    private static final int MAX_MAP_TRIPS = 10;
 
     private SoSmartTripMapVisualiser() {
     }
@@ -63,6 +58,9 @@ public final class SoSmartTripMapVisualiser {
                 .append(".leaflet-popup-content{font:16px/1.6 Arial,sans-serif;min-width:240px}")
                 .append(".leaflet-popup-close-button{font-size:22px!important}")
                 .append(".leaflet-control-zoom a{width:36px;height:36px;line-height:36px;font-size:22px}")
+                .append(".trip-toggle{display:block;width:100%;margin:6px 0 10px;")
+                .append("font:16px Arial,sans-serif;padding:8px 10px;border:1px solid #aaa;")
+                .append("border-radius:4px;background:#f8fafc;cursor:pointer}")
                 .append("</style>\n</head>\n<body>\n<div id='map'></div>\n")
 
                 // Map legend
@@ -73,7 +71,7 @@ public final class SoSmartTripMapVisualiser {
                 .append("<span class='swatch' style='background:green'></span>Node-ok közötti kapcsolat</div><div>")
                 .append("<span class='dot' style='background:#777'></span>Fog node</div><div>")
                 .append("<span class='swatch' style='background:#64748b'></span>")
-                .append("Fog kiszolgálási terület (közelítő)</div><div>")
+                .append("Fog node hatótávolsága</div><div>")
                 .append("<span class='dot' style='background:#007def'></span>Cloud node</div><div>")
                 .append("<span class='dot' style='background:#d32f2f'></span>Utazás kezdete</div><div>")
                 .append("<span class='dot' style='background:#333'></span>Utazás vége</div>")
@@ -95,10 +93,11 @@ public final class SoSmartTripMapVisualiser {
                 .append("const fogRegions=L.layerGroup().addTo(map);\n")
                 .append("const nodes=L.layerGroup().addTo(map);\n")
                 .append("const links=L.layerGroup().addTo(map);\n")
-                .append("const layers={'Fog kiszolgálási területek':fogRegions,")
+                .append("const layers={'Fog node hatótávolságok':fogRegions,")
                 .append("'Fog / Cloud node-ok':nodes,")
                 .append("'Hálózati kapcsolatok':links};\n")
                 .append("const bounds=L.latLngBounds([]);\n")
+                .append("const tripLayers=[];\n")
 
                 // Marker icons matching the existing Fog map
                 .append("const fogIcon=L.AwesomeMarkers.icon({icon:'cloud',prefix:'glyphicon',markerColor:'gray'});\n")
@@ -119,7 +118,8 @@ public final class SoSmartTripMapVisualiser {
             }
         }
 
-        // Draw Fog/Cloud node markers.
+        // Draw Fog/Cloud markers and Fog range circles.
+        int fogCircleIndex = 0;
         for (ComputingAppliance node : visibleNodes.values()) {
             boolean cloud = !fogNames.contains(node.name);
 
@@ -133,6 +133,27 @@ public final class SoSmartTripMapVisualiser {
                     .append("}).bindPopup(")
                     .append(js(node.name))
                     .append(").addTo(nodes);\n");
+
+            // Draw only the real, finite ComputingAppliance range.
+            if (!cloud && node.range > 0 && node.range < Integer.MAX_VALUE) {
+                long radiusMeters = node.range * 1_000L;
+                String circleVar = "fogCircle" + fogCircleIndex++;
+
+                html.append("const ").append(circleVar).append("=L.circle([")
+                        .append(lat).append(',').append(lon)
+                        .append("],{radius:")
+                        .append(radiusMeters)
+                        .append(",pane:'fog-region-pane',color:'#64748b',")
+                        .append("fillColor:'#64748b',fillOpacity:0.12,weight:2})")
+                        .append(".bindPopup(")
+                        .append(js(node.name + " | Hatótáv: " + node.range + " km"))
+                        .append(").addTo(fogRegions);\n");
+
+                // Use the already-added circle to calculate the map bounds.
+                html.append("bounds.extend(")
+                        .append(circleVar)
+                        .append(".getBounds());\n");
+            }
 
             html.append("bounds.extend([")
                     .append(lat).append(',')
@@ -155,9 +176,15 @@ public final class SoSmartTripMapVisualiser {
             }
         }
 
-        // Draw the first trips and their colored travel segments.
-        for (int i = 0; i < Math.min(MAX_MAP_TRIPS, trips.size()); i++) {
-            Trip trip = trips.get(i);
+        // Sort trips by numeric ID instead of alphabetically (Trip-2 before Trip-10).
+        List<Trip> sortedTrips = new ArrayList<>(trips);
+        sortedTrips.sort(Comparator.comparingInt(
+                        (Trip trip) -> tripNumber(trip.getId()))
+                .thenComparing(Trip::getId));
+
+        // Draw all trips and their colored travel segments.
+        for (int i = 0; i < sortedTrips.size(); i++) {
+            Trip trip = sortedTrips.get(i);
             String layer = "trip" + i;
 
             GeoLocation start = trip.getOrigin();
@@ -262,25 +289,57 @@ public final class SoSmartTripMapVisualiser {
                     .append(layer)
                     .append(";\n");
 
-            // Display the first three trips initially.
-            if (i < 3) {
-                html.append(layer).append(".addTo(map);\n");
-            }
+            // Store every trip layer for the global visibility toggle.
+            html.append("tripLayers.push(").append(layer).append(");\n");
+
+            // Display every trip initially.
+            html.append(layer).append(".addTo(map);\n");
 
             boundsExtend(html, start);
             boundsExtend(html, end);
         }
 
-
-        // Draw approximate Fog service regions and add layer controls.
-        appendFogRegions(html, fogNodes);
-        html.append("L.control.layers(null,layers,{collapsed:false}).addTo(map);\n")
+        // Place the global trip toggle inside the top-right layer selector.
+        html.append("const layersControl=L.control.layers(null,layers,{collapsed:false}).addTo(map);\n")
+                .append("const layerList=layersControl.getContainer()")
+                .append(".querySelector('.leaflet-control-layers-list');\n")
+                .append("const tripButton=document.createElement('button');\n")
+                .append("tripButton.type='button';\n")
+                .append("tripButton.className='trip-toggle';\n")
+                .append("layerList.insertBefore(tripButton,layerList.firstChild);\n")
+                .append("L.DomEvent.disableClickPropagation(tripButton);\n")
+                .append("function allTripsVisible(){return tripLayers.every(layer=>map.hasLayer(layer));}\n")
+                .append("function updateTripButton(){tripButton.textContent=allTripsVisible()")
+                .append("?'Összes trip elrejtése':'Összes trip megjelenítése';}\n")
+                .append("tripButton.addEventListener('click',()=>{\n")
+                .append("const hide=allTripsVisible();\n")
+                .append("tripLayers.forEach(layer=>{if(hide){map.removeLayer(layer);}")
+                .append("else{map.addLayer(layer);}});\n")
+                .append("updateTripButton();\n")
+                .append("});\n")
+                .append("map.on('overlayadd overlayremove',updateTripButton);\n")
+                .append("updateTripButton();\n")
                 .append("map.fitBounds(bounds,{padding:[40,40],maxZoom:13});\n")
                 .append("</script>\n</body>\n</html>\n");
 
         Path target = outputFile.toAbsolutePath();
         Files.createDirectories(target.getParent());
         Files.writeString(target, html.toString(), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Extracts the numeric suffix from IDs such as Trip-12.
+     */
+    private static int tripNumber(String tripId) {
+        int separator = tripId.lastIndexOf('-');
+        if (separator < 0 || separator == tripId.length() - 1) {
+            return Integer.MAX_VALUE;
+        }
+        try {
+            return Integer.parseInt(tripId.substring(separator + 1));
+        } catch (NumberFormatException ignored) {
+            return Integer.MAX_VALUE;
+        }
     }
 
     private static void boundsExtend(StringBuilder html, GeoLocation point) {
@@ -350,91 +409,6 @@ public final class SoSmartTripMapVisualiser {
                 );
         }
     }
-
-
-    /**
-     * Draws approximate nearest-Fog service regions using Voronoi cells.
-     * The regions describe the selection rule, not radio coverage.
-     */
-    private static void appendFogRegions(
-            StringBuilder html,
-            List<ComputingAppliance> fogNodes) {
-
-        String[] colors = {"#64748b", "#789879", "#aa8393"};
-
-        html.append("const fogSites=[");
-
-        for (int i = 0; i < fogNodes.size(); i++) {
-            ComputingAppliance fog = fogNodes.get(i);
-
-            if (i > 0) {
-                html.append(",");
-            }
-
-            html.append("{lat:")
-                    .append(fog.geoLocation.latitude)
-                    .append(",lon:")
-                    .append(fog.geoLocation.longitude)
-                    .append(",name:")
-                    .append(js(fog.name))
-                    .append(",color:")
-                    .append(js(colors[i % colors.length]))
-                    .append("}");
-        }
-
-        html.append("];\n")
-                .append("if(fogSites.length>0){\n")
-                .append("const scale=Math.max(0.01,Math.cos(")
-                .append("fogSites[0].lat*Math.PI/180));\n")
-                .append("const regionBounds=bounds.pad(0.3);\n")
-                .append("const frame=[")
-                .append("[regionBounds.getWest()*scale,regionBounds.getSouth()],")
-                .append("[regionBounds.getEast()*scale,regionBounds.getSouth()],")
-                .append("[regionBounds.getEast()*scale,regionBounds.getNorth()],")
-                .append("[regionBounds.getWest()*scale,regionBounds.getNorth()]")
-                .append("];\n")
-
-                .append("function clipRegion(poly,a,b){\n")
-                .append("const nx=(b.lon-a.lon)*scale,ny=b.lat-a.lat;\n")
-                .append("const mx=(a.lon+b.lon)*scale/2;")
-                .append("const my=(a.lat+b.lat)/2;\n")
-                .append("const score=p=>(p[0]-mx)*nx+(p[1]-my)*ny;\n")
-                .append("const result=[];\n")
-                .append("for(let i=0;i<poly.length;i++){\n")
-                .append("const prev=poly[(i+poly.length-1)%poly.length];\n")
-                .append("const curr=poly[i];\n")
-                .append("const v0=score(prev),v1=score(curr);\n")
-                .append("const in0=v0<=0,in1=v1<=0;\n")
-                .append("if(in0!==in1){\n")
-                .append("const t=v0/(v0-v1);\n")
-                .append("result.push([")
-                .append("prev[0]+(curr[0]-prev[0])*t,")
-                .append("prev[1]+(curr[1]-prev[1])*t]);\n")
-                .append("}\n")
-                .append("if(in1)result.push(curr);\n")
-                .append("}\n")
-                .append("return result;\n")
-                .append("}\n")
-
-                .append("fogSites.forEach((site,i)=>{\n")
-                .append("let poly=frame.map(p=>p.slice());\n")
-                .append("fogSites.forEach((other,j)=>{\n")
-                .append("if(i!==j)poly=clipRegion(poly,site,other);\n")
-                .append("});\n")
-                .append("if(poly.length>=3){\n")
-                .append("L.polygon(")
-                .append("poly.map(p=>[p[1],p[0]/scale]),")
-                .append("{pane:'fog-region-pane',")
-                .append("color:site.color,")
-                .append("fillColor:site.color,")
-                .append("fillOpacity:0.13,weight:2})")
-                .append(".bindPopup(site.name+' - legközelebbi Fog node területe')")
-                .append(".addTo(fogRegions);\n")
-                .append("}\n")
-                .append("});\n")
-                .append("}\n");
-    }
-
 
     private static String js(String value) {
         return "\"" + value
