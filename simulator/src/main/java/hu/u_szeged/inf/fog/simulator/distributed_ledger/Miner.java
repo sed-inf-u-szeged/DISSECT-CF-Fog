@@ -19,7 +19,6 @@ import hu.u_szeged.inf.fog.simulator.distributed_ledger.task.tx.ValidateTransact
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.transaction_selection_strategy.TransactionSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.distributed_ledger.validation_strategy.ValidationStrategy;
 import hu.u_szeged.inf.fog.simulator.node.ComputingAppliance;
-import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import org.eclipse.collections.impl.bimap.mutable.HashBiMap;
 
@@ -118,10 +117,6 @@ public class Miner extends Timed {
     public void stopVm() throws VirtualMachine.StateChangeException {
         if (this.localVm != null && this.localVm.getState().equals(VirtualMachine.State.RUNNING)) {
             this.localVm.switchoff(true);
-            EnergyDataCollector ec = EnergyDataCollector.getEnergyCollector(this.computingAppliance.iaas);
-            if (ec != null) {
-                ec.stop();
-            }
         }
     }
 

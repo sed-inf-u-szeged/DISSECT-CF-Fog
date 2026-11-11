@@ -132,11 +132,12 @@ public class ProofOfStakeSimulation {
 
         Timed.simulateUntil(3_000_001L);
 
-        // Calculate total energy consumption.
+        // Finalize energy measurements and calculate total energy consumption.
         double totalEnergy = 0.0;
 
         for (EnergyDataCollector ec : EnergyDataCollector.energyCollectors) {
-            totalEnergy += ec.energyConsumption / 1000.0 / 3_600_000.0;
+            ec.stop();
+            totalEnergy += ec.energyConsumption / 3_600_000_000.0;
         }
 
         // Record energy before printing the metrics.
