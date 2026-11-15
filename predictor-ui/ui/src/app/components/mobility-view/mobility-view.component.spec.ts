@@ -133,6 +133,26 @@ describe('Mobility replay chart caching', () => {
     expect(c.errorMaximum).toBe(500);
   });
 
+  it('switches shadow forecasts and matures comparison errors without changing serving ownership', () => {
+    const run = makeRun();
+    run.comparison = {methods:['TCN','XGBoost'],versions:[],predictions:[
+      {model:'TCN',model_version:'v0001',device_id:0,origin_ms:100,target_ms:200,origin_node:'a',predicted_latitude_deg:.001,predicted_longitude_deg:.002},
+      {model:'XGBoost',model_version:'v0001',device_id:0,origin_ms:100,target_ms:200,origin_node:'a',predicted_latitude_deg:.003,predicted_longitude_deg:.004}],
+      evaluations:[{model:'TCN',model_version:'v0001',origin_ms:100,target_ms:200,actual_latitude_deg:.001,actual_longitude_deg:.002,position_error_m:0,predict_wall_ms:2}]};
+    c.run = run; c.ngOnChanges(); c.model='TCN';
+    expect(c.methods.length).toBe(5); expect(c.shownForecast?.predicted_latitude_deg).toBe(.001);
+    expect(c.comparisonMetrics.find(m=>m.model==='TCN')?.count).toBe(0);
+    expect(c.latestPositionEvaluation).toBeUndefined();
+    c.model='XGBoost'; expect(c.shownForecast?.predicted_latitude_deg).toBe(.003);
+    c.choose(1); c.model='TCN';
+    expect(c.comparisonMetrics.find(m=>m.model==='TCN')?.count).toBe(1);
+    expect(c.comparisonTime('TCN')).toBe(2); expect(c.latestPositionEvaluation?.position_error_m).toBe(0);
+    expect(c.comparisonTime('HoldPosition')).toBeNull();
+    c.errorVersion='v0002'; expect(c.comparisonMetrics.find(m=>m.model==='TCN')?.count).toBe(0);
+    c.choose(2); expect(c.shownForecast).toBeUndefined();
+    expect(run.learning!.summary.promotions).toBe(0); expect(run.learning!.summary.active_lstm).toBeFalse();
+  });
+
   it('keeps load-counter reads linear and does not rescan on an unrelated device switch', () => {
     const run=makeRun(); let reads=0;
     run.frames=Array.from({length:128},(_,i)=>({time_ms:100+i,sample_kind:'OBSERVATION',

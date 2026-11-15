@@ -10,8 +10,11 @@ const {
 } = require('fs');
 const path = require('path');
 let mobilityRunDirectory = process.env.DISSECT_MOBILITY_RUN_DIR?.trim();
-const sqlite3 = mobilityRunDirectory ? null : require('sqlite3').verbose();
+const sqlite3 = mobilityRunDirectory || process.env.DISSECT_MOBILITY_CONFIGURE === '1' ? null : require('sqlite3').verbose();
 const { readMobilityRun } = require('./mobility-results');
+const { MobilityJob } = require('./mobility-job');
+const { Worker } = require('node:worker_threads');
+const configureMobility = process.env.DISSECT_MOBILITY_CONFIGURE === '1';
 
 let win;
 let db = null;
@@ -19,6 +22,39 @@ let dbPath = null;
 let refreshTimer = null;
 let refreshInProgress = false;
 let lastSentData = '';
+let closeAfterMobilityRun = false;
+const send = (channel, value) => { if (win && !win.isDestroyed()) win.webContents.send(channel, value); };
+const mobilityJob = new MobilityJob({
+  root: path.resolve(__dirname, '..', '..'),
+  onStatus: value => {
+    send('mobility-job-updated', value);
+    if (!value.active && closeAfterMobilityRun && win && !win.isDestroyed()) win.close();
+  },
+  onLive: value => send('mobility-live-updated', value),
+  onComplete: (directory, stillCurrent) => new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, 'mobility-result-worker.js'), {workerData: directory});
+    let delivered = false;
+    worker.once('message', message => {
+      delivered = true;
+      if (message.error) { reject(new Error(message.error)); return; }
+      if (stillCurrent()) { mobilityRunDirectory = directory; send('mobility-updated', message.run); }
+      resolve();
+    });
+    worker.once('error', reject);
+    worker.once('exit', code => { if (!delivered) reject(new Error('Result reader exited: ' + code)); });
+  })
+});
+function trusted(event) { return win && event.sender === win.webContents; }
+ipcMain.handle('get-mobility-job', event => {
+  if (!trusted(event)) throw new Error('Unknown UI');
+  return {...mobilityJob.snapshot(), configure: configureMobility && !mobilityRunDirectory};
+});
+ipcMain.handle('start-mobility-job', (event, request) => {
+  if (!trusted(event)) throw new Error('Unknown UI');
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  return mobilityJob.start(request);
+});
+ipcMain.handle('cancel-mobility-job', event => trusted(event) && mobilityJob.cancel());
 
 const predictionsForFeature = new Map();
 const simulationResultsPath = path.join(
@@ -32,6 +68,7 @@ const selectedDatabasePath = configuredDatabasePath
 
 ipcMain.handle('open-mobility-run', async (event) => {
   if (!win || event.sender !== win.webContents) return false;
+  if (mobilityJob.active) throw new Error('Finish or cancel the active mobility run first');
   const selection = await dialog.showOpenDialog(win, {
     title: 'Open a completed mobility run',
     defaultPath: mobilityRunDirectory || simulationResultsPath,
@@ -52,6 +89,7 @@ ipcMain.handle('open-mobility-run', async (event) => {
 });
 
 const createWindow = () => {
+  closeAfterMobilityRun = false;
   win = new BrowserWindow({
     width: 1400,
     height: 850,
@@ -70,6 +108,7 @@ const createWindow = () => {
 
   win.webContents.once('did-finish-load', () => {
     lastSentData = '';
+    if (mobilityJob.active) return;
     if (mobilityRunDirectory) {
       try {
         win.webContents.send('mobility-updated', readMobilityRun(mobilityRunDirectory));
@@ -78,6 +117,7 @@ const createWindow = () => {
       }
       return;
     }
+    if (configureMobility) return;
     fetchAndSendData();
     if (refreshTimer) {
       clearInterval(refreshTimer);
@@ -91,6 +131,22 @@ const createWindow = () => {
       clearInterval(refreshTimer);
       refreshTimer = null;
     }
+  });
+  let closePrompt = false;
+  win.on('close', event => {
+    if (!mobilityJob.active) return;
+    event.preventDefault();
+    if (closeAfterMobilityRun || closePrompt) return;
+    closePrompt = true;
+    dialog.showMessageBox(win, {type:'question',buttons:['Keep running','Stop and close'],defaultId:0,cancelId:0,
+      message:'A mobility run is still active.',detail:'Stop this run before closing? Its partial output and logs will be kept.'})
+      .then(answer => {
+        if (answer.response === 1) {
+          closeAfterMobilityRun = true;
+          mobilityJob.cancel();
+          if (!mobilityJob.active && win) win.close();
+        }
+      }).catch(error => send('data-error', error.message)).finally(() => { closePrompt = false; });
   });
 };
 
@@ -338,7 +394,7 @@ async function connectToDatabase() {
 }
 
 async function fetchAndSendData() {
-  if (mobilityRunDirectory) return;
+  if (mobilityRunDirectory || configureMobility || mobilityJob.active) return;
   if (refreshInProgress) {
     return;
   }

@@ -11,6 +11,23 @@ import java.util.stream.Stream;
 public final class MobilityUiLauncher {
     private MobilityUiLauncher() { }
 
+    /** Opens configuration before simulation, without needing a result directory. */
+    public static Process configure() throws IOException {
+        Path ui = ProjectPathResolver.getPredictorUiDirectory();
+        if (!Files.isDirectory(ui.resolve("node_modules"))) {
+            throw new IOException("UI dependencies are missing. Run npm ci in " + ui);
+        }
+        Path logs = ui.getParent().getParent().resolve("simulator/sim_res/mobility-ui");
+        Files.createDirectories(logs);
+        ProcessBuilder process = createProcess(ui, logs,
+                needsBuild(ui) ? "electron:build_and_run" : "electron:run",
+                System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win"));
+        process.environment().remove("DISSECT_MOBILITY_RUN_DIR");
+        process.environment().put("DISSECT_MOBILITY_CONFIGURE", "1");
+        System.out.println("Opening mobility configuration. UI log: " + logs.resolve("electron.log"));
+        return process.start();
+    }
+
     public static Process open(Path resultDirectory) throws IOException {
         Path ui = ProjectPathResolver.getPredictorUiDirectory();
         if (!Files.isDirectory(ui.resolve("node_modules"))) {
@@ -30,6 +47,7 @@ public final class MobilityUiLauncher {
                 : new ProcessBuilder("npm", "run", script);
         process.directory(ui.toFile());
         process.environment().put("DISSECT_MOBILITY_RUN_DIR", resultDirectory.toAbsolutePath().normalize().toString());
+        process.environment().remove("DISSECT_MOBILITY_CONFIGURE");
         process.environment().remove("DISSECT_DATABASE_PATH");
         process.redirectErrorStream(true);
         process.redirectOutput(resultDirectory.resolve("electron.log").toFile());

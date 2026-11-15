@@ -37,10 +37,10 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
   @ViewChild('content') content?: ElementRef<HTMLElement>;
   @ViewChild('versionDetails') versionDetails?: ElementRef<HTMLDetailsElement>;
   index = 0;
-  model: 'velocity' | 'hold' | 'lstm' | 'selected' = 'velocity';
+  model: string = 'velocity';
   errorVersion = '';
-  readonly methods: MobilityMethod[] = ['HoldPosition', 'ConstantVelocity', 'LSTM'];
-  readonly methodColors: Record<MobilityMethod, string> = { HoldPosition: '#ffd174', ConstantVelocity: '#61b8ac', LSTM: '#ff7395' };
+  get methods(): MobilityMethod[] { return ['HoldPosition', 'ConstantVelocity', 'LSTM', ...(this.run.comparison?.methods ?? [])]; }
+  readonly methodColors: Record<MobilityMethod, string> = { HoldPosition: '#ffd174', ConstantVelocity: '#61b8ac', LSTM: '#ff7395', 'IMM/Kalman': '#8ac6ff', XGBoost: '#c99aff', TCN: '#ff9b65' };
   readonly stateLabel = stateLabel;
   showActual = true;
   showFuture = true;
@@ -104,6 +104,7 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
   get shownForecast(): PositionPrediction | undefined {
     if (this.final) return undefined;
     const learning = this.run.learning;
+    if (this.run.comparison?.methods.some(m => m === this.model)) return this.run.comparison.predictions.find(p => p.origin_ms <= this.frame.time_ms && p.target_ms > this.frame.time_ms && p.model === this.model);
     if (learning) return this.model === 'selected'
       ? learning.selectedPredictions.find(p => p.origin_ms <= this.frame.time_ms && p.target_ms > this.frame.time_ms)
       : learning.predictions.find(p => p.origin_ms <= this.frame.time_ms && p.target_ms > this.frame.time_ms && p.model === this.method);
@@ -113,7 +114,7 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
       predicted_latitude_deg: this.model === 'hold' ? p.hold_latitude : p.velocity_latitude,
       predicted_longitude_deg: this.model === 'hold' ? p.hold_longitude : p.velocity_longitude } : undefined;
   }
-  get method(): MobilityMethod { return this.model === 'hold' ? 'HoldPosition' : this.model === 'lstm' ? 'LSTM' : 'ConstantVelocity'; }
+  get method(): MobilityMethod { return this.model === 'hold' ? 'HoldPosition' : this.model === 'lstm' ? 'LSTM' : this.run.comparison?.methods.find(m => m === this.model) ?? 'ConstantVelocity'; }
   get targetObservation() { return this.run.observations.find(o => o.time_ms === this.shownForecast?.target_ms); }
   get originCoverage() { return this.run.nodes.find(n => n.name === this.shownForecast?.origin_node); }
   get lifecycle() { return this.run.learning ? lifecycleAt(this.run.learning, this.frame.time_ms) : undefined; }
@@ -125,6 +126,7 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
   }
   get latestPositionEvaluation() {
     const data = this.run.learning;
+    if (this.run.comparison?.methods.some(m => m === this.model)) return this.run.comparison.evaluations.filter(e => e.model === this.model && e.target_ms <= this.frame.time_ms).at(-1);
     return (this.model === 'selected' ? data?.selectedEvaluations : data?.evaluations.filter(e => e.model === this.method))
       ?.filter(e => e.target_ms <= this.frame.time_ms).slice(-1)[0];
   }
@@ -132,8 +134,8 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
     const {learning, frames} = this.run, time = this.frame.time_ms, version = this.errorVersion;
     if (this.errorCache && this.errorCache.learning === learning && this.errorCache.frames === frames
       && this.errorCache.time === time && this.errorCache.version === version) return this.errorCache;
-    const rows = learning?.evaluations.filter(e => e.target_ms <= time
-      && (!version || e.model_version === version)) ?? [];
+    const rows = [...(learning?.evaluations ?? []), ...(this.run.comparison?.evaluations ?? [])].filter(e => e.target_ms <= time
+      && (!version || e.model_version === version));
     let largest = 0;
     for (const row of rows) largest = Math.max(largest, row.position_error_m);
     const unit = largest ? 10 ** Math.floor(Math.log10(largest)) : 1;
@@ -145,6 +147,10 @@ export class MobilityViewComponent implements OnChanges, OnDestroy {
   }
   get errorRows() { return this.errorChart.rows; }
   get comparisonMetrics() { return this.errorChart.metrics; }
+  comparisonTime(model: MobilityMethod): number | null {
+    const rows = this.errorChart.rows.filter(r => r.model === model && r.predict_wall_ms !== undefined);
+    return rows.length ? rows.reduce((s,r) => s + r.predict_wall_ms!, 0) / rows.length : null;
+  }
   get selectedMetrics() { return positionMetrics(this.run.learning?.selectedEvaluations.filter(e => e.target_ms <= this.frame.time_ms) ?? []); }
   get errorMaximum() { return this.errorChart.maximum; }
   errorTick(value: number) { return value.toFixed(Math.max(0, Math.min(6, 1 - Math.floor(Math.log10(this.errorMaximum))))); }

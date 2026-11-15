@@ -73,6 +73,8 @@ public final class MobilityLifecycleAdapter implements AutoCloseable {
     private boolean forecastReceived;
     private boolean finished;
     private boolean failed;
+    private Double lastSelectedError;
+    private long lastSelectedTarget = -1;
 
     /** The manager is shared with load prediction; no global reset is performed. */
     public MobilityLifecycleAdapter(LifecycleManager manager, Path output,
@@ -146,6 +148,8 @@ public final class MobilityLifecycleAdapter implements AutoCloseable {
         if (pendingSelection != null) {
             Selection selection = pendingSelection;
             double error = distance(selection.point, point);
+            lastSelectedError = error;
+            lastSelectedTarget = time;
             selectedEvaluations.write(selection.origin + "," + time + "," + selection.model + ","
                     + selection.version + "," + latitude + "," + longitude + "," + error + "\n");
             selectedEvaluations.flush();
@@ -203,6 +207,24 @@ public final class MobilityLifecycleAdapter implements AutoCloseable {
     }
 
     public boolean isClosedLoop() { return closedLoop; }
+
+    /** Read-only live display, containing only observations and decisions already made. */
+    public JSONObject preview() throws JSONException {
+        JSONObject result = new JSONObject().put("serving", current != null
+                && current.predictor.equals(manager.getActivePredictorName(feature)) ? "LSTM" : "HoldPosition")
+                .put("candidate", current == null ? "" : current.name)
+                .put("state", current == null ? "COLLECTING" : current.coordinator.getState().name())
+                .put("matched", current == null ? 0 : current.matched)
+                .put("promotions", promotions).put("fallbacks", fallbacks)
+                .put("error_m", lastSelectedError == null ? JSONObject.NULL : lastSelectedError)
+                .put("error_target_ms", lastSelectedTarget);
+        if (pendingSelection != null) {
+            result.put("forecast", new JSONObject().put("model", pendingSelection.model)
+                    .put("origin_ms", pendingSelection.origin).put("target_ms", pendingSelection.target)
+                    .put("latitude", pendingSelection.point[0]).put("longitude", pendingSelection.point[1]));
+        }
+        return result;
+    }
 
     /** Send one decision after matching actual targets, before accepting training. */
     public String control() throws IOException, JSONException {

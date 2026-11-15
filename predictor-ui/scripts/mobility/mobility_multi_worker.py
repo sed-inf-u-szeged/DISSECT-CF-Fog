@@ -5,6 +5,7 @@ import csv
 import gc
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -55,7 +56,7 @@ class TimedModel:
 
 
 class DeviceSession:
-    def __init__(self, output, run_id, device_id, policy_path, expected, trainer, reply):
+    def __init__(self, output, run_id, device_id, policy_path, expected, trainer, reply, methods=(), tf=None):
         self.output, self.run_id, self.device_id = output, run_id, device_id
         self.expected, self.now = expected, -1
         self.stack = ExitStack()
@@ -64,6 +65,7 @@ class DeviceSession:
         self.policy_path, self.issued, self.finished = policy_path, 0, False
         self.reply = DeviceReply(reply, device_id)
         self.observer = None
+        self.comparison = None
         self.times = {"TRAIN": [], "PREDICT": []}
         try:
             self.raw_stream = self.stack.enter_context((output / "online_observations.csv").open("x", encoding="utf-8", newline=""))
@@ -82,6 +84,9 @@ class DeviceSession:
                 return TimedModel(model, self)
 
             self.observer = ClosedLoopObserver(output, timed_trainer, self.reply, expected)
+            if methods:
+                from mobility_comparison_models import ComparisonSession
+                self.comparison = ComparisonSession(output, list(methods), tf, run_id, device_id)
             self.save("RUNNING")
         except BaseException:
             self.close()
@@ -111,12 +116,21 @@ class DeviceSession:
         self.now = int(row["time_ms"])
         self.raw.writerow(row)
         self.raw_stream.flush()
+        if self.comparison:
+            self.comparison.observe(row)
         self.observer.observe(row)
         if labelled is not None:
             self.samples.write(json.dumps(labelled.record(), allow_nan=False) + "\n")
             self.samples.flush()
         old = self.observer.current
         self.observer.control(command, self.buffer)
+        if self.comparison and command["action"] == "TRAIN":
+            request = self.buffer.scheduled_request(command["request_number"], command["window_size"], self.now)
+            self.comparison.fit(request, self.output / ("scheduled-request-%04d.json" % command["request_number"]))
+        if self.comparison:
+            if pending is not None:
+                self.comparison.predict(pending)
+            print("COMPARISON\t" + json.dumps(self.comparison.preview(self.now), allow_nan=False, separators=(",", ":")), file=self.reply, flush=True)
         if old is not None and old != self.observer.current:
             self.observer.versions[old]["model"].release()
             gc.collect()
@@ -137,6 +151,8 @@ class DeviceSession:
                 "Incomplete per-device observation stream")
         require(sha256(self.policy_path) == self.policy_hash, "Training policy changed")
         self.observer.finish()
+        if self.comparison:
+            self.comparison.finish(self.expected)
         self.finished = True
         metrics = {key.lower(): dict(count=len(values), total_seconds=sum(values),
                    mean_ms=float(np.mean(values) * 1000) if values else None,
@@ -154,10 +170,12 @@ class DeviceSession:
     def close(self):
         if self.observer is not None:
             self.observer.close()
+        if self.comparison is not None:
+            self.comparison.close()
         self.stack.close()
 
 
-def serve_multi(policy, output, run_id, count, expected, trainer, stream, reply):
+def serve_multi(policy, output, run_id, count, expected, trainer, stream, reply, methods=(), tf=None):
     require(type(count) is int and 1 <= count <= 100 and 105 <= expected <= 1441, "Invalid device or observation count")
     require(run_id and TrainingPolicy(**read_json(policy)) == TrainingPolicy(), "Invalid run identity or policy")
     state = dict(schema_version=1, status="RUNNING", run_id=run_id, device_count=count,
@@ -170,7 +188,7 @@ def serve_multi(policy, output, run_id, count, expected, trainer, stream, reply)
         for i in range(count):
             child = output / "devices" / str(i)
             child.mkdir(parents=True, exist_ok=True)
-            sessions[str(i)] = DeviceSession(child, run_id, str(i), policy, expected, trainer, reply)
+            sessions[str(i)] = DeviceSession(child, run_id, str(i), policy, expected, trainer, reply, methods, tf)
         print("READY\t" + PROTOCOL, file=reply, flush=True)
         lines, ended, tick = iter(stream), False, None
         for line in lines:
@@ -221,8 +239,11 @@ def main():
     try:
         with redirect_stdout(sys.stderr):
             tf = tensorflow_runtime()
+        from mobility_comparison_models import validate_methods, preflight
+        methods = validate_methods(json.loads(os.environ.get("MOBILITY_COMPARISON_MODELS", "[]")))
+        preflight(methods)
         serve_multi(args.training, args.output, args.run_id, args.devices, args.observations,
-                    lambda request, snapshot, directory: OnlineLstm.fit(tf, request, snapshot, directory), sys.stdin, sys.stdout)
+                    lambda request, snapshot, directory: OnlineLstm.fit(tf, request, snapshot, directory), sys.stdin, sys.stdout, methods, tf)
         return 0
     except Exception:
         traceback.print_exc(file=sys.stderr)

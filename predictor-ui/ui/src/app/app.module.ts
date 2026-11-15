@@ -1,4 +1,5 @@
 import { MobilityViewComponent } from './components/mobility-view/mobility-view.component';
+import { MobilityLauncherComponent } from './components/mobility-launcher/mobility-launcher.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -46,6 +47,7 @@ import { RunSummaryComponent } from './components/run-summary/run-summary.compon
   ],
   imports: [
     BrowserModule,
+    MobilityLauncherComponent,
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,

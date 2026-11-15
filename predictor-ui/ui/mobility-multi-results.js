@@ -35,6 +35,10 @@ function readMultiMobilityRun(root, build, required, learning) {
     for (const name of new Set([...required, ...learning.files])) {
       if (!(name in texts)) texts[name] = read(entry.path + '/' + name);
     }
+    const comparison = require('./mobility-comparison-results');
+    if (comparison.files.some(name => fs.existsSync(path.join(root,entry.path,name)))) {
+      for (const name of comparison.files) texts[name] = read(entry.path + '/' + name);
+    }
     const data = build(texts, path.basename(root) + ' / Device ' + id, {sharedFrames: true});
     check(data.observations.every(r => r.device_id === i) && data.learning?.device_id === i
       && data.learning.run_id === manifest.run_id && data.learning.samples.length === manifest.expected_observations_per_device,
@@ -45,6 +49,7 @@ function readMultiMobilityRun(root, build, required, learning) {
     check(data.props.device_id === id, 'device metadata differs');
     if (!first) first = data;
     else {
+      check(JSON.stringify(data.comparison?.methods) === JSON.stringify(first.comparison?.methods), 'comparison model selection differs across devices');
       // Shared load data is validated above, then retained only once in the UI payload.
       data.frames = first.frames; data.transfers = first.transfers; data.nodes = first.nodes;
     }

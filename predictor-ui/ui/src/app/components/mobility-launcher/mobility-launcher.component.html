@@ -1,0 +1,64 @@
+<section class="mobility-launcher">
+  <header><div><h2>{{ stageLabel }}</h2><p>Official simulator movement · 60-second position forecasts</p></div>
+    <button *ngIf="!state.active" type="button" (click)="dismissed.emit()">Close</button>
+    <button *ngIf="state.active" type="button" [disabled]="state.stage==='CANCELLING'" (click)="cancel()">{{state.stage==='CANCELLING'?'Stopping…':'Cancel run'}}</button>
+  </header>
+  <p class="error" role="alert" *ngIf="error">{{error}}</p>
+  <form *ngIf="!state.active" (ngSubmit)="run()" #runForm="ngForm">
+    <div class="fields">
+      <label>Movement strategy<select name="strategy" [(ngModel)]="strategy" required><option value="" disabled>Select a strategy</option><option value="random-walk">Random walk</option><option value="nomadic">Nomadic · waypoints</option></select></label>
+      <label>Devices<input name="devices" type="number" min="1" max="100" step="1" required [(ngModel)]="config.devices"></label>
+      <label>Movement duration / min<input name="minutes" type="number" min="104" max="1440" step="1" required [(ngModel)]="config.minutes"></label>
+    </div>
+    <p *ngIf="strategy==='random-walk'">Each device chooses random directions and speeds within its movement radius.</p>
+    <p *ngIf="strategy==='nomadic'">Each device follows the configured waypoints. It stays at the last point unless route repetition is enabled.</p>
+    <div class="fields" *ngIf="strategy==='random-walk'">
+      <label>Minimum speed / m/s<input name="speedMin" type="number" min="0" max="50" step="0.1" required [(ngModel)]="config.speedMin"></label>
+      <label>Maximum speed / m/s<input name="speedMax" type="number" [min]="config.speedMin" max="50" step="0.1" required [(ngModel)]="config.speedMax"></label>
+      <label>Movement radius / m<input name="radius" type="number" min="1" max="10000" required [(ngModel)]="config.radius"></label>
+    </div>
+    <div class="fields" *ngIf="strategy==='nomadic'">
+      <label>Speed / m/s<input name="speed" type="number" min="0.1" max="50" step="0.1" required [(ngModel)]="config.speed"></label>
+      <label class="route">Waypoints / m · east,north<textarea name="waypoints" rows="4" required [(ngModel)]="waypointsText"></textarea><small>Start at 0,0. Use one pair per line.</small></label>
+      <label class="check"><input name="repeatRoute" type="checkbox" [(ngModel)]="config.repeatRoute">Repeat closed route</label>
+    </div>
+    <fieldset><legend>Additional prediction models · shadow comparison</legend><label class="model-choice" *ngFor="let m of additionalModels"><input type="checkbox" [name]="'model-'+m" [(ngModel)]="modelEnabled[m]"> {{m}}</label>
+      <p>HoldPosition, ConstantVelocity and LSTM remain available. Selected models share the same eight-point history, 60-second targets and LSTM training snapshots.</p></fieldset>
+    <details><summary>Advanced settings</summary><div class="fields">
+      <label>Random seed<input name="seed" type="number" min="0" max="2147483647" step="1" required [(ngModel)]="config.seed"></label>
+      <label>Task drain allowance / min<input name="drainMinutes" type="number" min="1" max="1440" step="1" required [(ngModel)]="config.drainMinutes"></label>
+      <label>Start latitude / °<input name="latitude" type="number" min="-85" max="85" step="any" required [(ngModel)]="config.latitude"></label>
+      <label>Start longitude / °<input name="longitude" type="number" min="-180" max="180" step="any" required [(ngModel)]="config.longitude"></label>
+      <label class="wide">Python interpreter · optional<input name="python" type="text" placeholder="Use the active Python / conda environment" [(ngModel)]="pythonExecutable"></label>
+    </div><p>The drain allowance lets outstanding tasks finish after movement sampling ends. It does not add training samples.</p></details>
+    <p>Prediction: HoldPosition and ConstantVelocity baselines, with the existing LSTM training, qualification and fallback process.</p>
+    <p>At least 104 minutes are required by the current lifecycle audit. Results and configuration are saved automatically.</p>
+    <button class="primary" type="submit" [disabled]="!runForm.valid || submitting">{{submitting?'Starting…':'Run mobility'}}</button>
+  </form>
+  <div class="status" *ngIf="state.id"><span>{{elapsed}} s elapsed</span><span>{{observed}} observations received</span><span *ngIf="meta">{{progress | number:'1.0-1'}}% of scheduled observations</span></div>
+  <progress *ngIf="state.active" max="100" [value]="progress"></progress>
+  <p *ngIf="state.active && !meta">Preparing the runtime and prediction worker. Live data will appear as observations arrive.</p>
+  <p *ngIf="state.stage==='CANCELLED'">Cancelled. Partial files and logs are kept; this run is not marked complete.</p>
+  <div *ngIf="meta" class="live">
+    <div class="plot">
+      <div class="plot-title"><strong>Live trajectory</strong><label>Device<select aria-label="Live device" [(ngModel)]="selectedDevice" (ngModelChange)="refreshChart()"><option *ngFor="let id of devices" [ngValue]="id">Device {{id}}</option></select></label><span>{{(latest?.time_ms || 0)/60000 | number:'1.2-2'}} min</span></div>
+      <div class="legend"><span>— Actual</span><label>Shown forecast <select aria-label="Live prediction model" [(ngModel)]="previewModel" (ngModelChange)="refreshChart()"><option value="selected">System selected</option><option *ngFor="let m of state.config?.models" [value]="m">{{m}} · shadow</option></select></label></div>
+      <svg viewBox="0 0 980 555" role="img" aria-label="Current device trajectory and node coverage">
+        <g *ngFor="let node of circles"><circle [attr.cx]="node.x" [attr.cy]="node.y" [attr.r]="node.r" [attr.stroke]="node.color" [attr.fill]="node.color" fill-opacity=".06" stroke-width="1.5"/><rect [attr.x]="node.x-4" [attr.y]="node.y-4" width="8" height="8" [attr.fill]="node.color"/><text [attr.x]="node.x" [attr.y]="node.y+24" text-anchor="middle">{{node.name}}</text></g>
+        <path [attr.d]="path" fill="none" stroke="#ffd174" stroke-width="2.3"/>
+        <path [attr.d]="forecastPath" fill="none" stroke="#ff527d" stroke-width="2" stroke-dasharray="5 3"/>
+        <circle *ngIf="marker" [attr.cx]="marker.x" [attr.cy]="marker.y" r="5" fill="#ffd174"/>
+        <circle *ngIf="target" [attr.cx]="target.x" [attr.cy]="target.y" r="5" fill="#ff527d"/>
+        <text x="490" y="542" text-anchor="middle">East / m · local coordinates · North ↑</text>
+      </svg>
+      <p *ngIf="!(points.get(selectedDevice)?.length)">Waiting for this device's first observation.</p>
+      <p *ngIf="latest && !latest.sampled">Movement sampling has ended for this device. The displayed path stays at its last sample while remaining tasks finish.</p>
+    </div>
+    <aside><div class="card"><strong>This device</strong><p>Connection <b>{{latest?.connection || 'Waiting'}}</b></p><p>Serving <b>{{latest?.lifecycle?.serving || 'HoldPosition'}}</b></p><p>Candidate <b>{{latest?.lifecycle?.candidate || 'Not trained yet'}}</b></p><p>State <b>{{latest?.lifecycle?.state || 'Collecting history'}}</b></p><p>Matched targets <b>{{latest?.lifecycle?.matched || 0}} / 64</b></p><p *ngIf="latest?.lifecycle?.error_m != null">Latest error <b>{{latest?.lifecycle?.error_m | number:'1.2-2'}} m</b></p></div>
+      <div class="card" *ngIf="latest?.comparison as c"><strong>Shadow comparison</strong><p>{{c.matched}} matched targets per method</p><p *ngFor="let e of c.latest">{{e.model}} <b>{{e.position_error_m | number:'1.2-2'}} m</b></p><p *ngIf="!c.matched">Collecting training samples and future targets.</p></div>
+      <div class="card" *ngFor="let node of load?.nodes"><strong>{{node.node}} · all devices</strong><p>Waiting data <b>{{node.waiting_bytes | number}} B</b></p><p>Running tasks <b>{{node.running_tasks}}</b></p><p>Completed tasks <b>{{node.completed_tasks}}</b></p></div>
+      <p>Live preview. Final metrics are verified after the run, then opened automatically.</p>
+    </aside>
+  </div>
+  <details *ngIf="state.session"><summary>Run files and diagnostics</summary><p class="file">{{state.session}}</p><p>runner.log contains simulation and audit output; launcher.log contains startup errors.</p><p class="file" *ngIf="state.output">Results: {{state.output}}</p></details>
+</section>

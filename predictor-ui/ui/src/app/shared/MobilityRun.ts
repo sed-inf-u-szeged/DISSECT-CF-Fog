@@ -34,19 +34,26 @@ export interface MobilityRun {
   evaluations: MobilityEvaluation[]; frames: MobilityFrame[];
   transfers: MobilityTransfer[]; summary: MobilitySummary[];
   learning?: MobilityLearningRun;
+  comparison?: MobilityComparisonRun;
   devices?: { id: number; data: MobilityRun }[];
   multi?: { run_id: string; device_count: number; status: string };
 }
 
-export type MobilityMethod = 'HoldPosition' | 'ConstantVelocity' | 'LSTM';
+export type ComparisonMethod = 'IMM/Kalman' | 'XGBoost' | 'TCN';
+export type MobilityMethod = 'HoldPosition' | 'ConstantVelocity' | 'LSTM' | ComparisonMethod;
+export interface MobilityComparisonRun {
+  methods: ComparisonMethod[]; predictions: PositionPrediction[]; evaluations: PositionEvaluation[];
+  versions: {model: ComparisonMethod; model_version: string; shared_training_windows: number; fit_windows: number;
+    training_cutoff_sim_ms: number; train_wall_seconds: number; status: string;}[];
+}
 export interface PositionPrediction {
   model: MobilityMethod; model_version: string; device_id: number;
   origin_ms: number; target_ms: number; origin_node: string;
-  predicted_latitude_deg: number; predicted_longitude_deg: number;
+  predicted_latitude_deg: number; predicted_longitude_deg: number; predict_wall_ms?: number;
 }
 export interface PositionEvaluation {
   model: MobilityMethod; model_version: string; origin_ms: number; target_ms: number;
-  actual_latitude_deg: number; actual_longitude_deg: number; position_error_m: number;
+  actual_latitude_deg: number; actual_longitude_deg: number; position_error_m: number; predict_wall_ms?: number;
 }
 export interface MobilityLifecycleEvent {
   sequence: number; sim_time_ms: number; event: string; model_version?: string;

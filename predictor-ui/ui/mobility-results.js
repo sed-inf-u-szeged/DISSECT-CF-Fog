@@ -1,5 +1,6 @@
 'use strict';
 const learningResults = require('./mobility-learning-results');
+const comparisonResults = require('./mobility-comparison-results');
 const required=['run.properties','observations.csv','predictions.csv','evaluations.csv','node_load.csv','offload_events.csv','coverage_summary.csv'];
 function fail(s){throw new Error(s)}
 function csv(text,name){
@@ -60,6 +61,7 @@ function build(texts,label,{sharedFrames=false}={}){
  for(const [model,key] of [['HoldPosition','hold_exit'],['ConstantVelocity','velocity_exit']]){const s=summary.filter(s=>s.model===model);if(s.length!==1)fail('Missing or duplicate summary baseline: '+model);const c={evaluated:evaluations.length,tp:0,fn:0,fp:0,tn:0};for(const e of evaluations)c[e.actual_exit?(e[key]?'tp':'fn'):(e[key]?'fp':'tn')]++;for(const k of Object.keys(c))if(s[0][k]!==c[k])fail('Summary does not match evaluations: '+model);}
  const result={observations,predictions,evaluations,frames,transfers,nodes,summary,props,label};
  result.learning=learningResults.buildLearning(texts,result,table);
+ result.comparison=comparisonResults.buildComparison(texts,result,table);
  return result;
 }
 
@@ -73,7 +75,8 @@ function readMobilityRun(directory) {
   let bytes = 0;
   const texts = {};
   const hasLearning = learningResults.markers.some(name => fs.existsSync(path.join(root, name)));
-  for (const name of [...required, ...(hasLearning ? learningResults.files : [])]) {
+  const hasComparison = comparisonResults.files.some(name => fs.existsSync(path.join(root,name)));
+  for (const name of [...required, ...(hasLearning ? learningResults.files : []), ...(hasComparison ? comparisonResults.files : [])]) {
     const file = path.join(root, name);
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
       throw new Error('Mobility result file missing: ' + file);

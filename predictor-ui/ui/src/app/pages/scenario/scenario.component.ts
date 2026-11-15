@@ -43,6 +43,9 @@ export class ScenarioComponent implements OnInit, OnDestroy {
 
   mobilityRun?: MobilityRun;
   openingMobility = false;
+  mobilityControlsOpen = false;
+  mobilityJobActive = false;
+  private jobSubscription?: Subscription;
   private mobilitySubscription?: Subscription;
   private errorSubscription?: Subscription;
   statusText = '-';
@@ -74,6 +77,7 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     if (this.electron.hasApi()) {
       this.mobilitySubscription = this.electron.mobilityUpdates$?.subscribe(run => {
         this.mobilityRun = run;
+        this.mobilityControlsOpen = false;
         this.statusText = 'Mobility run complete · ' + (run.learning ? 'model lifecycle replay · ' : 'baseline replay · ') + run.label;
         this.changeDetectorRef.detectChanges();
       });
@@ -84,6 +88,15 @@ export class ScenarioComponent implements OnInit, OnDestroy {
       this.dataSubscription = this.electron.dataUpdates$.subscribe(
         data => this.updatePredictions(data)
       );
+      this.jobSubscription = this.electron.mobilityJobUpdates$.subscribe(state => {
+        this.mobilityJobActive = state.active;
+        if (state.active && state.stage !== 'LOADING') this.mobilityControlsOpen = true;
+        if (state.active) this.statusText = 'Mobility · ' + state.stage.toLowerCase();
+      });
+      this.electron.getMobilityJob().then(snapshot => {
+        this.mobilityJobActive = snapshot.state.active;
+        if (snapshot.configure || snapshot.state.active) this.mobilityControlsOpen = true;
+      }).catch(error => this.statusText = String(error));
     }
   }
 
@@ -91,13 +104,14 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     this.dataSubscription?.unsubscribe();
     this.mobilitySubscription?.unsubscribe();
     this.errorSubscription?.unsubscribe();
+    this.jobSubscription?.unsubscribe();
     if (this.statusTimer !== undefined) {
       clearTimeout(this.statusTimer);
     }
   }
 
   async openMobilityResults(): Promise<void> {
-    if (this.openingMobility) return;
+    if (this.openingMobility || this.mobilityJobActive) return;
     this.openingMobility = true;
     try { await this.electron.openMobilityRun(); }
     catch (error) { this.statusText = 'Could not open mobility results: ' + String(error); }

@@ -51,6 +51,8 @@ def audit_device(child, manifest, device_id, tf):
     result = audit_closed_worker(child, samples)
     result.update(audit_shared(child, samples, result["versions"], closed_loop=True))
     result.update(audit_closed_models(child, samples, result["versions"], tf, run_id=manifest["run_id"], device_id=device_id))
+    from audit_mobility_comparison import audit_comparison
+    result["comparison"] = audit_comparison(child, tf)
     tf.keras.backend.clear_session()
     return dict(device_id=device_id, observations=count, feature_parity="EXACT", **result)
 

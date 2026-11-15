@@ -3,11 +3,15 @@
         <div start style="display: flex; gap: 8px; align-items: center; padding-left: 16px;">
             <span class="title">DISSECT-CF-Fog Predictor UI</span>
         </div>
-        <div end style="padding-right: 16px;"><app-button color="normal" [disabled]="openingMobility" (click)="openMobilityResults()">{{ openingMobility ? 'Opening…' : 'Open mobility results' }}</app-button></div>
+        <div end style="padding-right: 16px; display: flex; gap: 8px;">
+            <app-button color="normal" [disabled]="mobilityJobActive" (click)="mobilityControlsOpen = true">New mobility run</app-button>
+            <app-button color="normal" [disabled]="openingMobility || mobilityJobActive" (click)="openMobilityResults()">{{ openingMobility ? 'Opening…' : 'Open mobility results' }}</app-button>
+        </div>
     </app-toolbar>
 
-    <app-mobility-view *ngIf="mobilityRun" [run]="mobilityRun"></app-mobility-view>
-    <div class="page-content" *ngIf="!mobilityRun">
+    <app-mobility-launcher *ngIf="mobilityControlsOpen" (started)="mobilityRun = undefined" (dismissed)="mobilityControlsOpen = false"></app-mobility-launcher>
+    <app-mobility-view *ngIf="mobilityRun && !mobilityControlsOpen" [run]="mobilityRun"></app-mobility-view>
+    <div class="page-content" *ngIf="!mobilityRun && !mobilityControlsOpen">
         <div class="output" style="width: 100vw;">
             <app-toolbar class="border-bottom">
                 <div start

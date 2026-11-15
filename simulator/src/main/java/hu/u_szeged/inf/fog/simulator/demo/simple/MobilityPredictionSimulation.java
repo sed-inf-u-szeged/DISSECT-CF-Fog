@@ -43,6 +43,73 @@ import java.util.Map;
 public class MobilityPredictionSimulation {
     private static final long STEP = 60_000;
     private static final long START = 2 * STEP;
+    private static LivePreview livePreview;
+
+    /** Optional append-only preview. Completed result validation remains separate. */
+    private static final class LivePreview implements AutoCloseable {
+        final Map<String, org.json.JSONObject> comparisons = new HashMap<>();
+        final BufferedWriter writer;
+        final Map<String, org.json.JSONObject> lifecycle = new HashMap<>();
+        long sequence;
+        long flushed = System.nanoTime();
+        long loadWritten;
+
+        LivePreview(Path file, MobilityScenarioConfig config, String runId, int count) throws Exception {
+            writer = Files.newBufferedWriter(file, java.nio.file.StandardOpenOption.CREATE_NEW);
+            GeoLocation west = config.start(), east = west.nextLocation(1600, 90);
+            org.json.JSONArray nodes = new org.json.JSONArray();
+            for (int i = 0; i < 2; i++) {
+                GeoLocation p = i == 0 ? west : east;
+                nodes.put(new org.json.JSONObject().put("name", i == 0 ? "mobility-west" : "mobility-east")
+                        .put("latitude", p.latitude).put("longitude", p.longitude).put("radius", 1000));
+            }
+            emit(new org.json.JSONObject().put("type", "META").put("schema_version", 1)
+                    .put("run_id", runId).put("device_count", count).put("duration_ms", config.durationMillis())
+                    .put("expected_observations", config.observationCount()).put("strategy", config.strategy()).put("nodes", nodes));
+            writer.flush();
+        }
+
+        void emit(org.json.JSONObject row) throws Exception {
+            row.put("sequence", ++sequence);
+            writer.write(row.toString()); writer.newLine();
+            if (System.nanoTime() - flushed >= 200_000_000L) { writer.flush(); flushed = System.nanoTime(); }
+        }
+
+        void frame(ObservedDevice device, GeoLocation actual, String node, long now) {
+            try {
+                boolean sampled = now <= device.stopTime + STEP;
+                org.json.JSONObject row = new org.json.JSONObject().put("type", "FRAME")
+                        .put("device_id", Integer.parseInt(device.deviceId)).put("time_ms", now).put("sampled", sampled)
+                        .put("latitude", actual.latitude).put("longitude", actual.longitude).put("connection", node);
+                org.json.JSONObject extra = comparisons.get(device.deviceId);
+                if (extra != null) { row.put("comparison", extra); }
+                org.json.JSONObject state = lifecycle.get(device.deviceId);
+                if (state != null) { row.put("lifecycle", state); }
+                emit(row);
+            } catch (Exception e) { throw new IllegalStateException("Cannot write live preview", e); }
+        }
+
+        void loads(TransferLedger ledger, String kind, long now) {
+            if (!"FINAL".equals(kind) && System.nanoTime() - loadWritten < 200_000_000L) { return; }
+            try {
+                org.json.JSONArray nodes = new org.json.JSONArray();
+                for (Application app : Application.allApplications) {
+                    long running = app.utilisedVms.stream().filter(MobilityTaskMetrics::isRunning).count();
+                    long completed = app.utilisedVms.stream().mapToLong(vm -> vm.taskCounter).sum();
+                    nodes.put(new org.json.JSONObject().put("node", app.computingAppliance.name)
+                            .put("waiting_bytes", app.receivedData - app.processedData)
+                            .put("running_tasks", running).put("completed_tasks", completed));
+                }
+                boolean draining = ledger.devices.stream().allMatch(d -> now > d.stopTime + STEP);
+                emit(new org.json.JSONObject().put("type", "LOAD").put("time_ms", now)
+                        .put("phase", draining ? "DRAINING" : "OBSERVING").put("nodes", nodes));
+                loadWritten = System.nanoTime();
+                if ("FINAL".equals(kind)) { writer.flush(); }
+            } catch (Exception e) { throw new IllegalStateException("Cannot write live load preview", e); }
+        }
+
+        @Override public void close() throws IOException { writer.close(); livePreview = null; }
+    }
 
     /** Retain a ready connection; wake a covered application if all covered brokers are stopped. */
     static final class StableConnection extends DeviceStrategy implements VirtualMachine.StateChange {
@@ -140,6 +207,7 @@ public class MobilityPredictionSimulation {
             if (totalUploads != uploaded || totalAccounted != uploaded) {
                 throw new IllegalStateException("Device/application byte conservation failed");
             }
+            if (livePreview != null) { livePreview.loads(this, kind, now); }
             if (devices.size() == 1) {
                 write(writer, rows.toString().stripTrailing());
             } else {
@@ -482,6 +550,7 @@ public class MobilityPredictionSimulation {
             }
             previous = current;
             previousTime = now;
+            if (livePreview != null) { livePreview.frame(this, current, currentNode, now); }
         }
     }
 
@@ -577,10 +646,17 @@ public class MobilityPredictionSimulation {
                     requests.write("CONTROL\t" + lifecycle.control()); requests.newLine(); requests.flush();
                     String prefix = "DEVICE\t" + id + "\t";
                     int messages = 0;
+                    org.json.JSONObject comparison = null;
                     while (true) {
                         String response = receive(300);
                         if (!response.startsWith(prefix)) { throw new IOException("Worker reply belongs to another device"); }
                         response = response.substring(prefix.length());
+                        if (response.startsWith("COMPARISON\t")) {
+                            if (comparison != null) { throw new IOException("Duplicate comparison preview"); }
+                            comparison = new org.json.JSONObject(response.substring("COMPARISON\t".length()));
+                            if (comparison.getLong("time_ms") != now) { throw new IOException("Stale comparison preview"); }
+                            continue;
+                        }
                         if (response.startsWith("LIFECYCLE\t")) {
                             if (++messages > 3) { throw new IOException("Excess lifecycle messages"); }
                             lifecycle.accept(response.substring("LIFECYCLE\t".length()));
@@ -597,6 +673,10 @@ public class MobilityPredictionSimulation {
                             predicted[id]++;
                         }
                         lifecycle.endObservation();
+                        if (livePreview != null) {
+                            livePreview.lifecycle.put(Integer.toString(id), lifecycle.preview());
+                            if (comparison != null) { livePreview.comparisons.put(Integer.toString(id), comparison); }
+                        }
                         observed[id]++;
                         break;
                     }
@@ -687,6 +767,10 @@ public class MobilityPredictionSimulation {
         Files.writeString(manifestPath, manifest.toString(2));
         long started = System.nanoTime();
         try (RunResources resources = new RunResources()) {
+            String liveFile = System.getenv("MOBILITY_LIVE_FILE");
+            if (liveFile != null && !liveFile.isBlank()) {
+                livePreview = resources.keep(new LivePreview(Path.of(liveFile), config, runId, count));
+            }
             SimLogger.setLogging(2, false);
             SeedSyncer.centralRnd.setSeed(config.seed());
             GeoLocation start = config.start();

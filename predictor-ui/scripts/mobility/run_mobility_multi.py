@@ -89,7 +89,11 @@ def scenario_with_limits(original, minutes, drain_minutes):
     return "\n".join(lines) + "\nduration_minutes=%d\ndrain_minutes=%d\n" % (minutes, drain_minutes)
 
 
-def main(argv=None):
+def main(argv=None, *, scenario_override=None, progress=None):
+    # The UI calls the same audited runner; no second simulation implementation.
+    def report(stage, **details):
+        if progress is not None:
+            progress(stage, **details)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--devices", type=int, nargs="+", default=[10])
@@ -97,6 +101,7 @@ def main(argv=None):
     parser.add_argument("--drain-minutes", type=int, default=120,
                         help="Additional simulated minutes allowed for workload drain (1-1440; sampling stays fixed)")
     parser.add_argument("--strategy", choices=["random-walk", "nomadic"], default="random-walk")
+    parser.add_argument("--comparison-models", nargs="*", choices=["IMM/Kalman", "XGBoost", "TCN"], default=[])
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--timeout-seconds", type=int, default=None)
     parser.add_argument("--java", default="java")
@@ -113,18 +118,22 @@ def main(argv=None):
             import psutil
         except ImportError as error:
             raise ValueError("Install memory sampling support: python -m pip install -r predictor-ui/scripts/mobility/requirements-multi.txt") from error
+        from mobility_comparison_models import validate_methods, preflight
+        methods = validate_methods(args.comparison_models)
+        preflight(methods)
         root = args.project_root.resolve()
         java, node = shutil.which(args.java), shutil.which(args.node)
         require(java and node, "JDK Java and Node.js must be on PATH")
         batch = root / "simulator/sim_res/mobility-multi" / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:12])
         batch.mkdir(parents=True, exist_ok=False)
         state = dict(schema_version=1, status="RUNNING", started_at_utc=now(), devices=args.devices, minutes=args.minutes,
-                     drain_minutes=args.drain_minutes,
+                     drain_minutes=args.drain_minutes, comparison_models=methods,
                      strategy=args.strategy, repeats=args.repeats, connection_control=False, random_stream="SHARED_SEED_SYNCER",
                      environment=dict(python=sys.version, platform=platform.platform(), psutil=psutil.__version__), runs=[])
         manifest = batch / "multi-device-batch.json"
         write_json(manifest, state)
         print("Multi-device batch: " + str(batch), flush=True)
+        report("PREPARING", batch=str(batch))
         source = batch / "source"
         source.mkdir()
         for path in Path(__file__).parent.glob("*.py"):
@@ -136,7 +145,7 @@ def main(argv=None):
         # Snapshot the exact display/accounting validator alongside the worker source.
         checker_root = batch / "ui-validator"
         checker_root.mkdir()
-        for name in ("check-mobility-results.js", "mobility-results.js", "mobility-learning-results.js", "mobility-multi-results.js"):
+        for name in ("check-mobility-results.js", "mobility-results.js", "mobility-learning-results.js", "mobility-multi-results.js", "mobility-comparison-results.js"):
             shutil.copy2(root / "predictor-ui/ui" / name, checker_root / name)
         checker_hashes = artifacts(checker_root)
         tf = None
@@ -146,25 +155,27 @@ def main(argv=None):
                 case = batch / ("devices-%03d-repeat-%02d" % (number, repeat))
                 case.mkdir()
                 config = case / ("official-" + args.strategy + ".properties")
-                original = (root / RESOURCE / config.name).read_text(encoding="utf-8-sig")
+                original = scenario_override if scenario_override is not None else (root / RESOURCE / config.name).read_text(encoding="utf-8-sig")
                 config.write_text(scenario_with_limits(original, args.minutes, args.drain_minutes), encoding="utf-8")
                 policy = case / "training-policy.json"
                 write_json(policy, asdict(TrainingPolicy()))
                 config_hash, policy_hash = sha256(config), sha256(policy)
                 environment = dict(os.environ, MOBILITY_SHADOW_PYTHON=sys.executable,
                                    MOBILITY_SHADOW_SCRIPT=str(source / "mobility_multi_worker.py"), MOBILITY_SHADOW_MODEL=str(policy),
-                                   PYTHONDONTWRITEBYTECODE="1")
+                                   PYTHONDONTWRITEBYTECODE="1", MOBILITY_COMPARISON_MODELS=__import__("json").dumps(methods))
                 environment.pop("MOBILITY_ONLINE_QUALITY_POLICY", None)
                 command = [java, "-cp", classpath, MAIN, "--no-ui", "--devices=" + str(number),
                            "--scenario=" + str(config), str(xml), str(case / "output")]
                 write_json(case / "command.json", command)
                 print("[%d devices, repeat %d] Simulation and sequential independent LSTMs" % (number, repeat), flush=True)
+                report("RUNNING", batch=str(batch), case=str(case), device_count=number)
                 timings = execute_monitored(command, root, case / "simulation.log", environment,
                                             args.timeout_seconds or max(600, number * 180), psutil)
                 outputs = list((case / "output").glob("mobility-multi-*"))
                 require(len(outputs) == 1, "Expected exactly one multi-device simulation output")
                 output = outputs[0]
                 print("  Simulation complete; checking saved models and lifecycle decisions", flush=True)
+                report("AUDITING", output=str(output))
                 if tf is None:
                     with contextlib.redirect_stdout(sys.stderr):
                         tf = tensorflow_runtime()
@@ -179,7 +190,7 @@ def main(argv=None):
                 # Timed.fire() advances the clock by one tick after dispatching an event.
                 require(drain["next_event_ms"] == -1 and drain["simulation_time_ms"] <= drain["simulation_limit_ms"] + 1,
                         "Simulation did not complete within its drain allowance")
-                summary = dict(device_count=number, repeat=repeat, minutes=args.minutes, drain_minutes=args.drain_minutes,
+                summary = dict(device_count=number, repeat=repeat, minutes=args.minutes, drain_minutes=args.drain_minutes, comparison_models=methods,
                                final_settlement_sim_minutes=drain["simulation_time_ms"] / 60000,
                                **timings, **timing_summary(operations))
                 summaries.append(summary)
@@ -190,18 +201,27 @@ def main(argv=None):
                                          performance=summary, devices=devices, artifact_sha256=artifacts(output)))
                 write_json(manifest, state)
                 print("  PASSED. Open mobility results: " + str(output), flush=True)
+                report("RESULT_READY", output=str(output))
         require(artifacts(source) == source_hashes and artifacts(batch / "runtime") == runtime_hashes
                 and artifacts(checker_root) == checker_hashes, "Source, validator or runtime changed")
         state.update(status="COMPLETE", finished_at_utc=now())
         write_json(manifest, state)
         print("MOBILITY_MULTI_DEVICE_OK")
         print("Scaling table: " + str(batch / "scaling.csv"))
+        report("COMPLETE", batch=str(batch), output=str(output))
         return 0
+    except KeyboardInterrupt:
+        if batch is not None and state is not None:
+            state.update(status="CANCELLED", finished_at_utc=now())
+            write_json(batch / "multi-device-batch.json", state)
+        report("CANCELLED")
+        raise
     except Exception as error:
         if batch is not None and state is not None:
             state.update(status="FAILED", error=str(error))
             write_json(batch / "multi-device-batch.json", state)
         print("MOBILITY_MULTI_DEVICE_FAILED: " + str(error), file=sys.stderr)
+        report("FAILED", error=str(error))
         return 1
 
 
