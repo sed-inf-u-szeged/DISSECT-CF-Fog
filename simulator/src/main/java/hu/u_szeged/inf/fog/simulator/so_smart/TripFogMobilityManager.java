@@ -206,7 +206,11 @@ public class TripFogMobilityManager {
 
             ComputingAppliance nearest = findNearestFog(geoLocation);
 
-            if (nearest != servingFog && !handoverPending) {
+            // Allow handover only within the target Fog node's range.
+            if (nearest != servingFog
+                    && !handoverPending
+                    && geoLocation.calculateDistance(nearest.geoLocation)
+                    <= nearest.range * 1_000.0) {
                 startHandover(nearest);
             }
         }
