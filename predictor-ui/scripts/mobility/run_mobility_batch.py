@@ -19,12 +19,15 @@ from check_mobility_run import sha256, validate_run
 MAIN = "hu.u_szeged.inf.fog.simulator.demo.simple.MobilityPredictionSimulation"
 BASE = "simulator/src/main/java/hu/u_szeged/inf/fog/simulator/"
 SOURCES = [BASE + name + ".java" for name in (
-    "demo/simple/MobilityPredictionSimulation", "demo/simple/MobilityScenarioConfig",
+    "demo/simple/MobilityPredictionSimulation", "demo/simple/MobilityScenarioConfig", "demo/simple/DeviceWorkloadProfile", "demo/CityTopology",
     "iot/mobility/MobilitySampleRecorder", "application/MobilityTaskMetrics",
     "iot/MobilityDeviceMetrics", "prediction/communication/launchers/MobilityUiLauncher",
+    "prediction/FixedIntervalSampler", "prediction/NodeLoadListener",
+    "prediction/NodeLoadPersistence", "prediction/NodeLoadBaselines",
+    "prediction/NodeLoadLearning", "prediction/NodeLoadModelWorker",
     "prediction/lifecycle/LifecycleAssessment", "prediction/lifecycle/LifecycleAssessmentSource",
     "prediction/lifecycle/LifecycleCoordinator", "prediction/lifecycle/LifecycleManager",
-    "prediction/mobility/MobilityLifecycleAdapter", "prediction/OnlineTrainingSchedule")]
+    "prediction/mobility/MobilityLifecycleAdapter", "prediction/mobility/MobilityPositionBaselines", "prediction/OnlineTrainingSchedule")]
 PLAN = "simulator/src/main/resources/demo/mobility/dataset-v1/dataset-plan.json"
 JAR = "simulator/target/dissect-cf-fog-1.0.0-SNAPSHOT-jar-with-dependencies.jar"
 XML = "simulator/src/main/resources/demo/LPDS_original.xml"
@@ -69,6 +72,9 @@ def prepare(root, batch, java):
     jar = runtime / "dependencies.jar"
     shutil.copy2(root / JAR, jar)
     shutil.copy2(root / XML, runtime / "nodes.xml")
+    (runtime / "XML_examples").mkdir()
+    for name in ("LPDS_32.xml", "LPDS_16.xml"):
+        shutil.copy2(root / "simulator/src/main/resources/demo/XML_examples" / name, runtime / "XML_examples" / name)
     source_files = []
     for relative in SOURCES:
         target = runtime / "source" / relative

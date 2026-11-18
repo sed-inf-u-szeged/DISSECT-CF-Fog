@@ -1,0 +1,12 @@
+.map-canvas{position:relative;overflow:hidden;background:#252a2e}
+svg{width:100%;height:clamp(300px,43vh,460px);display:block;overflow:hidden;user-select:none}
+.background{fill:#252a2e}.grid path{stroke:#697482;opacity:.12;fill:none}
+.coverage{fill:#a8b3c0;fill-opacity:.04;stroke:#a8b3c0;stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}
+.trails{pointer-events:none}.trails polyline{fill:none;stroke:#ffd174;stroke-width:1.5px;vector-effect:non-scaling-stroke}
+svg text{font:14px Inter,Arial,sans-serif;fill:#bac7d5;paint-order:stroke;stroke:#252a2e;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.node{pointer-events:none}.node rect{stroke:#252a2e;stroke-width:1px;vector-effect:non-scaling-stroke}.node.chosen rect{stroke:#ffd174}.device{cursor:pointer}.device circle{stroke:#252a2e;stroke-width:1px;vector-effect:non-scaling-stroke}.device .device-hit{stroke:none}.device .device-halo{stroke:none;opacity:.16}.device:hover .device-halo,.device:focus .device-halo{opacity:.3}.device:focus{outline:none}.device:focus .device-dot{stroke:#fff1cf;stroke-width:2px}.device text{font-weight:600;fill:#ffd174}
+.forecast,.truth{pointer-events:none}.forecast path{fill:none;stroke:#ff7395;stroke-width:1.5px;vector-effect:non-scaling-stroke}.forecast .forecast-link{stroke-dasharray:4 4}.forecast text{fill:#ff8ba6}.truth path{stroke:#fff;stroke-width:1.5px;vector-effect:non-scaling-stroke}
+.scale{pointer-events:none}.scale path{stroke:#bac7d5;fill:none;stroke-width:1px;vector-effect:non-scaling-stroke}.empty{position:absolute;inset:45% 16px auto;text-align:center;color:#bac7df;background:#252a2e;padding:12px}
+.label-leaders{pointer-events:none}.label-leaders path{stroke:#ffd174;stroke-opacity:.5;stroke-width:1px;fill:none;vector-effect:non-scaling-stroke}
+.device-label{cursor:pointer}.device-label rect{fill:#252a2e;stroke:#887546;stroke-width:1px;vector-effect:non-scaling-stroke}.device-label text{fill:#ffd174;font-weight:600;stroke:none}.device-label.chosen rect,.device-label:hover rect,.device-label:focus rect{stroke:#ffd174;stroke-width:2px}.device-label:focus{outline:none}
+.truth path.truth-outline{stroke:#252a2e;stroke-width:4.5px}

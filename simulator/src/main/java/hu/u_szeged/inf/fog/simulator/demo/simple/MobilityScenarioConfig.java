@@ -1,6 +1,7 @@
 package hu.u_szeged.inf.fog.simulator.demo.simple;
 
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
+import hu.u_szeged.inf.fog.simulator.demo.CityTopology;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.MobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.NomadicMobilityStrategy;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.RandomWalkMobilityStrategy;
@@ -14,12 +15,17 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-/** Selects official movement strategies; sampling interval and infrastructure remain fixed. */
+/** Selects official movement and explicit infrastructure profiles on a fixed sampling interval. */
 public final class MobilityScenarioConfig {
     private static final String DEFAULT_POINTS = "0,0;1600,0;1600,1200;0,1200;0,0";
     private static final Set<String> KEYS = Set.of("scenario_name", "seed", "mobility_strategy",
             "start_latitude_deg", "start_longitude_deg", "speed_m_s", "waypoints_m", "route_repeats",
-            "speed_min_m_s", "speed_max_m_s", "radius_m", "duration_minutes", "drain_minutes");
+            "speed_min_m_s", "speed_max_m_s", "radius_m", "duration_minutes", "drain_minutes",
+            "infrastructure", "city_placement", "city_coverage_km", "device_workload");
+    private final DeviceWorkloadProfile deviceWorkload;
+    private final String infrastructure;
+    private final String cityPlacement;
+    private final long cityCoverageKm;
     private final String name;
     private final long seed;
     private final int durationMinutes;
@@ -40,6 +46,22 @@ public final class MobilityScenarioConfig {
         for (String key : properties.stringPropertyNames()) {
             if (!KEYS.contains(key)) { throw new IllegalArgumentException("Unknown scenario key: " + key); }
         }
+        deviceWorkload = DeviceWorkloadProfile.parse(properties.getProperty("device_workload", "constant").trim());
+        infrastructure = properties.getProperty("infrastructure", "two-node").trim();
+        if (!infrastructure.equals("two-node") && !infrastructure.equals("hungary-cities")) {
+            throw new IllegalArgumentException("Unknown infrastructure");
+        }
+        cityPlacement = properties.getProperty("city_placement", "distributed").trim();
+        cityCoverageKm = Long.parseLong(properties.getProperty("city_coverage_km", "20").trim());
+        if (cityCoverageKm < 1 || cityCoverageKm > 100) {
+            throw new IllegalArgumentException("city_coverage_km must be an integer from 1 to 100");
+        }
+        if (isCityTopology()) {
+            CityTopology.deviceOrigin(cityPlacement, 0);
+            if (!properties.containsKey("mobility_strategy")) {
+                throw new IllegalArgumentException("City scenarios require an explicit mobility strategy");
+            }
+        } else { reject(properties, "city_placement", "city_coverage_km"); }
         durationMinutes = Integer.parseInt(properties.getProperty("duration_minutes", "120").trim());
         if (durationMinutes < 10 || durationMinutes > 1440) {
             throw new IllegalArgumentException("duration_minutes must be an integer between 10 and 1440");
@@ -150,6 +172,14 @@ public final class MobilityScenarioConfig {
         return new MobilityScenarioConfig(properties);
     }
 
+    public boolean isCityTopology() { return infrastructure.equals("hungary-cities"); }
+    public String infrastructure() { return infrastructure; }
+    public String cityPlacement() { return cityPlacement; }
+    public long cityCoverageKm() { return cityCoverageKm; }
+    public GeoLocation deviceStart(int index) {
+        return isCityTopology() ? CityTopology.deviceOrigin(cityPlacement, index).location() : start();
+    }
+    public DeviceWorkloadProfile deviceWorkload() { return deviceWorkload; }
     public String name() { return name; }
     public long seed() { return seed; }
     public String strategy() { return strategy; }
@@ -161,24 +191,35 @@ public final class MobilityScenarioConfig {
     public GeoLocation start() { return new GeoLocation(latitude, longitude); }
 
     /** Creates an official strategy with fresh mutable state and metres-per-millisecond speed. */
-    public MobilityStrategy movement(long limitMillis) {
+    public MobilityStrategy movement(long limitMillis) { return movement(limitMillis, start()); }
+
+    /** Translate local waypoint offsets to this device's city; each strategy owns fresh mutable state. */
+    public MobilityStrategy movement(long limitMillis, GeoLocation origin) {
+        origin = new GeoLocation(origin.latitude, origin.longitude);
         if (limitMillis <= 0 || limitMillis > simulationLimitMillis()) {
             throw new IllegalArgumentException("Simulation limit must be positive and within the configured duration plus drain allowance");
         }
         double perMillis = java.math.BigDecimal.valueOf(speed).movePointLeft(3).doubleValue();
         if (isRandomWalk()) {
             double maxPerMillis = java.math.BigDecimal.valueOf(maximumSpeed).movePointLeft(3).doubleValue();
-            return new RandomWalkMobilityStrategy(start(), perMillis, maxPerMillis, radius);
+            return new RandomWalkMobilityStrategy(origin, perMillis, maxPerMillis, radius);
+        }
+        List<GeoLocation> route = new ArrayList<>();
+        for (double[] offset : offsets) {
+            GeoLocation point = new GeoLocation(origin.latitude, origin.longitude);
+            if (offset[0] != 0) { point = point.nextLocation(Math.abs(offset[0]), offset[0] > 0 ? 90 : 270); }
+            if (offset[1] != 0) { point = point.nextLocation(Math.abs(offset[1]), offset[1] > 0 ? 0 : 180); }
+            route.add(point);
         }
         int laps = repeats ? Math.max(32, (int) Math.ceil(speed * limitMillis / 1000.0 / length) + 2) : 1;
         ArrayList<GeoLocation> destinations = new ArrayList<>();
         for (int lap = 0; lap < laps; lap++) {
-            for (int i = 1; i < points.size(); i++) {
-                GeoLocation point = points.get(i);
+            for (int i = 1; i < route.size(); i++) {
+                GeoLocation point = route.get(i);
                 destinations.add(new GeoLocation(point.latitude, point.longitude));
             }
         }
-        return new NomadicMobilityStrategy(start(), perMillis, destinations);
+        return new NomadicMobilityStrategy(origin, perMillis, destinations);
     }
 
     public long durationMillis() { return durationMinutes * 60_000L; }
@@ -203,6 +244,13 @@ public final class MobilityScenarioConfig {
                 + "\nroute_strategy=" + (isRandomWalk() ? "RandomWalkMobilityStrategy" : "NomadicMobilityStrategy")
                 + "\nroute_repeats=" + repeats + "\nstart_latitude_deg=" + latitude
                 + "\nstart_longitude_deg=" + longitude;
+        common += "\ninfrastructure=" + infrastructure + deviceWorkload.metadata();
+        if (isCityTopology()) {
+            common += "\ncity_placement=" + cityPlacement + "\ncity_coverage_km=" + cityCoverageKm
+                    + "\nnode_topology_file=node_topology.json\napplication_strategy=Pliant-reactive"
+                    + "\nconnection_strategy=StableConnection"
+                    + "\napplication_task_bytes=5120\napplication_instructions=480";
+        }
         return common + (isRandomWalk()
                 ? "\nspeed_min_m_s=" + speed + "\nspeed_max_m_s=" + maximumSpeed + "\nradius_m=" + radius
                 : "\nspeed_m_s=" + speed + "\nroute_file=route_waypoints.csv");
@@ -213,6 +261,12 @@ public final class MobilityScenarioConfig {
         StringBuilder effective = new StringBuilder("scenario_name=").append(name)
                 .append("\nseed=").append(seed).append("\nduration_minutes=").append(durationMinutes)
                 .append("\ndrain_minutes=").append(drainMinutes);
+        effective.append("\ninfrastructure=").append(infrastructure)
+                .append("\ndevice_workload=").append(deviceWorkload.key());
+        if (isCityTopology()) {
+            effective.append("\ncity_placement=").append(cityPlacement)
+                    .append("\ncity_coverage_km=").append(cityCoverageKm);
+        }
         if (!legacy) {
             effective.append("\nmobility_strategy=").append(strategy)
                     .append("\nstart_latitude_deg=").append(latitude)

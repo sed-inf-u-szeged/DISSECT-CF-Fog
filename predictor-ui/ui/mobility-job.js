@@ -6,11 +6,11 @@ const {randomUUID} = require('node:crypto');
 const {StringDecoder} = require('node:string_decoder');
 
 class LiveJournal {
-  constructor() { this.offset = 0; this.pending = ''; this.decoder = new StringDecoder('utf8'); this.sequence = 0; this.meta = null; this.points = new Map(); this.latest = new Map(); this.load = null; }
+  constructor() { this.offset = 0; this.pending = ''; this.decoder = new StringDecoder('utf8'); this.sequence = 0; this.meta = null; this.points = new Map(); this.latest = new Map(); this.load = null; this.history = []; this.nodeLoadMeta = null; }
   accept(row) {
     if (!row || row.sequence !== this.sequence + 1) throw Error('Live preview sequence is incomplete');
     if (row.type === 'META') {
-      if (this.meta || row.schema_version !== 1 || !Number.isInteger(row.device_count) || row.device_count < 1 || row.device_count > 100) throw Error('Invalid preview metadata');
+      if (this.meta || ![1,2].includes(row.schema_version) || !Number.isInteger(row.device_count) || row.device_count < 1 || row.device_count > 100) throw Error('Invalid preview metadata');
       this.meta = row;
     } else if (row.type === 'FRAME') {
       if (!this.meta || !Number.isInteger(row.device_id) || row.device_id < 0 || row.device_id >= this.meta.device_count || !Number.isFinite(row.time_ms) || !Number.isFinite(row.latitude) || !Number.isFinite(row.longitude)) throw Error('Invalid preview frame');
@@ -23,15 +23,37 @@ class LiveJournal {
         points.push({type:'POINT', device_id:row.device_id, time_ms:row.time_ms, latitude:row.latitude, longitude:row.longitude});
         this.points.set(row.device_id, points);
       }
-    } else if (row.type === 'LOAD') { if (!Array.isArray(row.nodes)) throw Error('Invalid live node load'); this.load = row; }
+    } else if (row.type === 'MOBILITY_STATUS') {
+      if (!this.meta || !Number.isInteger(row.device_id) || row.device_id<0 || row.device_id>=this.meta.device_count
+        || !Number.isSafeInteger(row.time_ms) || row.time_ms<0 || row.lifecycle?.state!=='TRAINING'
+        || row.time_ms<(this.latest.get(row.device_id)?.time_ms??0)) throw Error('Invalid mobility training status');
+    } else if (row.type === 'LOAD') { if (!this.meta || !Array.isArray(row.nodes) || !Number.isFinite(row.time_ms)) throw Error('Invalid live node load'); this.load = row; }
+    else if (row.type === 'NODE_LOAD') {
+      if (!this.meta || row.run_id!==this.meta.run_id || !Number.isSafeInteger(row.time_ms) || row.time_ms<0
+        || !row.data || row.data.time_ms!==row.time_ms
+        || !['META','SAMPLE','VECTOR','EVALUATION','SELECTION','EVENT'].includes(row.kind)) throw Error('Invalid live node-load record');
+      if (row.kind==='META') {
+        if (this.nodeLoadMeta || row.data.run_id!==row.run_id || row.data.interval_ms!==60000
+          || !Array.isArray(row.data.node_ids) || !row.data.node_ids.length
+          || row.data.node_ids.length!==this.meta.nodes.length
+          || new Set(row.data.node_ids).size!==row.data.node_ids.length
+          || row.data.node_ids.some(id=>!this.meta.nodes.some(n=>n.name===id))) throw Error('Invalid live node-load metadata');
+        this.nodeLoadMeta=row.data;
+      } else if (!this.nodeLoadMeta?.node_ids.includes(row.data.node_id)) throw Error('Unknown live load node');
+      if (row.kind==='VECTOR' && (!Array.isArray(row.data.values)
+        || row.data.values.length!==(row.data.model==='Persistence'?1:64)
+        || row.data.values.some(v=>!Number.isFinite(v)||v<0))) throw Error('Incomplete live forecast vector');
+    }
     else throw Error('Unknown live preview event');
     this.sequence = row.sequence;
+    this.history.push(row);
   }
   async read(file) {
     let handle;
     try { handle = await fs.promises.open(file, 'r'); }
     catch (e) { if (e.code === 'ENOENT') return []; throw e; }
     try {
+      if ((await handle.stat()).size<this.offset) throw Error('Live preview journal was truncated');
       const buffer = Buffer.allocUnsafe(256 * 1024);
       const {bytesRead} = await handle.read(buffer, 0, buffer.length, this.offset);
       this.offset += bytesRead;
@@ -39,11 +61,42 @@ class LiveJournal {
       const lines = this.pending.split('\n'); this.pending = lines.pop();
       if (this.pending.length > 65536) throw Error('Live preview record exceeds its size limit');
       const rows = [];
-      for (const line of lines) { if (!line.trim()) continue; const row = JSON.parse(line); this.accept(row); rows.push(row); }
+      for (const line of lines) { if (line.length>65536) throw Error('Live preview record exceeds its size limit'); if (!line.trim()) continue; const row = JSON.parse(line); this.accept(row); rows.push(row); }
       return rows;
     } finally { await handle.close(); }
   }
-  snapshot() { return this.meta ? [this.meta, ...[...this.points.values()].flat(), ...[...this.latest.values()].map(r=>({...r,type:'LATEST'})), ...(this.load?[this.load]:[])] : []; }
+  // Retain chronological records so reload can restore historical browsing too.
+  snapshot() { return this.history.slice(); }
+
+  verifyNodeLoad(data) {
+    if (this.meta?.schema_version!==2) return; // Older launchers did not emit load records.
+    if (!data || !this.nodeLoadMeta || data.run_id!==this.meta.run_id) throw Error('Live/final node-load run differs');
+    const records=this.history.filter(r=>r.type==='NODE_LOAD');
+    const compare=(a,b,label)=>{
+      const sorted=rows=>rows.map(r=>JSON.stringify(r)).sort();
+      if(JSON.stringify(sorted(a))!==JSON.stringify(sorted(b))) throw Error('Live/final node load differs: '+label);
+    };
+    compare(this.nodeLoadMeta.node_ids,data.nodes.map(n=>n.node_id),'nodes');
+    compare(this.nodeLoadMeta.models,data.models,'models');
+    compare(this.nodeLoadMeta.baselines??[],data.baselines??[],'baselines');
+    if(data.models.length && (data.profile!==this.nodeLoadMeta.profile
+      || Object.entries(this.nodeLoadMeta.policy).some(([k,v])=>data.policy?.[k]!==v))) throw Error('Live/final load policy differs');
+    const of=kind=>records.filter(r=>r.kind===kind).map(r=>r.data);
+    const identity=p=>[p.node_id,p.model,p.version,p.origin_index,p.target_index];
+    compare(of('SAMPLE').map(r=>[r.node_id,r.index,r.time_ms,r.value]),
+      data.nodes.flatMap(n=>n.samples.map(s=>[n.node_id,s.index,s.time_ms,s.value])),'actual samples');
+    compare(of('VECTOR').flatMap(r=>r.values.map((value,i)=>[r.node_id,r.model,r.version,r.origin_index,r.origin_index+i+1,
+      r.time_ms,r.time_ms+(i+1)*data.interval_ms,value,r.inference_vector_ms,r.persistence_bytes??null])),
+      data.nodes.flatMap(n=>[...n.baseline,...n.predictions].map(p=>[...identity(p),p.origin_ms,p.target_ms,p.predicted_bytes,p.inference_vector_ms,p.persistence_bytes??null])),'issued vectors');
+    compare(of('EVALUATION').map(r=>[...identity(r),r.time_ms,r.actual_bytes]),
+      data.nodes.flatMap(n=>[...n.baselineEvaluations,...n.evaluations].map(p=>[...identity(p),p.target_ms,p.actual_bytes])),'matched targets');
+    compare(of('SELECTION').map(r=>[...identity(r),r.time_ms]),
+      data.nodes.flatMap(n=>n.selections.map(p=>[...identity(p),p.selection_ms])),'recorded service');
+    compare(of('EVENT').map(r=>[r.node_id,r.model,r.version,r.time_ms,r.event]),
+      data.nodes.flatMap(n=>n.events.map(r=>[r.node_id,r.model,r.version,r.time_ms,r.event])),'lifecycle');
+    compare(of('EVENT').filter(r=>r.event==='TRAINED').map(r=>[r.node_id,r.model,r.version,r.trained_at_ms,r.training_windows,r.training_seconds]),
+      data.nodes.flatMap(n=>n.versions.map(v=>[n.node_id,v.model,v.version,v.trained_at_ms,v.training_windows,v.training_seconds])),'versions');
+  }
 }
 
 class MobilityJob {
@@ -117,13 +170,19 @@ class MobilityJob {
     this.stopTimer();
     // A timer read may still be in flight; wait without blocking the Electron loop.
     while(this.pumping) await new Promise(resolve=>setTimeout(resolve,10));
-    try { await this.pump(); } catch(error) { this.failure ||= error.message; }
+    try {
+      // A fast simulation can leave more than one 256 KiB batch at process exit.
+      let offset;
+      do { offset=this.journal.offset; await this.pump(); } while(this.journal.offset!==offset);
+      if(code===0 && !this.cancelRequested && this.journal.pending.trim()) throw Error('Incomplete final live preview record');
+    } catch(error) { this.failure ||= error.message; }
     this.child=null;
     if (this.failure) { this.finishError(id,this.failure); return; }
     if (this.cancelRequested || code===130) { this.update({stage:'CANCELLED',active:false,finishedAt:Date.now()}); return; }
     if (code!==0 || !this.state.output) throw Error(this.state.error || 'Mobility run failed. See '+path.join(this.state.session,'runner.log'));
     this.update({stage:'LOADING',active:true});
-    await this.onComplete(this.state.output, ()=>id===this.state.id && !this.cancelRequested);
+    await this.onComplete(this.state.output, ()=>id===this.state.id && !this.cancelRequested,
+      data=>this.journal.verifyNodeLoad(data));
     if (id!==this.state.id) return;
     this.update({stage:this.cancelRequested?'CANCELLED':'COMPLETE',active:false,finishedAt:Date.now()});
   }

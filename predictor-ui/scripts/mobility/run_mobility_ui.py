@@ -13,12 +13,21 @@ def validate_config(value):
     if not isinstance(value, dict):
         raise ValueError('Expected a mobility configuration')
     allowed = {'strategy', 'devices', 'minutes', 'drainMinutes', 'seed', 'latitude', 'longitude',
-               'speedMin', 'speedMax', 'radius', 'speed', 'waypoints', 'repeatRoute', 'models'}
+               'speedMin', 'speedMax', 'radius', 'speed', 'waypoints', 'repeatRoute', 'models',
+               'loadModels', 'loadProfile', 'loadEpochs', 'infrastructure', 'cityPlacement', 'cityCoverageKm', 'deviceWorkload'}
     if set(value) - allowed:
         raise ValueError('Unknown mobility setting')
     cfg = dict(value)
+    cfg['deviceWorkload'] = cfg.get('deviceWorkload', 'constant')
+    if cfg['deviceWorkload'] not in ('constant', 'periodic-burst'):
+        raise ValueError('Choose Constant or Periodic bursts for device workload')
     from mobility_comparison_models import validate_methods
     cfg["models"] = validate_methods(cfg.get("models", []))
+    from node_load_worker import validate_options
+    cfg['loadModels'] = cfg.get('loadModels', [])
+    cfg['loadProfile'] = cfg.get('loadProfile', 'candidate')
+    cfg['loadEpochs'] = cfg.get('loadEpochs', 40)
+    validate_options(cfg['loadModels'], cfg['loadProfile'], cfg['loadEpochs'])
     if cfg.get('strategy') not in ('random-walk', 'nomadic'):
         raise ValueError('Choose Random walk or Nomadic')
     def number(name, low, high, integer=False):
@@ -29,6 +38,17 @@ def validate_config(value):
     for key, low, high in [('devices', 1, 100), ('minutes', 104, 1440), ('drainMinutes', 1, 1440), ('seed', 0, 2147483647)]:
         number(key, low, high, True)
     number('latitude', -85, 85); number('longitude', -180, 180)
+    cfg['infrastructure'] = cfg.get('infrastructure', 'two-node')
+    if cfg['infrastructure'] not in ('two-node', 'hungary-cities'):
+        raise ValueError('Unknown infrastructure')
+    if cfg['infrastructure'] == 'hungary-cities':
+        cfg['cityPlacement'] = cfg.get('cityPlacement', 'distributed')
+        cities = ('Sopron_fog2', 'Szombathely_fog2', 'Gyor_fog1', 'Szeged_fog2', 'Pecs_fog2',
+                  'Kecskemet_fog1', 'Miskolc_fog2', 'Debrecen_fog2', 'Gyongyos_fog1')
+        if cfg['cityPlacement'] not in ('distributed', *cities):
+            raise ValueError('Choose a fog city or distribute devices across all nine fog cities')
+        cfg['cityCoverageKm'] = cfg.get('cityCoverageKm', 20)
+        number('cityCoverageKm', 1, 100, True)
     if cfg['strategy'] == 'random-walk':
         number('speedMin', 0, 50); number('speedMax', cfg['speedMin'], 50); number('radius', 1, 10000)
         if cfg['radius'] <= cfg['speedMax'] * 60:
@@ -58,6 +78,10 @@ def scenario_text(cfg):
     data = dict(scenario_name='ui-' + cfg['strategy'], seed=cfg['seed'],
                 mobility_strategy=cfg['strategy'].replace('-', '_'), start_latitude_deg=cfg['latitude'],
                 start_longitude_deg=cfg['longitude'])
+    data['infrastructure'] = cfg['infrastructure']
+    data['device_workload'] = cfg['deviceWorkload']
+    if cfg['infrastructure'] == 'hungary-cities':
+        data.update(city_placement=cfg['cityPlacement'], city_coverage_km=cfg['cityCoverageKm'])
     if cfg['strategy'] == 'random-walk':
         data.update(speed_min_m_s=cfg['speedMin'], speed_max_m_s=cfg['speedMax'], radius_m=cfg['radius'])
     else:
@@ -103,7 +127,9 @@ def main(argv=None):
         with (session / 'runner.log').open('w', encoding='utf-8', buffering=1) as log, contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             from run_mobility_multi import main as run
             result = run(['--project-root', str(root), '--devices', str(cfg['devices']), '--minutes', str(cfg['minutes']),
-                          '--drain-minutes', str(cfg['drainMinutes']), '--strategy', cfg['strategy'], '--repeats', '1', '--comparison-models', *cfg['models']],
+                          '--drain-minutes', str(cfg['drainMinutes']), '--strategy', cfg['strategy'], '--repeats', '1',
+                          '--load-profile', cfg['loadProfile'], '--load-epochs', str(cfg['loadEpochs']),
+                          '--load-models', *cfg['loadModels'], '--comparison-models', *cfg['models']],
                          scenario_override=scenario_text(cfg), progress=progress)
         return result
     except KeyboardInterrupt:

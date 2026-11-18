@@ -171,4 +171,27 @@ class MobilityOfficialStrategyTest {
             }
         }
     }
+    @Test void cityDevicesUseIndependentLocalMovementAndSavedPlacement() throws Exception {
+        MobilityScenarioConfig city = config(RANDOM + "infrastructure=hungary-cities\ncity_coverage_km=20\n");
+        assertTrue(city.isCityTopology());
+        assertEquals(47.7, city.deviceStart(0).latitude);
+        assertEquals(46.2, city.deviceStart(3).latitude);
+        assertEquals(0, city.deviceStart(0).calculateDistance(city.deviceStart(9)), 1e-6);
+        MobilityStrategy sopron = city.movement(LIMIT, city.deviceStart(0));
+        MobilityStrategy szeged = city.movement(LIMIT, city.deviceStart(3));
+        for (int i = 0; i < 121; i++) {
+            assertTrue(city.deviceStart(0).calculateDistance(sopron.move(clock())) <= 800.001);
+            assertTrue(city.deviceStart(3).calculateDistance(szeged.move(clock())) <= 800.001);
+        }
+        city.save(directory);
+        MobilityScenarioConfig saved = MobilityScenarioConfig.load(directory.resolve("scenario-effective.properties"));
+        assertEquals(city.metadata(), saved.metadata());
+        assertThrows(IllegalArgumentException.class, () -> config(RANDOM + "infrastructure=hungary-cities\ncity_placement=Budapest_cloud\n"));
+        assertThrows(IllegalArgumentException.class, () -> config(RANDOM + "city_coverage_km=20\n"));
+        MobilityScenarioConfig route = config(NOMADIC + "infrastructure=hungary-cities\ncity_placement=Szeged_fog2\n");
+        NomadicMobilityStrategy movement = (NomadicMobilityStrategy) route.movement(LIMIT, route.deviceStart(0));
+        assertEquals(46.2, movement.currentPosition.latitude);
+        assertEquals(1600, route.deviceStart(0).calculateDistance(movement.destinations.peek()), 0.01);
+    }
+
 }

@@ -217,7 +217,9 @@ public final class MobilityLifecycleAdapter implements AutoCloseable {
                 .put("matched", current == null ? 0 : current.matched)
                 .put("promotions", promotions).put("fallbacks", fallbacks)
                 .put("error_m", lastSelectedError == null ? JSONObject.NULL : lastSelectedError)
-                .put("error_target_ms", lastSelectedTarget);
+                .put("error_target_ms", lastSelectedTarget)
+                .put("observations", observations).put("available_windows", Math.max(0, observations - 9))
+                .put("required_windows", trainingWindow);
         if (pendingSelection != null) {
             result.put("forecast", new JSONObject().put("model", pendingSelection.model)
                     .put("origin_ms", pendingSelection.origin).put("target_ms", pendingSelection.target)

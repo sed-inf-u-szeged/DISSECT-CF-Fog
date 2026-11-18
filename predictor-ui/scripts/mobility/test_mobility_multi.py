@@ -84,6 +84,21 @@ class MultiDeviceTest(unittest.TestCase):
             if payload.startswith("LIFECYCLE\t"):
                 self.assertEqual(json.loads(payload.split("\t", 1)[1])["device_id"], device)
 
+    def test_city_nodes_come_from_run_topology_and_cloud_is_not_device_access(self):
+        write_json(self.output / "node_topology.json", dict(schema_version=1, run_id="multi-test", nodes=[
+            dict(name="Szeged_fog2", role="fog", serviceable=True),
+            dict(name="Budapest_cloud", role="cloud", serviceable=False)]))
+        transactions = [s.replace('mobility-west', 'Szeged_fog2').replace('mobility-east', 'Szeged_fog2')
+                        for s in self.input(1)]
+        result, _ = self.run_input(transactions, 1)
+        self.assertEqual(result['status'], 'COMPLETE')
+        from mobility_shadow_worker import History
+        history = History(['Szeged_fog2'])
+        from test_mobility_shadow import raw, sample
+        row = sample(0); row['current_node'] = 'Budapest_cloud'
+        with self.assertRaisesRegex(ValueError, 'Unexpected node'):
+            history.append(raw(row))
+
     def test_misrouted_observation_is_rejected_before_training(self):
         transactions = self.input(2)
         transactions[0] = transactions[0].replace("multi-test,0,", "multi-test,1,", 1)

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -16,6 +16,7 @@ import {
 } from 'src/app/shared/settings';
 import { ModalService } from 'src/app/services/modal-service/modal.service';
 import { SimulationViewModalComponent } from 'src/app/components/simulation-view-modal/simulation-view-modal.component';
+import { MobilityLauncherComponent } from '../../components/mobility-launcher/mobility-launcher.component';
 
 @Component({
   selector: 'app-scenario',
@@ -45,6 +46,7 @@ export class ScenarioComponent implements OnInit, OnDestroy {
   openingMobility = false;
   mobilityControlsOpen = false;
   mobilityJobActive = false;
+  @ViewChild(MobilityLauncherComponent) mobilityLauncher?:MobilityLauncherComponent;
   private jobSubscription?: Subscription;
   private mobilitySubscription?: Subscription;
   private errorSubscription?: Subscription;
@@ -77,7 +79,8 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     if (this.electron.hasApi()) {
       this.mobilitySubscription = this.electron.mobilityUpdates$?.subscribe(run => {
         this.mobilityRun = run;
-        this.mobilityControlsOpen = false;
+        // Keep live historical browsing in place when validation finishes.
+        if(!this.mobilityJobActive) this.mobilityControlsOpen = false;
         this.statusText = 'Mobility run complete · ' + (run.learning ? 'model lifecycle replay · ' : 'baseline replay · ') + run.label;
         this.changeDetectorRef.detectChanges();
       });
@@ -116,6 +119,11 @@ export class ScenarioComponent implements OnInit, OnDestroy {
     try { await this.electron.openMobilityRun(); }
     catch (error) { this.statusText = 'Could not open mobility results: ' + String(error); }
     finally { this.openingMobility = false; this.changeDetectorRef.detectChanges(); }
+  }
+
+  configureMobility():void {
+    if(this.mobilityJobActive) return;
+    this.mobilityLauncher?.configureNewRun();this.mobilityControlsOpen=true;
   }
 
   private updatePredictions(data: Map<string, Prediction[]>): void {

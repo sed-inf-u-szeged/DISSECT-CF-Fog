@@ -102,6 +102,9 @@ def main(argv=None, *, scenario_override=None, progress=None):
                         help="Additional simulated minutes allowed for workload drain (1-1440; sampling stays fixed)")
     parser.add_argument("--strategy", choices=["random-walk", "nomadic"], default="random-walk")
     parser.add_argument("--comparison-models", nargs="*", choices=["IMM/Kalman", "XGBoost", "TCN"], default=[])
+    parser.add_argument("--load-models", nargs="*", choices=["LSTM", "TCN", "GRU", "PatchTST"], default=[])
+    parser.add_argument("--load-profile", choices=["candidate", "observe"], default="candidate")
+    parser.add_argument("--load-epochs", type=int, default=40)
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--timeout-seconds", type=int, default=None)
     parser.add_argument("--java", default="java")
@@ -121,6 +124,9 @@ def main(argv=None, *, scenario_override=None, progress=None):
         from mobility_comparison_models import validate_methods, preflight
         methods = validate_methods(args.comparison_models)
         preflight(methods)
+        from node_load_worker import validate_options, preflight as load_preflight
+        load_models = validate_options(args.load_models, args.load_profile, args.load_epochs)
+        load_preflight(load_models)
         root = args.project_root.resolve()
         java, node = shutil.which(args.java), shutil.which(args.node)
         require(java and node, "JDK Java and Node.js must be on PATH")
@@ -128,6 +134,7 @@ def main(argv=None, *, scenario_override=None, progress=None):
         batch.mkdir(parents=True, exist_ok=False)
         state = dict(schema_version=1, status="RUNNING", started_at_utc=now(), devices=args.devices, minutes=args.minutes,
                      drain_minutes=args.drain_minutes, comparison_models=methods,
+                     load_models=load_models, load_profile=args.load_profile, load_epochs=args.load_epochs,
                      strategy=args.strategy, repeats=args.repeats, connection_control=False, random_stream="SHARED_SEED_SYNCER",
                      environment=dict(python=sys.version, platform=platform.platform(), psutil=psutil.__version__), runs=[])
         manifest = batch / "multi-device-batch.json"
@@ -138,6 +145,12 @@ def main(argv=None, *, scenario_override=None, progress=None):
         source.mkdir()
         for path in Path(__file__).parent.glob("*.py"):
             shutil.copy2(path, source / path.name)
+        # Baseline implementations also belong to the frozen run.
+        scripts = root / "predictor-ui/scripts"
+        for name in ("predictor_models", "app_utils"):
+            shutil.copytree(scripts / name, source / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        shutil.copy2(scripts / "model_registry.py", source / "model_registry.py")
+        shutil.copy2(scripts / "error_metrics.py", source / "error_metrics.py")
         source_hashes = artifacts(source)
         write_json(batch / "source-sha256.json", source_hashes)
         classpath, xml = prepare(root, batch, java)
@@ -145,7 +158,7 @@ def main(argv=None, *, scenario_override=None, progress=None):
         # Snapshot the exact display/accounting validator alongside the worker source.
         checker_root = batch / "ui-validator"
         checker_root.mkdir()
-        for name in ("check-mobility-results.js", "mobility-results.js", "mobility-learning-results.js", "mobility-multi-results.js", "mobility-comparison-results.js"):
+        for name in ("check-mobility-results.js", "mobility-results.js", "mobility-baseline-results.js", "mobility-learning-results.js", "mobility-multi-results.js", "mobility-comparison-results.js", "node-load-results.js"):
             shutil.copy2(root / "predictor-ui/ui" / name, checker_root / name)
         checker_hashes = artifacts(checker_root)
         tf = None
@@ -162,7 +175,9 @@ def main(argv=None, *, scenario_override=None, progress=None):
                 config_hash, policy_hash = sha256(config), sha256(policy)
                 environment = dict(os.environ, MOBILITY_SHADOW_PYTHON=sys.executable,
                                    MOBILITY_SHADOW_SCRIPT=str(source / "mobility_multi_worker.py"), MOBILITY_SHADOW_MODEL=str(policy),
-                                   PYTHONDONTWRITEBYTECODE="1", MOBILITY_COMPARISON_MODELS=__import__("json").dumps(methods))
+                                   PYTHONDONTWRITEBYTECODE="1", MOBILITY_COMPARISON_MODELS=__import__("json").dumps(methods),
+                                   NODE_LOAD_MODELS=__import__("json").dumps(load_models), NODE_LOAD_PROFILE=args.load_profile,
+                                   NODE_LOAD_EPOCHS=str(args.load_epochs), NODE_LOAD_SCRIPT=str(source / "node_load_worker.py"))
                 environment.pop("MOBILITY_ONLINE_QUALITY_POLICY", None)
                 command = [java, "-cp", classpath, MAIN, "--no-ui", "--devices=" + str(number),
                            "--scenario=" + str(config), str(xml), str(case / "output")]
@@ -170,7 +185,8 @@ def main(argv=None, *, scenario_override=None, progress=None):
                 print("[%d devices, repeat %d] Simulation and sequential independent LSTMs" % (number, repeat), flush=True)
                 report("RUNNING", batch=str(batch), case=str(case), device_count=number)
                 timings = execute_monitored(command, root, case / "simulation.log", environment,
-                                            args.timeout_seconds or max(600, number * 180), psutil)
+                                            args.timeout_seconds or max(600, int(number * 180 * args.minutes / 120),
+                                                                        1800 if load_models else 0), psutil)
                 outputs = list((case / "output").glob("mobility-multi-*"))
                 require(len(outputs) == 1, "Expected exactly one multi-device simulation output")
                 output = outputs[0]
@@ -181,6 +197,11 @@ def main(argv=None, *, scenario_override=None, progress=None):
                         tf = tensorflow_runtime()
                     state["environment"]["tensorflow"] = tf.__version__
                 devices, operations = audit_run(output, node, checker_root / "check-mobility-results.js", tf)
+                from audit_node_load_models import audit as audit_load_models
+                load_audit = audit_load_models(output, tf=tf)
+                require(read_json(output / "node_load_model_summary.json")["models"] == load_models,
+                        "Configured load models differ from recorded models")
+                write_json(output / "node_load_model_audit.json", load_audit)
                 require(sha256(config) == config_hash and sha256(policy) == policy_hash, "Configuration changed during run")
                 require(all(read_json(output / "devices" / str(i) / "multi-worker-device.json")["policy_sha256"] == policy_hash
                             for i in range(number)), "Worker policy differs")

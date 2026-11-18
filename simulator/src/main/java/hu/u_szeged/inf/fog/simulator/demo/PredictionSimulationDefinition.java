@@ -3,9 +3,7 @@ package hu.u_szeged.inf.fog.simulator.demo;
 import hu.mta.sztaki.lpds.cloud.simulator.Timed;
 import hu.mta.sztaki.lpds.cloud.simulator.energy.powermodelling.PowerState;
 import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
-import hu.mta.sztaki.lpds.cloud.simulator.iaas.constraints.AlterableResourceConstraints;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
-import hu.mta.sztaki.lpds.cloud.simulator.io.VirtualAppliance;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
@@ -19,7 +17,6 @@ import hu.u_szeged.inf.fog.simulator.prediction.Feature;
 import hu.u_szeged.inf.fog.simulator.prediction.FeatureManager;
 import hu.u_szeged.inf.fog.simulator.prediction.OnlineModelLifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
-import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.EnergyDataCollector;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.util.TimelineVisualiser;
@@ -41,89 +38,12 @@ public class PredictionSimulationDefinition implements PredictionConfigurator.Si
 
         SimLogger.setLogging(1, true);
 
-        String cloudfile = ScenarioBase.resourcePath + "LPDS_original.xml";
-        String fogfile1 = ScenarioBase.resourcePath + "/XML_examples/LPDS_32.xml";
-        String fogfile2 = ScenarioBase.resourcePath + "/XML_examples/LPDS_16.xml";
-
-        VirtualAppliance va = new VirtualAppliance("va", 100, 0, false, 1073741824L);
-
-        AlterableResourceConstraints arc1 = new AlterableResourceConstraints(2, 0.001, 4294967296L);
-        AlterableResourceConstraints arc2 = new AlterableResourceConstraints(4, 0.001, 8589934592L);
-        AlterableResourceConstraints arc3 = new AlterableResourceConstraints(8, 0.001, 17179869184L);
-
-        // https://aws.amazon.com/ec2/pricing/on-demand/
-        Instance instance_type1 = new Instance("a1.large", va, arc1, 0.051 / 60 / 60 / 1000);
-        Instance instance_type2 = new Instance("a1.xlarge", va, arc2, 0.102 / 60 / 60 / 1000);
-        Instance instance_type3 = new Instance("a1.2xlarge", va, arc3, 0.204 / 60 / 60 / 1000);
-
-        ComputingAppliance Budapest_cloud = new ComputingAppliance(cloudfile, "Budapest_cloud", new GeoLocation(47.5, 19.1), 10000);
-
-        ComputingAppliance Sopron_fog2 = new ComputingAppliance(fogfile2, "Sopron_fog2", new GeoLocation(47.7, 16.6), 10000);
-        ComputingAppliance Szombathely_fog2 = new ComputingAppliance(fogfile2, "Szombathely_fog2", new GeoLocation(47.2, 16.6), 10000);
-        ComputingAppliance Gyor_fog1 = new ComputingAppliance(fogfile1, "Gyor_fog1", new GeoLocation(47.6, 17.6), 10000);
-
-        ComputingAppliance Szeged_fog2 = new ComputingAppliance(fogfile2, "Szeged_fog2", new GeoLocation(46.2, 20.1), 10000);
-        ComputingAppliance Pecs_fog2 = new ComputingAppliance(fogfile2, "Pecs_fog2", new GeoLocation(46.0, 18.2), 10000);
-        ComputingAppliance Kecskemet_fog1 = new ComputingAppliance(fogfile1, "Kecskemet_fog1", new GeoLocation(46.8, 19.7), 10000);
-
-        ComputingAppliance Miskolc_fog2 = new ComputingAppliance(fogfile2, "Miskolc_fog2", new GeoLocation(48.1, 20.7), 10000);
-        ComputingAppliance Debrecen_fog2 = new ComputingAppliance(fogfile2, "Debrecen_fog2", new GeoLocation(47.5, 21.6), 10000);
-        ComputingAppliance Gyongyos_fog1 = new ComputingAppliance(fogfile1, "Gyongyos_fog1", new GeoLocation(47.7, 19.9), 10000);
-
-        Gyor_fog1.addNeighbor(Gyongyos_fog1, 33);
-        Gyor_fog1.addNeighbor(Kecskemet_fog1, 35);
-        Kecskemet_fog1.addNeighbor(Gyongyos_fog1, 34);
-
-        Kecskemet_fog1.setParent(Budapest_cloud, 25);
-        Gyongyos_fog1.setParent(Budapest_cloud, 25);
-        Gyor_fog1.setParent(Budapest_cloud, 27);
-
-        Sopron_fog2.addNeighbor(Szombathely_fog2, 45);
-        Sopron_fog2.setParent(Gyor_fog1, 43);
-        Szombathely_fog2.setParent(Gyor_fog1, 44);
-
-        Szeged_fog2.addNeighbor(Pecs_fog2, 44);
-        Szeged_fog2.setParent(Kecskemet_fog1, 49);
-        Pecs_fog2.setParent(Kecskemet_fog1, 47);
-
-        Miskolc_fog2.addNeighbor(Debrecen_fog2, 41);
-        Miskolc_fog2.setParent(Gyongyos_fog1, 44);
-        Debrecen_fog2.setParent(Gyongyos_fog1, 48);
-
-        Application Budapest_cloud_app = new Application("Budapest_cloud_app", 1 * 60 * 1000, tasksize, instructions, false, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type3);
-        Application Sopron_fog2_app = new Application("Sopron_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Szombathely_fog2_app = new Application("Szombathely_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Gyor_fog1_app = new Application("Gyor_fog1_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type2);
-        Application Szeged_fog2_app = new Application("Szeged_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Pecs_fog2_app = new Application("Pecs_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Kecskemet_fog1_app = new Application("Kecskemet_fog1_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type2);
-        Application Miskolc_fog2_app = new Application("Miskolc_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Debrecen_fog2_app = new Application("Debrecen_fog2_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type1);
-        Application Gyongyos_fog1_app = new Application("Gyongyos_fog1_app", 1 * 60 * 1000, tasksize, instructions, true, generateAppStrategy(applicationStrategy, activationRatio, transferDivider), instance_type2);
-
-        Budapest_cloud.addApplication(Budapest_cloud_app);
-        Sopron_fog2.addApplication(Sopron_fog2_app);
-        Szombathely_fog2.addApplication(Szombathely_fog2_app);
-        Gyor_fog1.addApplication(Gyor_fog1_app);
-        Szeged_fog2.addApplication(Szeged_fog2_app);
-        Pecs_fog2.addApplication(Pecs_fog2_app);
-        Kecskemet_fog1.addApplication(Kecskemet_fog1_app);
-        Miskolc_fog2.addApplication(Miskolc_fog2_app);
-        Debrecen_fog2.addApplication(Debrecen_fog2_app);
-        Gyongyos_fog1.addApplication(Gyongyos_fog1_app);
-
-        new EnergyDataCollector("Budapest_cloud", Budapest_cloud.iaas, true);
-        new EnergyDataCollector("Sopron_fog2", Sopron_fog2.iaas, true);
-        new EnergyDataCollector("Szombathely_fog2", Szombathely_fog2.iaas, true);
-        new EnergyDataCollector("Gyor_fog1", Gyor_fog1.iaas, true);
-
-        new EnergyDataCollector("Szeged_fog2", Szeged_fog2.iaas, true);
-        new EnergyDataCollector("Pecs_fog2", Pecs_fog2.iaas, true);
-        new EnergyDataCollector("Kecskemet_fog1", Kecskemet_fog1.iaas, true);
-
-        new EnergyDataCollector("Miskolc_fog2", Miskolc_fog2.iaas, true);
-        new EnergyDataCollector("Debrecen_fog2", Debrecen_fog2.iaas, true);
-        new EnergyDataCollector("Gyongyos_fog1", Gyongyos_fog1.iaas, true);
+        for (ComputingAppliance node : CityTopology.create(
+                java.nio.file.Path.of(ScenarioBase.resourcePath, "LPDS_original.xml"),
+                java.nio.file.Path.of(ScenarioBase.resourcePath), 10000, tasksize, instructions,
+                () -> generateAppStrategy(applicationStrategy, activationRatio, transferDivider))) {
+            new EnergyDataCollector(node.name, node.iaas, true);
+        }
 
         generateDevices(device_multiplier);
 

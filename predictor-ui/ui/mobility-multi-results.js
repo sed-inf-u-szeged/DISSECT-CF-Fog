@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 function check(ok, message) { if (!ok) throw new Error('Multi-device results: ' + message); }
 
-function readMultiMobilityRun(root, build, required, learning) {
+function readMultiMobilityRun(root, build, required, learning, csv) {
   let bytes = 0;
   const canonical = fs.realpathSync(root);
   function read(relative) {
@@ -25,6 +25,10 @@ function readMultiMobilityRun(root, build, required, learning) {
   const properties = Object.fromEntries(propertyRows.map(s => [s.slice(0, s.indexOf('=')), s.slice(s.indexOf('=') + 1)]));
   check(Number(properties.device_count) === manifest.device_count && properties.load_scope === 'ALL_DEVICES', 'global device count or load scope differs');
   const shared = Object.fromEntries(['node_load.csv', 'offload_events.csv'].map(name => [name, read(name)]));
+  if(fs.existsSync(path.join(root,'node_topology.json'))) shared['node_topology.json']=read('node_topology.json');
+  if(properties.infrastructure==='hungary-cities') {
+    check(properties.run_id===manifest.run_id && !!shared['node_topology.json'], 'city run identity or topology is missing');
+  }
   const devices = [];
   let generated = 0, uploaded = 0, issued = 0, matched = 0;
   let first;
@@ -38,6 +42,10 @@ function readMultiMobilityRun(root, build, required, learning) {
     const comparison = require('./mobility-comparison-results');
     if (comparison.files.some(name => fs.existsSync(path.join(root,entry.path,name)))) {
       for (const name of comparison.files) texts[name] = read(entry.path + '/' + name);
+    }
+    const baselines = require('./mobility-baseline-results');
+    if (baselines.markers.some(name=>fs.existsSync(path.join(root,entry.path,name)))) {
+      for (const name of baselines.files) if (!(name in texts)) texts[name]=read(entry.path+'/'+name);
     }
     const data = build(texts, path.basename(root) + ' / Device ' + id, {sharedFrames: true});
     check(data.observations.every(r => r.device_id === i) && data.learning?.device_id === i
@@ -70,6 +78,8 @@ function readMultiMobilityRun(root, build, required, learning) {
       && counter.device_generated_bytes >= counter.device_upload_completed_bytes_total,
     'global byte conservation failed at ' + frame.time_ms);
   }
-  return {...first, label: path.basename(root), devices, multi: manifest};
+  const nodeLoad = require('./node-load-results').readNodeLoad(read,
+    name => fs.existsSync(path.join(root, name)), csv, manifest.run_id, first.nodes.map(n => n.name));
+  return {...first, label: path.basename(root), devices, multi: manifest, nodeLoad};
 }
 module.exports = {readMultiMobilityRun};

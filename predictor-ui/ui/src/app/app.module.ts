@@ -1,5 +1,8 @@
+import {MobilityReadinessComponent} from './components/mobility-readiness/mobility-readiness.component';
+import { MobilityMapComponent } from './components/mobility-map/mobility-map.component';
 import { MobilityViewComponent } from './components/mobility-view/mobility-view.component';
 import { MobilityLauncherComponent } from './components/mobility-launcher/mobility-launcher.component';
+import { NodeLoadViewComponent } from './components/node-load-view/node-load-view.component';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -48,6 +51,9 @@ import { RunSummaryComponent } from './components/run-summary/run-summary.compon
   imports: [
     BrowserModule,
     MobilityLauncherComponent,
+    MobilityReadinessComponent,
+    NodeLoadViewComponent,
+    MobilityMapComponent,
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,

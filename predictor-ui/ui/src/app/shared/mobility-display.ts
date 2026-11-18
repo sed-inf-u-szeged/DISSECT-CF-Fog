@@ -1,5 +1,14 @@
 import { MobilityLearningRun, MobilityMethod, PositionEvaluation } from './MobilityRun';
 
+/** A display window only: retain recorded coordinates and never include future observations.
+ * Anchor to the last observation so final task draining does not erase the path. */
+export function recentMovement<T extends {time_ms?:number}>(rows:T[], time:number, minutes:number):T[] {
+  const known=rows.filter(row=>row.time_ms!==undefined && row.time_ms<=time);
+  if(!minutes || !known.length) return known;
+  const start=known[known.length-1].time_ms!-minutes*60000;
+  return known.filter(row=>row.time_ms!>=start);
+}
+
 /** Replay state uses only events already observed at the selected simulation time. */
 export function lifecycleAt(run: MobilityLearningRun, time: number) {
   let version = '', state = 'WARMUP', decision = 'WAITING_FOR_EVALUATION';

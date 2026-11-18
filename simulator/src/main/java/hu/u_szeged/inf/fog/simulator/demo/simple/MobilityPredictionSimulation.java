@@ -16,6 +16,8 @@ import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.mta.sztaki.lpds.cloud.simulator.util.SeedSyncer;
 import hu.u_szeged.inf.fog.simulator.application.Application;
 import hu.u_szeged.inf.fog.simulator.application.strategy.RuntimeAwareApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.application.strategy.PliantApplicationStrategy;
+import hu.u_szeged.inf.fog.simulator.demo.CityTopology;
 import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.iot.SmartDevice;
 import hu.u_szeged.inf.fog.simulator.iot.mobility.GeoLocation;
@@ -28,7 +30,10 @@ import hu.u_szeged.inf.fog.simulator.provider.Instance;
 import hu.u_szeged.inf.fog.simulator.util.SimLogger;
 import hu.u_szeged.inf.fog.simulator.prediction.communication.launchers.MobilityUiLauncher;
 import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
+import hu.u_szeged.inf.fog.simulator.prediction.mobility.MobilityPositionBaselines;
 import hu.u_szeged.inf.fog.simulator.prediction.mobility.MobilityLifecycleAdapter;
+import hu.u_szeged.inf.fog.simulator.prediction.FixedIntervalSampler;
+import hu.u_szeged.inf.fog.simulator.prediction.NodeLoadLearning;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,30 +54,47 @@ public class MobilityPredictionSimulation {
     private static final class LivePreview implements AutoCloseable {
         final Map<String, org.json.JSONObject> comparisons = new HashMap<>();
         final BufferedWriter writer;
+        final String runId;
         final Map<String, org.json.JSONObject> lifecycle = new HashMap<>();
         long sequence;
         long flushed = System.nanoTime();
         long loadWritten;
 
-        LivePreview(Path file, MobilityScenarioConfig config, String runId, int count) throws Exception {
+        LivePreview(Path file, MobilityScenarioConfig config, String runId, int count, org.json.JSONArray nodes) throws Exception {
+            this.runId = runId;
             writer = Files.newBufferedWriter(file, java.nio.file.StandardOpenOption.CREATE_NEW);
-            GeoLocation west = config.start(), east = west.nextLocation(1600, 90);
-            org.json.JSONArray nodes = new org.json.JSONArray();
-            for (int i = 0; i < 2; i++) {
-                GeoLocation p = i == 0 ? west : east;
-                nodes.put(new org.json.JSONObject().put("name", i == 0 ? "mobility-west" : "mobility-east")
-                        .put("latitude", p.latitude).put("longitude", p.longitude).put("radius", 1000));
-            }
-            emit(new org.json.JSONObject().put("type", "META").put("schema_version", 1)
+            emit(new org.json.JSONObject().put("type", "META").put("schema_version", 2)
                     .put("run_id", runId).put("device_count", count).put("duration_ms", config.durationMillis())
                     .put("expected_observations", config.observationCount()).put("strategy", config.strategy()).put("nodes", nodes));
             writer.flush();
+        }
+
+        void nodeLoad(String kind, org.json.JSONObject record) throws IOException {
+            try {
+                emit(new org.json.JSONObject().put("type", "NODE_LOAD").put("kind", kind).put("run_id", runId)
+                        .put("time_ms", record.getLong("time_ms")).put("data", record));
+                // Publish TRAINING before its blocking worker call, and complete vectors immediately.
+                if ("EVENT".equals(kind) || "META".equals(kind)
+                        || ("VECTOR".equals(kind) && !"Persistence".equals(record.optString("model")))) {
+                    writer.flush(); flushed = System.nanoTime();
+                }
+            } catch (Exception error) { throw new IOException("Cannot publish live node-load record", error); }
         }
 
         void emit(org.json.JSONObject row) throws Exception {
             row.put("sequence", ++sequence);
             writer.write(row.toString()); writer.newLine();
             if (System.nanoTime() - flushed >= 200_000_000L) { writer.flush(); flushed = System.nanoTime(); }
+        }
+
+        void training(int device, long now, MobilityLifecycleAdapter lifecycle, String command) throws Exception {
+            org.json.JSONObject control = new org.json.JSONObject(command);
+            if (!"TRAIN".equals(control.getString("action"))) return;
+            org.json.JSONObject state = lifecycle.preview().put("state", "TRAINING")
+                    .put("candidate", control.getString("model_version"));
+            emit(new org.json.JSONObject().put("type", "MOBILITY_STATUS").put("device_id", device)
+                    .put("time_ms", now).put("lifecycle", state));
+            writer.flush(); flushed = System.nanoTime();
         }
 
         void frame(ObservedDevice device, GeoLocation actual, String node, long now) {
@@ -85,6 +107,7 @@ public class MobilityPredictionSimulation {
                 if (extra != null) { row.put("comparison", extra); }
                 org.json.JSONObject state = lifecycle.get(device.deviceId);
                 if (state != null) { row.put("lifecycle", state); }
+                if (sampled) { row.put("baselines", device.positionBaselines.preview()); }
                 emit(row);
             } catch (Exception e) { throw new IllegalStateException("Cannot write live preview", e); }
         }
@@ -102,7 +125,7 @@ public class MobilityPredictionSimulation {
                 }
                 boolean draining = ledger.devices.stream().allMatch(d -> now > d.stopTime + STEP);
                 emit(new org.json.JSONObject().put("type", "LOAD").put("time_ms", now)
-                        .put("phase", draining ? "DRAINING" : "OBSERVING").put("nodes", nodes));
+                        .put("phase", "FINAL".equals(kind) ? "FINAL" : draining ? "DRAINING" : "OBSERVING").put("nodes", nodes));
                 loadWritten = System.nanoTime();
                 if ("FINAL".equals(kind)) { writer.flush(); }
             } catch (Exception e) { throw new IllegalStateException("Cannot write live load preview", e); }
@@ -235,8 +258,20 @@ public class MobilityPredictionSimulation {
 
         @Override
         protected void startDataTranfer(Application destination, long bytes) {
+            tracedTransfer(ledger, application, destination, bytes);
+        }
+    }
+
+    private static final class TracedPliantStrategy extends PliantApplicationStrategy {
+        private final TransferLedger ledger;
+        TracedPliantStrategy(TransferLedger ledger) { super(0.9, 2.0); this.ledger = ledger; }
+        @Override protected void startDataTranfer(Application destination, long bytes) {
+            tracedTransfer(ledger, application, destination, bytes);
+        }
+    }
+
+    private static void tracedTransfer(TransferLedger ledger, Application source, Application destination, long bytes) {
             if (destination == null) { return; }
-            final Application source = application;
             final long id = ++ledger.nextId;
             final long start = Timed.getFireCount();
             // Same transfer and accounting order as ApplicationStrategy at 29df879.
@@ -271,7 +306,70 @@ public class MobilityPredictionSimulation {
             } catch (NetworkNode.NetworkException error) {
                 throw new IllegalStateException("Offload transfer failed", error);
             }
+    }
+
+    /** A shared node clock for load forecasting, independent of device callbacks. */
+    private static void simulateWithNodeSamples(TransferLedger ledger, MobilityScenarioConfig config,
+            Path output, ComputingAppliance... nodes) throws IOException, org.json.JSONException {
+        String runId = output.getFileName().toString();
+        long sampleUntil = ledger.devices.stream().mapToLong(d -> d.stopTime + STEP).max().orElseThrow();
+        long count;
+        try (BufferedWriter writer = Files.newBufferedWriter(output.resolve("node_load_samples.csv"));
+                NodeLoadLearning learning = NodeLoadLearning.fromEnvironment(output)) {
+            if (livePreview != null) {
+                org.json.JSONArray ids = new org.json.JSONArray();
+                for (ComputingAppliance node : nodes) { ids.put(node.name); }
+                livePreview.nodeLoad("META", learning.liveMetadata(ids));
+                learning.setListener(livePreview::nodeLoad);
+            }
+            write(writer, "run_id,node_id,sample_index,time_ms,sample_phase,waiting_assignment_bytes,"
+                    + "running_tasks,completed_tasks_total,connected_devices,device_upload_completed_bytes_derived,"
+                    + "offload_sent_bytes_total,offload_received_bytes_total,net_received_counter_bytes,"
+                    + "assigned_to_compute_bytes,incoming_offload_transfers");
+            count = FixedIntervalSampler.simulate(STEP, sampleUntil, config.simulationLimitMillis(), (index, time) -> {
+                for (ComputingAppliance node : nodes) {
+                    long net = 0, assigned = 0, sent = 0, received = 0, incoming = 0, running = 0, completed = 0;
+                    java.util.HashSet<hu.u_szeged.inf.fog.simulator.iot.Device> connected = new java.util.HashSet<>();
+                    for (Application app : node.applications) {
+                        net += app.receivedData;
+                        assigned += app.processedData;
+                        sent += ledger.get(ledger.sent, app);
+                        received += ledger.get(ledger.received, app);
+                        incoming += app.incomingData;
+                        connected.addAll(app.deviceList);
+                        for (AppVm vm : app.utilisedVms) {
+                            if (MobilityTaskMetrics.isRunning(vm)) { running++; }
+                            completed += vm.taskCounter;
+                        }
+                    }
+                    write(writer, runId + "," + node.name + "," + index + "," + time + "," + FixedIntervalSampler.PHASE
+                            + "," + (net - assigned) + "," + running + "," + completed + "," + connected.size()
+                            + "," + (net + sent - received) + "," + sent + "," + received + "," + net
+                            + "," + assigned + "," + incoming);
+                    if (livePreview != null) {
+                        try {
+                            livePreview.nodeLoad("SAMPLE", new org.json.JSONObject().put("node_id", node.name)
+                                    .put("time_ms", time).put("index", index).put("value", net - assigned)
+                                    .put("running_tasks", running).put("completed_tasks", completed));
+                        } catch (org.json.JSONException error) { throw new IOException(error); }
+                    }
+                    learning.observe(node.name, index, time, net - assigned);
+                }
+            });
+            learning.finish();
         }
+        org.json.JSONArray nodeIds = new org.json.JSONArray();
+        for (ComputingAppliance node : nodes) { nodeIds.put(node.name); }
+        org.json.JSONObject metadata = new org.json.JSONObject().put("schema_version", 1).put("run_id", runId)
+                .put("node_ids", nodeIds).put("interval_ms", STEP).put("start_ms", 0)
+                .put("sample_until_ms", sampleUntil).put("sample_count_per_node", count)
+                .put("last_sample_ms", count == 0 ? org.json.JSONObject.NULL : (count - 1) * STEP)
+                .put("rows", count * nodes.length).put("sample_phase", FixedIntervalSampler.PHASE)
+                .put("sampling_scope", "CONFIGURED_OBSERVATION_SPAN")
+                .put("simulation_end_ms", Timed.getFireCount()).put("simulation_limit_ms", config.simulationLimitMillis());
+        Files.writeString(output.resolve("node_load_sampling.json"), metadata.toString(2));
+        System.out.println("NODE_LOAD_SAMPLES_RECORDED nodes=" + nodes.length + " samples_per_node=" + count);
+        System.out.println("NODE_LOAD_OBSERVATION_INTERVAL_MS=" + STEP);
     }
 
     private static final class Counts {
@@ -457,8 +555,12 @@ public class MobilityPredictionSimulation {
     private static final class ObservedDevice extends SmartDevice {
         private final BufferedWriter observations;
         private final MobilitySampleRecorder samples;
+        private final MobilityPositionBaselines positionBaselines;
         private final SampleSink shadow;
         private final String deviceId;
+        private final DeviceWorkloadProfile workload;
+        private final BufferedWriter demand;
+        private long measurementIndex;
         private final BufferedWriter predictions;
         private final BufferedWriter evaluations;
         private final BufferedWriter loads;
@@ -475,17 +577,22 @@ public class MobilityPredictionSimulation {
 
         ObservedDevice(MobilityStrategy movement, PhysicalMachine machine, long stop,
                 BufferedWriter observations, BufferedWriter predictions,
-                BufferedWriter evaluations, BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, ShadowBridge shadow) {
-            this("0", movement, machine, stop, observations, predictions, evaluations, loads, ledger, samples, shadow);
+                BufferedWriter evaluations, BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, ShadowBridge shadow,
+                DeviceWorkloadProfile workload, BufferedWriter demand, MobilityPositionBaselines positionBaselines) {
+            this("0", movement, machine, stop, observations, predictions, evaluations, loads, ledger, samples, shadow, workload, demand, positionBaselines);
         }
 
         ObservedDevice(String deviceId, MobilityStrategy movement, PhysicalMachine machine, long stop,
                 BufferedWriter observations, BufferedWriter predictions, BufferedWriter evaluations,
-                BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, SampleSink shadow) {
+                BufferedWriter loads, TransferLedger ledger, MobilitySampleRecorder samples, SampleSink shadow,
+                DeviceWorkloadProfile workload, BufferedWriter demand, MobilityPositionBaselines positionBaselines) {
             super(START, stop, 100, STEP, movement, new StableConnection(), machine, 50, false);
             this.deviceId = deviceId;
+            this.workload = workload;
+            this.demand = demand;
             this.observations = observations;
             this.samples = samples;
+            this.positionBaselines = positionBaselines;
             this.shadow = shadow;
             this.predictions = predictions;
             this.evaluations = evaluations;
@@ -497,6 +604,12 @@ public class MobilityPredictionSimulation {
         @Override
         public void tick(long fires) {
             String oldNode = previousObservedNode;
+            long measurementTime = Timed.getFireCount();
+            if (measurementTime >= startTime && measurementTime < stopTime) {
+                fileSize = workload.bytesAt(Integer.parseInt(deviceId), measurementIndex);
+                write(demand, deviceId + "," + measurementIndex + "," + measurementTime + "," + fileSize);
+                measurementIndex++;
+            }
             super.tick(fires);
             long now = Timed.getFireCount();
             // SmartDevice has now applied movement and refreshed the actual application connection.
@@ -507,6 +620,7 @@ public class MobilityPredictionSimulation {
                 // Later movement used to drain buffered uploads remains in observations.csv.
                 if (now <= stopTime + STEP) {
                     String sample = samples.recordAndGet(deviceId, now, current.latitude, current.longitude, currentNode);
+                    positionBaselines.observe(now, current.latitude, current.longitude, currentNode, now < stopTime + STEP);
                     if (shadow != null) { shadow.observe(sample, now, now < stopTime + STEP, current); }
                 }
             } catch (IOException error) {
@@ -643,7 +757,9 @@ public class MobilityPredictionSimulation {
                     lifecycle.observe(runId, Integer.toString(id), now, actual.latitude, actual.longitude, forecastAllowed);
                     requests.write("DEVICE\t" + id); requests.newLine();
                     requests.write("OBS\t" + forecastAllowed + "\t" + sample); requests.newLine();
-                    requests.write("CONTROL\t" + lifecycle.control()); requests.newLine(); requests.flush();
+                    String command = lifecycle.control();
+                    if (livePreview != null) livePreview.training(id, now, lifecycle, command);
+                    requests.write("CONTROL\t" + command); requests.newLine(); requests.flush();
                     String prefix = "DEVICE\t" + id + "\t";
                     int messages = 0;
                     org.json.JSONObject comparison = null;
@@ -751,6 +867,39 @@ public class MobilityPredictionSimulation {
                 .put("offload_in_flight_bytes", ledger.inFlightBytes).put("nodes", nodes);
     }
 
+    private static org.json.JSONObject topology(MobilityScenarioConfig config, String runId,
+            java.util.List<ComputingAppliance> infrastructure) throws org.json.JSONException {
+        org.json.JSONArray nodes = new org.json.JSONArray(), links = new org.json.JSONArray();
+        for (ComputingAppliance node : infrastructure) {
+            boolean serviceable = node.applications.stream().anyMatch(a -> a.serviceable);
+            Application app = node.applications.get(0);
+            nodes.put(new org.json.JSONObject().put("name", node.name)
+                    .put("latitude", node.geoLocation.latitude).put("longitude", node.geoLocation.longitude)
+                    .put("radius", serviceable ? node.range * 1000 : 0).put("serviceable", serviceable)
+                    .put("role", serviceable ? "fog" : "cloud")
+                    .put("resources", new org.json.JSONObject()
+                            .put("host_count", node.iaas.machines.size())
+                            .put("total_cpu_cores", node.iaas.getCapacities().getRequiredCPUs())
+                            .put("total_memory_bytes", node.iaas.getCapacities().getRequiredMemory())
+                            .put("vm_cpu_cores", app.instance.arc.getRequiredCPUs())
+                            .put("vm_memory_bytes", app.instance.arc.getRequiredMemory()))
+                    .put("application", new org.json.JSONObject().put("task_bytes", app.tasksize)
+                            .put("instructions_per_task", config.isCityTopology() ? 480 : 2500).put("interval_ms", STEP)));
+        }
+        if (config.isCityTopology()) {
+            for (CityTopology.LinkSpec link : CityTopology.LINKS) {
+                links.put(new org.json.JSONObject().put("source", link.source).put("target", link.target)
+                        .put("kind", link.parent ? "parent" : "peer").put("latency_ms", link.latency));
+            }
+        } else {
+            links.put(new org.json.JSONObject().put("source", "mobility-west").put("target", "mobility-east")
+                    .put("kind", "peer").put("latency_ms", 10));
+        }
+        return new org.json.JSONObject().put("schema_version", 1).put("run_id", runId)
+                .put("infrastructure", config.infrastructure()).put("nodes", nodes).put("links", links)
+                .put("coverage_semantics", "synthetic device access; cloud has no direct device coverage");
+    }
+
     private static void runMulti(MobilityScenarioConfig config, Path xml, Path parent, int count, boolean openUi) throws Exception {
         if (config.observationCount() < 105) { throw new IllegalArgumentException("Multi-device lifecycle requires at least 104 duration_minutes"); }
         Files.createDirectories(parent);
@@ -767,24 +916,39 @@ public class MobilityPredictionSimulation {
         Files.writeString(manifestPath, manifest.toString(2));
         long started = System.nanoTime();
         try (RunResources resources = new RunResources()) {
-            String liveFile = System.getenv("MOBILITY_LIVE_FILE");
-            if (liveFile != null && !liveFile.isBlank()) {
-                livePreview = resources.keep(new LivePreview(Path.of(liveFile), config, runId, count));
-            }
             SimLogger.setLogging(2, false);
             SeedSyncer.centralRnd.setSeed(config.seed());
-            GeoLocation start = config.start();
-            ComputingAppliance west = new ComputingAppliance(xml.toString(), "mobility-west", start, 1);
-            ComputingAppliance east = new ComputingAppliance(xml.toString(), "mobility-east", start.nextLocation(1600, 90), 1);
-            west.addNeighbor(east, 10);
-            VirtualAppliance va = new VirtualAppliance("mobility-va", 100, 0, false, 1_073_741_824L);
-            Instance instance = new Instance("mobility-instance", va,
-                    new AlterableResourceConstraints(2, 0.001, 4_294_967_296L), 0.0255 / 3_600_000);
             BufferedWriter loads = resources.writer(output.resolve("node_load.csv"));
             BufferedWriter transfers = resources.writer(output.resolve("offload_events.csv"));
+            BufferedWriter demand = resources.writer(output.resolve("device_demand_schedule.csv"));
+            write(demand, "device_id,measurement_index,measurement_started_ms,bytes");
             TransferLedger ledger = new TransferLedger(transfers);
-            for (ComputingAppliance node : new ComputingAppliance[] {west, east}) {
-                node.addApplication(new Application(node.name + "-app", STEP, 250, 2500, true, new TracedRuntimeStrategy(ledger), instance));
+            java.util.List<ComputingAppliance> nodes;
+            if (config.isCityTopology()) {
+                // The shared infrastructure is reused; forecast-driven control is a later experiment.
+                if (hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator.PREDICTION_ENABLED) {
+                    throw new IllegalStateException("City integration requires reactive Pliant (predictions are observational)");
+                }
+                nodes = CityTopology.create(xml, xml.toAbsolutePath().getParent(), config.cityCoverageKm(),
+                        5120, 480, () -> new TracedPliantStrategy(ledger));
+            } else {
+                GeoLocation start = config.start();
+                ComputingAppliance west = new ComputingAppliance(xml.toString(), "mobility-west", start, 1);
+                ComputingAppliance east = new ComputingAppliance(xml.toString(), "mobility-east", start.nextLocation(1600, 90), 1);
+                west.addNeighbor(east, 10);
+                nodes = java.util.List.of(west, east);
+                VirtualAppliance va = new VirtualAppliance("mobility-va", 100, 0, false, 1_073_741_824L);
+                Instance instance = new Instance("mobility-instance", va,
+                        new AlterableResourceConstraints(2, 0.001, 4_294_967_296L), 0.0255 / 3_600_000);
+                for (ComputingAppliance node : nodes) {
+                    node.addApplication(new Application(node.name + "-app", STEP, 250, 2500, true, new TracedRuntimeStrategy(ledger), instance));
+                }
+            }
+            org.json.JSONObject topology = topology(config, runId, nodes);
+            Files.writeString(output.resolve("node_topology.json"), topology.toString(2));
+            String liveFile = System.getenv("MOBILITY_LIVE_FILE");
+            if (liveFile != null && !liveFile.isBlank()) {
+                livePreview = resources.keep(new LivePreview(Path.of(liveFile), config, runId, count, topology.getJSONArray("nodes")));
             }
             write(transfers, "transfer_id,time_ms,event,source_node,destination_node,bytes,event_sequence");
             write(loads, "time_ms,sample_kind,node,device_upload_completed_bytes_derived,offload_sent_bytes,offload_received_bytes,net_received_counter_bytes,"
@@ -802,11 +966,16 @@ public class MobilityPredictionSimulation {
                 write(predictions, "device_id,origin_ms,target_ms,origin_node,node_latitude,node_longitude,radius_m,hold_latitude,hold_longitude,velocity_latitude,velocity_longitude");
                 write(evaluations, "device_id,origin_ms,target_ms,origin_node,actual_node,actual_latitude,actual_longitude,distance_to_origin_node_m,actual_exit,hold_exit,velocity_exit");
                 MobilitySampleRecorder samples = resources.keep(new MobilitySampleRecorder(child.resolve("mobility_samples.csv"), runId));
-                new ObservedDevice(id, config.movement(config.simulationLimitMillis()), deviceMachine("mobility-device-" + id), START + config.durationMillis(),
-                        observations, predictions, evaluations, loads, ledger, samples, bridge.session(i));
-                entries.put(new org.json.JSONObject().put("device_id", id).put("path", "devices/" + id));
+                new ObservedDevice(id, config.movement(config.simulationLimitMillis(), config.deviceStart(i)), deviceMachine("mobility-device-" + id), START + config.durationMillis(),
+                        observations, predictions, evaluations, loads, ledger, samples, bridge.session(i), config.deviceWorkload(), demand,
+                        resources.keep(new MobilityPositionBaselines(child, runId, id)));
+                GeoLocation origin = config.deviceStart(i);
+                org.json.JSONObject entry = new org.json.JSONObject().put("device_id", id).put("path", "devices/" + id)
+                        .put("start_latitude", origin.latitude).put("start_longitude", origin.longitude);
+                if (config.isCityTopology()) { entry.put("start_node", CityTopology.deviceOrigin(config.cityPlacement(), i).name); }
+                entries.put(entry);
             }
-            Timed.simulateUntil(config.simulationLimitMillis());
+            simulateWithNodeSamples(ledger, config, output, nodes.toArray(new ComputingAppliance[0]));
             org.json.JSONObject drain = drainState(config, ledger);
             Files.writeString(output.resolve("drain-state.json"), drain.toString(2));
             manifest.put("drain_state", drain);
@@ -827,8 +996,9 @@ public class MobilityPredictionSimulation {
             long generated = ledger.devices.stream().mapToLong(d -> d.generatedData).sum();
             long uploaded = ledger.devices.stream().mapToLong(MobilityDeviceMetrics::uploadCompletedBytes).sum();
             if (ledger.inFlightBytes != 0 || assigned != generated || uploaded != generated) { throw new IllegalStateException("Multi-device final byte conservation failed"); }
-            String common = "schema_version=2\nseed=" + config.seed() + "\ninterval_ms=" + STEP
-                    + "\nnode_radius_m=1000\nnode_separation_m=1600\nscenario_name=" + config.name() + config.metadata()
+            String common = "schema_version=2\nposition_baselines=early-position-v1\nrun_id=" + runId + "\nseed=" + config.seed() + "\ninterval_ms=" + STEP
+                    + (config.isCityTopology() ? "" : "\nnode_radius_m=1000\nnode_separation_m=1600")
+                    + "\nscenario_name=" + config.name() + config.metadata()
                     + "\nsimulation_limit_ms=" + config.simulationLimitMillis() + "\nfinal_settlement_time_ms=" + Timed.getFireCount()
                     + "\ngenerated_bytes=" + generated + "\nupload_completed_bytes=" + uploaded + "\nassigned_bytes_final=" + assigned
                     + "\noffload_transfers=" + ledger.nextId + "\noffload_bytes=" + Application.totalBytesOnNetwork
@@ -836,7 +1006,9 @@ public class MobilityPredictionSimulation {
             long issued = 0, matched = 0;
             for (ObservedDevice device : ledger.devices) {
                 Path child = output.resolve("devices").resolve(device.deviceId);
-                Files.writeString(child.resolve("run.properties"), common + "device_id=" + device.deviceId + "\nissued=" + device.issued
+                Files.writeString(child.resolve("run.properties"), common + "device_start_latitude_deg=" + config.deviceStart(Integer.parseInt(device.deviceId)).latitude
+                        + "\ndevice_start_longitude_deg=" + config.deviceStart(Integer.parseInt(device.deviceId)).longitude
+                        + "\ndevice_id=" + device.deviceId + "\nissued=" + device.issued
                         + "\nmatched=" + device.matched + "\ndevice_generated_bytes=" + device.generatedData
                         + "\ndevice_uploaded_bytes=" + MobilityDeviceMetrics.uploadCompletedBytes(device) + "\n");
                 Files.writeString(child.resolve("coverage_summary.csv"), "model,evaluated,tp,fn,fp,tn\n"
@@ -896,6 +1068,7 @@ public class MobilityPredictionSimulation {
             runMulti(config, xml, parent, multiDevices, openUi);
             return;
         }
+        if (config.isCityTopology()) { throw new IllegalArgumentException("City scenarios require --devices=<count>"); }
         Files.createDirectories(parent);
         Path output = Files.createTempDirectory(parent, "mobility-").toAbsolutePath();
         config.save(output);
@@ -909,12 +1082,14 @@ public class MobilityPredictionSimulation {
         VirtualAppliance va = new VirtualAppliance("mobility-va", 100, 0, false, 1_073_741_824L);
         AlterableResourceConstraints resources = new AlterableResourceConstraints(2, 0.001, 4_294_967_296L);
         Instance instance = new Instance("mobility-instance", va, resources, 0.0255 / 3_600_000);
-        try (ShadowBridge shadow = ShadowBridge.open(output, config.observationCount());
+        try (MobilityPositionBaselines positionBaselines = new MobilityPositionBaselines(output, output.getFileName().toString(), "0");
+             ShadowBridge shadow = ShadowBridge.open(output, config.observationCount());
              BufferedWriter observations = Files.newBufferedWriter(output.resolve("observations.csv"));
              BufferedWriter predictions = Files.newBufferedWriter(output.resolve("predictions.csv"));
              BufferedWriter evaluations = Files.newBufferedWriter(output.resolve("evaluations.csv"));
              BufferedWriter loads = Files.newBufferedWriter(output.resolve("node_load.csv"));
              BufferedWriter transfers = Files.newBufferedWriter(output.resolve("offload_events.csv"));
+             BufferedWriter demand = Files.newBufferedWriter(output.resolve("device_demand_schedule.csv"));
              MobilitySampleRecorder samples = new MobilitySampleRecorder(
                      output.resolve("mobility_samples.csv"), output.getFileName().toString())) {
             TransferLedger ledger = new TransferLedger(transfers);
@@ -923,6 +1098,7 @@ public class MobilityPredictionSimulation {
                         new TracedRuntimeStrategy(ledger), instance));
             }
             write(transfers, "transfer_id,time_ms,event,source_node,destination_node,bytes,event_sequence");
+            write(demand, "device_id,measurement_index,measurement_started_ms,bytes");
             write(observations, "device_id,time_ms,latitude,longitude,previous_node,current_node");
             write(predictions, "device_id,origin_ms,target_ms,origin_node,node_latitude,node_longitude,radius_m,"
                     + "hold_latitude,hold_longitude,velocity_latitude,velocity_longitude");
@@ -934,8 +1110,8 @@ public class MobilityPredictionSimulation {
                     + "incoming_offload_transfers,connected_devices,device_generated_bytes,"
                     + "device_upload_completed_bytes_total,offload_in_flight_bytes_total,offload_event_sequence");
             ObservedDevice device = new ObservedDevice(config.movement(config.simulationLimitMillis()), deviceMachine(), START + config.durationMillis(),
-                    observations, predictions, evaluations, loads, ledger, samples, shadow);
-            Timed.simulateUntil(config.simulationLimitMillis());
+                    observations, predictions, evaluations, loads, ledger, samples, shadow, config.deviceWorkload(), demand, positionBaselines);
+            simulateWithNodeSamples(ledger, config, output, westNode, eastNode);
             if (Timed.getNextFire() != -1 || device.isSubscribed() || device.pending != null
                     || device.issued != device.matched) {
                 throw new IllegalStateException("Incomplete simulation or unmatched forecasts. Results: " + output);
@@ -960,7 +1136,7 @@ public class MobilityPredictionSimulation {
             String summary = "model,evaluated,tp,fn,fp,tn\n" + device.holdCounts.row("HoldPosition")
                     + "\n" + device.velocityCounts.row("ConstantVelocity") + "\n";
             Files.writeString(output.resolve("coverage_summary.csv"), summary);
-            String run = "schema_version=2\nseed=" + config.seed() + "\ninterval_ms=" + STEP
+            String run = "schema_version=2\nposition_baselines=early-position-v1\nseed=" + config.seed() + "\ninterval_ms=" + STEP
                     + "\nnode_radius_m=1000\n"
                     + "route_width_m=" + config.widthMeters() + "\nroute_height_m=" + config.heightMeters()
                     + "\nscenario_name=" + config.name()

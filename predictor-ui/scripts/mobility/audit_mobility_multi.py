@@ -58,6 +58,14 @@ def audit_device(child, manifest, device_id, tf):
 
 
 def audit_run(output, node, checker, tf):
+    # Older saved runs predate the common node clock; audit it when advertised.
+    if (output / "node_load_sampling.json").exists() or (output / "node_load_samples.csv").exists():
+        from audit_node_load_samples import audit
+        print("  Node load sampling: " + json.dumps(audit(output), sort_keys=True), flush=True)
+    if any((output / name).exists() for name in (
+            "node_load_predictions.csv", "node_load_evaluations.csv", "node_load_prediction_summary.json")):
+        from audit_node_load_predictions import audit as audit_predictions
+        print("  Node load baseline: " + json.dumps(audit_predictions(output), sort_keys=True), flush=True)
     manifest = read_json(output / "multi-device.json")
     worker = read_json(output / "multi-worker.json")
     require(manifest["status"] == worker["status"] == "COMPLETE" and manifest["run_id"] == worker["run_id"]

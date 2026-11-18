@@ -1,6 +1,7 @@
 'use strict';
 const learningResults = require('./mobility-learning-results');
 const comparisonResults = require('./mobility-comparison-results');
+const baselineResults = require('./mobility-baseline-results');
 const required=['run.properties','observations.csv','predictions.csv','evaluations.csv','node_load.csv','offload_events.csv','coverage_summary.csv'];
 function fail(s){throw new Error(s)}
 function csv(text,name){
@@ -28,10 +29,36 @@ function build(texts,label,{sharedFrames=false}={}){
  const device=observations[0].device_id;if([...observations,...predictions,...evaluations].some(r=>r.device_id!==device))fail('This view supports one device. Multiple devices or mixed runs detected.');
  observations.sort((a,b)=>a.time_ms-b.time_ms);predictions.sort((a,b)=>a.origin_ms-b.origin_ms);evaluations.sort((a,b)=>a.target_ms-b.target_ms);transfers.sort((a,b)=>a.event_sequence-b.event_sequence);
  unique(observations,r=>r.time_ms,'Observations');unique(predictions,r=>r.origin_ms,'Predictions');unique(evaluations,r=>r.origin_ms,'Evaluations');unique(loads,r=>r.time_ms+'|'+r.sample_kind+'|'+r.node,'Node snapshots');unique(transfers,r=>r.event_sequence,'Transfer events');
- const nodes=[];for(const p of predictions){const n=nodes.find(n=>n.name===p.origin_node);if(n){if(!close(n.latitude,p.node_latitude)||!close(n.longitude,p.node_longitude)||n.radius!==p.radius_m)fail('Inconsistent node geometry');}else nodes.push({name:p.origin_node,latitude:p.node_latitude,longitude:p.node_longitude,radius:p.radius_m});}
+ const nodes=[];
+ if(texts['node_topology.json']) {
+   const topology=JSON.parse(texts['node_topology.json']);
+   if(topology.schema_version!==1||topology.run_id!==props.run_id||topology.infrastructure!==props.infrastructure
+      ||!Array.isArray(topology.nodes)||!topology.nodes.length||!Array.isArray(topology.links))fail('Invalid node topology identity');
+   for(const n of topology.nodes) {
+     if(!n||typeof n.name!=='string'||!n.name||nodes.some(x=>x.name===n.name)
+       ||![n.latitude,n.longitude,n.radius].every(x=>typeof x==='number'&&Number.isFinite(x))
+       ||Math.abs(n.latitude)>90||Math.abs(n.longitude)>180||!['fog','cloud'].includes(n.role)
+       ||n.serviceable!==(n.role==='fog')||(n.serviceable?n.radius<=0:n.radius!==0))fail('Invalid topology node geometry or role');
+     nodes.push({name:n.name,latitude:n.latitude,longitude:n.longitude,radius:n.radius,role:n.role,serviceable:n.serviceable});
+   }
+   const names=new Set(nodes.map(n=>n.name)),links=new Set();
+   for(const l of topology.links) {
+     const key=l.kind+'|'+l.source+'|'+l.target;
+     if(!names.has(l.source)||!names.has(l.target)||l.source===l.target||!['parent','peer'].includes(l.kind)
+       ||!Number.isSafeInteger(l.latency_ms)||l.latency_ms<0||links.has(key))fail('Invalid topology link');
+     links.add(key);
+   }
+   if(props.infrastructure==='hungary-cities'&&(nodes.length!==10||nodes.filter(n=>n.role==='cloud').length!==1
+       ||!nodes.some(n=>n.name==='Budapest_cloud'&&n.role==='cloud')))fail('City topology requires nine fog nodes and Budapest cloud');
+ } else if(props.infrastructure==='hungary-cities')fail('City results require node_topology.json');
+ for(const p of predictions){const n=nodes.find(n=>n.name===p.origin_node);if(n){if(!close(n.latitude,p.node_latitude)||!close(n.longitude,p.node_longitude)||n.radius!==p.radius_m||n.serviceable===false)fail('Inconsistent node geometry');}else {
+   if(texts['node_topology.json'])fail('Forecast node is absent from topology');
+   nodes.push({name:p.origin_node,latitude:p.node_latitude,longitude:p.node_longitude,radius:p.radius_m});
+ }}
  // A node may exist without ever being the origin of a coverage forecast.
  const nodeNames=[...new Set(loads.map(r=>r.node))];
  if(nodeNames.some(name=>!nodes.some(n=>n.name===name))){
+   if(texts['node_topology.json'])fail('Snapshot node is absent from topology');
    for(const k of ['start_latitude_deg','start_longitude_deg','node_radius_m','node_separation_m'])if(props[k]===undefined||!Number.isFinite(Number(props[k])))fail('Missing node geometry: '+k);
    const lat=Number(props.start_latitude_deg),lon=Number(props.start_longitude_deg),radius=Number(props.node_radius_m),separation=Number(props.node_separation_m),r=Math.PI/180;
    if(Math.abs(lat)>90||Math.abs(lon)>180||radius<=0||separation<=0)fail('Invalid node geometry');
@@ -62,6 +89,7 @@ function build(texts,label,{sharedFrames=false}={}){
  const result={observations,predictions,evaluations,frames,transfers,nodes,summary,props,label};
  result.learning=learningResults.buildLearning(texts,result,table);
  result.comparison=comparisonResults.buildComparison(texts,result,table);
+ result.baselines=baselineResults.buildBaselines(texts,result,table);
  return result;
 }
 
@@ -70,13 +98,14 @@ function readMobilityRun(directory) {
   const path = require('path');
   const root = path.resolve(directory);
   if (fs.existsSync(path.join(root, 'multi-device.json'))) {
-    return require('./mobility-multi-results').readMultiMobilityRun(root, build, required, learningResults);
+    return require('./mobility-multi-results').readMultiMobilityRun(root, build, required, learningResults, csv);
   }
   let bytes = 0;
   const texts = {};
   const hasLearning = learningResults.markers.some(name => fs.existsSync(path.join(root, name)));
+  const hasBaselines = baselineResults.markers.some(name => fs.existsSync(path.join(root,name)));
   const hasComparison = comparisonResults.files.some(name => fs.existsSync(path.join(root,name)));
-  for (const name of [...required, ...(hasLearning ? learningResults.files : []), ...(hasComparison ? comparisonResults.files : [])]) {
+  for (const name of [...required, ...(fs.existsSync(path.join(root,'node_topology.json'))?['node_topology.json']:[]), ...(hasLearning ? learningResults.files : []), ...(hasComparison ? comparisonResults.files : []), ...(hasBaselines ? baselineResults.files : [])]) {
     const file = path.join(root, name);
     if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
       throw new Error('Mobility result file missing: ' + file);
@@ -85,6 +114,15 @@ function readMobilityRun(directory) {
     if (bytes > 50 * 1024 * 1024) throw new Error('Mobility result exceeds 50 MB.');
     texts[name] = fs.readFileSync(file, 'utf8');
   }
-  return build(texts, path.basename(path.dirname(root)) + '/' + path.basename(root));
+  const result = build(texts, path.basename(path.dirname(root)) + '/' + path.basename(root));
+  const canonical = fs.realpathSync(root);
+  result.nodeLoad = require('./node-load-results').readNodeLoad(name => {
+    const file = path.join(root, name);
+    if (!fs.statSync(file).isFile() || !fs.realpathSync(file).startsWith(canonical + path.sep)) throw new Error('Node-load file leaves selected run');
+    bytes += fs.statSync(file).size;
+    if (bytes > 50 * 1024 * 1024) throw new Error('Mobility result exceeds 50 MB.');
+    return fs.readFileSync(file, 'utf8');
+  }, name => fs.existsSync(path.join(root, name)), csv, result.learning?.run_id ?? result.props.run_id ?? path.basename(root), result.nodes.map(n => n.name));
+  return result;
 }
 module.exports = { readMobilityRun, build, csv };

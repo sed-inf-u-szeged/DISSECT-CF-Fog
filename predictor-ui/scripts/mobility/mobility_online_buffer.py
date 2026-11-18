@@ -78,9 +78,9 @@ class OnlineSampleBuffer:
     A future lifecycle controller must decide whether and when to execute a request.
     """
 
-    def __init__(self, policy=None):
+    def __init__(self, policy=None, allowed_nodes=("mobility-west", "mobility-east")):
         self.policy = policy or TrainingPolicy()
-        self.history = History()
+        self.history = History(allowed_nodes)
         self.pending = None
         self.completed_count = 0
         self.request_count = 0

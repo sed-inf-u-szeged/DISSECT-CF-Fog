@@ -29,6 +29,25 @@ def build_serving_model(core, mean, std, input_size):
     return tf.keras.Model(inputs, outputs)
 
 
+def select_target_frames(frames, target_column=None):
+    """Keep the legacy fog default; a run-local worker may name one exact node."""
+    if target_column is not None and (not isinstance(target_column, str)
+            or not target_column.endswith("::notYetProcessedData")):
+        raise ValueError("Invalid explicit waiting-data target column.")
+    selected, selected_columns = [], []
+    for frame in frames:
+        columns = [column for column in frame.columns
+                   if (str(column) == target_column if target_column is not None else
+                       str(column).endswith("::notYetProcessedData") and "_cloud::" not in str(column))]
+        if columns:
+            selected.append(frame[columns])
+            selected_columns.extend(map(str, columns))
+    if not selected:
+        raise ValueError("No matching waiting-data target columns were found. "
+                         "Refusing to train on an unidentified target.")
+    return selected, selected_columns
+
+
 def run(settings, helpers):
     load_paths, load_frames, prepare, make_data, get_model, save_model, register = helpers
 
@@ -48,23 +67,7 @@ def run(settings, helpers):
         raise ValueError("No training CSV files were found.")
 
     frames = load_frames(paths)
-    selected = []
-    selected_columns = []
-    for frame in frames:
-        columns = [
-            column for column in frame.columns
-            if str(column).endswith("::notYetProcessedData")
-            and "_cloud::" not in str(column)
-        ]
-        if columns:
-            selected.append(frame[columns])
-            selected_columns.extend(map(str, columns))
-
-    if not selected:
-        raise ValueError(
-            "No fog-node ::notYetProcessedData columns were found. "
-            "Refusing to train on an unidentified target."
-        )
+    selected, selected_columns = select_target_frames(frames, settings.get("targetColumn"))
 
     frames = prepare(settings, selected)
     x_raw, y_raw = make_data(

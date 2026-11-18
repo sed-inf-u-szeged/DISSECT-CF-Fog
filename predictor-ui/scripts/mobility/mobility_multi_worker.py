@@ -56,11 +56,11 @@ class TimedModel:
 
 
 class DeviceSession:
-    def __init__(self, output, run_id, device_id, policy_path, expected, trainer, reply, methods=(), tf=None):
+    def __init__(self, output, run_id, device_id, policy_path, expected, trainer, reply, methods=(), tf=None, allowed_nodes=("mobility-west", "mobility-east")):
         self.output, self.run_id, self.device_id = output, run_id, device_id
         self.expected, self.now = expected, -1
         self.stack = ExitStack()
-        self.buffer = OnlineSampleBuffer(TrainingPolicy(**read_json(policy_path)))
+        self.buffer = OnlineSampleBuffer(TrainingPolicy(**read_json(policy_path)), allowed_nodes)
         self.policy_hash = sha256(policy_path)
         self.policy_path, self.issued, self.finished = policy_path, 0, False
         self.reply = DeviceReply(reply, device_id)
@@ -182,13 +182,25 @@ def serve_multi(policy, output, run_id, count, expected, trainer, stream, reply,
                  worker_processes=1, scheduling="SEQUENTIAL_SHARED_WORKER", connection_control=False)
     manifest = output / "multi-worker.json"
     require(not manifest.exists(), "Refusing existing worker output")
+    allowed_nodes = ("mobility-west", "mobility-east")
+    topology_file = output / "node_topology.json"
+    if topology_file.exists():
+        topology = read_json(topology_file)
+        require(topology.get('schema_version') == 1 and topology.get('run_id') == run_id,
+                "Topology belongs to another run")
+        nodes = topology.get('nodes', [])
+        require(nodes and all(isinstance(n.get('name'), str) and n['name']
+                and n.get('role') in ('fog', 'cloud') and n.get('serviceable') == (n['role'] == 'fog') for n in nodes)
+                and len({n['name'] for n in nodes}) == len(nodes), "Invalid topology nodes")
+        allowed_nodes = tuple(n['name'] for n in nodes if n['serviceable'])
+        require(allowed_nodes, "Topology has no device-access nodes")
     sessions = {}
     write_json(manifest, state)
     try:
         for i in range(count):
             child = output / "devices" / str(i)
             child.mkdir(parents=True, exist_ok=True)
-            sessions[str(i)] = DeviceSession(child, run_id, str(i), policy, expected, trainer, reply, methods, tf)
+            sessions[str(i)] = DeviceSession(child, run_id, str(i), policy, expected, trainer, reply, methods, tf, allowed_nodes)
         print("READY\t" + PROTOCOL, file=reply, flush=True)
         lines, ended, tick = iter(stream), False, None
         for line in lines:

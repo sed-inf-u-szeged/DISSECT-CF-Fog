@@ -4,7 +4,7 @@
             <span class="title">DISSECT-CF-Fog Predictor UI</span>
         </div>
         <div end style="padding-right: 16px; display: flex; gap: 8px;">
-            <app-button color="normal" [disabled]="mobilityJobActive" (click)="mobilityControlsOpen = true">New mobility run</app-button>
+            <app-button color="normal" [disabled]="mobilityJobActive" (click)="configureMobility()">New mobility run</app-button>
             <app-button color="normal" [disabled]="openingMobility || mobilityJobActive" (click)="openMobilityResults()">{{ openingMobility ? 'Opening…' : 'Open mobility results' }}</app-button>
         </div>
     </app-toolbar>

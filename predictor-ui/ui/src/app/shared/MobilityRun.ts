@@ -1,3 +1,5 @@
+import { NodeLoadRun } from './NodeLoadRun';
+
 export interface MobilityObservation {
   device_id: number; time_ms: number; latitude: number; longitude: number;
   previous_node: string; current_node: string;
@@ -13,7 +15,7 @@ export interface MobilityEvaluation {
   actual_latitude: number; actual_longitude: number;
   actual_exit: boolean; hold_exit: boolean; velocity_exit: boolean;
 }
-export interface MobilityNode { name: string; latitude: number; longitude: number; radius: number; }
+export interface MobilityNode { role?: 'fog' | 'cloud'; serviceable?: boolean; name: string; latitude: number; longitude: number; radius: number; }
 export interface MobilityLoad {
   node: string;
   device_upload_completed_bytes_derived: number; offload_sent_bytes: number;
@@ -33,10 +35,12 @@ export interface MobilityRun {
   observations: MobilityObservation[]; predictions: MobilityForecast[];
   evaluations: MobilityEvaluation[]; frames: MobilityFrame[];
   transfers: MobilityTransfer[]; summary: MobilitySummary[];
+  baselines?: {source: string; predictions: PositionPrediction[]; evaluations: PositionEvaluation[]};
   learning?: MobilityLearningRun;
   comparison?: MobilityComparisonRun;
   devices?: { id: number; data: MobilityRun }[];
   multi?: { run_id: string; device_count: number; status: string };
+  nodeLoad?: NodeLoadRun;
 }
 
 export type ComparisonMethod = 'IMM/Kalman' | 'XGBoost' | 'TCN';
@@ -58,6 +62,7 @@ export interface PositionEvaluation {
 export interface MobilityLifecycleEvent {
   sequence: number; sim_time_ms: number; event: string; model_version?: string;
   model?: MobilityMethod; state?: string; decision?: string;
+  available_windows?: number; window_size?: number; reason?: string;
 }
 export interface MobilityVersion {
   model_version: string; training_windows: number; training_cutoff_sim_ms: number;

@@ -1,0 +1,41 @@
+{
+  "infrastructure": "hungary-cities",
+  "cityPlacement": "distributed",
+  "cityCoverageKm": 20,
+  "strategy": "random-walk",
+  "devices": 9,
+  "minutes": 480,
+  "drainMinutes": 1440,
+  "seed": 42,
+  "latitude": 47.73,
+  "longitude": 18.27,
+  "speedMin": 2,
+  "speedMax": 6,
+  "radius": 800,
+  "speed": 4.1,
+  "waypoints": [
+    [
+      0,
+      0
+    ],
+    [
+      1600,
+      0
+    ],
+    [
+      1600,
+      600
+    ]
+  ],
+  "repeatRoute": false,
+  "models": [],
+  "loadModels": [
+    "LSTM",
+    "TCN",
+    "GRU",
+    "PatchTST"
+  ],
+  "loadProfile": "candidate",
+  "loadEpochs": 40,
+  "deviceWorkload": "periodic-burst"
+}

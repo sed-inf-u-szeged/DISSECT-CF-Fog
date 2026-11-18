@@ -1,10 +1,35 @@
+<div class="live-controls" *ngIf="meta" role="group" aria-label="Shared live replay controls">
+  <div class="live-clock"><strong>{{following ? 'Following latest' : 'Browsing history'}}</strong>
+    <span>Replay {{replayTime/60000 | number:'1.2-2'}} min · received {{latestTime/60000 | number:'1.2-2'}} min</span>
+    <button type="button" *ngIf="following" (click)="seekTime(replayTime)">Pause view</button>
+    <button type="button" *ngIf="!following" (click)="followLatest()">Follow latest</button>
+    <button type="button" *ngIf="state.stage==='COMPLETE'" (click)="dismissed.emit()">Open verified replay</button>
+    <button type="button" *ngIf="!state.active" (click)="configureNewRun()">Configure another run</button>
+    <button type="button" (click)="showSection('mobility')">Mobility</button>
+    <button type="button" *ngIf="nodeLoad" (click)="showSection('load')">Load prediction</button>
+    <button type="button" *ngIf="nodeLoad" (click)="showSection('nodes')">Node samples</button>
+  </div>
+  <div class="live-timeline"><label for="live-replay-time">Replay time</label><span>0 min</span>
+    <input id="live-replay-time" type="range" min="0" step="1" [max]="latestTime" [value]="replayTime"
+      [disabled]="latestTime===0" [attr.aria-valuetext]="(replayTime/60000).toFixed(2)+' simulation minutes'" (input)="seek($event)">
+    <span>{{latestTime/60000 | number:'1.2-2'}} min</span>
+  </div>
+  <p *ngIf="trainingText" class="training" role="status">{{trainingText}}. Charts keep their last issued predictions while training runs.</p>
+  <p *ngIf="!following && state.active">The simulation continues collecting data. Your selected replay time stays fixed.</p>
+</div>
 <section class="mobility-launcher">
   <header><div><h2>{{ stageLabel }}</h2><p>Official simulator movement · 60-second position forecasts</p></div>
     <button *ngIf="!state.active" type="button" (click)="dismissed.emit()">Close</button>
     <button *ngIf="state.active" type="button" [disabled]="state.stage==='CANCELLING'" (click)="cancel()">{{state.stage==='CANCELLING'?'Stopping…':'Cancel run'}}</button>
   </header>
   <p class="error" role="alert" *ngIf="error">{{error}}</p>
-  <form *ngIf="!state.active" (ngSubmit)="run()" #runForm="ngForm">
+  <form *ngIf="!state.active && !meta" (ngSubmit)="run()" #runForm="ngForm">
+    <div class="fields">
+      <label>Infrastructure<select name="infrastructure" [(ngModel)]="config.infrastructure"><option value="hungary-cities">Hungary cities · 9 fog + 1 cloud</option><option value="two-node">Two-node mobility demo</option></select></label>
+      <label *ngIf="config.infrastructure==='hungary-cities'">Device starting cities<select name="cityPlacement" [(ngModel)]="config.cityPlacement"><option value="distributed">Distribute across nine fog cities</option><option *ngFor="let city of cities" [value]="city">{{city}}</option></select></label>
+      <label *ngIf="config.infrastructure==='hungary-cities'">Fog access radius / km<input name="cityCoverageKm" type="number" min="1" max="100" step="1" required [(ngModel)]="config.cityCoverageKm"></label>
+    </div>
+    <p *ngIf="config.infrastructure==='hungary-cities'">City nodes and hardware come from the original Workload scenario. Coverage is an experimental setting. Each device moves locally from its starting city; Budapest cloud receives offloaded work. Nine devices place one in each fog city.</p>
     <div class="fields">
       <label>Movement strategy<select name="strategy" [(ngModel)]="strategy" required><option value="" disabled>Select a strategy</option><option value="random-walk">Random walk</option><option value="nomadic">Nomadic · waypoints</option></select></label>
       <label>Devices<input name="devices" type="number" min="1" max="100" step="1" required [(ngModel)]="config.devices"></label>
@@ -19,16 +44,27 @@
     </div>
     <div class="fields" *ngIf="strategy==='nomadic'">
       <label>Speed / m/s<input name="speed" type="number" min="0.1" max="50" step="0.1" required [(ngModel)]="config.speed"></label>
-      <label class="route">Waypoints / m · east,north<textarea name="waypoints" rows="4" required [(ngModel)]="waypointsText"></textarea><small>Start at 0,0. Use one pair per line.</small></label>
+      <label class="route">Waypoints / m · east,north<textarea name="waypoints" rows="4" required [(ngModel)]="waypointsText"></textarea><small>Start at 0,0. Use one pair per line. In the city scenario, offsets are relative to each device’s starting city.</small></label>
       <label class="check"><input name="repeatRoute" type="checkbox" [(ngModel)]="config.repeatRoute">Repeat closed route</label>
     </div>
+    <div class="fields"><label>Device workload<select name="deviceWorkload" [(ngModel)]="config.deviceWorkload"><option value="constant">Constant · 100 bytes per minute</option><option value="periodic-burst">Periodic bursts · 100–1900 bytes per minute</option></select></label></div>
+    <p *ngIf="config.deviceWorkload==='periodic-burst'">Experimental workload: each device sends a rising and falling burst every 32 minutes, with staggered starts. Queues and forecasts are computed from the simulation.</p>
     <fieldset><legend>Additional prediction models · shadow comparison</legend><label class="model-choice" *ngFor="let m of additionalModels"><input type="checkbox" [name]="'model-'+m" [(ngModel)]="modelEnabled[m]"> {{m}}</label>
       <p>HoldPosition, ConstantVelocity and LSTM remain available. Selected models share the same eight-point history, 60-second targets and LSTM training snapshots.</p></fieldset>
+    <fieldset><legend>Node-load prediction · qualification and fallback</legend>
+      <p>Baselines: ARIMA and LR · always enabled. They use 192 observed minutes to forecast 64 targets. LR serves during training and after fallback.</p>
+      <label class="model-choice" *ngFor="let m of loadModels"><input type="checkbox" [name]="'load-model-'+m" [(ngModel)]="loadModelEnabled[m]"> {{m}}</label>
+      <label>Quality profile <select name="loadProfile" [(ngModel)]="loadProfile"><option value="candidate">Candidate · 80% within tolerance</option><option value="observe">Observe · workflow check only</option></select></label>
+      <p>Predict queued data (bytes) at each node using 192 past minutes and 64 future targets. Use 480 movement minutes to check training and qualification. Results are saved as node_load_model_* files.</p>
+      <p>Experimental criteria; no capacity or offload control. Load actuals, issued predictions and model states appear during the run. Use Follow latest or browse received history without stopping the simulation.</p>
+      <p *ngIf="(loadModelEnabled.LSTM || loadModelEnabled.TCN || loadModelEnabled.GRU || loadModelEnabled.PatchTST) && config.minutes < 286">First load training needs 287 one-minute samples, normally at simulation minute 286. This short duration may finish before any trained load forecast is produced. Use 480 minutes to include training and evaluation.</p>
+      <p *ngIf="(loadModelEnabled.LSTM || loadModelEnabled.TCN || loadModelEnabled.GRU || loadModelEnabled.PatchTST) && config.minutes >= 286 && config.minutes < 350">The first 64-target evaluation ends around simulation minute 350. This duration may finish before qualification is complete.</p>
+    </fieldset>
     <details><summary>Advanced settings</summary><div class="fields">
       <label>Random seed<input name="seed" type="number" min="0" max="2147483647" step="1" required [(ngModel)]="config.seed"></label>
       <label>Task drain allowance / min<input name="drainMinutes" type="number" min="1" max="1440" step="1" required [(ngModel)]="config.drainMinutes"></label>
-      <label>Start latitude / °<input name="latitude" type="number" min="-85" max="85" step="any" required [(ngModel)]="config.latitude"></label>
-      <label>Start longitude / °<input name="longitude" type="number" min="-180" max="180" step="any" required [(ngModel)]="config.longitude"></label>
+      <label *ngIf="config.infrastructure!=='hungary-cities'">Start latitude / °<input name="latitude" type="number" min="-85" max="85" step="any" required [(ngModel)]="config.latitude"></label>
+      <label *ngIf="config.infrastructure!=='hungary-cities'">Start longitude / °<input name="longitude" type="number" min="-180" max="180" step="any" required [(ngModel)]="config.longitude"></label>
       <label class="wide">Python interpreter · optional<input name="python" type="text" placeholder="Use the active Python / conda environment" [(ngModel)]="pythonExecutable"></label>
     </div><p>The drain allowance lets outstanding tasks finish after movement sampling ends. It does not add training samples.</p></details>
     <p>Prediction: HoldPosition and ConstantVelocity baselines, with the existing LSTM training, qualification and fallback process.</p>
@@ -39,26 +75,40 @@
   <progress *ngIf="state.active" max="100" [value]="progress"></progress>
   <p *ngIf="state.active && !meta">Preparing the runtime and prediction worker. Live data will appear as observations arrive.</p>
   <p *ngIf="state.stage==='CANCELLED'">Cancelled. Partial files and logs are kept; this run is not marked complete.</p>
-  <div *ngIf="meta" class="live">
+  <div *ngIf="meta" class="live" #liveMobility>
     <div class="plot">
-      <div class="plot-title"><strong>Live trajectory</strong><label>Device<select aria-label="Live device" [(ngModel)]="selectedDevice" (ngModelChange)="refreshChart()"><option *ngFor="let id of devices" [ngValue]="id">Device {{id}}</option></select></label><span>{{(latest?.time_ms || 0)/60000 | number:'1.2-2'}} min</span></div>
-      <div class="legend"><span>— Actual</span><label>Shown forecast <select aria-label="Live prediction model" [(ngModel)]="previewModel" (ngModelChange)="refreshChart()"><option value="selected">System selected</option><option *ngFor="let m of state.config?.models" [value]="m">{{m}} · shadow</option></select></label></div>
-      <svg viewBox="0 0 980 555" role="img" aria-label="Current device trajectory and node coverage">
-        <g *ngFor="let node of circles"><circle [attr.cx]="node.x" [attr.cy]="node.y" [attr.r]="node.r" [attr.stroke]="node.color" [attr.fill]="node.color" fill-opacity=".06" stroke-width="1.5"/><rect [attr.x]="node.x-4" [attr.y]="node.y-4" width="8" height="8" [attr.fill]="node.color"/><text [attr.x]="node.x" [attr.y]="node.y+24" text-anchor="middle">{{node.name}}</text></g>
-        <path [attr.d]="path" fill="none" stroke="#ffd174" stroke-width="2.3"/>
-        <path [attr.d]="forecastPath" fill="none" stroke="#ff527d" stroke-width="2" stroke-dasharray="5 3"/>
-        <circle *ngIf="marker" [attr.cx]="marker.x" [attr.cy]="marker.y" r="5" fill="#ffd174"/>
-        <circle *ngIf="target" [attr.cx]="target.x" [attr.cy]="target.y" r="5" fill="#ff527d"/>
-        <text x="490" y="542" text-anchor="middle">East / m · local coordinates · North ↑</text>
-      </svg>
-      <p *ngIf="!(points.get(selectedDevice)?.length)">Waiting for this device's first observation.</p>
+      <div class="plot-title"><strong>Mobility · next position</strong><label>Device<select aria-label="Live device" [ngModel]="selectedDevice" (ngModelChange)="selectMapDevice($event)"><option *ngFor="let id of devices" [ngValue]="id">Device {{id}}</option></select></label><span>Last observation {{(latest?.time_ms || 0)/60000 | number:'1.2-2'}} min</span></div>
+      <p>Yellow shows recorded positions. The pink outline is a single future position, not a complete predicted route.</p>
+      <div class="legend"><span>● Observed</span><span>◇ Predicted</span><label>Shown forecast <select aria-label="Live prediction model" [(ngModel)]="previewModel" (ngModelChange)="refreshChart()"><option value="selected">System selected</option><option value="HoldPosition">HoldPosition</option><option value="ConstantVelocity">ConstantVelocity</option><option *ngFor="let m of state.config?.models" [value]="m">{{m}} · shadow</option></select></label>
+        <label><input type="checkbox" [(ngModel)]="showTruth">× Target actual (retrospective)</label>
+</div>
+      <p class="prediction-summary" *ngIf="previewForecast as p">{{p.model}} · issued {{p.origin_ms/60000 | number:'1.2-2'}} min → target {{p.target_ms/60000 | number:'1.2-2'}} min (+{{(p.target_ms-p.origin_ms)/1000}} s). <span *ngIf="p.model==='HoldPosition'">HoldPosition predicts the observed position, so its marker overlaps.</span></p>
+      <p *ngIf="latest && !previewForecast">No issued position forecast for this method at the selected time.</p>
+      <p *ngIf="showTruth && mapForecast as p">{{targetObservation ? 'Retrospective: recorded target at '+(p.target_ms/60000).toFixed(2)+' min, later than replay time. Shown in the device path view only; not used for prediction or replay scores.' : 'Waiting for the real observation at '+(p.target_ms/60000).toFixed(2)+' min. No target position is estimated.'}}</p>
+      <app-mobility-map [nodes]="mapNodes" [tracks]="mapTracks" [time]="replayTime" [loads]="mapLoads" [loadTime]="load?.time_ms"
+        [selectedDevice]="selectedDevice" [selectedNode]="selectedNodeId" [forecast]="mapForecast" [(pathMinutes)]="pathWindowMinutes"
+        [truth]="showTruth ? targetObservation : undefined" [truthRequested]="showTruth"
+        (deviceChange)="selectMapDevice($event)" (nodeChange)="selectMapNode($event)" (viewLoad)="showSection('load')"></app-mobility-map>
+      <p *ngIf="!latest">No observation for this device at the selected replay time.</p>
       <p *ngIf="latest && !latest.sampled">Movement sampling has ended for this device. The displayed path stays at its last sample while remaining tasks finish.</p>
     </div>
     <aside><div class="card"><strong>This device</strong><p>Connection <b>{{latest?.connection || 'Waiting'}}</b></p><p>Serving <b>{{latest?.lifecycle?.serving || 'HoldPosition'}}</b></p><p>Candidate <b>{{latest?.lifecycle?.candidate || 'Not trained yet'}}</b></p><p>State <b>{{latest?.lifecycle?.state || 'Collecting history'}}</b></p><p>Matched targets <b>{{latest?.lifecycle?.matched || 0}} / 64</b></p><p *ngIf="latest?.lifecycle?.error_m != null">Latest error <b>{{latest?.lifecycle?.error_m | number:'1.2-2'}} m</b></p></div>
       <div class="card" *ngIf="latest?.comparison as c"><strong>Shadow comparison</strong><p>{{c.matched}} matched targets per method</p><p *ngFor="let e of c.latest">{{e.model}} <b>{{e.position_error_m | number:'1.2-2'}} m</b></p><p *ngIf="!c.matched">Collecting training samples and future targets.</p></div>
-      <div class="card" *ngFor="let node of load?.nodes"><strong>{{node.node}} · all devices</strong><p>Waiting data <b>{{node.waiting_bytes | number}} B</b></p><p>Running tasks <b>{{node.running_tasks}}</b></p><p>Completed tasks <b>{{node.completed_tasks}}</b></p></div>
-      <p>Live preview. Final metrics are verified after the run, then opened automatically.</p>
+      <p>Received observations and issued forecasts only. Final results are checked against this live stream before the verified replay is available.</p>
     </aside>
+  </div>
+  <section *ngIf="meta" aria-label="Position model status">
+    <h3>Position model status · Device {{selectedDevice}} · at replay time</h3>
+    <app-mobility-readiness [live]="readiness" [sampleCount]="observedForDevice" [methods]="state.config?.models || []"></app-mobility-readiness>
+  </section>
+  <div class="live-node-load" *ngIf="nodeLoad" #liveLoad>
+  <app-node-load-view [data]="nodeLoad" [selectedNodeId]="selectedNodeId" (nodeChange)="selectMapNode($event)" [time]="replayTime" [endTime]="latestTime" [final]="atFinal" (seekTime)="seekTime($event)"></app-node-load-view>
+    <h3 #liveNodes>Node samples · observed state only</h3>
+    <p>These are 60-second observations, not predictions. Each card shows its sample time; no samples are added during task draining.</p>
+    <div class="node-status-grid"><div class="card" *ngFor="let node of nodeStatuses; trackBy: trackNodeStatus"><strong>{{node.node}}</strong>
+      <p>Sample time <b>{{node.time_ms/60000 | number:'1.2-2'}} min</b></p><p>Queued data (bytes) <b>{{node.waiting_bytes | number}}</b></p>
+      <p>Running tasks <b>{{node.running_tasks}}</b></p><p>Completed tasks <b>{{node.completed_tasks}}</b></p>
+    </div></div>
   </div>
   <details *ngIf="state.session"><summary>Run files and diagnostics</summary><p class="file">{{state.session}}</p><p>runner.log contains simulation and audit output; launcher.log contains startup errors.</p><p class="file" *ngIf="state.output">Results: {{state.output}}</p></details>
 </section>

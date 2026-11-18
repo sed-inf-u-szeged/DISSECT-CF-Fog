@@ -47,7 +47,8 @@ def features(history):
 
 
 class History:
-    def __init__(self):
+    def __init__(self, allowed_nodes=('mobility-west', 'mobility-east')):
+        self.allowed_nodes = frozenset(allowed_nodes) | {'NONE'}
         self.rows=deque(maxlen=8);self.identity=None;self.last_time=None;self.count=0
 
     def append(self, raw):
@@ -58,7 +59,7 @@ class History:
                 and str(int(identity[1])) == identity[1], 'Invalid device identity')
         now=int(r['time_ms']);lat=float(r['latitude_deg']);lon=float(r['longitude_deg'])
         require(now>=0 and math.isfinite(lat) and math.isfinite(lon) and abs(lat)<=90 and abs(lon)<=180,'Invalid observation')
-        require(r['current_node'] in ('NONE','mobility-west','mobility-east'),'Unexpected node')
+        require(r['current_node'] in self.allowed_nodes,'Unexpected node')
         if self.identity is None:
             self.identity=identity
             require(r['motion_valid']=='false' and r['heading_valid']=='false'

@@ -1,5 +1,4 @@
-<app-toolbar class="border-bottom">
-  <div start class="controls navigation">
+<div class="controls navigation border-bottom" role="group" aria-label="Replay controls">
     <app-button color="normal" [disabled]="index === 0" (click)="choose(index - 1)">Previous</app-button>
     <app-button color="normal" [disabled]="index === run.frames.length - 1" (click)="choose(index + 1)">Next</app-button>
     <span>{{ index + 1 }} / {{ run.frames.length }} mobility frame</span><span>•</span>
@@ -7,36 +6,41 @@
     <app-button color="normal" (click)="play()">{{ timer ? 'Pause' : 'Play' }}</app-button>
     <app-button color="normal" (click)="nextConnection()">Next connection</app-button>
     <app-button color="normal" (click)="choose(run.frames.length - 1)">Final settlement</app-button>
-  </div>
-</app-toolbar>
+    <app-button color="normal" (click)="showSection('mobility')">Mobility</app-button>
+    <app-button *ngIf="run.learning" color="normal" (click)="showSection('errors')">Position errors</app-button>
+    <app-button color="normal" (click)="showNodeLoad()">Node load</app-button>
+    <app-button color="normal" (click)="showSection('nodes')">Node observations</app-button>
+</div>
+<div class="replay-timeline border-bottom">
+  <label for="mobility-timeline">Replay time</label>
+  <span class="timeline-start">{{ minutes(run.frames[0].time_ms) }} min</span>
+  <input id="mobility-timeline" class="timeline" type="range" min="0" step="1"
+    [max]="run.frames.length - 1" [value]="index" [disabled]="run.frames.length < 2"
+    [attr.aria-valuetext]="minutes(frame.time_ms) + ' minutes, frame ' + (index + 1) + ' of ' + run.frames.length"
+    (input)="seek($event)">
+  <span class="timeline-end">{{ minutes(run.frames[run.frames.length - 1].time_ms) }} min</span>
+</div>
 <div class="filters border-bottom controls">
   <ng-container *ngIf="devices.length"><label for="mobility-device">Device</label><select id="mobility-device" [ngModel]="deviceId" (ngModelChange)="selectDevice($event)"><option *ngFor="let device of devices" [ngValue]="device.id">Device {{ device.id }}</option></select><span>{{ devices.length }} devices</span></ng-container>
   <app-checkbox-container><label>Actual path</label><input type="checkbox" [(ngModel)]="showActual"></app-checkbox-container>
   <app-checkbox-container><label>Future prediction</label><input type="checkbox" [(ngModel)]="showFuture"></app-checkbox-container>
   <app-checkbox-container><label>Target actual (retrospective)</label><input type="checkbox" [(ngModel)]="showTruth" [disabled]="!targetObservation"></app-checkbox-container>
-  <label for="mobility-model">Prediction</label><select id="mobility-model" [(ngModel)]="model" (ngModelChange)="updateProjection()"><option *ngIf="run.learning" value="selected">System selected</option><option value="velocity">ConstantVelocity</option><option value="hold">HoldPosition</option><option *ngIf="run.learning" value="lstm">LSTM candidate</option><option *ngFor="let m of run.comparison?.methods" [value]="m">{{m}} · shadow</option></select>
+  <label for="mobility-model">Position forecast</label><select id="mobility-model" [(ngModel)]="model"><option *ngIf="run.learning" value="selected">System selected</option><option value="velocity">ConstantVelocity</option><option value="hold">HoldPosition</option><option *ngIf="run.learning" value="lstm">LSTM candidate</option><option *ngFor="let m of run.comparison?.methods" [value]="m">{{m}} · shadow</option></select>
 </div>
 <div class="content" #content>
+  <div class="section-intro" #mobilitySection><strong>Mobility · device and node details</strong><p>Choose a city to view its coverage and load. Choose a device to view its local path and select its connected node. All panels follow the top replay time.</p></div>
+  <p *ngIf="run.props['infrastructure']==='hungary-cities'">Hungary city scenario · 9 fog nodes + Budapest cloud · experimental fog radius {{run.props['city_coverage_km']}} km. Observed and predicted loads belong to these simulated city nodes. Forecasts do not control capacity or offloading.</p>
   <p *ngIf="devices.length">Predictions and lifecycle: Device {{ deviceId }}. Node load, offloads and accounting: all {{ devices.length }} devices.</p>
   <p *ngIf="!hasObservation">Device {{ deviceId }} has no observation yet at this simulation time.</p>
   <details class="settings"><summary>Run {{ run.label }} · {{ run.learning ? 'Model lifecycle replay' : 'Baseline replay' }}</summary><p>Device {{ observation.device_id }} · seed {{ run.props['seed'] }} · {{ strategyText }} · observation interval {{ +run.props['interval_ms'] / 1000 }} s. Position predictions do not control connections.</p></details>
-  <input class="timeline" aria-label="Mobility frame" type="range" min="0" [max]="run.frames.length - 1" [value]="index" (input)="seek($event)">
   <p *ngIf="final">Final settlement. Position remains at the last observation ({{ minutes(observation.time_ms) }} min); no new forecast.</p>
   <p *ngIf="run.comparison as comparison">{{ comparison.methods.join(', ') }} run in shadow comparison. They use the same past observations and target times; the serving lifecycle still selects HoldPosition or LSTM.</p>
-  <div class="chart-row">
-    <section class="chart"><div class="heading"><strong>{{ model === 'selected' ? 'System selected' : model === 'lstm' ? 'LSTM candidate' : method }}</strong><span>Device {{ observation.device_id }} · trajectory and node coverage</span></div>
-      <div class="legend"><span class="actual">— Actual</span><span class="future">— Future</span><span *ngFor="let n of run.nodes; index as i" [style.color]="colors[i]">— {{ n.name }}</span></div>
-      <svg viewBox="0 0 900 430" role="img" aria-label="Historical device path, node coverage and future position">
-        <g *ngFor="let t of xTicks"><line [attr.x1]="axisX(t)" [attr.x2]="axisX(t)" y1="20" y2="370" class="grid"/><text [attr.x]="axisX(t)" y="390" text-anchor="middle">{{ t | number:'1.0-0' }}</text></g>
-        <g *ngFor="let t of yTicks"><line x1="50" x2="865" [attr.y1]="axisY(t)" [attr.y2]="axisY(t)" class="grid"/><text x="43" [attr.y]="axisY(t)+4" text-anchor="end">{{ t | number:'1.0-0' }}</text></g>
-        <g *ngFor="let ring of rings; index as i"><polygon [attr.points]="ring.points" [attr.stroke]="colors[i]" [attr.fill]="colors[i]" fill-opacity="0.05"/><rect [attr.x]="ring.x-4" [attr.y]="ring.y-4" width="8" height="8" [attr.fill]="colors[i]"/><text [attr.x]="ring.x" [attr.y]="ring.y+21" text-anchor="middle">{{ ring.node.name }}</text></g>
-        <polyline *ngIf="showActual" [attr.points]="trajectory" fill="none" stroke="#ffd174" stroke-width="1.7"/>
-        <circle *ngIf="hasObservation" [attr.cx]="currentPoint[0]" [attr.cy]="currentPoint[1]" r="5" fill="#ffd174"><title>Current observed position</title></circle>
-        <g *ngIf="shownForecast && showFuture"><line [attr.x1]="currentPoint[0]" [attr.y1]="currentPoint[1]" [attr.x2]="futurePoint[0]" [attr.y2]="futurePoint[1]" stroke="#ff5479" stroke-dasharray="5 4"/><path [attr.d]="'M'+futurePoint[0]+','+(futurePoint[1]-6)+'l6,6 -6,6 -6,-6Z'" fill="#ff5479"><title>Predicted future position</title></path></g>
-        <g *ngIf="showTruth && targetObservation"><path [attr.d]="'M'+(truthPoint[0]-6)+','+(truthPoint[1]-6)+'l12,12m0,-12l-12,12'" stroke="#ebebeb" stroke-width="2"><title>Retrospective target observation</title></path></g>
-        <text x="450" y="420" text-anchor="middle">East from first node / m (local coordinates)</text><text transform="translate(12 200) rotate(-90)" text-anchor="middle">North / m</text>
-      </svg>
-    </section>
+  <div class="chart-row map-layout">
+    <app-mobility-map [nodes]="mapNodes" [tracks]="mapTracks" [time]="frame.time_ms" [loads]="frame.nodes"
+      [selectedDevice]="deviceId" [selectedNode]="selectedNodeId" [forecast]="shownForecast"
+      [truth]="showTruth ? targetObservation : undefined" [truthRequested]="showTruth" [showPaths]="showActual" [showForecast]="showFuture" [(pathMinutes)]="pathWindowMinutes"
+      (deviceChange)="selectDevice($event)" (nodeChange)="selectNode($event)" (viewLoad)="showNodeLoad()"></app-mobility-map>
+    <details class="device-details" open><summary>Device {{deviceId}} · prediction and model lifecycle{{lifecycle ? ' · serving '+lifecycle.owner : ''}}</summary>
     <aside class="side">
       <div class="card" *ngIf="lifecycle as state"><div class="card-title">Model lifecycle · this frame</div><div class="pair"><span>Serving model</span><strong>{{ state.owner }}</strong></div><div class="pair"><span>Candidate</span><strong>{{ state.version || 'Not trained yet' }}</strong></div><div class="pair"><span>State</span><strong>{{ stateLabel(state.state) }}</strong></div><div class="pair" *ngIf="state.version"><span>Matched targets</span><strong>{{ state.matched }}{{ state.matched < 64 ? ' / 64' : '' }}</strong></div><p>Promotions {{ state.promotions }} · fallbacks {{ state.fallbacks }}. State uses events up to this frame.</p></div>
       <div class="card"><div class="card-title">This frame · position prediction</div><div class="pair"><span>Connection</span><strong>{{ name(observation.current_node) }}</strong></div>
@@ -46,15 +50,34 @@
       <details class="card" open><summary>Latest matured evaluation</summary><ng-container *ngIf="run.learning; else coverageEvaluation"><p *ngIf="latestPositionEvaluation as e; else noEvaluation">{{ e.model }} {{ e.model_version }} · target {{ minutes(e.target_ms) }} min<br>Position error: <strong>{{ e.position_error_m | number:'1.2-2' }} m</strong></p></ng-container><ng-template #coverageEvaluation><p *ngIf="matured as e; else noEvaluation">Target {{ minutes(e.target_ms) }} min · {{ e.origin_node }} · {{ correctMatured() ? 'Correct' : 'Incorrect' }}. Actual: {{ e.actual_exit ? 'outside' : 'inside' }} origin coverage.</p></ng-template><ng-template #noEvaluation><p>No target observations matched yet.</p></ng-template></details>
       <div class="card"><span class="card-title">Run status · COMPLETE</span><p>Viewing {{ final ? 'final settlement' : 'a historical frame' }}. Connection changes use the existing reactive strategy.</p></div>
     </aside>
+    </details>
   </div>
   <ng-container *ngIf="run.learning as learning">
-    <section class="chart position-errors">
-      <div class="heading"><strong>Position error / m</strong><span>Matched targets up to this frame</span></div>
-      <div class="legend"><span *ngFor="let method of methods" [style.color]="methodColors[method]">{{ method }}</span><label for="error-version">Version</label><select id="error-version" [(ngModel)]="errorVersion"><option value="">All versions</option><option *ngFor="let v of learning.versions" [value]="v.model_version">{{ v.model_version }}</option></select></div>
-      <svg *ngIf="errorRows.length" viewBox="0 0 900 225" role="img" aria-label="Matched position error comparison"><g *ngFor="let t of ticks"><line x1="60" x2="860" [attr.y1]="errorY(errorMaximum*t/3)" [attr.y2]="errorY(errorMaximum*t/3)" class="grid"/><text x="50" [attr.y]="errorY(errorMaximum*t/3)+4" text-anchor="end">{{ errorTick(errorMaximum*t/3) }}</text><text [attr.x]="chartX(chartTime(t))" y="200" text-anchor="middle">{{ chartTime(t)/60000 | number:'1.0-0' }}</text></g><path *ngFor="let method of methods" [attr.d]="errorPath(method)" fill="none" [attr.stroke]="methodColors[method]" stroke-width="1.5"/><line [attr.x1]="chartX(frame.time_ms)" [attr.x2]="chartX(frame.time_ms)" y1="25" y2="180" stroke="#ffd174" stroke-dasharray="4 4"/><text x="450" y="222" text-anchor="middle">Target simulation time / min</text></svg>
-      <p *ngIf="!errorRows.length" class="legend">No matched candidate targets in this selection yet.</p>
+    <section class="chart position-errors" #positionErrors>
+      <div class="heading"><strong>Position model status · Device {{deviceId}}</strong><span>At replay time · position forecasts only</span></div>
+      <app-mobility-readiness [learning]="learning" [comparison]="run.comparison" [time]="frame.time_ms"></app-mobility-readiness>
+      <div class="heading"><strong>Prediction quality · position error / m</strong><span>Lower is better · evaluated targets only</span></div>
+      <p class="map-note">Each point is the distance between an earlier prediction and the position later observed at its target time. These curves are errors, not device trajectories.</p>
+      <div class="legend"><button class="model-toggle" type="button" *ngFor="let method of methods" [style.color]="methodColors[method]" [class.muted]="hiddenMethods.has(method)" [attr.aria-pressed]="!hiddenMethods.has(method)" (click)="toggleErrorMethod(method)">{{hiddenMethods.has(method) ? '+' : '−'}} {{ method }}</button><label for="error-version">Version</label><select id="error-version" [(ngModel)]="errorVersion"><option value="">All versions</option><option *ngFor="let v of learning.versions" [value]="v.model_version">{{ v.model_version }}</option></select><label for="error-range">Chart range</label><select id="error-range" [(ngModel)]="errorWindowMinutes"><option [ngValue]="0">Whole history</option><option [ngValue]="30">Last 30 min</option><option [ngValue]="60">Last 60 min</option></select></div>
+      <ng-container *ngIf="errorRows.length">
+        <div class="axis-measure">Position error (m)</div>
+        <div class="fixed-axis-plot error-plot">
+          <svg viewBox="60 30 800 150" preserveAspectRatio="none" role="img" aria-label="Matched position error comparison in metres">
+            <line *ngFor="let value of errorTicks" x1="60" x2="860" [attr.y1]="errorY(value)" [attr.y2]="errorY(value)" class="grid"/>
+            <path *ngFor="let method of visibleMethods" [attr.d]="errorPath(method)" fill="none" [attr.stroke]="methodColors[method]" stroke-width="1.5"/>
+            <line [attr.x1]="errorX(frame.time_ms)" [attr.x2]="errorX(frame.time_ms)" y1="30" y2="180" class="replay-line"/>
+          </svg>
+          <span *ngFor="let p of errorEndpoints" class="sample-dot" [style.left.%]="p.x" [style.bottom.%]="p.y" [style.background-color]="methodColors[p.model]" [title]="p.title"></span>
+          <span *ngFor="let value of errorTicks" class="axis-y" [style.bottom.%]="value/errorMaximum*100">{{errorTick(value)}}</span>
+          <span *ngFor="let t of ticks" class="axis-x" [class.first]="t===0" [class.last]="t===3" [style.left.%]="t/3*100">{{errorTime(t)/60000 | number:'1.0-1'}}</span>
+        </div>
+        <div class="axis-title">Target simulation time (min)</div>
+      </ng-container>
+      <p class="map-note">Click a model name to show or hide its curve. Baseline curves include early forecasts. The table below compares shared candidate targets up to replay time. Chart range and visibility do not change its scores; the version filter applies to both.</p>
+      <p *ngIf="!errorRows.length && hasErrorHistory" class="legend">No evaluated targets in this chart range. Choose Whole history to view earlier errors.</p>
+      <p *ngIf="!errorRows.length && !hasErrorHistory" class="legend">Waiting for a real target position. HoldPosition starts with the first observation; ConstantVelocity needs two observations. Errors appear after the 60-second target arrives.</p>
     </section>
-    <div class="card"><div class="card-title">Candidate comparison · same targets up to this frame</div><div class="table-wrap"><table><thead><tr><th>Method</th><th>Matched</th><th>Mean error / m</th><th>RMSE / m</th><th *ngIf="run.comparison">Mean inference / ms</th></tr></thead><tbody><tr *ngFor="let m of comparisonMetrics"><td [style.color]="methodColors[m.model]">{{ m.model }}</td><td>{{ m.count }}</td><td>{{ m.mean === null ? '—' : (m.mean | number:'1.2-2') }}</td><td>{{ m.rmse === null ? '—' : (m.rmse | number:'1.2-2') }}</td><td *ngIf="run.comparison">{{ comparisonTime(m.model) === null ? '—' : (comparisonTime(m.model) | number:'1.2-2') }}</td></tr></tbody></table></div><p>Includes matched targets for the chosen version filter. LSTM qualification uses each version's first 64 targets. Additional models are shadow comparisons on the same training snapshots, without serving qualification. Inference time includes per-window processing; unrecorded values show —.</p><p>System selected, all matched targets up to this frame: {{ selectedMetrics.count }} · mean {{ selectedMetrics.mean === null ? '—' : (selectedMetrics.mean | number:'1.2-2') }} m · RMSE {{ selectedMetrics.rmse === null ? '—' : (selectedMetrics.rmse | number:'1.2-2') }} m. This includes baseline service before the first LSTM fit.</p></div>
+    <div class="card"><div class="card-title">Candidate comparison · same targets up to this frame</div><div class="table-wrap"><table><thead><tr><th>Method</th><th>Matched</th><th>Mean error / m</th><th>RMSE / m</th><th *ngIf="run.comparison">Mean inference / ms</th></tr></thead><tbody><tr *ngFor="let m of comparisonMetrics"><td [style.color]="methodColors[m.model]">{{ m.model }}</td><td>{{ m.count }}</td><td>{{ m.mean === null ? '—' : (m.mean | number:'1.2-2') }}</td><td>{{ m.rmse === null ? '—' : (m.rmse | number:'1.2-2') }}</td><td *ngIf="run.comparison">{{ comparisonTime(m.model) === null ? '—' : (comparisonTime(m.model) | number:'1.2-2') }}</td></tr></tbody></table></div><p>Includes all matched targets up to replay time for the chosen version filter, regardless of chart range. LSTM qualification uses each version's first 64 targets. Additional models are shadow comparisons on the same training snapshots, without serving qualification. Inference time includes per-window processing; unrecorded values show —.</p><p>System selected, all matched targets up to this frame: {{ selectedMetrics.count }} · mean {{ selectedMetrics.mean === null ? '—' : (selectedMetrics.mean | number:'1.2-2') }} m · RMSE {{ selectedMetrics.rmse === null ? '—' : (selectedMetrics.rmse | number:'1.2-2') }} m. This records lifecycle service after its input history is ready; the curves above also include earlier baseline forecasts.</p></div>
     <details class="card" #versionDetails><summary>Whole-run model versions (retrospective)</summary><p>Promotions {{ learning.summary.promotions }} · fallbacks {{ learning.summary.fallbacks }} · LSTM-selected predictions {{ learning.summary.lstm_selected_origins }}. Final serving model: {{ learning.summary.active_lstm ? 'LSTM' : 'HoldPosition' }}.</p><div class="table-wrap"><table><thead><tr><th>Version</th><th>Training windows</th><th>Matched</th><th>First qualification</th><th>Final state</th><th>Selected</th><th>Replay</th></tr></thead><tbody><tr *ngFor="let v of learning.versions"><td>{{ v.model_version }}</td><td>{{ v.training_windows }}</td><td>{{ v.matched_origins }}</td><td>{{ stateLabel(v.quality_decision) }}</td><td>{{ stateLabel(v.state) }}</td><td>{{ v.selected_origins }}</td><td><button type="button" (click)="jumpToVersion(v.training_cutoff_sim_ms)">Training time</button></td></tr></tbody></table></div><p>A passed version can later degrade. A version with fewer than 64 targets is still awaiting qualification.</p></details>
     <details *ngIf="run.comparison as comparison" class="card"><summary>Additional model versions (retrospective)</summary>
       <div class="table-wrap"><table><thead><tr><th>Model</th><th>Version</th><th>Fit windows</th><th>Training / s</th><th>Role</th></tr></thead><tbody>
@@ -62,16 +85,52 @@
       </tbody></table></div><p>IMM/Kalman uses fixed noise settings and the latest eight positions; its duration is setup time. XGBoost and TCN are fitted separately for each device.</p>
     </details>
   </ng-container>
-  <div class="chart-row" *ngFor="let key of $any(['waiting_assignment_bytes','running_tasks'])">
-    <section class="chart"><div class="heading"><strong>{{ key === 'running_tasks' ? 'Running tasks' : 'Waiting data / B' }}</strong><span>Observed node load</span></div>
-      <svg viewBox="0 0 900 225" role="img" [attr.aria-label]="key"><g *ngFor="let t of ticks"><line x1="60" x2="860" [attr.y1]="chartY(maximum(key)*t/3,key)" [attr.y2]="chartY(maximum(key)*t/3,key)" class="grid"/><text x="50" [attr.y]="chartY(maximum(key)*t/3,key)+4" text-anchor="end">{{ maximum(key)*t/3 | number:'1.0-0' }}</text><text [attr.x]="chartX(chartTime(t))" y="200" text-anchor="middle">{{ chartTime(t)/60000 | number:'1.0-0' }}</text></g>
-        <g *ngFor="let node of frame.nodes"><path [attr.d]="chartPath(node.node,key)" fill="none" [attr.stroke]="colors[run.nodes[0].name === node.node ? 0 : 1]" stroke-width="1.5"/><circle [attr.cx]="chartX(frame.time_ms)" [attr.cy]="chartY($any(node)[key],key)" r="3" [attr.fill]="colors[run.nodes[0].name === node.node ? 0 : 1]"/></g>
-        <line [attr.x1]="chartX(frame.time_ms)" [attr.x2]="chartX(frame.time_ms)" y1="25" y2="180" stroke="#ffd174" stroke-dasharray="4 4"/><text x="450" y="222" text-anchor="middle">Simulation time / min</text>
-      </svg></section>
-    <aside class="side"><div class="card"><div class="card-title">This frame · {{ key === 'running_tasks' ? 'tasks' : 'waiting bytes' }}</div><div class="pair" *ngFor="let node of frame.nodes"><span>{{ node.node }}</span><strong>{{ number($any(node)[key]) }}</strong></div><p>{{ key === 'running_tasks' ? 'Tasks currently executing. Assigned data is not completed work.' : 'Data waiting for assignment; excludes work already assigned to tasks.' }}</p></div></aside>
-  </div>
-  <p>Curves stop at the selected frame. No intermediate load snapshots exist between the last position observation and final settlement; this gap is left blank.</p>
-  <details class="card" open><summary>Node accounting · selected frame</summary><div class="table-wrap"><table><thead><tr><th>Metric</th><th *ngFor="let n of frame.nodes">{{ n.node }}</th></tr></thead><tbody><tr *ngFor="let m of metrics"><td>{{ m.label }}</td><td *ngFor="let n of frame.nodes">{{ number(n[m.key]) }}</td></tr></tbody></table></div><p>Device uploads are derived from node byte accounting. Offloads move existing data; they do not create additional bytes.</p></details>
+
+  <app-node-load-view #nodeLoadSection [data]="nodeLoad" [selectedNodeId]="selectedNodeId" (nodeChange)="selectNode($event)" [time]="frame.time_ms" [endTime]="run.frames[run.frames.length-1].time_ms" [final]="final" (seekTime)="seekLoadTime($event)"></app-node-load-view>
+
+  <section class="load-overview" #observedNodes aria-label="Observed load by node">
+    <div class="heading"><strong>Node observations · actual state</strong><span>At {{minutes(frame.time_ms)}} min · all devices · no predictions in this section</span></div>
+    <p class="map-note">Queued data is waiting for compute; running tasks are already executing. A node can have no queue and still be busy.</p>
+    <div class="node-observation-layout" [class.single-node]="!!loadNodeFilter">
+    <div class="node-summary table-wrap">
+      <table><caption>All nodes · observed state at {{minutes(frame.time_ms)}} min</caption>
+        <thead><tr><th>Node</th><th>Role</th><th>Queued data (bytes)</th><th>Running tasks</th></tr></thead>
+        <tbody><tr *ngFor="let n of orderedNodes" [class.selected-node]="n.name===selectedNodeId">
+          <td><button type="button" (click)="selectNode(n.name)" [attr.aria-pressed]="n.name===selectedNodeId">{{cityName(n.name)}}</button></td>
+          <td>{{nodeRole(n)}}</td><td>{{currentLoad(n.name) ? number(currentLoad(n.name)!.waiting_assignment_bytes) : '—'}}</td><td>{{currentLoad(n.name) ? number(currentLoad(n.name)!.running_tasks) : '—'}}</td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="node-observation-detail">
+    <div class="load-controls controls">
+      <label>Metric <select [(ngModel)]="loadMetric"><option value="waiting_assignment_bytes">Queued data (bytes)</option><option value="running_tasks">Running tasks</option></select></label>
+      <label>Time range <select [(ngModel)]="loadWindowMinutes"><option [ngValue]="30">Last 30 min</option><option [ngValue]="60">Last 60 min</option><option [ngValue]="0">Whole run</option></select></label>
+      <label>Node <select [ngModel]="loadNodeFilter" (ngModelChange)="selectObservedNode($event)"><option value="">All nodes · separate charts</option><option *ngFor="let n of orderedNodes" [value]="n.name">{{cityName(n.name)}}</option></select></label>
+    </div>
+    <p class="map-note">{{loadMetric==='running_tasks' ? 'Tasks currently executing; these are not completed tasks.' : 'Bytes waiting for assignment to compute; excludes data already assigned to tasks.'}} These event snapshots can be between the one-minute samples used by load prediction above. Compare timestamps before comparing values. Each node has its own chart; scales are shared.</p>
+    <div class="load-grid" [class.single-node]="!!loadNodeFilter">
+      <section class="node-card" *ngFor="let n of visibleLoadNodes" [style.border-top-color]="nodeColor(n.name)">
+        <div class="node-title"><strong>{{cityName(n.name)}}</strong><span>{{nodeRole(n)}}</span></div>
+        <div class="node-values" *ngIf="currentLoad(n.name) as current">At {{minutes(frame.time_ms)}} min: <strong>{{number(current.waiting_assignment_bytes)}} bytes queued</strong> · <strong>{{number(current.running_tasks)}} running tasks</strong></div>
+        <div class="axis-measure">{{loadMetric==='running_tasks' ? 'Running tasks (count)' : 'Queued data (bytes)'}}</div>
+        <div class="fixed-axis-plot node-plot">
+          <svg viewBox="50 30 370 110" preserveAspectRatio="none" role="img" [attr.aria-label]="n.name+' '+loadMetric">
+            <line *ngFor="let t of ticks" x1="50" x2="420" [attr.y1]="chartY(maximum(loadMetric)*t/3,loadMetric)" [attr.y2]="chartY(maximum(loadMetric)*t/3,loadMetric)" class="grid"/>
+            <path [attr.d]="chartPath(n.name,loadMetric)" fill="none" [attr.stroke]="nodeColor(n.name)" stroke-width="1.5"/>
+            <line [attr.x1]="loadX(frame.time_ms)" [attr.x2]="loadX(frame.time_ms)" y1="30" y2="140" class="replay-line"/>
+          </svg>
+          <span *ngFor="let t of ticks" class="axis-y" [style.bottom.%]="t/3*100">{{maximum(loadMetric)*t/3 | number:'1.0-0'}}</span>
+          <span *ngFor="let t of ticks" class="axis-x" [class.first]="t===0" [class.last]="t===3" [style.left.%]="t/3*100">{{loadTime(t)/60000 | number:'1.0-1'}}</span>
+          <span *ngIf="currentLoad(n.name) as current" class="sample-dot" [style.left.%]="(loadX(frame.time_ms)-50)/370*100" [style.bottom.%]="current[loadMetric]/maximum(loadMetric)*100" [attr.title]="number(current[loadMetric])+' at '+minutes(frame.time_ms)+' min'"></span>
+        </div>
+        <div class="axis-title">Simulation time (min)</div>
+      </section>
+    </div>
+    <p class="map-note">Curves stop at the selected frame. The unsampled interval before final settlement stays blank; its isolated endpoint is the final recorded value.</p>
+    </div>
+    </div>
+  </section>
+  <details class="card"><summary>Detailed node accounting · selected frame</summary><div class="table-wrap"><table><thead><tr><th>Node</th><th *ngFor="let m of metrics">{{m.label}}</th></tr></thead><tbody><tr *ngFor="let n of frame.nodes"><td [style.color]="nodeColor(n.node)">{{n.node}}</td><td *ngFor="let m of metrics">{{number(n[m.key])}}</td></tr></tbody></table></div><p>Device uploads are derived from node byte accounting. Offloads move existing data; they do not create additional bytes.</p></details>
   <div class="events"><details class="card" open><summary>Recent connection changes</summary><p *ngFor="let e of connectionEvents">{{ minutes(e.time_ms) }} min · {{ name(e.previous_node) }} → {{ name(e.current_node) }}</p><p *ngIf="!connectionEvents.length">No connection changes yet.</p></details><details class="card" open><summary>Recent offloads</summary><p *ngFor="let e of transferEvents">{{ minutes(e.time_ms) }} min · #{{ e.transfer_id }} {{ e.event }} · {{ e.bytes }} B · {{ e.source_node }} → {{ e.destination_node }}</p><p *ngIf="!transferEvents.length">No offload events yet.</p></details></div>
   <details class="card"><summary>Whole-run metrics (retrospective)</summary><div class="table-wrap"><table><thead><tr><th>Baseline</th><th>Evaluated</th><th>TP</th><th>FN</th><th>FP</th><th>TN</th></tr></thead><tbody><tr *ngFor="let s of run.summary"><td>{{ s.model }}</td><td>{{ s.evaluated }}</td><td>{{ s.tp }}</td><td>{{ s.fn }}</td><td>{{ s.fp }}</td><td>{{ s.tn }}</td></tr></tbody></table></div><p>Generated / uploaded: {{ run.props['generated_bytes'] }} / {{ run.props['upload_completed_bytes'] }} B · offloads: {{ run.props['offload_transfers'] }} / {{ run.props['offload_bytes'] }} B · completed tasks: {{ finalCompleted }}.</p><p>Matched forecasts: {{ run.evaluations.length }} / {{ run.predictions.length }}. Unmatched targets are not scored. These results describe this scenario only; they are not evidence of improved task performance.</p></details>
 </div>

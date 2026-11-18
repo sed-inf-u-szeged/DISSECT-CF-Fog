@@ -45,3 +45,19 @@ test('explicit folder reader loads completed results and identifies missing file
     fs.unlinkSync(path.join(dir,'shared_selected_evaluations.csv'));assert.throws(()=>readMobilityRun(dir),/file missing/);
   }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('explicit topology retains an unvisited node and rejects mixed identities or geometry',()=>{
+  const t=fixture(), old=build(t,'old');
+  t['run.properties']+='\nrun_id=synthetic-ui-fixture\ninfrastructure=two-node\n';
+  const topology={schema_version:1,run_id:'synthetic-ui-fixture',infrastructure:'two-node',
+    nodes:old.nodes.map(n=>({...n,role:'fog',serviceable:true})),
+    links:[{source:'mobility-west',target:'mobility-east',kind:'peer',latency_ms:10}]};
+  t['node_topology.json']=JSON.stringify(topology);
+  assert.equal(build(t,'explicit').nodes.length,2);
+  topology.run_id='other';t['node_topology.json']=JSON.stringify(topology);
+  assert.throws(()=>build(t,'mixed'),/identity/);
+  topology.run_id='synthetic-ui-fixture';topology.nodes.find(n=>n.name==='mobility-west').latitude+=.1;
+  t['node_topology.json']=JSON.stringify(topology);assert.throws(()=>build(t,'geometry'),/geometry/);
+  delete t['node_topology.json'];t['run.properties']=t['run.properties'].replace('infrastructure=two-node','infrastructure=hungary-cities');
+  assert.throws(()=>build(t,'missing city geometry'),/node_topology/);
+});

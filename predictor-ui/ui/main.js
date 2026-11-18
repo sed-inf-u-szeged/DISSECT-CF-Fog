@@ -31,12 +31,13 @@ const mobilityJob = new MobilityJob({
     if (!value.active && closeAfterMobilityRun && win && !win.isDestroyed()) win.close();
   },
   onLive: value => send('mobility-live-updated', value),
-  onComplete: (directory, stillCurrent) => new Promise((resolve, reject) => {
+  onComplete: (directory, stillCurrent, verifyNodeLoad) => new Promise((resolve, reject) => {
     const worker = new Worker(path.join(__dirname, 'mobility-result-worker.js'), {workerData: directory});
     let delivered = false;
     worker.once('message', message => {
       delivered = true;
       if (message.error) { reject(new Error(message.error)); return; }
+      try { verifyNodeLoad(message.run.nodeLoad); } catch (error) { reject(error); return; }
       if (stillCurrent()) { mobilityRunDirectory = directory; send('mobility-updated', message.run); }
       resolve();
     });
