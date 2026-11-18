@@ -1,6 +1,48 @@
 <div class="chart-prediction">
-    <canvas #predictionCanvas></canvas>
+  <div class="chart-heading">
+    <strong>{{ modelName }}</strong>
+    <span [title]="prediction.feature_name">{{ featureName }}</span>
+  </div>
+  <div class="canvas-container"><canvas #predictionCanvas></canvas></div>
 </div>
-<div class="chart-error">
-    <canvas #errorCanvas></canvas>
-</div>
+<aside class="chart-side" *ngIf="metrics">
+  <div class="frame-summary">
+    <div class="card-title">This frame · backtest</div>
+    <div class="primary-metrics">
+      <div><span class="metric-label" [title]="toleranceLabel">Within tolerance</span>
+        <strong>{{ formatMetric(metrics.accuracy) }}<small *ngIf="metrics.accuracy !== null">%</small></strong></div>
+      <div><span class="metric-label" title="Mean absolute error in original data units. Lower is better.">MAE ↓</span>
+        <strong>{{ formatMetric(metrics.mae) }}</strong></div>
+    </div>
+    <div class="sample-note">{{ metrics.matched }} / {{ metrics.expected }} matched
+      <span *ngIf="metrics.hits !== null"> · {{ metrics.hits }} hits</span></div>
+    <div class="sample-note" *ngIf="metrics.accuracy === null">{{ metrics.matched ? 'Accuracy unavailable: run tolerance not recorded.' : 'No matched actual values for this frame.' }}</div>
+  </div>
+  <details class="metric-details">
+    <summary>More frame metrics</summary>
+    <div class="metric-row"><span>RMSE</span><span>{{ formatMetric(metrics.rmse) }}</span></div>
+    <div class="metric-row"><span>MSE</span><span>{{ formatMetric(metrics.mse) }}</span></div>
+    <div class="metric-row"><span>SMAPE (%)</span><span>{{ formatMetric(metrics.smape) }}</span></div>
+    <p>{{ toleranceLabel }}</p>
+    <p title="|prediction − actual| ≤ max(absolute tolerance, relative tolerance × |actual|)">Accuracy counts points within the run’s tolerance. MAE uses original units.</p>
+    <div class="metric-row"><span>Stored history</span><span>{{ prediction.original_data.data.length }}</span></div>
+    <div class="metric-row"><span>Backtest input</span><span>{{ prediction.test_data_beginning.data.length }}</span></div>
+    <div class="metric-row"><span>External smoothing</span><span>{{ smoothingLabel }}</span></div>
+  </details>
+  <details class="metric-details online-details">
+    <summary>Latest online · {{ getLifecycleState() }} <span class="state-dot" [class.active]="prediction.lifecycle?.is_active"></span></summary>
+    <p>Latest saved evaluation, separate from this frame.</p>
+    <div class="metric-row"><span>State</span><span>{{ getLifecycleState() }}</span></div>
+    <div class="metric-row"><span>Selected for use</span><span>{{ prediction.lifecycle?.is_active ? 'Yes' : 'No' }}</span></div>
+    <ng-container *ngIf="prediction.lifecycle?.metrics as online">
+      <div class="metric-row"><span>Within tolerance (%)</span><span>{{ formatMetric(online.accuracy) }}</span></div>
+      <div class="metric-row"><span>MAE</span><span>{{ formatMetric(online.mae) }}</span></div>
+      <div class="metric-row"><span>Matched points</span><span>{{ online.matched_samples }}</span></div>
+      <div class="metric-row"><span>RMSE</span><span>{{ formatMetric(online.rmse) }}</span></div>
+      <div class="metric-row"><span>MSE</span><span>{{ formatMetric(online.mse) }}</span></div>
+      <div class="metric-row"><span>SMAPE (%)</span><span>{{ formatMetric(online.smape) }}</span></div>
+    </ng-container>
+    <p *ngIf="!prediction.lifecycle?.metrics">No saved online evaluation.</p>
+    <p *ngIf="prediction.lifecycle?.updated_at">Updated: {{ prediction.lifecycle?.updated_at }}</p>
+  </details>
+</aside>

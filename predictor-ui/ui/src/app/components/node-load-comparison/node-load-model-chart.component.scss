@@ -1,0 +1,34 @@
+:host { display: block; min-width: 0; }
+.model-row { display: flex; align-items: stretch; gap: 12px; min-width: 0; }
+.chart-panel { flex: 1; min-width: 0; position: relative; min-height: 250px; background: var(--color-foreground, #26262d); border-radius: 3px; }
+.chart-heading { display: flex; align-items: center; gap: 12px; padding: 10px 16px 0; height: 28px; font-size: 12px; }
+.chart-heading strong { color: #ffd174; white-space: nowrap; }
+.feature { color: #adb9ce; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-heading button { margin-left: auto; background: transparent; color: #bac7df; border: 1px solid #555663; border-radius: 3px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.canvas-container { position: absolute; inset: 44px 12px 8px; }
+.chart-side { flex: 0 0 240px; display: flex; flex-direction: column; gap: 4px; align-self: flex-start; min-width: 0; }
+.metric-card { background: var(--color-foreground, #26262d); border-radius: 3px; padding: 8px; }
+.card-title { color: #c6ccda; font-size: 11px; margin-bottom: 4px; }
+.metric { display: flex; justify-content: space-between; gap: 10px; margin: 7px 0; font-size: 11px; color: #b8c1d1; }
+.metric strong { color: #f1f1f6; text-align: right; font-size: 13px; font-weight: 500; }
+.note, p { color: #adb9ce; font-size: 11px; line-height: 1.55; margin: 6px 0 0; }
+.missing { color: #e4c38c; padding: 0 10px; }
+.readiness strong { color: #ffd174; font-size: 12px; }
+.readiness progress { display: block; width: 100%; height: 8px; accent-color: #ffd174; margin: 7px 0 0; }
+.progress-count { color: #cbd3df; font-size: 11px; margin-top: 5px; font-variant-numeric: tabular-nums; }
+.readiness p { margin-top: 4px; }
+summary { color: #b8c6df; font-size: 11px; cursor: pointer; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #ffd174; outline-offset: 2px; }
+.expanded .chart-panel { height: max(400px, calc(100dvh - 220px)); }
+@media(max-width: 850px) {
+  .model-row { flex-direction: column; gap: 8px; }
+  .chart-panel { flex: none; height: 250px; }
+  .chart-side { flex: none; width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .feature { max-width: 45%; }
+}
+@media(max-width: 550px) {
+  .chart-side { grid-template-columns: 1fr; }
+  .chart-heading { flex-wrap: wrap; height: 48px; gap: 4px 10px; }
+  .canvas-container { top: 64px; }
+  .feature { max-width: 100%; }
+}

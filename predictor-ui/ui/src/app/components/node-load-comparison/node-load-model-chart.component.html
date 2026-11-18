@@ -1,0 +1,56 @@
+<div class="model-row" [class.expanded]="expanded">
+  <div class="chart-panel">
+    <div class="chart-heading">
+      <strong>{{trace.model}}</strong>
+      <span class="feature">{{nodeId}} · {{!trace.hasRecorded ? 'observed load · awaiting forecast' : trace.model==='Persistence' ? (trace.paired?'paired 64-target reference':'one-step baseline') : trace.isBaseline ? 'baseline · 192 past / 64 future' : 'recorded 64-target blocks'}}</span>
+      <button *ngIf="!expanded" type="button" (click)="expand.emit(trace.model)" [attr.aria-label]="'Expand '+trace.model+' load chart'">Expand</button>
+    </div>
+    <div class="canvas-container"><canvas #canvas role="img" [attr.aria-label]="trace.model+' at '+nodeId+': yellow actual, blue earlier prediction, pink future; replay '+minutes(view.time)+' minutes'"></canvas></div>
+  </div>
+  <aside class="chart-side">
+    <div class="metric-card" *ngIf="trace.hasRecorded; else awaitingForecast">
+      <div class="card-title">Latest issued forecast<span *ngIf="trace.version && trace.model!=='Persistence'"> · {{trace.version}}</span></div>
+      <p *ngIf="trace.latest.length">Issued {{minutes(trace.latest[0].origin_ms)}} min<br>Targets {{minutes(trace.latest[0].target_ms)}}–{{minutes(trace.latest[trace.latest.length-1].target_ms)}} min</p>
+      <ng-container *ngIf="trace.metrics.count; else noScores">
+        <div class="metric"><span>Within tolerance</span><strong>{{metric(trace.metrics.within)}}{{trace.metrics.within===null ? '' : ' %'}}</strong></div>
+        <div class="metric"><span>MAE (bytes) ↓</span><strong>{{metric(trace.metrics.mae)}}</strong></div>
+        <div class="note">{{trace.metrics.count}} / {{trace.latest.length}} targets observed</div>
+      </ng-container>
+      <ng-template #noScores><div class="note">{{trace.latest.length ? 'Waiting for actual target values · 0 / '+trace.latest.length+' observed.' : 'No saved forecast at this time.'}}</div></ng-template>
+      <div class="note">Forecast status: {{trace.state}}</div>
+    </div>
+    <ng-template #awaitingForecast>
+      <div class="metric-card readiness" *ngIf="!trace.progress" role="status">
+        <strong>{{trace.model}} · {{trace.readiness}}</strong>
+        <p>{{trace.missing}}</p>
+        <progress *ngIf="trace.readiness==='Collecting history'" [max]="trace.isBaseline ? 192 : 287" [value]="view.sampleCount" [attr.aria-label]="trace.model+' history: '+view.sampleCount+' of '+(trace.isBaseline ? 192 : 287)+' samples'"></progress>
+        <progress *ngIf="trace.readiness==='Training'" [attr.aria-label]="trace.model+' training in progress'"></progress>
+        <p>{{!view.actual.length ? 'No observed load samples in this window yet.' : filters.actual ? 'Yellow shows the observed node load. Predictions will appear when recorded.' : 'Actual load is hidden by the display option.'}}</p>
+      </div>
+    </ng-template>
+    <div class="metric-card readiness" *ngIf="trace.progress as progress" role="status">
+      <strong>{{progressTitle}}</strong>
+      <div class="progress-count">{{progressCount}}</div>
+      <progress *ngIf="progress.value!==null && progress.phase!=='training'" [max]="progress.total" [value]="progress.value" [attr.aria-label]="trace.model+' '+progress.title" [attr.aria-valuetext]="progress.detail"></progress>
+      <progress *ngIf="progress.value===null" [attr.aria-label]="trace.model+' '+progress.title"></progress>
+      <p *ngIf="progressNote">{{progressNote}}</p>
+    </div>
+    <p class="missing" *ngIf="trace.hasRecorded && trace.missing && !trace.progress">{{trace.missing}}</p>
+    <details class="metric-card" *ngIf="trace.hasRecorded || trace.progress">
+      <summary>{{trace.hasRecorded ? 'Score and training details' : 'Training details'}}</summary>
+      <ng-container *ngIf="trace.progress as progress">
+        <p><strong>{{trace.model}} · {{progress.title}}{{progress.version ? ' · '+progress.version : ''}}</strong></p>
+        <p>{{progress.detail}}</p><p *ngIf="progress.hint">{{progress.hint}}</p>
+        <p *ngIf="trace.missing">{{trace.missing}}</p>
+      </ng-container>
+      <ng-container *ngIf="trace.hasRecorded">
+      <div class="metric"><span>RMSE (bytes) ↓</span><strong>{{metric(trace.metrics.rmse)}}</strong></div>
+      <div *ngIf="trace.metrics.pairedMae!==null" class="metric"><span>Same-target Persistence MAE (bytes)</span><strong>{{metric(trace.metrics.pairedMae)}}</strong></div>
+      <p>Scores belong to the latest issued block above, not the whole visible window. Only observed targets are scored. A new block starts its own score; earlier blocks remain on the timeline.</p>
+      <p *ngIf="trace.model==='Persistence'">{{trace.paired ? 'The reference repeats the value saved at issue time for the same 64 targets as the learned models. Rolling one-minute forecasts are separate in Diagnostics.' : 'The latest observed value predicts one sample ahead. This is a one-step score.'}}</p>
+      <div *ngFor="let b of trace.baselineScores" class="metric"><span>Same-origin {{b.model}} MAE (bytes)</span><strong>{{metric(b.mae)}}</strong></div>
+      <p *ngIf="trace.model!=='Persistence'">This row may differ from the serving model. Baseline comparisons use the same issue time and observed targets.</p>
+      </ng-container>
+    </details>
+  </aside>
+</div>

@@ -1,0 +1,93 @@
+<div class="map-layout">
+  <nav class="node-picker" aria-label="Choose a city or node">
+    <strong>Nodes <span>{{nodes.length}}</span></strong>
+    <p>Click a node to inspect its coverage and load.</p>
+    <div class="node-list">
+      <button type="button" *ngFor="let n of orderedNodes" [attr.data-node]="n.name" [class.active]="n.name===selectedNode" [attr.aria-pressed]="n.name===selectedNode" (click)="activateNode(n.name)">
+        <span>{{city(n.name)}}</span><small>{{role(n)}} · {{connectionCount(n.name)}} connected</small>
+      </button>
+    </div>
+  </nav>
+  <section class="map-main" aria-label="Selected device or node detail">
+    <div class="map-toolbar">
+      <div class="buttons" role="group" aria-label="Detail view">
+        <button type="button" (click)="showDevice()" [class.active]="viewMode==='device'" [attr.aria-pressed]="viewMode==='device'" aria-label="Show device detail">Device {{selectedDevice}} · path</button>
+        <button type="button" (click)="showNode()" [disabled]="!node" [class.active]="viewMode==='node'" [attr.aria-pressed]="viewMode==='node'" aria-label="Show node coverage">{{node ? city(node.name) : 'Node'}} · coverage</button>
+      </div>
+      <label *ngIf="viewMode==='device'">History <select aria-label="Map trail history" [ngModel]="pathMinutes" (ngModelChange)="pathMinutesChange.emit($event)"><option [ngValue]="10">Last 10 min</option><option [ngValue]="30">Last 30 min</option><option [ngValue]="0">Full observed path</option></select></label>
+    </div>
+    <div class="reading-guide" *ngIf="viewMode==='device'; else nodeGuide">
+      <span class="actual-key">● Observed position and path</span><span class="forecast-key" *ngIf="showForecast">◇ Predicted position</span><span *ngIf="retrospective">× Target actual · retrospective</span>
+    </div>
+    <ng-template #nodeGuide><div class="reading-guide">Square = node · circles = last observed device positions · click a device to inspect its path.</div></ng-template>
+    <div class="time-summary" *ngIf="viewMode==='device' && device as d">
+      <span>Observed <b>{{minutes(d.observation.time_ms)}} min</b></span>
+      <ng-container *ngIf="visibleForecast as p"><span>Issued <b>{{minutes(p.origin_ms)}} min</b></span><span>Target <b>{{minutes(p.target_ms)}} min · +{{(p.target_ms-p.origin_ms)/1000}} s</b></span><span>{{p.model}} {{p.model_version}}</span></ng-container>
+    </div>
+    <div *ngIf="truthOutside" class="target-notice"><span>× Target actual is outside this view · retrospective</span><button type="button" class="primary" (click)="fitTruth()">Fit target actual</button></div>
+    <div class="map-canvas">
+      <svg viewBox="0 0 1000 540" role="group" [attr.aria-label]="viewMode==='device' ? 'Device '+selectedDevice+' observed path and issued prediction' : city(selectedNode)+' coverage and observed devices'">
+        <rect width="1000" height="540" class="background"/>
+        <g class="grid" aria-hidden="true"><path d="M0,135H1000M0,270H1000M0,405H1000M250,0V540M500,0V540M750,0V540"/></g>
+        <ng-container *ngFor="let n of renderedNodes; trackBy:trackNode">
+          <polygon *ngIf="viewMode==='node' && n.node.name===selectedNode && n.outline" class="coverage" [attr.points]="n.outline"/>
+          <g *ngIf="onScreen(n.point)" [attr.transform]="'translate('+n.point.x+','+n.point.y+')'" class="node" [class.chosen]="n.node.name===selectedNode" aria-hidden="true">
+            <rect x="-5" y="-5" width="10" height="10" [attr.fill]="nodeColor"/>
+            <text y="24" text-anchor="middle">{{city(n.node.name)}}{{role(n.node)==='Cloud' ? ' · cloud' : ''}}</text>
+          </g>
+        </ng-container>
+        <g *ngIf="showPaths && viewMode==='device'" class="trails" aria-hidden="true"><polyline *ngFor="let d of renderedDevices; trackBy:trackDevice" [attr.points]="d.path"/></g>
+        <g class="label-leaders" aria-hidden="true"><path *ngFor="let label of deviceLabels" [attr.d]="'M'+label.anchor.x+','+label.anchor.y+'L'+label.leader.x+','+label.leader.y"/></g>
+        <g *ngFor="let d of renderedDevices; trackBy:trackDevice" [attr.transform]="'translate('+d.point.x+','+d.point.y+')'" class="device" [class.chosen]="d.id===selectedDevice"
+          role="button" tabindex="0" [attr.aria-label]="'Inspect device '+d.id+' or choose nearby devices, observed '+minutes(d.observation.time_ms)+' minutes'" [attr.data-device]="d.id"
+          (click)="inspectMarker(d.id)" (keydown.enter)="inspectMarker(d.id)" (keydown.space)="inspectMarker(d.id);$event.preventDefault()">
+          <title>Device {{d.id}} · observed {{minutes(d.observation.time_ms)}} min · {{connectionName(d.observation.current_node)}}</title>
+          <circle class="device-hit" r="14" fill="transparent"/>
+          <circle class="device-halo" r="8" fill="#ffd174"/>
+          <circle class="device-dot" r="5" fill="#ffd174"/>
+        </g>
+        <g *ngFor="let label of deviceLabels" class="device-label" [class.chosen]="label.ids.includes(selectedDevice)" role="button" tabindex="0"
+          [attr.data-device-label]="label.key" [attr.aria-label]="label.ids.length===1 ? 'Inspect device '+label.ids[0] : 'Choose among '+label.ids.length+' nearby devices'"
+          (click)="inspectLabel(label)" (keydown.enter)="inspectLabel(label)" (keydown.space)="inspectLabel(label);$event.preventDefault()">
+          <title>{{label.ids.length===1 ? 'Device '+label.ids[0]+' · click to inspect path' : 'Nearby devices · click to choose a device'}}</title>
+          <rect [attr.x]="label.x" [attr.y]="label.y" [attr.width]="label.width" [attr.height]="label.height" rx="4"/>
+          <text [attr.x]="label.x+8" [attr.y]="label.y+18">{{label.text}}</text>
+        </g>
+        <g *ngIf="showForecast && predicted && currentPoint" class="forecast" fill="none" aria-label="Selected device forecast">
+          <path [attr.d]="'M'+currentPoint.x+','+currentPoint.y+'L'+predicted.x+','+predicted.y" class="forecast-link"/>
+          <path [attr.d]="'M'+predicted.x+','+(predicted.y-8)+'l8,8 -8,8 -8,-8Z'"/>
+          <text [attr.x]="predicted.x+13" [attr.y]="predicted.y-13">{{coincident ? 'Observed + predicted' : 'Predicted'}}</text>
+        </g>
+        <g *ngIf="retrospective" class="truth" fill="none" aria-label="Retrospective target observation"><path class="truth-outline" [attr.d]="'M'+(retrospective.x-7)+','+(retrospective.y-7)+'l14,14m0,-14l-14,14'"/><path [attr.d]="'M'+(retrospective.x-7)+','+(retrospective.y-7)+'l14,14m0,-14l-14,14'"/></g>
+        <g class="scale" aria-hidden="true"><path [attr.d]="'M25,511v7h'+scaleBar.pixels+'v-7'"/><text x="25" y="500">≈ {{scaleBar.label}}</text><text x="970" y="28" text-anchor="end">N ↑</text></g>
+      </svg>
+      <p class="empty" *ngIf="viewMode==='device' && !device">Device {{selectedDevice}} has no recorded position at this time.</p>
+    </div>
+    <div class="map-foot" *ngIf="viewMode==='device'; else coverageFoot">
+      <span *ngIf="device as d">Connection: <button type="button" [disabled]="!knownNode(d.observation.current_node)" (click)="activateNode(d.observation.current_node)">{{connectionName(d.observation.current_node)}}</button></span>
+      <span>View fits the observed path and issued forecast.</span>
+    </div>
+    <ng-template #coverageFoot><div class="map-foot">{{visibleDevices}} observed devices. Yellow labels link to unchanged positions; crowded markers open a device list.<button type="button" (click)="chooseVisibleDevice()" [disabled]="!visibleDevices">Choose device ({{visibleDevices}})</button></div></ng-template>
+    <div class="device-picker" *ngIf="pickerDevices.length" role="group" aria-label="Choose a nearby device">
+      <div><strong>Choose device · {{pickerDevices.length}}</strong><button type="button" (click)="pickerIds=[]">Close list</button></div>
+      <div class="picker-options"><button type="button" *ngFor="let d of pickerDevices; trackBy:trackDevice" (click)="activateDevice(d.id)" [class.active]="d.id===selectedDevice">Device {{d.id}}<small>{{minutes(d.observation.time_ms)}} min · {{connectionName(d.observation.current_node)}}</small></button></div>
+    </div>
+    <p *ngIf="truthRequested && viewMode==='node'" class="hint">Target actual is shown in <button type="button" (click)="showDevice()">Device {{selectedDevice}} · path</button>. Coverage shows current observed devices only.</p>
+    <p *ngIf="coincident && showForecast && viewMode==='device'" class="hint">The prediction overlaps the current position. This does not mean its future error is zero.</p>
+    <p *ngIf="truthRequested && viewMode==='device' && !retrospective" class="hint">{{visibleForecast ? 'No recorded observation matches this forecast target yet.' : 'No current forecast target is available for this device and method.'}}</p>
+  </section>
+  <aside class="node-detail" aria-label="Selected node load summary">
+    <ng-container *ngIf="node as n">
+      <strong>{{city(n.name)}} · {{role(n)}}</strong><p>Selected node · aggregate load</p>
+      <div class="stats" *ngIf="load as l; else noLoad"><div><span>Queued data (bytes)</span><b>{{l.waiting_assignment_bytes | number:'1.0-2'}}</b></div><div><span>Running tasks</span><b>{{l.running_tasks}}</b></div><div><span>Completed tasks</span><b>{{l.completed_tasks}}</b></div></div>
+      <ng-template #noLoad><p>No node snapshot available at this time.</p></ng-template>
+      <p *ngIf="load">Observed at {{minutes(loadTime ?? time)}} min</p>
+      <button type="button" class="primary" (click)="viewLoad.emit()">View load forecasts ↓</button>
+      <div class="connected-devices"><strong>Connected devices · {{connected.length}}</strong><p>Click a device to inspect its path.</p>
+        <button type="button" *ngFor="let d of connected" [attr.data-connected-device]="d.id" (click)="activateDevice(d.id)" [class.active]="d.id===selectedDevice">Device {{d.id}}</button>
+        <p *ngIf="!connected.length">No recorded device connection.</p>
+      </div>
+      <details><summary>Coverage details</summary><p>{{hasCoverage(n) ? 'Configured radius: '+(n.radius/1000)+' km.' : 'No device-access coverage circle.'}}</p><p *ngIf="hasCoverage(n)">{{inside.length}} devices inside coverage. Coverage alone does not mean connection.</p><p>Counts use the latest observation available for each device at the replay time.</p></details>
+    </ng-container>
+  </aside>
+</div>

@@ -1,76 +1,83 @@
-import { ApplicationRef, ComponentFactoryResolver, EmbeddedViewRef, EventEmitter, Injectable, Injector } from '@angular/core';
+import { ApplicationRef, ComponentFactoryResolver, EventEmitter, Injectable, Injector, NgZone } from '@angular/core';
 import { ModalBaseComponent } from 'src/app/components/modal-base/modal-base.component';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class ModalService {
   closeEmitter: EventEmitter<any> = new EventEmitter();
   componentRef: any;
   modalRef: any;
   data: any;
   opts: any;
-  canClose: boolean = true;
+  canClose = true;
+  private closeTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private componentFactoryResolver: ComponentFactoryResolver,
     private appRef: ApplicationRef,
-    private injector: Injector
-  ) { }
+    private injector: Injector,
+    private zone: NgZone
+  ) {}
 
-  create(component: any, data?: any, opts?: any) {
-    this.data = data;
-    this.opts = opts;
-    document.body.className = 'no-scroll';
-
-    this.componentRef = this.componentFactoryResolver.resolveComponentFactory(component).create(this.injector);
-    this.appRef.attachView(this.componentRef.hostView);
-    const domElem = (this.componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    
-    this.modalRef = this.componentFactoryResolver.resolveComponentFactory(ModalBaseComponent).create(this.injector);
-    this.appRef.attachView(this.modalRef.hostView);
-    const modalElem = (this.modalRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    
-    let modalContainer = modalElem.getElementsByClassName('modal')[0];
-    modalContainer.appendChild(domElem);
-    modalContainer.className = 'modal';
-    document.body.appendChild(modalElem);
-
-    setTimeout(() => {
-      modalContainer.className = 'modal open';
-    }, 1);
-
-    // 5. Wait some time and remove it from the component tree and from the DOM
-    /*setTimeout(() => {
-        this.appRef.detachView(componentRef.hostView);
-        componentRef.destroy();
-    }, 3000);*/
+  create(component: any, data?: any, opts?: any): void {
+    this.zone.run(() => {
+      this.dispose();
+      this.data = data;
+      this.opts = opts;
+      this.canClose = true;
+      document.body.classList.add('no-scroll');
+      try {
+        this.modalRef = this.componentFactoryResolver.resolveComponentFactory(ModalBaseComponent).create(this.injector);
+        this.componentRef = this.componentFactoryResolver.resolveComponentFactory(component).create(this.injector);
+        this.appRef.attachView(this.modalRef.hostView);
+        this.appRef.attachView(this.componentRef.hostView);
+        const modalElement = this.modalRef.location.nativeElement as HTMLElement;
+        const contentElement = this.componentRef.location.nativeElement as HTMLElement;
+        const container = modalElement.querySelector('.modal')!;
+        container.appendChild(contentElement);
+        document.body.appendChild(modalElement);
+        // Initial render must not depend on a later IPC callback or browser event.
+        this.modalRef.changeDetectorRef.detectChanges();
+        this.componentRef.changeDetectorRef.detectChanges();
+        container.classList.add('open');
+      } catch (error) {
+        this.dispose();
+        throw error;
+      }
+    });
   }
 
-  closeCurrentmodal(message?: any) {
-    const modalElem = (this.modalRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
-    let modalContainer = modalElem.getElementsByClassName('modal')[0];
-    modalContainer.className = 'modal close';
-
-    setTimeout(() => {
-      this.appRef.detachView(this.modalRef.hostView);
-      this.modalRef.destroy();
-      this.appRef.detachView(this.componentRef.hostView);
-      this.componentRef.destroy();
-      document.body.className = '';
-      this.closeEmitter.emit(message);
-    }, 500);
+  closeCurrentmodal(message?: any): void {
+    if (!this.modalRef || !this.canClose || this.closeTimer !== undefined) { return; }
+    this.zone.run(() => {
+      const element = this.modalRef.location.nativeElement as HTMLElement;
+      element.querySelector('.modal')!.className = 'modal close';
+      // Stop playback immediately; destroy the content while the shell fades out.
+      if (this.componentRef) {
+        this.appRef.detachView(this.componentRef.hostView);
+        this.componentRef.destroy();
+        this.componentRef = undefined;
+      }
+      this.closeTimer = setTimeout(() => {
+        this.dispose();
+        this.closeEmitter.emit(message);
+      }, 150);
+    });
   }
 
-  afterClosed() {
-    return this.closeEmitter;
+  private dispose(): void {
+    if (this.closeTimer !== undefined) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = undefined;
+    }
+    for (const ref of [this.componentRef, this.modalRef]) {
+      if (ref) { this.appRef.detachView(ref.hostView); ref.destroy(); }
+    }
+    this.componentRef = undefined;
+    this.modalRef = undefined;
+    document.body.classList.remove('no-scroll');
   }
 
-  disableClose() {
-    this.canClose = false;
-  }
-
-  enableClose() {
-    this.canClose = true;
-  }
+  afterClosed() { return this.closeEmitter; }
+  disableClose(): void { this.canClose = false; }
+  enableClose(): void { this.canClose = true; }
 }

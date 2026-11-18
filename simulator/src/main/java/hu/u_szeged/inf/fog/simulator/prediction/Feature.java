@@ -1,5 +1,6 @@
 package hu.u_szeged.inf.fog.simulator.prediction;
 
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.annotations.ToJsonParseIgnore;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ import lombok.Setter;
  */
 @NoArgsConstructor
 public abstract class Feature {
-    
+
     @Getter
     private String name;
 
@@ -56,6 +57,14 @@ public abstract class Feature {
         double value = compute();
         values.add(value);
 
+        int timestamp = values.size() - 1;
+        LifecycleManager.getInstance().resolveActualValue(
+                getName(),
+                timestamp,
+                value
+        );
+
+        PredictionConfigurator.sqLiteManager.syncLifecycleData(getName());
         PredictionConfigurator.sqLiteManager.addRawDataToTable(getName(), value);
 
         hasNewValue = true;
@@ -85,10 +94,10 @@ public abstract class Feature {
 
     @Override
     public String toString() {
-        return "Feature{" 
+        return "Feature{"
                 + "name='" + name + '\''
-                + ", values=" + values.size() 
-                + ", predictions=" + predictions.size() 
+                + ", values=" + values.size()
+                + ", predictions=" + predictions.size()
                 + '}';
     }
 }

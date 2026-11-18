@@ -1,0 +1,52 @@
+<section class="load-section" aria-label="Node-load prediction">
+  <div class="title"><strong>Node workload forecast</strong><span>Shared simulation time · all devices</span></div>
+  <ng-container *ngIf="data && node; else unavailable">
+    <div class="controls">
+      <label for="load-node">Node</label><select id="load-node" [ngModel]="nodeId" (ngModelChange)="selectNode($event)"><option *ngFor="let n of data.nodes" [value]="n.node_id">{{n.node_id}}</option></select>
+    </div>
+    <p>Queued data is received data waiting to be assigned to compute, measured in bytes. Forecasts use this node's past queue samples across all devices; predicted device arrivals are a later step.</p>
+    <app-node-load-comparison [data]="data" [node]="node" [time]="time" [final]="final" (seekTime)="seekTime.emit($event)"></app-node-load-comparison>
+    <details>
+      <summary>Diagnostics · saved forecasts, service and cumulative metrics</summary>
+    <button *ngIf="hasTraining" type="button" (click)="seekTime.emit(firstTraining)">Jump to first load training</button>
+    <div class="controls">
+      <label for="load-method">Load prediction</label><select id="load-method" [ngModel]="method" (ngModelChange)="selectMethod($event)">
+        <option *ngIf="hasSelections" value="selected">System selected</option><option *ngIf="!data.baselines" value="Persistence">Legacy Persistence · 1 min</option><option *ngFor="let b of data.baselines" [value]="b">{{b}} · 64 min</option><option *ngFor="let model of data.models" [value]="model">{{model}} · 64 min</option>
+      </select>
+      <label *ngIf="data.models.length" for="load-version">Version</label><select *ngIf="data.models.length" id="load-version" [ngModel]="version" (ngModelChange)="selectVersion($event)" [disabled]="!learned"><option value="">All versions</option><option *ngFor="let v of view.versionOptions" [value]="v">{{v}}</option></select>
+      <ng-container *ngIf="blockMethod && view.vectors.length"><label for="load-origin">Forecast origin</label><select id="load-origin" [(ngModel)]="origin"><option [ngValue]="-1">Latest issued by this frame</option><option *ngFor="let v of view.vectors" [ngValue]="v[0].origin_ms">{{minutes(v[0].origin_ms)}} min · {{v[0].version}}</option></select></ng-container>
+    </div>
+    <p>Inspect saved forecasts and recorded choices. Cumulative metrics below use their original horizons and may cover different target sets.</p>
+    <p *ngIf="!data.hasBaseline">This run contains uniform actual samples only. Load predictions were not exported in this run.</p>
+    <div class="chart-row" *ngIf="view as v">
+      <div class="plot">
+        <div class="legend"><span class="actual">— Observed up to this frame</span><span class="prediction">— {{blockMethod ? method + ' · saved 64-target vector' : method === 'selected' ? 'Recorded selected forecasts' : 'Rolling one-minute Persistence'}}</span><span class="paired" *ngIf="learned && !data.baselines">— Persistence from the same origin</span><span>┆ Replay time</span></div>
+        <svg viewBox="0 0 900 225" role="img" aria-label="Node queued data in bytes and forecasts on simulation time">
+          <g *ngFor="let tick of ticks"><line x1="60" x2="860" [attr.y1]="y(v.maximum*tick/3)" [attr.y2]="y(v.maximum*tick/3)" class="grid"/><text x="50" [attr.y]="y(v.maximum*tick/3)+4" text-anchor="end">{{v.maximum*tick/3 | number:'1.0-1'}}</text><text [attr.x]="60+800*tick/3" y="200" text-anchor="middle">{{v.end*tick/180000 | number:'1.0-1'}}</text></g>
+          <path [attr.d]="v.actualPath" class="actual-line"/><path [attr.d]="v.pairedPath" class="paired-line"/><path [attr.d]="v.forecastPath" class="forecast-line"/>
+          <circle *ngIf="v.actualLast as p" [attr.cx]="x(p.time)" [attr.cy]="y(p.value)" r="3" fill="#ffd174"/>
+          <circle *ngIf="v.forecastLast as p" [attr.cx]="x(p.time)" [attr.cy]="y(p.value)" r="3" fill="#ff7395"/>
+          <line [attr.x1]="x(time)" [attr.x2]="x(time)" y1="25" y2="180" class="cursor"/><text x="450" y="222" text-anchor="middle">Simulation / target time · min</text>
+        </svg>
+        <p *ngIf="blockMethod && !learned && !v.vector.length">ARIMA and LR require 192 observed samples before their first 64-target forecast.</p>
+        <p *ngIf="learned && !v.vector.length">No forecast for this model/version has been issued by this frame. First training needs 287 node samples (192 inputs + 64 targets, across 32 training windows).</p>
+        <p *ngIf="learned && v.vector.length">One saved 64-minute vector, issued at {{minutes(v.vector[0].origin_ms)}} min. {{data.baselines ? '' : 'The green line uses the same origin and targets.'}} {{v.hasFuture ? 'Future actual values remain hidden.' : 'All targets of this vector are now in the past.'}}</p>
+        <p *ngIf="method === 'selected'">Recorded choices for the next target. A trained value can come from an older 64-point vector; its original lead is preserved. This selection does not operate the simulator.</p>
+        <p *ngIf="final">Final settlement: historical predictions only. Actual samples stop at their last recorded time; the drain interval is left blank and is not scored as zero load.</p>
+      </div>
+      <aside>
+        <div class="card-title">Node load · {{minutes(time)}} min</div>
+        <div class="pair"><span>Latest sampled actual</span><strong>{{metric(v.lastSample?.value)}} bytes</strong></div><p *ngIf="v.lastSample">Sample time {{minutes(v.lastSample.time_ms)}} min · sampled every {{data.interval_ms/1000}} s.</p>
+        <ng-container *ngIf="v.selected as s"><div class="pair"><span>Last recorded choice</span><strong>{{s.model}} {{s.model === 'Persistence' ? '' : s.version}}</strong></div><p>Selected at {{minutes(s.selection_ms)}} min for target {{minutes(s.target_ms)}} min. Original lead {{s.lead_steps}} min.</p></ng-container>
+        <ng-container *ngIf="v.forecastOrigin as f"><div class="pair"><span>Shown method</span><strong>{{f.model}} {{f.model === 'Persistence' ? '' : f.version}}</strong></div><div *ngIf="learned" class="pair"><span>Version state at replay time</span><strong>{{v.latestState}}</strong></div><p>Issued {{minutes(f.origin_ms)}} min. {{learned ? 'Prediction spans the next 64 minutes.' : 'Latest shown target: '+minutes(f.target_ms)+' min.'}}</p></ng-container>
+      </aside>
+    </div>
+    <div *ngIf="data.policy as p" class="policy">Experimental qualification: {{p.matched_targets}} matched targets; at least {{p.minimum_within_tolerance_percent}}% within max({{p.absolute_tolerance_bytes}} bytes, {{p.relative_tolerance*100}}% of actual); SMAPE ≤ 200%. MAE/RMSE have no pass limit in this profile. {{data.profile === 'observe' ? 'Observe checks the workflow only; passing does not establish useful accuracy.' : 'Quality thresholds still require calibration.'}}</div>
+    <div *ngIf="data.models.length || data.baselines?.length" class="table-wrap"><table><caption>Load methods · recorded matched targets up to this frame{{version ? ' · '+version : ' · all versions'}}</caption><thead><tr><th>Model</th><th>Matched</th><th>MAE (bytes)</th><th>RMSE (bytes)</th><th>Within tolerance</th><th *ngIf="!data.baselines">Paired Persistence MAE (bytes)</th><th *ngIf="!data.baselines">Paired Persistence RMSE (bytes)</th></tr></thead><tbody><tr *ngFor="let row of view.comparison"><td>{{row.model}}</td><td>{{row.count}}</td><td>{{metric(row.mae)}}</td><td>{{metric(row.rmse)}}</td><td>{{metric(row.within)}}{{row.within === null ? '' : '%'}}</td><td *ngIf="!data.baselines">{{metric(row.pairedMae)}}</td><td *ngIf="!data.baselines">{{metric(row.pairedRmse)}}</td></tr></tbody></table><p>Each row uses that method's own matured targets; methods may have different origin and target sets. Use the same-window load comparison above for scores with the same issue time and observed targets. These cumulative metrics are separate from each version's 64-target qualification.</p></div>
+    <p *ngIf="data.hasBaseline && !data.baselines">Legacy rolling one-minute Persistence, up to this frame: {{view.baselineMetrics.count}} matched · MAE {{metric(view.baselineMetrics.mae)}} bytes · RMSE {{metric(view.baselineMetrics.rmse)}} bytes. Its horizon differs from the 64-minute model comparison.</p>
+    <p *ngIf="hasSelections">System selected, up to this frame: {{view.selectedMetrics.count}} matched · MAE {{metric(view.selectedMetrics.mae)}} bytes · RMSE {{metric(view.selectedMetrics.rmse)}} bytes. Trained forecasts may have different original lead times.</p>
+    <details *ngIf="data.models.length"><summary>Load model versions · up to this frame</summary><p *ngIf="!view.versions.length">Collecting history; no load model has been trained at this time.</p><div class="table-wrap" *ngIf="view.versions.length"><table><thead><tr><th>Model</th><th>Version</th><th>Training windows</th><th>Matched</th><th>State now</th><th>Training / s</th><th>Inference / vector ms</th><th>Replay</th></tr></thead><tbody><tr *ngFor="let v of view.versions"><td>{{v.model}}</td><td>{{v.version}}</td><td>{{v.training_windows}}</td><td>{{v.matched}}</td><td>{{v.state}}</td><td>{{metric(v.training_seconds)}}</td><td>{{metric(v.inference)}}</td><td><button type="button" (click)="seekTime.emit(v.trained_at_ms)">Training time</button></td></tr></tbody></table></div><p>Versions are local to this node and model family. Inference is measured per 64-value vector. Rejected means qualification failed; the simulation can still complete successfully.</p></details>
+    </details>
+  </ng-container>
+  <ng-template #unavailable><p>This saved run has no uniform node-load prediction exports. Its device trajectories and observed node-load charts remain available. Open a W03–W05 run to view the corresponding samples and forecasts.</p></ng-template>
+</section>

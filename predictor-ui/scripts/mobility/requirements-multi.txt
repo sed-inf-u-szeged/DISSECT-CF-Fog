@@ -1,0 +1,2 @@
+# Additional process-tree memory sampling dependency; keep the existing TensorFlow environment.
+psutil==7.2.2

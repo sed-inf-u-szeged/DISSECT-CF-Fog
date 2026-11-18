@@ -1,0 +1,69 @@
+<section class="comparison" *ngIf="view as v" aria-label="Node-load rolling timeline">
+  <div class="heading"><strong>{{cityName()}} · {{role()}} · load forecast</strong><span>Queued data (bytes)</span></div>
+  <div class="time-summary" aria-label="Load timeline timing">
+    <div><span>Replay time · follows the top slider</span><strong>{{minutes(time)}} min</strong></div>
+    <div><span>Latest actual sample</span><strong>{{v.lastActual ? minutes(v.lastActual.time_ms)+' min · '+v.lastActual.value+' bytes' : 'No samples yet'}}</strong></div>
+  </div>
+  <p class="window-label">{{minutes(v.start)}}–{{minutes(v.end)}} min · fixed window: past 192 + future 64 minutes<span *ngIf="time<192*60000"> · starts at 0 until enough history is available</span>.</p>
+  <ng-container *ngTemplateOutlet="legend"></ng-container>
+  <p>Actual uses one-minute samples. When actual and prediction values are close, their lines overlap; hover for values. The node observations below show finer event changes.</p>
+  <div class="models"><span>Show models</span><button *ngFor="let t of v.traces" type="button" (click)="toggle(t.model)" [class.dim]="hidden.has(t.model)" [attr.aria-pressed]="!hidden.has(t.model)">{{t.model}}</button></div>
+  <details class="time-help">
+    <summary>Display options and reading guide</summary>
+    <div class="filters">
+      <label><input type="checkbox" [ngModel]="filters.actual" (ngModelChange)="setFilter('actual',$event)">Actual</label>
+      <label><input type="checkbox" [ngModel]="filters.test" (ngModelChange)="setFilter('test',$event)">Earlier prediction</label>
+      <label><input type="checkbox" [ngModel]="filters.future" (ngModelChange)="setFilter('future',$event)">Future prediction</label>
+      <label><input type="checkbox" [ngModel]="filters.commonY" (ngModelChange)="setFilter('commonY',$event)">Common Y scale</label>
+    </div>
+    <p>Move the top replay slider to scroll every row together. Yellow shows observed samples only. A recorded prediction changes from pink to blue when replay reaches its target time; its value and timestamp stay unchanged. Gaps mean no prediction was recorded.</p>
+    <p>Each row scores its latest issued block, using only targets observed by replay time. The issue time and target range beside the chart identify this block. Hover a prediction to inspect its original issue time, version and lead. Different origins are kept as separate lines.</p>
+    <p *ngIf="!data.baselines && v.hasLearned">Legacy Persistence shows the same-origin, same-target reference for the trained blocks; history before the first trained block uses one-step Persistence. Rolling one-minute service and individual saved vectors remain in the diagnostics below.</p>
+    <p *ngIf="!data.baselines && !v.hasLearned">Legacy Persistence predicts one sample ahead. {{data.models.length ? 'Trained model curves appear when complete forecasts become available.' : 'Trained load models were not enabled for this run.'}}</p>
+    <p *ngIf="data.baselines">ARIMA and LR fit the same 192 observed samples and issue 64 future targets. They refit every 64 samples and at neural forecast origins. LR is the default service and fallback; ARIMA is the backup if LR is unavailable. Negative queue predictions are clipped to zero; unsuccessful fits leave a gap.</p>
+    <p>Common Y scale includes hidden models. Display choices do not change scores, model qualification or the recorded service.</p>
+    <p *ngIf="v.selection as s">Recorded service at {{minutes(s.selection_ms)}} min: {{s.model}} {{s.model==='Persistence' ? '' : s.version}}. Displaying a candidate does not select it for service.</p>
+  </details>
+  <p class="notice" *ngIf="endedBeforeTraining">This run ended before enough load samples were collected. Reopening it cannot add trained forecasts. Open an existing longer run, or start a longer run with load models enabled.</p>
+  <section class="aligned-scores" *ngIf="alignedScores as scores" aria-label="Load model comparison at the same issue time">
+    <div class="heading"><strong>Same-window load comparison · {{cityName()}}</strong><span>Same issue time · same observed targets</span></div>
+    <div class="controls">
+      <label>Issue time <select aria-label="Load comparison issue time" [(ngModel)]="comparisonOrigin">
+        <option [ngValue]="-1">Auto · shared block</option>
+        <option *ngFor="let o of scores.options" [ngValue]="o.origin">{{minutes(o.origin)}} min · {{o.available}}/{{scores.rows.length}} methods</option>
+      </select></label>
+      <span *ngIf="scores.origin!==undefined">Issued {{minutes(scores.origin!)}} min · targets {{minutes(scores.start!)}}–{{minutes(scores.end!)}} min · {{scores.matched}}/{{scores.total}} observed · {{scores.available}}/{{scores.rows.length}} methods</span>
+    </div>
+    <p *ngIf="scores.missing" class="notice">{{scores.missing}}</p>
+    <p *ngIf="scores.origin!==undefined && scores.matched<64">Partial block: only observed targets are scored{{comparisonOrigin<0 ? '; no fully observed shared block is available yet' : ''}}.</p>
+    <div class="score-table" *ngIf="scores.origin!==undefined">
+      <table><thead><tr><th>Model</th><th>Version</th><th>Matched</th><th>Within tolerance ↑</th><th>MAE (bytes) ↓</th><th>RMSE (bytes) ↓</th></tr></thead>
+        <tbody><tr *ngFor="let row of scores.rows"><td>{{row.model}}</td><td>{{row.available ? row.version : 'No forecast at this origin'}}</td>
+          <td>{{row.available ? row.metrics.count+' / '+scores.total : '—'}}</td><td>{{metric(row.metrics.within)}}{{row.metrics.within===null?'':' %'}}</td>
+          <td>{{metric(row.metrics.mae)}}</td><td>{{metric(row.metrics.rmse)}}</td></tr></tbody>
+      </table>
+    </div>
+    <p>Auto uses the latest fully observed block shared by all enabled methods, or a shared partial block if none has finished. Chart cards below score each model's latest issued block, which may have a different issue time. Model visibility does not change this table.</p>
+  </section>
+  <div class="model-list">
+    <app-node-load-model-chart *ngFor="let t of charts; trackBy:trackModel" [view]="v" [trace]="t" [nodeId]="node.node_id" [filters]="filters" (expand)="openDetail($event)"></app-node-load-model-chart>
+  </div>
+  <p *ngIf="!charts.length">All model rows are hidden. Select a model above to show its observed load and any recorded forecasts.</p>
+  <p *ngIf="final">Final settlement: actual samples end at {{v.lastActual ? minutes(v.lastActual.time_ms) : 'unavailable'}} min. The unsampled drain interval and unrecorded future remain blank.</p>
+  <dialog #detailDialog class="detail-dialog" (close)="detailModel=''" aria-label="Expanded node-load forecast">
+    <ng-container *ngIf="detailTrace as t">
+      <div class="dialog-heading"><strong>{{cityName()}} · load forecast</strong><button type="button" (click)="closeDetail()" autofocus aria-label="Close expanded load chart">Close</button></div>
+      <div class="controls">
+        <label>Model <select aria-label="Expanded load model" [(ngModel)]="detailModel"><option *ngFor="let model of v.traces" [value]="model.model">{{model.model}}</option></select></label>
+        <span class="clock">Replay {{minutes(time)}} min · window {{minutes(v.start)}}–{{minutes(v.end)}} min</span>
+      </div>
+      <ng-container *ngTemplateOutlet="legend"></ng-container>
+      <app-node-load-model-chart [view]="v" [trace]="t" [nodeId]="node.node_id" [filters]="filters" [expanded]="true"></app-node-load-model-chart>
+    </ng-container>
+  </dialog>
+</section>
+<ng-template #legend>
+  <div class="filters" aria-label="Load curve legend">
+    <span class="actual">— Actual</span><span class="test">┄ Earlier prediction</span><span class="future">··· Future prediction</span><span class="boundaries">Yellow dashed: replay time</span>
+  </div>
+</ng-template>

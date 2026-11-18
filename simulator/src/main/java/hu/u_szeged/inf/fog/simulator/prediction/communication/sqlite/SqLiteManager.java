@@ -4,14 +4,23 @@ import hu.u_szeged.inf.fog.simulator.demo.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.prediction.Prediction;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionConfigurator;
 import hu.u_szeged.inf.fog.simulator.prediction.PredictionLogger;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.EvaluationMetrics;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleCoordinator;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleManager;
+import hu.u_szeged.inf.fog.simulator.prediction.lifecycle.LifecycleState;
 import hu.u_szeged.inf.fog.simulator.prediction.parser.JsonParser;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.PairPredictionSettings;
+import hu.u_szeged.inf.fog.simulator.prediction.settings.SimulationSettings;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.Setter;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -69,7 +78,7 @@ public class SqLiteManager {
         if (!enabled) {
             return null;
         }
-        
+
         if (!databaseFile.exists()) {
             setUpDatabase();
         }
@@ -87,7 +96,7 @@ public class SqLiteManager {
         if (!enabled) {
             return;
         }
-        
+
         databaseFile = createDatabaseFile();
 
         connection = getConnection();
@@ -126,8 +135,18 @@ public class SqLiteManager {
                             + " prediction_number INTEGER NOT NULL)")
                     .toString();
 
+            String createLifecycleTableSQL = new StringBuilder("CREATE TABLE IF NOT EXISTS ")
+                    .append(formatFeatureNameToSQL(featureName)).append("_feature_lifecycle")
+                    .append("(predictor_name TEXT PRIMARY KEY,"
+                            + " lifecycle_state TEXT NOT NULL,"
+                            + " is_active INTEGER NOT NULL,"
+                            + " latest_metrics TEXT,"
+                            + " updated_at TEXT NOT NULL)")
+                    .toString();
+
             statement.execute(createRawTableSQL);
             statement.execute(createPredictedTableSQL);
+            statement.execute(createLifecycleTableSQL);
 
             connection.commit();
         } catch (SQLException e) {
@@ -145,7 +164,7 @@ public class SqLiteManager {
         if (!enabled) {
             return;
         }
-        
+
         String insertSQL = new StringBuilder(" INSERT INTO ")
                 .append(formatFeatureNameToSQL(featureName)).append("_feature_raw (raw_value) VALUES ( ? );")
                 .toString();
@@ -168,7 +187,7 @@ public class SqLiteManager {
         if (!enabled) {
             return;
         }
-        
+
         String insertSQL = new StringBuilder(" INSERT INTO ")
                 .append(formatFeatureNameToSQL(featureName))
                 .append("_feature_prediction (predictor_settings,original_data,preprocessed_data,"
@@ -202,16 +221,114 @@ public class SqLiteManager {
     }
 
     /**
+     * Persists the newest lifecycle state for serving and shadow predictors of one feature.
+     *
+     * @param featureName the feature whose lifecycle state is synchronized
+     */
+    public void syncLifecycleData(String featureName) {
+        if (!enabled || SimulationSettings.get() == null
+                || SimulationSettings.get().getPredictionSettings() == null) {
+            return;
+        }
+
+        String upsertSQL = new StringBuilder("INSERT INTO ")
+                .append(formatFeatureNameToSQL(featureName)).append("_feature_lifecycle ")
+                .append("(predictor_name, lifecycle_state, is_active, latest_metrics, updated_at) ")
+                .append("VALUES (?, ?, ?, ?, datetime('now')) ")
+                .append("ON CONFLICT(predictor_name) DO UPDATE SET ")
+                .append("lifecycle_state = excluded.lifecycle_state, ")
+                .append("is_active = excluded.is_active, ")
+                .append("latest_metrics = excluded.latest_metrics, ")
+                .append("updated_at = excluded.updated_at;")
+                .toString();
+
+        Set<String> servingPredictors = new LinkedHashSet<>();
+        for (PairPredictionSettings predictionSettings
+                : SimulationSettings.get().getPredictionSettings()) {
+            servingPredictors.add(predictionSettings.getPredictorName());
+        }
+        Set<String> predictorNames = new LinkedHashSet<>(servingPredictors);
+        if (PredictionConfigurator.predictor != null) {
+            predictorNames.addAll(PredictionConfigurator.predictor.keySet());
+        }
+
+        String knownPredictorsSQL = "SELECT predictor_name FROM "
+                + formatFeatureNameToSQL(featureName) + "_feature_lifecycle";
+
+        try (Statement statement = getConnection().createStatement();
+                ResultSet knownPredictors = statement.executeQuery(knownPredictorsSQL)) {
+            while (knownPredictors.next()) {
+                predictorNames.add(knownPredictors.getString("predictor_name"));
+            }
+        } catch (SQLException e) {
+            PredictionLogger.error("SQLite lifecycle synchronization error", e.getMessage());
+            return;
+        }
+
+        try (PreparedStatement preparedStatement = getConnection().prepareStatement(upsertSQL)) {
+            LifecycleManager lifecycleManager = LifecycleManager.getInstance();
+
+            for (String predictorName : predictorNames) {
+                LifecycleCoordinator coordinator = lifecycleManager.getCoordinator(
+                        predictorName,
+                        featureName
+                );
+
+                if (coordinator == null) {
+                    continue;
+                }
+
+                preparedStatement.setString(1, predictorName);
+                preparedStatement.setString(2, coordinator.getState().name());
+                preparedStatement.setInt(
+                        3,
+                        coordinator.getState() == LifecycleState.ACTIVE
+                                && lifecycleManager.isActive(predictorName, featureName)
+                                && servingPredictors.contains(predictorName) ? 1 : 0
+                );
+                preparedStatement.setString(4, createMetricsJson(coordinator.getLatestMetrics()));
+                preparedStatement.addBatch();
+            }
+
+            preparedStatement.executeBatch();
+            getConnection().commit();
+        } catch (SQLException e) {
+            PredictionLogger.error("SQLite lifecycle synchronization error", e.getMessage());
+        }
+    }
+
+    /**
+     * Converts optional evaluation metrics to JSON text.
+     *
+     * @param metrics the latest metrics
+     * @return JSON text, or null when metrics are unavailable
+     */
+    private String createMetricsJson(EvaluationMetrics metrics) {
+        if (metrics == null) {
+            return null;
+        }
+
+        return "{"
+                + "\"matched_samples\":" + metrics.getMatchedSamples()
+                + ",\"accuracy\":" + metrics.getAccuracy()
+                + ",\"mae\":" + metrics.getMae()
+                + ",\"mse\":" + metrics.getMse()
+                + ",\"rmse\":" + metrics.getRmse()
+                + ",\"smape\":" + metrics.getSmape()
+                + "}";
+    }
+
+    /**
      * Method for the creation of the database file.
      *
      * @return The created database file.
-     * @throws IOException if couldn't create database file.
+     * @throws IOException if couldn't create the file.
      */
     private File createDatabaseFile() throws IOException {
         if (!enabled) {
             return null;
         }
-        
+
         PredictionLogger.info("SQLite setup", "Creating database...");
 
         File databaseFile = new File(

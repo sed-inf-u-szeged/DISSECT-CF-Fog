@@ -149,4 +149,56 @@ When the Predictor UI is enabled, `electron.log` contains output from the Electr
 
 Prediction results can optionally be visualized using the Electron/Angular Predictor UI.
 
-When enabled, the simulator launches the UI together with the prediction components. The UI reads the SQLite database generated during the simulation and displays the available time-series and prediction results. 
+When enabled, the simulator launches the UI together with the prediction components. The UI reads the SQLite database generated during the simulation and displays the available time-series and prediction results.
+
+### Automatically trained models
+
+Run `PredictionSimulation` normally (including VS Code's Run action). It starts
+all adapters registered in `OnlineModelCatalog.builtIn()`, currently LSTM and
+TCN, alongside the five existing forecasting baselines. No model-selection
+argument is required. The startup log lists the selected online model types.
+
+Optional experiment filters are `--online-models=LSTM`, `--online-models=TCN`,
+or a comma-separated list of registered types. `--online-models=ALL` is the
+default. The previous singular option and `BOTH` alias remain accepted for
+older launch configurations; `BOTH` specifically means LSTM and TCN, not future
+models. Remove an old filter from a VS Code launch configuration to use ALL.
+
+`OnlineModelLifecycleManager` owns one independent controller per registered
+adapter. All controllers use the shared `TrainSettings` as a template and
+`OnlineTrainingSettings` for data readiness. They each retain their own version
+counter, evaluation state and retry schedule. Training is sequential while
+simulation time is paused. Matching initial triggers therefore see the same
+observed data; subsequent retraining may occur at different origins.
+
+The current neural-model settings are input 192, output 64, and at least 32
+stride-one training samples per eligible series. The initial raw window is
+192 + 64 + 32 - 1 = 287 points. These 32 overlapping training samples are not a
+separate validation set. Neural models can predict repeatedly after training;
+they do not retrain on each prediction request. ARIMA and linear regression
+currently fit within their prediction calls.
+
+Each family/version saves its input snapshot under
+`online-training-data/<model-type>/<predictor-version>/dataset.csv` and its
+training outputs/log under `online-models/<model-type>/<predictor-version>/`.
+A model becomes eligible per feature after shadow evaluation. Eligible READY
+candidates keep predicting and collecting metrics alongside the ACTIVE model.
+The UI reads prediction names from SQLite, so every model with prediction
+records appears automatically; an untrained model has no prediction curve yet.
+
+To add a new model family:
+
+1. Implement and validate its Python training and prediction paths, including
+   registration under its own model type and routing in `predictor.py`.
+2. Implement `OnlineModelAdapter` for its trainer invocation, result validation,
+   version naming, input requirements and prediction settings. Return compatible
+   `PairPredictionSettings`; do not add its untrained model to static baselines.
+3. Add the adapter to `OnlineModelCatalog.builtIn()`. The normal Run then includes
+   it automatically. No extra combination mode, simulation loop, Pliant
+   model-name branch or UI dropdown entry is needed.
+4. Verify the new model's input/target alignment, preprocessing, saved artifact,
+   lifecycle eligibility and prediction records before comparing performance.
+
+GRU and Transformer are not implemented by this infrastructure change. Their
+input requirements should be validated by their adapters; the current common
+192/64 protocol is a project configuration, not an architectural requirement.

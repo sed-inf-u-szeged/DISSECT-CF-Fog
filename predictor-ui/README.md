@@ -1,166 +1,262 @@
-# Overview
+# Prediction and Model Lifecycle
 
-This directory contains the Phyton scripts used for time series analysis functionality of the DISSECT-CF-Fog simulation framework. It also has a user-friendly interface, which makes easier to set the necessary parameters up for the evaluation,  however, for more experienced people, the the interface may not be sufficient, or covers all functionality.
+This module contains the Python prediction and training code, together
+with the Electron UI for the DISSECT-CF-Fog simulator.
 
-**Attention**: the module can only be used together with the core simulator. 
+The Java simulator collects feature data, manages model lifecycle states
+and requests predictions. Python performs prediction and model training.
+The UI displays saved results.
 
-## Getting started
+## Setup and entry points
 
-* [Node.js] (version 18 or higher)
+The prediction workflow requires the Java simulator, a Python environment
+with the predictor dependencies, and Node.js dependencies for the UI.
 
-* [Python] (version 3.11 or higher)
+See [simulator setup](../simulator/README.md) for Java and Maven setup.
 
-    * The script (located in the `script/` directory) requires additional installation of dependencies with the following command: `pip install -r requirement.txt`
+Install UI dependencies from `predictor-ui/ui`:
 
-* [Angular] (version 16 or higher) 
-
-    * To start the UI, you need to install Angular with the Node Package Manager with the folloginw command: `npm install -g @angular/cli@16`
-
-    * The predictor UI (located in the ui/ directory) requires additional installation of dependencies (defined in package.json) with the following command: `npm install`
-
-    * To run a dev server for the predictor UI use the following command: `ng serve` (the server will run on `http://localhost:4200/` by default)
-
-**Attention**: both the UI and the Python application are controlled by the core simulator, no need to start them manually. However, updating the applications' [start command] is recommended as it depends on the specific installation environment.
-
-[Node.js]: https://nodejs.org/en/download/
-[Python]: https://www.python.org/downloads/
-[Angular]: https://angular.dev/
-[start command]: https://github.com/sed-inf-u-szeged/DISSECT-CF-Fog/tree/master/simulator/src/main/java/hu/u_szeged/inf/fog/simulator/prediction/communication/applications
-
-## Prediction without UI
-Take the example in <b>[PredictionSim.java](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/demo/PredictionSim.java)</b>
-
-* Create SimulationSettings object which is responsible for prediction settings.
-
-```java
-SimulationSettings simulationSettings = new SimulationSettings(
-    new ExportSettings(true, "D:/", true, false, true),
-    new PredictionSettings(
-        64,
-        64,
-        256,
-        new PredictionSettings.SmoothingSettings(
-                48,
-                5
-        ),
-        true
-    ),
-    new PredictorSettings(
-        PredictorSettings.PredictorEnum.ARIMA,
-        Map.of(
-                "p_value", 3,
-                "d_value", 0,
-                "q_value", 0
-        ),
-        null
-    )
-);
-```
-* Predictor model's <b>hyperparameters and options</b> <b>must match</b> their template in <b>[PredictorTemplate.getAll()](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/prediction/settings/predictor/PredictorTemplate.java)</b>
-```java
-// PredictorTemplate
-Arrays.asList(
-    new Parameter("P value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("3"),
-    new Parameter("D value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0"),
-    new Parameter("Q value").required().setType(Parameter.ParameterType.TEXT).setDefaultValue("0")
-)
+```sh
+npm install
 ```
 
-```java
-// SimulationSettings
-Map.of(
-    "p_value", 3,
-    "d_value", 0,
-    "q_value", 0
-),
-```
-* If the Parameter ID is not provided, it is calculated from the label as follows - ```label.toLowerCase().replaceAll(" ", "_");```
-* Add <b>PredictorApplication</b> to the applications:
-```java
-predictionSimulation.addApplications(
-    new PredictorApplication()
-);
+Use a Python environment compatible with the project's dependency file.
+Install its dependencies with the same interpreter used by the simulator:
+
+```sh
+python -m pip install -r predictor-ui/scripts/requirements.txt
 ```
 
-After you start the simulation the predictor application will show up in a terminal window.
+Replace the placeholder with the actual dependency-file path.
+Python is required for this prediction workflow, even when it is optional
+for other simulator examples.
 
-## Prediction with UI
-Take the example in <b>[PredictionSimWithEUI.java](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/demo/PredictionSimWithEUI.java)</b>
+The current Java demo entry point is:
 
-No need for SimulationSettings. All settings come from the UI.
-
-* Add <b>PredictorApplication</b> and <b>ElectronApplication</b> to the applications:
-```java
-predictionSimulation.addApplications(
-    new PredictorApplication(),
-    new ElectronApplication()
-);
+```text
+simulator/src/main/java/hu/u_szeged/inf/fog/simulator/demo/PredictionSimulation.java
 ```
 
-After you start the simulation the predictor and the UI application will show up in a terminal window.
+Its configuration must select the intended Python environment and
+prediction settings.
 
-## LSTM model
-Each LSTM model can be used only with specific simulations. The model's <b>parameters must match the simulation parameters</b>. 
-For example: 
-* Future model
+For viewing existing results, see the [UI guide](ui/README.md).
+Starting the UI alone does not start a simulation or train a model.
 
-| Settings | Simulation | LSTM model |
-|:----------:|:----------:|:----------:|
-| Batch size | 256 | input_size:256 |
-| Prediction length | 64 | output_size:64 |
+## Data-driven training
 
-* Test model
+LSTM training is triggered by data readiness rather than a fixed fifth
+simulation hour.
 
-| Settings | Simulation | LSTM model |
-|:----------:|:----------:|:----------:|
-| Batch size | 256 | input_size:192 <small><i>(Batch size - Test length)</i></small> |
-| Test length | 64 | output_size:64 |
+Each feature is checked separately. Features can therefore start
+training at different simulation times.
 
-Use <b>[lstm_trainer.py](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/resources/prediction/scripts/predictor_models/lstm_trainer.py)</b> script to train LSTM models.
+For a sequence model with input length I, output length O and a minimum
+of W training windows, stride-one window construction requires:
 
-* The followings need to be set:
-
-```python
-if __name__ == "__main__":
-    main({
-        "model_name": "model_i256_o64.h5",
-        "datasets_directory": "D:/train_datasets/",  # Directory containing *.csv files.
-        "model_output_location": "D:/train_datasets/",
-        "training_feature_index": 3,  # Column index in .csv files that trainer uses for training.
-        "scale": True,
-        "smoothing": {
-            "window_size": 48,
-            "polynomial_degree": 5
-        },
-        "input_size": 256,
-        "output_size": 64,
-        "loss_function": "mean_squared_error",
-        "optimizer": "Adam",
-        "epochs": 3
-    })
+```text
+minimum data points = I + O + W - 1
 ```
 
-After running the script, the model will be generated in the output  directory.
+With the current LSTM settings:
 
-## Prediction result
-Currently prediction result can be found in <b>[PliantApplicationStrategy.java](https://github.com/andrasmarkus/dissect-cf/blob/prediction/src/main/java/hu/u_szeged/inf/fog/simulator/application/strategy/PliantApplicationStrategy.java)</b>
+```text
+input length = 192
+output length = 64
+minimum training windows = 32
 
-```java
-PredictionResult result = PredictionResult.get();
-if (result != null) {
-    // Handle prediction result
-}
+minimum data points = 192 + 64 + 32 - 1 = 287
 ```
 
-## Easier testing
-For testing purposes use <b>disableApplications()</b> which prevents applications from opening. 
+This is a data requirement, not a guarantee of good prediction quality.
+The selected training data must also satisfy the controller's validity
+checks.
 
-```java
-PredictionSimulation predictionSimulation = new PredictionSimulation(new PredictionSim());
-predictionSimulation.addSimulationSettings(simulationSettings);
-predictionSimulation.addApplications(
-    new PredictorApplication()
-);
-predictionSimulation.disableApplications(); // <--- Disable opening.
-predictionSimulation.simulate();
+Training readiness and evaluation readiness are separate requirements.
+Having enough data to train does not immediately make a model ACTIVE.
+
+## Training and prediction windows
+
+Training uses a snapshot of the data available at the training attempt.
+
+The current LSTM uses 192 input values to predict 64 target values.
+
+For a 256-point historical prediction frame:
+
+- The first 192 points provide the test input.
+- The following 64 actual points provide the test targets.
+- Future prediction uses the latest 192 available points to forecast
+  the next 64 points.
+
+Input preprocessing must remain consistent between training and
+prediction. The updated pipeline fits scaling on input data and keeps
+evaluation targets in their original units.
+
+Historical test errors and future online evaluation are different
+measurements.
+
+## Shadow evaluation
+
+After training, the candidate produces forecasts for future target
+timestamps while the serving model continues to operate.
+
+Each forecast records its target timestamp. It can be evaluated only
+after the actual value for that timestamp becomes available.
+
+This wait is required because the target is in the simulated future.
+It is not an additional fixed training delay.
+
+The current policy requires 64 matched target samples before making
+a complete-window quality decision.
+
+For each model version and feature, the updated coordinator retains
+the first registered forecast for a target timestamp. Later forecasts
+for the same target are not counted again.
+
+The evaluator uses the most recent resolved targets up to its configured
+window size. Forecasts can have different lead times; this rule does
+not establish a fixed-horizon comparison between models.
+
+## Metrics and acceptance
+
+The evaluator computes all metrics from matched predictions and actual
+values in the evaluation window.
+
+```text
+error = prediction - actual
+
+MAE = mean(|error|)
+MSE = mean(error²)
+RMSE = sqrt(MSE)
+SMAPE = mean(200 × |error| / (|prediction| + |actual|))
 ```
+
+A SMAPE term is zero when both prediction and actual are zero.
+
+Within-tolerance accuracy is:
+
+```text
+allowed error = max(absolute tolerance, relative tolerance × |actual|)
+hit = |error| <= allowed error
+accuracy = 100 × number of hits / matched samples
+```
+
+Accuracy is not calculated by converting MAE or RMSE into a percentage.
+
+A candidate must have enough matched samples and satisfy all configured
+quality checks:
+
+- Accuracy at or above the minimum.
+- MAE, MSE, RMSE and SMAPE at or below their respective maxima.
+
+Passing evaluation makes a candidate READY. Lifecycle selection then
+determines whether it becomes ACTIVE.
+
+The configured trusted baseline has special fallback behavior and is
+not subject to the same degradation rule as an ordinary candidate.
+
+## Monitoring and retraining
+
+An ACTIVE non-trusted model continues to receive online evaluation.
+
+When a complete evaluation window fails the policy, the model becomes
+DEGRADED and the lifecycle manager can fall back to the trusted baseline.
+
+Retraining uses a new snapshot of the available data. It can contain
+both earlier observations and newly collected observations within the
+selected training window.
+
+Retraining is not simply repeated evaluation of the original snapshot.
+
+Current training defaults include:
+
+| Setting | Value |
+| --- | ---: |
+| Minimum training windows | 32 |
+| Minimum new data points between attempts | 64 |
+| Training-window growth after shadow failure | 64 |
+| Maximum training data points | 4096 |
+
+The new-data condition is measured from the previous training attempt,
+not from the moment evaluation fails. An eligible retry may therefore
+start without another full waiting period after failure.
+
+After shadow failure, the requested training window grows, subject to
+its limit. Degradation triggers a retry but does not itself apply that
+shadow-failure growth rule.
+
+## Model versions
+
+Names such as `LSTM256-v1`, `LSTM256-v2` and `LSTM256-v3` identify
+successive candidate versions.
+
+A higher version number does not prove that the previous version was
+ACTIVE. A previous candidate may have failed shadow evaluation.
+
+Each new version must be evaluated before it can serve as an active
+model.
+
+## Configuration and implementation
+
+Java prediction sources are under:
+
+```text
+simulator/src/main/java/hu/u_szeged/inf/fog/simulator/prediction/
+```
+
+Key files include:
+
+| File | Responsibility |
+| --- | --- |
+| `settings/OnlineTrainingSettings.java` | Training readiness and retry data requirements |
+| `settings/PairPredictionSettings.java` | Prediction and sequence settings |
+| `settings/LifecycleSettings.java` | Evaluation thresholds and baseline settings |
+| `LstmOnlineLifecycleController.java` | LSTM training attempts and candidate lifecycle |
+| `OnlineModelAdapter.java` | Model adapter contract |
+| `LstmModelAdapter.java` | LSTM-specific adapter |
+| `lifecycle/ShadowEvaluator.java` | Matching predictions and calculating metrics |
+| `lifecycle/LifecyclePolicy.java` | Quality acceptance checks |
+| `lifecycle/LifecycleCoordinator.java` | Per-model evaluation and state transitions |
+| `lifecycle/LifecycleManager.java` | Activation and fallback coordination |
+
+The demo configuration can override settings. Inspect the selected run's
+exported settings instead of assuming every run uses the same thresholds.
+
+Permissive settings, such as minimum accuracy 0%, are useful for observing
+the workflow. They do not demonstrate acceptable model quality.
+
+## Tests
+
+From the repository root, run the focused lifecycle checks:
+
+```sh
+mvn -f simulator/pom.xml test "-Dtest=LifecycleUniqueTargetTest,LifecycleCoordinatorTest,LifecyclePolicyTest,LifecycleToleranceConfigurationTest,ShadowEvaluatorToleranceTest"
+```
+
+This focused set passed 31 tests in the Windows development environment.
+
+The [UI guide](ui/README.md) contains the separate six-test refresh command.
+
+Unit tests verify specific behavior using controlled inputs. They do not
+train and validate every model or establish real-world prediction quality.
+
+## Current scope and remaining work
+
+The workflow has been exercised with LSTM, ARIMA and Linear Regression.
+Saved-run chart display and replay have also been checked on Windows.
+
+Remaining work includes:
+
+- Calibrating quality thresholds against representative data and
+  application requirements.
+- Verifying the latest changes in an integrated live run.
+- Completing Linux runtime verification.
+- Extending and testing model-specific training and prediction adapters.
+
+The adapter interface is a foundation for adding models. GRU and
+Transformer support is not automatic: each model still needs an
+implementation that declares its data requirements, trains, saves,
+loads and predicts correctly.
+
+Existing result databases retain the metrics generated by the code
+and settings used for those runs. UI updates do not recalculate them.
