@@ -4,6 +4,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.iaas.PhysicalMachine;
 import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication;
 import hu.u_szeged.inf.fog.simulator.agent.AgentApplication.Component;
+import hu.u_szeged.inf.fog.simulator.agent.Capacity;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
@@ -24,6 +25,9 @@ public class QoSNormalizationBounds {
     public final double minimumBandwidth;
     public final double maximumBandwidth;
 
+    public final double minimumPerformance;
+    public final double maximumPerformance;
+
     public QoSNormalizationBounds(
             double minimumCost,
             double maximumCost,
@@ -32,7 +36,9 @@ public class QoSNormalizationBounds {
             double minimumLatency,
             double maximumLatency,
             double minimumBandwidth,
-            double maximumBandwidth) {
+            double maximumBandwidth,
+            double minimumPerformance,
+            double maximumPerformance) {
 
         this.minimumCost = minimumCost;
         this.maximumCost = maximumCost;
@@ -42,6 +48,8 @@ public class QoSNormalizationBounds {
         this.maximumLatency = maximumLatency;
         this.minimumBandwidth = minimumBandwidth;
         this.maximumBandwidth = maximumBandwidth;
+        this.minimumPerformance = minimumPerformance;
+        this.maximumPerformance = maximumPerformance;
     }
 
     public static QoSNormalizationBounds calculateFor(AgentApplication application) {
@@ -66,12 +74,14 @@ public class QoSNormalizationBounds {
         return new QoSNormalizationBounds(
                 calculateMinimumCost(components),
                 calculateMaximumCost(components),
-                calculateMinimumEnergy(nodes),
-                calculateMaximumEnergy(components.size(), nodes),
+                calculateMinimumEnergy(components),
+                calculateMaximumEnergy(components),
                 calculateMinimumLatency(nodes),
                 calculateMaximumLatency(nodes),
                 calculateMinimumBandwidth(nodes),
-                calculateMaximumBandwidth(nodes));
+                calculateMaximumBandwidth(nodes),
+                calculateMinimumPerformance(components),
+                calculateMaximumPerformance(components));
     }
 
     private static Set<ComputingAppliance> collectResourceNodes() {
@@ -84,6 +94,34 @@ public class QoSNormalizationBounds {
         return nodes;
     }
 
+    private static double calculateMinimumPerformance(Collection<Component> components) {
+        double minimumPerCoreProcessing = ResourceAgent.allResourceAgents.values().stream()
+                .flatMap(agent -> agent.capacities.values().stream())
+                .mapToDouble(capacity -> capacity.perCoreProcessing)
+                .min()
+                .orElseThrow();
+
+        double totalVirtualCpu = components.stream()
+                .mapToDouble(MappingStrategy::requiredVirtualCpu)
+                .sum();
+
+        return totalVirtualCpu * minimumPerCoreProcessing;
+    }
+
+    private static double calculateMaximumPerformance(Collection<Component> components) {
+        double maximumPerCoreProcessing = ResourceAgent.allResourceAgents.values().stream()
+                .flatMap(agent -> agent.capacities.values().stream())
+                .mapToDouble(capacity -> capacity.perCoreProcessing)
+                .max()
+                .orElseThrow();
+
+        double totalVirtualCpu = components.stream()
+                .mapToDouble(MappingStrategy::requiredVirtualCpu)
+                .sum();
+
+        return totalVirtualCpu * maximumPerCoreProcessing;
+    }
+
     private static double calculateMinimumCost(Collection<Component> components) {
         double totalMinimumCost = 0.0;
 
@@ -91,8 +129,10 @@ public class QoSNormalizationBounds {
             double componentMinimumCost = Double.POSITIVE_INFINITY;
 
             for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
-                double minimumDynamicCost = calculateComponentCost(agent, component) * 0.85; // TODO: remove hard-coded factor
-                componentMinimumCost = Math.min(componentMinimumCost, minimumDynamicCost);
+                for (Capacity capacity : agent.capacities.values()) {
+                    double minimumDynamicCost = calculateComponentCost(agent, component, capacity) * 0.85; // TODO: remove hard-coded factor
+                    componentMinimumCost = Math.min(componentMinimumCost, minimumDynamicCost);
+                }
             }
 
             totalMinimumCost += componentMinimumCost;
@@ -108,8 +148,10 @@ public class QoSNormalizationBounds {
             double componentMaximumCost = Double.NEGATIVE_INFINITY;
 
             for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
-                double maximumDynamicCost = calculateComponentCost(agent, component) * 1.15; // TODO: remove hard-coded factor
-                componentMaximumCost = Math.max(componentMaximumCost, maximumDynamicCost);
+                for (Capacity capacity : agent.capacities.values()) {
+                    double maximumDynamicCost = calculateComponentCost(agent, component, capacity) * 1.15; // TODO: remove hard-coded factor
+                    componentMaximumCost = Math.max(componentMaximumCost, maximumDynamicCost);
+                }
             }
 
             totalMaximumCost += componentMaximumCost;
@@ -118,46 +160,60 @@ public class QoSNormalizationBounds {
         return totalMaximumCost;
     }
 
-    private static double calculateComponentCost(ResourceAgent agent, Component component) {
+    private static double calculateComponentCost(ResourceAgent agent, Component component, Capacity capacity) {
         double demandShare = agent.calculateDemandShare(
-                MappingStrategy.requiredCpu(component),
+                MappingStrategy.requiredPhysicalCpu(component, capacity),
                 MappingStrategy.requiredMemory(component),
                 MappingStrategy.requiredStorage(component));
 
         return agent.baseHourlyPrice * demandShare;
     }
 
-    private static double calculateMinimumEnergy(Set<ComputingAppliance> nodes) {
-        return nodes.stream()
-                .map(node -> node.iaas.machines.get(0))
-                .mapToDouble(machine -> machine.getCurrentPowerBehavior().getMinConsumption())
-                .min()
-                .orElseThrow();
-    }
+    private static double calculateMinimumEnergy(Collection<Component> components) {
+        double totalMinimumEnergy = 0.0;
 
-    private static double calculateMaximumEnergy(
-            int componentCount,
-            Set<ComputingAppliance> nodes) {
+        for (Component component : components) {
+            double componentMinimumEnergy = Double.POSITIVE_INFINITY;
 
-        List<Double> maximumNodePowers = new ArrayList<>();
+            for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
+                for (Capacity capacity : agent.capacities.values()) {
+                    double energy = calculateComponentEnergy(component, capacity);
+                    componentMinimumEnergy = Math.min(componentMinimumEnergy, energy);
+                }
+            }
 
-        for (ComputingAppliance node : nodes) {
-            PhysicalMachine machine = node.iaas.machines.get(0);
-
-            double maximumPower = machine.getCurrentPowerBehavior().getMinConsumption()
-                    + machine.getCurrentPowerBehavior().getConsumptionRange();
-
-            maximumNodePowers.add(maximumPower);
+            totalMinimumEnergy += componentMinimumEnergy;
         }
 
-        maximumNodePowers.sort(Comparator.reverseOrder());
+        return totalMinimumEnergy;
+    }
 
-        int maximumUsedNodeCount = Math.min(componentCount, maximumNodePowers.size());
+    private static double calculateMaximumEnergy(Collection<Component> components) {
+        double totalMaximumEnergy = 0.0;
 
-        return maximumNodePowers.stream()
-                .limit(maximumUsedNodeCount)
-                .mapToDouble(Double::doubleValue)
-                .sum();
+        for (Component component : components) {
+            double componentMaximumEnergy = Double.NEGATIVE_INFINITY;
+
+            for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
+                for (Capacity capacity : agent.capacities.values()) {
+                    double energy = calculateComponentEnergy(component, capacity);
+                    componentMaximumEnergy = Math.max(componentMaximumEnergy, energy);
+                }
+            }
+
+            totalMaximumEnergy += componentMaximumEnergy;
+        }
+
+        return totalMaximumEnergy;
+    }
+
+    private static double calculateComponentEnergy(Component component, Capacity capacity) {
+        PhysicalMachine machine = capacity.node.iaas.machines.get(0);
+
+        double totalCpu = machine.getCapacities().getTotalProcessingPower();
+        double requiredCpu = MappingStrategy.requiredPhysicalCpu(component, capacity);
+
+        return machine.getCurrentPowerBehavior().getConsumptionRange() * requiredCpu / totalCpu;
     }
 
     private static double calculateMinimumLatency(Set<ComputingAppliance> nodes) {
@@ -216,6 +272,7 @@ public class QoSNormalizationBounds {
         return "cost=[" + minimumCost + ", " + maximumCost + "]"
                 + ", energy_W=[" + minimumEnergy + ", " + maximumEnergy + "]"
                 + ", latency_ms=[" + minimumLatency + ", " + maximumLatency + "]"
-                + ", bandwidth_byte_per_ms=[" + minimumBandwidth + ", " + maximumBandwidth + "]";
+                + ", bandwidth_byte_per_ms=[" + minimumBandwidth + ", " + maximumBandwidth + "]"
+                + ", performance=[" + minimumPerformance + ", " + maximumPerformance + "]";
     }
 }

@@ -177,30 +177,25 @@ public class ResourceAgent {
             deploy(app, bcastMessageSize);
         });
     }
-    
+
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
-        
+
         if (!app.offers.isEmpty()) {
-            boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
             boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
 
-            if (atomicOffers) {
+            if (Config.APP_TYPE.get("rankingMethod").equals("sa")) {
                 app.winningOffer = 0;
-                SimLogger.logRun("The simulated annealing selected an offer for " + app.name + " at: "
-                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                SimLogger.logRun("The simulated annealing selected an offer for " + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (onlyFirstOffer) {
                 app.winningOffer = 0;
-                SimLogger.logRun("The first hard-valid offer was selected for " + app.name + " at: "
-                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                SimLogger.logRun("The first hard-valid offer was selected for " + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
             } else if (Config.APP_TYPE.get("rankingMethod").equals("random")) {
                 long rankingStart = System.nanoTime();
                 app.winningOffer = SeedSyncer.centralRnd.nextInt(app.offers.size());
                 app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
 
-                SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: "
-                        + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS
-                        + " min., randomly selected offer index is: " + app.winningOffer);
+                SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min., randomly selected offer index is: " + app.winningOffer);
             } else {
                 long rankingStart = System.nanoTime();
                 app.winningOffer = callRankingScript(app);
@@ -221,22 +216,16 @@ public class ResourceAgent {
             double qosObjective = globalOfferEvaluator.calculateQosUtility(app, winningOffer.metrics);
             app.winningGlobalQosScore = Math.max(0.0, Math.min(1.0, 1.0 - qosObjective));
 
+            materializeWinningAtomicReservations(app, winningOffer);
             acknowledgeAndInitSwarmAgent(app, winningOffer, bcastMessageSize);
         } else {
             new DeferredEvent(10 * 1_000L) {
-
                 @Override
                 protected void eventAction() {
                     if (app.broadcastCount <= (int) Config.APP_TYPE.get("maxRebroadcast")) {
                         releaseResourcesDueToNoOffers(app);
-                        SimLogger.logRun("Rebroadcast " + (app.broadcastCount) + " for " + app.name + " at: "
-                                + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
+                        SimLogger.logRun("Rebroadcast " + app.broadcastCount + " for " + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min.");
                         broadcast(app, bcastMessageSize);
-
-                        /*
-                        ResourceAgent.resourceAgents
-                                .forEach(agent -> ((SimulatedAnnealingStrategy)agent.agentStrategy).switchCoolingTactic());
-                        */
                     } else {
                         acknowledgeAndInitSwarmAgent(app, new Offer(new HashMap<>(), -1), bcastMessageSize);
                         app.deploymentSuccessful = false;
@@ -263,30 +252,30 @@ public class ResourceAgent {
 
         app.offerGeneratingAgents.add(this);
 
-        boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
-
         for (ResourceAgent agent : app.offerGeneratingAgents) {
-            if (atomicOffers && !(agent.agentStrategy instanceof ExhaustiveMappingStrategy)) {
-                throw new IllegalStateException( "Atomic offer generation requires ExhaustiveMappingStrategy");
-            }
-
             long localGenerationStart = System.nanoTime();
             List<LocalOffer> agentLocalOffers = agent.agentStrategy.generateLocalOffers(agent, app);
             app.localGenerationRuntimeNanos += System.nanoTime() - localGenerationStart;
 
-            if (atomicOffers) {
-                agent.reserveAtomicLocalOffers(agentLocalOffers);
-            } else {
-                agent.reserveLocalOffers(agentLocalOffers);
-            }
+            agent.reserveAtomicLocalOffers(agentLocalOffers);
             localOffers.addAll(agentLocalOffers);
         }
 
-        if (atomicOffers) {
+        if (Config.APP_TYPE.get("rankingMethod").equals("sa")) {
             generateAtomicOfferCombinations(localOffers, app);
         } else {
-            generateNonAtomicOfferCombinations(localOffers, app);
+            generateBacktrackingOfferCombinations(localOffers, app);
         }
+    }
+
+    private void generateBacktrackingOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
+        boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
+
+        BacktrackingOfferSelectionStrategy selectionStrategy = new BacktrackingOfferSelectionStrategy(onlyFirstOffer);
+
+        long globalSelectionStart = System.nanoTime();
+        app.offers.addAll(selectionStrategy.selectOffers(localOffers, app));
+        app.globalSelectionRuntimeNanos += System.nanoTime() - globalSelectionStart;
     }
 
     private void reserveAtomicLocalOffers(List<LocalOffer> localOffers) {
@@ -320,14 +309,6 @@ public class ResourceAgent {
         }
     }
 
-    private void reserveLocalOffers(List<LocalOffer> localOffers) {
-        for (LocalOffer localOffer : localOffers) {
-            for (ComponentPlacement placement : localOffer.placements) {
-                placement.capacity.reserveCapacity(placement.component, localOffer.agent,  localOffer);
-            }
-        }
-    }
-
     private Map<Capacity, Triple<Double, Long, Long>> calculateAtomicReservationEnvelope(List<LocalOffer> localOffers) {
         Map<Capacity, Triple<Double, Long, Long>> reservationEnvelope = new LinkedHashMap<>();
 
@@ -338,7 +319,7 @@ public class ResourceAgent {
                 Triple<Double, Long, Long> currentDemand = offerDemandByCapacity.getOrDefault(placement.capacity, Triple.of(0.0, 0L, 0L));
 
                 Triple<Double, Long, Long> updatedDemand = Triple.of(
-                        currentDemand.getLeft() + MappingStrategy.requiredCpu( placement.component),
+                        currentDemand.getLeft() + MappingStrategy.requiredPhysicalCpu(placement.component, placement.capacity),
                         currentDemand.getMiddle() + MappingStrategy.requiredMemory(placement.component),
                         currentDemand.getRight()+ MappingStrategy.requiredStorage(placement.component));
 
@@ -385,8 +366,6 @@ public class ResourceAgent {
             return;
         }
 
-        materializeWinningAtomicReservations(app, winningState);
-
         Map<ResourceAgent, Set<Component>> agentComponentsMap = new LinkedHashMap<>();
 
         List<ComponentPlacement> selectedPlacements = new ArrayList<>();
@@ -405,16 +384,6 @@ public class ResourceAgent {
         winningOffer.selectedPlacements.addAll(selectedPlacements);
 
         app.offers.add(winningOffer);
-    }
-
-    private void generateNonAtomicOfferCombinations(List<LocalOffer> localOffers, AgentApplication app) {
-        boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
-
-        BacktrackingOfferSelectionStrategy selectionStrategy = new BacktrackingOfferSelectionStrategy(onlyFirstOffer);
-
-        long globalSelectionStart = System.nanoTime();
-        app.offers.addAll(selectionStrategy.selectOffers(localOffers, app));
-        app.globalSelectionRuntimeNanos += System.nanoTime() - globalSelectionStart;
     }
 
     private int callRankingScript(AgentApplication app) {
@@ -618,14 +587,35 @@ public class ResourceAgent {
         }
     }
 
-    private void materializeWinningAtomicReservations(AgentApplication app, AtomicCoverageState winningState) {
+    private void materializeWinningAtomicReservations(AgentApplication app, Offer winningOffer) {
+        Set<LocalOffer> selectedLocalOffers = new LinkedHashSet<>();
+
+        for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
+            for (Capacity capacity : agent.capacities.values()) {
+                for (Utilisation utilisation : capacity.utilisations) {
+                    if (utilisation.state != Utilisation.State.RESERVED || !utilisation.envelopeReservation) {
+                        continue;
+                    }
+
+                    for (LocalOffer localOffer : utilisation.coveredOffers) {
+                        Set<Component> winningComponents = winningOffer.agentComponentsMap.get(localOffer.agent);
+
+                        if (winningComponents != null && !localOffer.placements.isEmpty() && localOffer.placements.size() == winningComponents.size() &&
+                                winningOffer.selectedPlacements.containsAll(localOffer.placements)) {
+                            selectedLocalOffers.add(localOffer);
+                        }
+                    }
+                }
+            }
+        }
+
         for (ResourceAgent agent : ResourceAgent.allResourceAgents.values()) {
             for (Capacity capacity : agent.capacities.values()) {
                 releaseAtomicEnvelopeReservations(app, capacity);
             }
         }
 
-        for (LocalOffer localOffer : winningState.selectedOffers) {
+        for (LocalOffer localOffer : selectedLocalOffers) {
             for (ComponentPlacement placement : localOffer.placements) {
                 placement.capacity.reserveCapacity(placement.component, localOffer.agent, localOffer);
             }

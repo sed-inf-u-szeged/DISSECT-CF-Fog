@@ -6,7 +6,6 @@ import hu.u_szeged.inf.fog.simulator.agent.Offer;
 import hu.u_szeged.inf.fog.simulator.agent.ResourceAgent;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.ComponentPlacement;
-import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -27,30 +26,25 @@ public class BacktrackingOfferSelectionStrategy {
     }
 
     public List<Offer> selectOffers(List<LocalOffer> localOffers, AgentApplication application) {
-
-        List<Pair<ResourceAgent, ComponentPlacement>> pairs = localOffers.stream()
-                .flatMap(localOffer -> localOffer.placements.stream()
-                        .map(placement -> Pair.of(localOffer.agent, placement)))
-                .toList();
-
         List<Offer> offers = new ArrayList<>();
 
-        generateCombinations(pairs, application, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), offers);
+        generateCombinations(localOffers, application, new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>(), offers);
+
         return offers;
     }
 
     private boolean generateCombinations(
-            List<Pair<ResourceAgent, ComponentPlacement>> pairs,
+            List<LocalOffer> localOffers,
             AgentApplication application,
-            Set<Pair<ResourceAgent, ComponentPlacement>> currentCombination,
+            Set<LocalOffer> currentCombination,
             Set<Component> includedComponents,
+            Set<ResourceAgent> includedAgents,
             Set<String> seenStates,
             List<Offer> offers) {
 
         String stateKey = currentCombination.stream()
-                .map(pair -> pair.getLeft().name
-                        + ":" + pair.getRight().component.id
-                        + "->" + pair.getRight().capacity.node.name)
+                .flatMap(localOffer -> localOffer.placements.stream()
+                        .map(placement -> localOffer.agent.name + ":" + placement.component.id + "->" + placement.capacity.node.name))
                 .sorted()
                 .collect(Collectors.joining(","));
 
@@ -74,49 +68,58 @@ public class BacktrackingOfferSelectionStrategy {
             return false;
         }
 
-        for (Pair<ResourceAgent, ComponentPlacement> pair : pairs) {
-            Component component = pair.getRight().component;
-
-            if (currentCombination.contains(pair) || includedComponents.contains(component)) {
+        for (LocalOffer localOffer : localOffers) {
+            if (includedAgents.contains(localOffer.agent) || localOffer.placements.isEmpty()) {
                 continue;
             }
 
-            currentCombination.add(pair);
-            includedComponents.add(component);
+            Set<Component> offeredComponents = new LinkedHashSet<>();
+            boolean validOffer = true;
 
-            boolean found = generateCombinations(
-                    pairs,
-                    application,
-                    currentCombination,
-                    includedComponents,
-                    seenStates,
-                    offers);
+            for (ComponentPlacement placement : localOffer.placements) {
+                if (!application.components.contains(placement.component) || includedComponents.contains(placement.component) || !offeredComponents.add(placement.component)) {
+                    validOffer = false;
+                    break;
+                }
+            }
 
-            currentCombination.remove(pair);
-            includedComponents.remove(component);
+            if (!validOffer) {
+                continue;
+            }
+
+            currentCombination.add(localOffer);
+            includedAgents.add(localOffer.agent);
+            includedComponents.addAll(offeredComponents);
+
+            boolean found = generateCombinations(localOffers, application, currentCombination, includedComponents, includedAgents, seenStates, offers);
+
+            currentCombination.remove(localOffer);
+            includedAgents.remove(localOffer.agent);
+            includedComponents.removeAll(offeredComponents);
 
             if (found) {
                 return true;
             }
-
         }
 
         return false;
     }
 
-    private Offer createOffer(Set<Pair<ResourceAgent, ComponentPlacement>> combination, int offerId) {
+    private Offer createOffer(Set<LocalOffer> combination, int offerId) {
         Map<ResourceAgent, Set<Component>> agentComponentsMap = new HashMap<>();
+        List<ComponentPlacement> selectedPlacements = new ArrayList<>();
 
-        for (Pair<ResourceAgent, ComponentPlacement> pair : combination) {
-            agentComponentsMap.computeIfAbsent(pair.getLeft(), ignored -> new LinkedHashSet<>())
-                    .add(pair.getRight().component);
+        for (LocalOffer localOffer : combination) {
+            Set<Component> selectedComponents = agentComponentsMap.computeIfAbsent(localOffer.agent, ignored -> new LinkedHashSet<>());
+
+            for (ComponentPlacement placement : localOffer.placements) {
+                selectedComponents.add(placement.component);
+                selectedPlacements.add(placement);
+            }
         }
 
         Offer offer = new Offer(agentComponentsMap, offerId);
-
-        offer.selectedPlacements.addAll(combination.stream()
-                .map(Pair::getRight)
-                .toList());
+        offer.selectedPlacements.addAll(selectedPlacements);
 
         return offer;
     }

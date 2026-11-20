@@ -59,12 +59,12 @@ public class Config {
                             new ResourceAgentTopology(0, 5, 6),
                             new ResourceAgentTopology(3, 1, 2)
                     )),
-                    Map.entry("submissionDelay", createSubmissionDelays(6, 1)),
-                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
+                    Map.entry("submissionDelay", createSubmissionDelays(5, 1)),
+                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-bw")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-latency")),
-                    Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-price")),
+                    //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-price")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-S8")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-M12")),
                     //Map.entry("submissionDelay", List.of(0)), // 1 app
@@ -97,23 +97,22 @@ public class Config {
                     //Map.entry("computeTaskPerByte", 0.0),
 
                     // Algorithm 1: First Fit + all hard-valid coverages + ranking
-                    Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                    Map.entry("atomicOffers", false),
-                    Map.entry("onlyFirstOffer", false),
+                    //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
+                    //Map.entry("onlyFirstOffer", false),
                     //Map.entry("rankingMethod", "random"),
-                    Map.entry("rankingMethod", "rank_no_re"),
-                    Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
-                    Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
+                    //Map.entry("rankingMethod", "rank_no_re"),
+                    //Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
+                    //Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
-                    //Map.entry("atomicOffers", false),
                     //Map.entry("onlyFirstOffer", true),
+                    //Map.entry("rankingMethod", "random"),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
-                    //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
-                    //Map.entry("atomicOffers", true),
-                    //Map.entry("onlyFirstOffer", false),
+                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    Map.entry("onlyFirstOffer", false),
+                    Map.entry("rankingMethod", "sa"),
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor
@@ -284,41 +283,41 @@ public class Config {
 
     public static final Map<String, Object> APP_TYPE = DUMMY_CONFIGURATION;
     //public static final Map<String, Object> APP_TYPE = NOISE_CLASS_CONFIGURATION;
-    
+
     public static IaaSService createNode(String name, double cpu, long memory, long storage,
                                          double minpower, double idlepower, double maxpower,
                                          long bandwidth, int latency, Map<String, Integer> latencyMap) {
-        
+
         IaaSService iaas = null;
         try {
             iaas = new IaaSService(FirstFitScheduler.class, AlwaysOnMachines.class);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException | SecurityException e) {
             SimLogger.logError("Node creation has failed: " + e);
-        }     
-        
+        }
+
         final EnumMap<PowerTransitionGenerator.PowerStateKind, Map<String, PowerState>> transitions =
                 PowerTransitionGenerator.generateTransitions(minpower, idlepower, maxpower, 10, 20);
-        
+
         // PM
-        Repository pmRepo1 = new Repository(storage, name + "-internalRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+        Repository pmRepo1 = new Repository(storage, name + "-internalRepo", bandwidth, bandwidth, bandwidth, latencyMap,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network));
 
-        PhysicalMachine pm1 = new PhysicalMachine(cpu, 1, memory, pmRepo1, 60_000, 60_000, 
+        PhysicalMachine pm1 = new PhysicalMachine(cpu, 1, memory, pmRepo1, 60_000, 60_000,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.host));
 
         iaas.registerHost(pm1);
-        
+
         // Repository
-        Repository nodeRepo = new Repository(storage, name + "-externalRepo", bandwidth, bandwidth, bandwidth, latencyMap, 
+        Repository nodeRepo = new Repository(storage, name + "-externalRepo", bandwidth, bandwidth, bandwidth, latencyMap,
                 transitions.get(PowerTransitionGenerator.PowerStateKind.storage),
                 transitions.get(PowerTransitionGenerator.PowerStateKind.network));
-        
+
         iaas.registerRepository(nodeRepo);
         latencyMap.put(name + "-internalRepo", latency);
         latencyMap.put(name + "-externalRepo", latency);
-        
+
         return iaas;
     }
 }

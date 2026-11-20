@@ -30,8 +30,19 @@ public class LocalMetricsCalculator {
         double energy = calculateProjectedPower(placements);
         double latency = calculateLatency(placements);
         double bandwidth = calculateBandwidth(placements);
+        double performance = calculatePerformance(placements);
 
-        return new LocalMetrics(balance, utilisation,fragmentation,compactness, cost, energy, latency, bandwidth);
+        return new LocalMetrics(balance, utilisation, fragmentation, compactness, cost, energy, latency, bandwidth, performance);
+    }
+
+    public double calculatePerformance(List<ComponentPlacement> placements) {
+        double performance = 0.0;
+
+        for (ComponentPlacement placement : placements) {
+            performance += MappingStrategy.requiredPhysicalCpu(placement.component, placement.capacity);
+        }
+
+        return performance;
     }
 
     private double calculateBandwidth(List<ComponentPlacement> placements) {
@@ -83,20 +94,18 @@ public class LocalMetricsCalculator {
             PhysicalMachine machine = node.iaas.machines.get(0);
 
             double totalCpu = machine.getCapacities().getTotalProcessingPower();
-            double currentlyFreeCpu = machine.freeCapacities.getTotalProcessingPower();
             double offerCpuDemand = 0.0;
 
             for (ComponentPlacement placement : placements) {
                 if (placement.capacity.node == node) {
-                    offerCpuDemand += MappingStrategy.requiredCpu(placement.component);
+                    offerCpuDemand += MappingStrategy.requiredPhysicalCpu(placement.component, placement.capacity);
                 }
             }
 
-            double projectedCpuUtilisation = 1.0 - (currentlyFreeCpu - offerCpuDemand) / totalCpu;
-            double projectedPower = machine.getCurrentPowerBehavior().getMinConsumption()
-                    + machine.getCurrentPowerBehavior().getConsumptionRange() * projectedCpuUtilisation;
+            double additionalCpuUtilisation = offerCpuDemand / totalCpu;
+            double additionalPower = machine.getCurrentPowerBehavior().getConsumptionRange() * additionalCpuUtilisation;
 
-            totalProjectedPower += projectedPower;
+            totalProjectedPower += additionalPower;
         }
 
         return totalProjectedPower;
@@ -109,7 +118,7 @@ public class LocalMetricsCalculator {
             Component component = placement.component;
 
             double demandShare = agent.calculateDemandShare(
-                            MappingStrategy.requiredCpu(component),
+                            MappingStrategy.requiredPhysicalCpu(component, placement.capacity),
                             MappingStrategy.requiredMemory(component),
                             MappingStrategy.requiredStorage(component));
 
@@ -141,7 +150,7 @@ public class LocalMetricsCalculator {
         for (ComponentPlacement placement : placements) {
             Component component = placement.component;
 
-            remainingCpu -= MappingStrategy.requiredCpu(component);
+            remainingCpu -= MappingStrategy.requiredPhysicalCpu(component, placement.capacity);
             remainingMemory -= MappingStrategy.requiredMemory(component);
             remainingStorage -= MappingStrategy.requiredStorage(component);
         }
@@ -254,7 +263,7 @@ public class LocalMetricsCalculator {
 
         for (ComponentPlacement placement : placements) {
             if (placement.capacity == capacity) {
-                remainingCpu -= MappingStrategy.requiredCpu(placement.component);
+                remainingCpu -= MappingStrategy.requiredPhysicalCpu(placement.component, capacity);
             }
         }
 
@@ -319,7 +328,7 @@ public class LocalMetricsCalculator {
             if (placement.capacity == capacity) {
                 Component component = placement.component;
 
-                remainingCpu -=MappingStrategy.requiredCpu(component);
+                remainingCpu -= MappingStrategy.requiredPhysicalCpu(component, capacity);
                 remainingMemory -= MappingStrategy.requiredMemory(component);
                 remainingStorage -= MappingStrategy.requiredStorage(component);
             }

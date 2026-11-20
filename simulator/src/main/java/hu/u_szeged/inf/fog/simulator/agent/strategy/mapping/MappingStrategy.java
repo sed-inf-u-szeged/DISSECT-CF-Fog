@@ -22,26 +22,29 @@ public abstract class MappingStrategy {
 
         private long storage;
 
+        private final Capacity capacity;
+
         public AvailableCapacity(Capacity capacity) {
             this.cpu = capacity.cpu;
             this.memory = capacity.memory;
             this.storage = capacity.storage;
+            this.capacity = capacity;
         }
 
         public boolean canHost(Component component) {
-            return requiredCpu(component) <= cpu
+            return requiredPhysicalCpu(component, capacity) <= cpu
                     && requiredMemory(component) <= memory
                     && requiredStorage(component) <= storage;
         }
 
         public void consume(Component component) {
-            cpu -= requiredCpu(component);
+            cpu -= requiredPhysicalCpu(component, capacity);
             memory -= requiredMemory(component);
             storage -= requiredStorage(component);
         }
 
         public void restore(Component component) {
-            cpu += requiredCpu(component);
+            cpu += requiredPhysicalCpu(component, capacity);
             memory += requiredMemory(component);
             storage += requiredStorage(component);
         }
@@ -65,11 +68,15 @@ public abstract class MappingStrategy {
         return providerMatch && locationMatch && edgeMatch;
     }
 
-    public static double requiredCpu(Component component) {
+    public static double requiredVirtualCpu(Component component) {
         if (component.requirements == null || component.requirements.cpu == null || component.requirements.cpu <= 0.0) {
             throw new IllegalArgumentException("Component '" + component.id + "' must define a positive CPU requirement.");
         }
         return component.requirements.cpu;
+    }
+
+    public static double requiredPhysicalCpu(Component component, Capacity capacity) {
+        return requiredVirtualCpu(component) * capacity.perCoreProcessing;
     }
 
     public static long requiredMemory(Component component) {

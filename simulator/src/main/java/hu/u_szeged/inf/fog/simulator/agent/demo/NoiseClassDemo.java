@@ -137,7 +137,7 @@ public class NoiseClassDemo {
                         ComputingAppliance.allComputingAppliances.get("RPi" + i + j),
                         5,
                         8 * ScenarioBase.GB_IN_BYTE,
-                        256 * ScenarioBase.GB_IN_BYTE
+                        256 * ScenarioBase.GB_IN_BYTE, 1.0
                 ));
             }
         }
@@ -145,7 +145,7 @@ public class NoiseClassDemo {
         
         ResourceAgent ra1 = 
                 new ResourceAgent("Agent1", 0.00013889, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
-        ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node1, 10, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE));
+        ra1.initResourceAgent(resourceAgentVa, resourceAgentArc, new Capacity(node1, 10, 52 * ScenarioBase.GB_IN_BYTE, 256 * ScenarioBase.GB_IN_BYTE, 1.0));
 
         /*
         ResourceAgent ra2 = 

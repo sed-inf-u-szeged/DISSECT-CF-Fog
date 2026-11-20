@@ -70,8 +70,8 @@ public class LocalOfferParetoFilter {
                         >= secondMetrics.utilisation - EPSILON
                         && firstMetrics.compactness
                         >= secondMetrics.compactness - EPSILON
-                        && firstMetrics.bandwidth
-                        >= secondMetrics.bandwidth - EPSILON;
+                        && firstMetrics.bandwidth >= secondMetrics.bandwidth - EPSILON
+                        && firstMetrics.performance >= secondMetrics.performance - EPSILON;
 
         boolean noWorseInMinimizedMetrics =
                 firstMetrics.fragmentation
@@ -90,8 +90,8 @@ public class LocalOfferParetoFilter {
                         > secondMetrics.utilisation + EPSILON
                         || firstMetrics.compactness
                         > secondMetrics.compactness + EPSILON
-                        || firstMetrics.bandwidth
-                        > secondMetrics.bandwidth + EPSILON;
+                        || firstMetrics.bandwidth > secondMetrics.bandwidth + EPSILON
+                        || firstMetrics.performance > secondMetrics.performance + EPSILON;
 
         boolean betterInMinimizedMetric =
                 firstMetrics.fragmentation

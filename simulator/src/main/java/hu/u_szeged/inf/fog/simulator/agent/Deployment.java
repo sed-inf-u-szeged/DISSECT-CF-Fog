@@ -17,6 +17,7 @@ import hu.u_szeged.inf.fog.simulator.agent.management.dummy.DummySwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.noise.ForecastBasedSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.noise.GreedyNoiseSwarmAgent;
 import hu.u_szeged.inf.fog.simulator.agent.management.noise.ScalableGreedySwarmAgent;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.node.ComputingAppliance;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
 import hu.u_szeged.inf.fog.simulator.common.util.SimLogger;
@@ -63,7 +64,10 @@ public class Deployment extends Timed {
         ComputingAppliance node = resource.getLeft();
         Utilisation utilisation = resource.getRight();
 
-        AlterableResourceConstraints arc = new AlterableResourceConstraints(utilisation.utilisedCpu, 1, utilisation.utilisedMemory);
+        double virtualCpu = MappingStrategy.requiredVirtualCpu(utilisation.component);
+        double perCoreProcessing = utilisation.utilisedCpu / virtualCpu;
+        AlterableResourceConstraints arc = new AlterableResourceConstraints(virtualCpu, perCoreProcessing, utilisation.utilisedMemory);
+
         VirtualAppliance va = (VirtualAppliance) registryService.lookup(utilisation.component.id);
 
         try {

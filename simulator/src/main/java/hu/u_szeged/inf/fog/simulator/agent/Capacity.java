@@ -53,14 +53,13 @@ public class Capacity {
 
         public List<LocalOffer> coveredOffers;
 
-        public static Utilisation createNonAtomicReservation(LocalOffer localOffer, Component component, ResourceAgent resourceAgent) {
+        public static Utilisation createComponentReservation(LocalOffer localOffer, Component component, ResourceAgent resourceAgent, Capacity capacity) {
             Utilisation utilisation = new Utilisation();
-
             utilisation.state = State.RESERVED;
             utilisation.envelopeReservation = false;
             utilisation.coveredOffers = List.of(localOffer);
             utilisation.component = component;
-            utilisation.utilisedCpu = MappingStrategy.requiredCpu(component);
+            utilisation.utilisedCpu = MappingStrategy.requiredPhysicalCpu(component, capacity);
             utilisation.utilisedMemory = MappingStrategy.requiredMemory(component);
             utilisation.utilisedStorage = MappingStrategy.requiredStorage(component);
             utilisation.resourceAgent = resourceAgent;
@@ -138,6 +137,8 @@ public class Capacity {
 
     public double totalCpu;
 
+    public final double perCoreProcessing;
+
     public long totalMemory;
 
     public long totalStorage;
@@ -146,7 +147,7 @@ public class Capacity {
 
     public List<Utilisation> utilisations;
 
-    public Capacity(ComputingAppliance node, double cpu, long memory, long storage) {
+    public Capacity(ComputingAppliance node, double cpu, long memory, long storage, double perCoreProcessing) {
         this.node = node;
         this.cpu = cpu;
         this.memory = memory;
@@ -154,11 +155,12 @@ public class Capacity {
         this.totalMemory = memory;
         this.totalStorage = storage;
         this.storage = storage;
+        this.perCoreProcessing = perCoreProcessing;
         this.utilisations = new ArrayList<>();
     }
 
     public void reserveCapacity(Component component, ResourceAgent ra, LocalOffer localOffer) {
-        Utilisation utilisation = Utilisation.createNonAtomicReservation(localOffer, component, ra);
+        Utilisation utilisation = Utilisation.createComponentReservation(localOffer, component, ra, this);
         this.utilisations.add(utilisation);
 
         this.cpu -= utilisation.utilisedCpu;

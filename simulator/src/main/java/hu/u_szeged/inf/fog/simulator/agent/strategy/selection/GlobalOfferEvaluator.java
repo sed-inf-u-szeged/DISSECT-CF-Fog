@@ -47,6 +47,10 @@ public class GlobalOfferEvaluator {
             violation += calculateMaximumViolation(metrics.energy, application.maxEnergyConsumption);
         }
 
+        if (application.minPerformance != null) {
+            violation += calculateMinimumViolation(metrics.performance, application.minPerformance);
+        }
+
         return violation;
     }
 
@@ -102,8 +106,9 @@ public class GlobalOfferEvaluator {
         double totalProjectedPower = localMetricsCalculator.calculateProjectedPower(offer.selectedPlacements);
         double averageLatency = totalPlacementCount == 0 ? 0.0 : weightedLatencySum / totalPlacementCount;
         double averageBandwidth = totalPlacementCount == 0 ? 0.0 : weightedBandwidthSum / totalPlacementCount;
+        double totalPerformance = localMetricsCalculator.calculatePerformance(offer.selectedPlacements);
 
-        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth);
+        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth, totalPerformance);
     }
 
     public GlobalOfferMetrics evaluate(AtomicCoverageState state) {
@@ -129,12 +134,13 @@ public class GlobalOfferEvaluator {
         double totalProjectedPower = localMetricsCalculator.calculateProjectedPower(selectedPlacements);
         double averageLatency = totalPlacementCount == 0 ? 0.0 : weightedLatencySum / totalPlacementCount;
         double averageBandwidth = totalPlacementCount == 0 ? 0.0 : weightedBandwidthSum / totalPlacementCount;
+        double totalPerformance = localMetricsCalculator.calculatePerformance(selectedPlacements);
 
-        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth);
+        return new GlobalOfferMetrics(providerCount, totalCost, totalProjectedPower, averageLatency, averageBandwidth, totalPerformance);
     }
 
     public double calculateQosUtility(AgentApplication application, GlobalOfferMetrics metrics) {
-        double totalWeight = application.price + application.energy + application.latency + application.bandwidth;
+        double totalWeight = application.price + application.energy + application.latency + application.bandwidth + application.performance;
 
         if (totalWeight <= EPSILON) {
             return 0.0;
@@ -169,6 +175,10 @@ public class GlobalOfferEvaluator {
                     * normalizeMaximizedMetric(metrics.bandwidth, bounds.minimumBandwidth, bounds.maximumBandwidth);
         }
 
+        if (application.performance > EPSILON) {
+            weightedScore += application.performance * normalizeMaximizedMetric(metrics.performance, bounds.minimumPerformance, bounds.maximumPerformance);
+        }
+
         return weightedScore / totalWeight;
     }
 
@@ -177,6 +187,7 @@ public class GlobalOfferEvaluator {
         validatePositiveWeightedReference(application.energy, application.maxEnergyConsumption, "maxEnergyConsumption");
         validatePositiveWeightedReference(application.latency, application.maxLatency, "maxLatency");
         validatePositiveWeightedReference(application.bandwidth, application.minBandwidth, "minBandwidth");
+        validatePositiveWeightedReference(application.performance, application.minPerformance, "minPerformance");
     }
 
     private void validatePositiveWeightedReference(double weight, Double reference, String referenceName) {
@@ -202,6 +213,10 @@ public class GlobalOfferEvaluator {
 
         if (application.bandwidth > EPSILON) {
             weightedScore += application.bandwidth * (application.minBandwidth / Math.max(metrics.bandwidth, EPSILON));
+        }
+
+        if (application.performance > EPSILON) {
+            weightedScore += application.performance * (application.minPerformance / Math.max(metrics.performance, EPSILON));
         }
 
         return weightedScore / totalWeight;

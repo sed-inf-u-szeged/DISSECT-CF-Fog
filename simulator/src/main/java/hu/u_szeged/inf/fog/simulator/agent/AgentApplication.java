@@ -27,6 +27,8 @@ public class AgentApplication {
     
     public double bandwidth;
 
+    public double performance;
+
     public Integer minProviderCount;
 
     public Integer maxProviderCount;
@@ -36,6 +38,8 @@ public class AgentApplication {
     public Double maxLatency;
 
     public Double minBandwidth;
+
+    public Double minPerformance;
 
     public Double maxEnergyConsumption;
         
@@ -138,7 +142,7 @@ public class AgentApplication {
 
     @Override
     public String toString() {
-        return "AgentApplication [name=" + name + ", energy=" + energy + ", price=" + price + ", latency=" + latency
-                + ", bandwidth=" + bandwidth + ", components=" + components + "]";
+        return "AgentApplication [name=" + name + ", energy=" + energy + ", price=" + price + ", latency=" + latency +
+                ", bandwidth=" + bandwidth + ", performance=" + performance + ", components=" + components + "]";
     }
 }

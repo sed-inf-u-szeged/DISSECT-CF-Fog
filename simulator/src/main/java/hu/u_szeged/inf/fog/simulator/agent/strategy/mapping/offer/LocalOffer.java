@@ -26,7 +26,9 @@ public class LocalOffer {
 
         public final double bandwidth;
 
-        public LocalMetrics(double balance, double utilisation, double fragmentation, double compactness, double cost, double energy, double latency, double bandwidth) {
+        public final double performance;
+
+        public LocalMetrics(double balance, double utilisation, double fragmentation, double compactness, double cost, double energy, double latency, double bandwidth, double performance) {
             this.balance = balance;
             this.utilisation = utilisation;
             this.fragmentation = fragmentation;
@@ -35,6 +37,7 @@ public class LocalOffer {
             this.energy = energy;
             this.latency = latency;
             this.bandwidth = bandwidth;
+            this.performance = performance;
         }
     }
 

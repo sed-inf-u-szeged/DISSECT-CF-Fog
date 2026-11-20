@@ -7,12 +7,14 @@ public class GlobalOfferMetrics {
     public final double energy;
     public final double latency;
     public final double bandwidth;
+    public final double performance;
 
-    public GlobalOfferMetrics(int providerCount, double cost, double energy, double latency, double bandwidth) {
+    public GlobalOfferMetrics(int providerCount, double cost, double energy, double latency, double bandwidth, double performance) {
         this.providerCount = providerCount;
         this.cost = cost;
         this.energy = energy;
         this.latency = latency;
         this.bandwidth = bandwidth;
+        this.performance = performance;
     }
 }

@@ -69,29 +69,8 @@ public class    DummyAppDemo {
                             .toList();
         }
 
-        if (appDescriptionFiles.size() > submissionDelays.size()) {
-            SimLogger.logWarning(
-                    appDescriptionFiles.size()
-                            + " application description files were found, but only "
-                            + submissionDelays.size()
-                            + " applications are configured for submission. "
-                            + "Only the first "
-                            + submissionDelays.size()
-                            + " files will be used.");
-
-            try {
-                Thread.sleep(2_000L);
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-
-                SimLogger.logError(
-                        "The simulation was interrupted while waiting after "
-                                + "the application configuration warning.");
-            }
-
-            appDescriptionFiles =
-                    appDescriptionFiles
-                            .subList(0, submissionDelays.size());
+        if (appDescriptionFiles.size() != submissionDelays.size()) {
+            SimLogger.logError("Application configuration mismatch: " + appDescriptionFiles.size() + " JSON files, but " + submissionDelays.size() + " submission delays. Simulation aborted.");
         }
 
         for (int applicationIndex = 0;
@@ -277,14 +256,12 @@ public class    DummyAppDemo {
             if (successful) {
                 Offer winningOffer = application.offers.get(application.winningOffer);
                 SimLogger.logRes("\t\tWinning provider count: " + winningOffer.metrics.providerCount);
-
                 SimLogger.logRes("\t\tWinning cost: " + winningOffer.metrics.cost);
-
-                SimLogger.logRes("\t\tWinning projected power (W): " + winningOffer.metrics.energy);
-
+                SimLogger.logRes("\t\tWinning additional power (W): " + winningOffer.metrics.energy);
                 SimLogger.logRes("\t\tWinning average latency (ms): " + winningOffer.metrics.latency);
-
                 SimLogger.logRes("\t\tWinning average bandwidth (byte/ms): " + winningOffer.metrics.bandwidth);
+                SimLogger.logRes("\t\tWinning performance: " + winningOffer.metrics.performance);
+                // TODO: compared to the required values?
             }
 
             SimLogger.logRes("\t\tBroadcast rounds: " + application.broadcastCount);
@@ -522,24 +499,23 @@ public class    DummyAppDemo {
         SimLogger.logRes("Simulator's runtime (sec.): " + TimeUnit.SECONDS.convert(stoptime - starttime, TimeUnit.NANOSECONDS));
 
         MappingStrategy mappingStrategy = (MappingStrategy) Config.APP_TYPE.get("mappingStrategy");
-        boolean atomicOffers = (boolean) Config.APP_TYPE.get("atomicOffers");
+        String rankingMethod = (String) Config.APP_TYPE.get("rankingMethod");
         boolean onlyFirstOffer = (boolean) Config.APP_TYPE.get("onlyFirstOffer");
 
         String globalSelectionMethod;
 
-        if (atomicOffers) {
+        if (rankingMethod.equals("sa")) {
             globalSelectionMethod = "Global SA";
         } else if (onlyFirstOffer) {
             globalSelectionMethod = "First hard-valid coverage";
         } else {
-            globalSelectionMethod = "All hard-valid coverages + " + Config.APP_TYPE.get("rankingMethod") + " ranking";
+            globalSelectionMethod = "All hard-valid coverages + " + rankingMethod + " ranking";
         }
 
         SimLogger.logEmptyLine();
         SimLogger.logRes("Algorithm configuration:");
         SimLogger.logRes("\tLocal mapping strategy: " + mappingStrategy.getClass().getSimpleName());
         SimLogger.logRes("\tGlobal selection method: " + globalSelectionMethod);
-        SimLogger.logRes("\tAtomic LocalOffers: " + atomicOffers);
     }
 
     private static boolean hasRunningApplication(ComputingAppliance node) {
@@ -698,7 +674,7 @@ public class    DummyAppDemo {
                                 node,
                                 cpu,
                                 memoryGb * ScenarioBase.GB_IN_BYTE,
-                                storageGb * ScenarioBase.GB_IN_BYTE));
+                                storageGb * ScenarioBase.GB_IN_BYTE, 1.0));
             }
 
             for (int capacityIndex = 0;
@@ -763,7 +739,7 @@ public class    DummyAppDemo {
                                 node,
                                 cpu,
                                 memoryGb * ScenarioBase.GB_IN_BYTE,
-                                storageGb * ScenarioBase.GB_IN_BYTE));
+                                storageGb * ScenarioBase.GB_IN_BYTE, SeedSyncer.centralRnd.nextBoolean() ? 0.75 : 0.5));
             }
 
             for (int capacityIndex = 0;
@@ -828,7 +804,7 @@ public class    DummyAppDemo {
                                 node,
                                 cpu,
                                 memoryGb * ScenarioBase.GB_IN_BYTE,
-                                storageGb * ScenarioBase.GB_IN_BYTE));
+                                storageGb * ScenarioBase.GB_IN_BYTE, 0.25));
             }
 
             double initialHourlyPrice =

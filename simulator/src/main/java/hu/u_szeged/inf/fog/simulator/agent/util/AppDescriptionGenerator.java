@@ -30,10 +30,11 @@ public class AppDescriptionGenerator {
         String outputDirectory = ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-L16/";
 
         // Application Owner QoS weights
-        double energyWeight = 0.7;
+        double energyWeight = 0.5;
         double priceWeight = 0.1;
         double latencyWeight = 0.1;
         double bandwidthWeight = 0.1;
+        double performanceWeight = 0.1;
 
         // Application-level hard requirements
         int minProviderCount = 1;
@@ -44,6 +45,7 @@ public class AppDescriptionGenerator {
         double maxLatency = 70.0;
         double minBandwidth = 50_000.0;
         double maxEnergyConsumption = 3_000.0;
+        double minPerformanceRatio = 0.5;
 
         // Component resource requirement ranges
         int minimumCpu = 3;
@@ -127,6 +129,7 @@ public class AppDescriptionGenerator {
             root.put("price", priceWeight);
             root.put("latency", latencyWeight);
             root.put("bandwidth", bandwidthWeight);
+            root.put("performance", performanceWeight);
 
             root.put("minProviderCount", minProviderCount);
             root.put("maxProviderCount", maxProviderCount);
@@ -136,7 +139,7 @@ public class AppDescriptionGenerator {
             root.put("maxEnergyConsumption", maxEnergyConsumption);
 
             ArrayNode components = mapper.createArrayNode();
-
+            double totalVirtualCpu = 0.0;
             for (int componentIndex = 1; componentIndex <= componentCount; componentIndex++) {
                 ObjectNode component = mapper.createObjectNode();
                 component.put("id", String.valueOf(componentIndex));
@@ -146,6 +149,7 @@ public class AppDescriptionGenerator {
                 int cpu = minimumCpu + random.nextInt(maximumCpu - minimumCpu + 1);
                 int memoryGb = minimumMemoryGb + random.nextInt(maximumMemoryGb - minimumMemoryGb + 1);
                 int storageGb = minimumStorageGb + random.nextInt(maximumStorageGb - minimumStorageGb + 1);
+                totalVirtualCpu += cpu;
 
                 requirements.put("cpu", cpu);
                 requirements.put("memory", memoryGb * ScenarioBase.GB_IN_BYTE);
@@ -182,6 +186,7 @@ public class AppDescriptionGenerator {
                 components.add(component);
             }
 
+            root.put("minPerformance", totalVirtualCpu * minPerformanceRatio);
             root.set("components", components);
 
             File outputFile = Path.of(outputDirectory, applicationName + ".json").toFile();
