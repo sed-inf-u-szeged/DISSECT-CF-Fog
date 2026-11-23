@@ -9,6 +9,7 @@ import hu.mta.sztaki.lpds.cloud.simulator.io.Repository;
 import hu.mta.sztaki.lpds.cloud.simulator.util.PowerTransitionGenerator;
 import hu.u_szeged.inf.fog.simulator.agent.application.parking.ParkingSensor;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.FirstFitMappingStrategy;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.RandomFirstFitMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.sa.SimulatedAnnealingStrategy;
 import hu.u_szeged.inf.fog.simulator.common.util.ScenarioBase;
@@ -45,6 +46,7 @@ public class Config {
     public static final Map<String, Object> DUMMY_CONFIGURATION =
             Map.ofEntries(
                     Map.entry("simLength", 60 * 60 * 1000L), // 60 min.
+
                     /*
                     Map.entry("raTopologies", List.of(
                             new ResourceAgentTopology(1, 1, 1),
@@ -59,7 +61,9 @@ public class Config {
                             new ResourceAgentTopology(0, 5, 6),
                             new ResourceAgentTopology(3, 1, 2)
                     )),
+
                     Map.entry("submissionDelay", createSubmissionDelays(5, 1)),
+
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-bw")),
@@ -67,9 +71,11 @@ public class Config {
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-price")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-S8")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen3-M12")),
+
                     //Map.entry("submissionDelay", List.of(0)), // 1 app
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/")),
-                    //Map.entry("maxRebroadcast", 2),
+
+                    Map.entry("maxRebroadcast", 2),
                     Map.entry("csvLogging", true),
 
                     // Application profile: default
@@ -96,23 +102,27 @@ public class Config {
                     //Map.entry("computeTaskBase", 10_000_000.0),
                     //Map.entry("computeTaskPerByte", 0.0),
 
-                    // Algorithm 1: First Fit + all hard-valid coverages + ranking
                     //Map.entry("mappingStrategy", new FirstFitMappingStrategy(true)),
-                    //Map.entry("onlyFirstOffer", false),
                     //Map.entry("rankingMethod", "random"),
                     //Map.entry("rankingMethod", "rank_no_re"),
                     //Map.entry("rankingScript", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\for_simulator\\call_ranking_func.py"),
                     //Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
 
+                    // Algorithm 1: Random First Fit + all hard-valid coverages + ranking
+                    Map.entry("mappingStrategy", new RandomFirstFitMappingStrategy()),
+                    Map.entry("onlyFirstOffer", false),
+                    Map.entry("rankingMethod", "qos"),
+
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
                     //Map.entry("onlyFirstOffer", true),
-                    //Map.entry("rankingMethod", "random"),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
-                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
-                    Map.entry("onlyFirstOffer", false),
-                    Map.entry("rankingMethod", "sa"),
+                    //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    //Map.entry("onlyFirstOffer", false),
+                    //Map.entry("rankingMethod", "sa"),
+
+                    // TODO: Compare Global SA against exhaustive Backtracking + QoS ranking using the same Pareto-filtered local offers to evaluate solution quality, optimality gap, and scalability.
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor

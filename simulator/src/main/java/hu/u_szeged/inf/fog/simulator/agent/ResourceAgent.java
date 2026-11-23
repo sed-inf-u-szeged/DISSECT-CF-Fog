@@ -178,6 +178,7 @@ public class ResourceAgent {
         });
     }
 
+
     private void deploy(AgentApplication app, int bcastMessageSize) {
         this.generateOffers(app);
 
@@ -196,6 +197,33 @@ public class ResourceAgent {
                 app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
 
                 SimLogger.logRun(app.offers.size() + " offers were generated for " + app.name + " at: " + Timed.getFireCount() / (double) ScenarioBase.MINUTE_IN_MILLISECONDS + " min., randomly selected offer index is: " + app.winningOffer);
+            } else if (Config.APP_TYPE.get("rankingMethod").equals("qos")) {
+                long rankingStart = System.nanoTime();
+
+                GlobalOfferEvaluator evaluator = new GlobalOfferEvaluator();
+                int bestIndex = -1;
+                double bestQos = Double.POSITIVE_INFINITY;
+
+                for (int i = 0; i < app.offers.size(); i++) {
+                    Offer offer = app.offers.get(i);
+
+                    if (offer.metrics == null) {
+                        offer.metrics = evaluator.evaluate(offer);
+                    }
+
+                    double qos = evaluator.calculateQosUtility(app, offer.metrics);
+
+                    if (qos < bestQos) {
+                        bestQos = qos;
+                        bestIndex = i;
+                    }
+                }
+
+                app.winningOffer = bestIndex;
+                app.globalSelectionRuntimeNanos += System.nanoTime() - rankingStart;
+
+                SimLogger.logRun("The QoS ranking selected offer index " + app.winningOffer
+                        + " for " + app.name + " from " + app.offers.size() + " offers.");
             } else {
                 long rankingStart = System.nanoTime();
                 app.winningOffer = callRankingScript(app);
@@ -235,6 +263,7 @@ public class ResourceAgent {
             };
         }
     }
+
 
     private void generateOffers(AgentApplication app) {
         app.offers.clear();
@@ -522,6 +551,9 @@ public class ResourceAgent {
 
                 failedApplicationCount++;
                 List<Integer> submissionCounts = (List<Integer>) Config.APP_TYPE.get("submissionDelay");
+
+                // TODO: Revisit simulation shutdown handling for mixed successful and failed deployments.
+                // The current termination condition does not account for completed applications.
                 if (failedApplicationCount == submissionCounts.size()) {
                     SimLogger.logRun("All " + failedApplicationCount + " submitted applications failed to deploy.");
                     ResourceAgentManager.getInstance().stop();
