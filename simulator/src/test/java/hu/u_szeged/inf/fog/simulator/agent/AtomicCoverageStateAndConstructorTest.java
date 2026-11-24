@@ -192,7 +192,7 @@ class AtomicCoverageStateAndConstructorTest {
     }
 
     private static Capacity capacity(String nodeName) {
-        return new Capacity(createNode(nodeName), 10.0, 100L, 100L);
+        return new Capacity(createNode(nodeName), 10.0, 100L, 100L, 1.0);
     }
 
     private static ComputingAppliance createNode(String name) {
@@ -203,7 +203,7 @@ class AtomicCoverageStateAndConstructorTest {
     }
 
     private static LocalOffer offer(ResourceAgent agent, ComponentPlacement... placements) {
-        return new LocalOffer(agent, List.of(placements), new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+        return new LocalOffer(agent, List.of(placements), new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
     }
 
     private static String signature(AtomicCoverageState state) {

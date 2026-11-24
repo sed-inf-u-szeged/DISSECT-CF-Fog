@@ -166,13 +166,13 @@ class LocalMetricsCalculatorTest {
             double offerCpuDemand = 0.0;
             for (ComponentPlacement placement : placements) {
                 if (placement.capacity.node == node) {
-                    offerCpuDemand += placement.component.requirements.cpu;
+                    offerCpuDemand += hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy.requiredPhysicalCpu(
+                            placement.component, placement.capacity);
                 }
             }
 
-            double projectedCpuUtilisation = 1.0 - (currentlyFreeCpu - offerCpuDemand) / totalCpu;
-            double projectedPower = machine.getCurrentPowerBehavior().getMinConsumption()
-                    + machine.getCurrentPowerBehavior().getConsumptionRange() * projectedCpuUtilisation;
+            double projectedPower = machine.getCurrentPowerBehavior().getConsumptionRange()
+                    * offerCpuDemand / totalCpu;
             totalProjectedPower += projectedPower;
         }
 
@@ -195,7 +195,7 @@ class LocalMetricsCalculatorTest {
                 Config.createNode(nodeName, cpu, memory, storage, 10, 20, 50, bandwidth, latency, latencyMap),
                 new GeoLocation(0, 0), "x", "x", false);
 
-        return new Capacity(node, cpu, memory, storage);
+        return new Capacity(node, cpu, memory, storage, 1.0);
     }
 
     private static Component component(String id, Double cpu, Long memory, Long storage) {

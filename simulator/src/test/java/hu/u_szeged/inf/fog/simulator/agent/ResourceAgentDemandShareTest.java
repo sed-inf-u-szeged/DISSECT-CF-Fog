@@ -101,6 +101,6 @@ class ResourceAgentDemandShareTest {
                         Config.createNode(nodeName, 10, 10 * ScenarioBase.GB_IN_BYTE, 10 * ScenarioBase.GB_IN_BYTE,
                                 1, 1, 1, 1, 1, new HashMap<>()),
                         new GeoLocation(0, 0), "X", "X", false),
-                cpu, memory, storage);
+                cpu, memory, storage, 1.0);
     }
 }

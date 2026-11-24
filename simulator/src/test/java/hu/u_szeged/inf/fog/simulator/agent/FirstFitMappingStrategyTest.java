@@ -195,7 +195,7 @@ class FirstFitMappingStrategyTest {
             double cpu,
             long memory,
             long storage) {
-        return new Capacity(createNode(nodeName, provider, location, edge), cpu, memory, storage);
+        return new Capacity(createNode(nodeName, provider, location, edge), cpu, memory, storage, 1.0);
     }
 
     private static ComputingAppliance createNode(String name, String provider, String location, boolean edge) {

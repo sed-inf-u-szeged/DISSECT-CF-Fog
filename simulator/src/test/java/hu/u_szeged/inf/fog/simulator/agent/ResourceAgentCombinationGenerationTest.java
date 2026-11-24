@@ -70,11 +70,10 @@ public class ResourceAgentCombinationGenerationTest {
         Capacity cap = capacity("NodeA", 10.0, 100L, 100L);
         agent.capacities.put(cap.node.name, cap);
 
-        LocalOffer offerA = localOffer(agent, cap, c1);
-        LocalOffer offerB = localOffer(agent, cap, c2);
-        cap.reserveAtomicOffers(List.of(offerA, offerB), agent, 2.0, 2L, 2L);
+        LocalOffer combinedOffer = localOffer(agent, cap, c1, c2);
+        cap.reserveAtomicOffers(List.of(combinedOffer), agent, 2.0, 2L, 2L);
 
-        AtomicCoverageState winningState = new AtomicCoverageState(app.components, List.of(offerA, offerB));
+        AtomicCoverageState winningState = new AtomicCoverageState(app.components, List.of(combinedOffer));
         invokeMaterializeWinningAtomicReservations(agent, app, winningState);
 
         assertEquals(2, cap.utilisations.stream()
@@ -132,7 +131,7 @@ public class ResourceAgentCombinationGenerationTest {
     }
 
     private static Capacity capacity(String nodeName, double cpu, long memory, long storage) {
-        return new Capacity(createNode(nodeName), cpu, memory, storage);
+        return new Capacity(createNode(nodeName), cpu, memory, storage, 1.0);
     }
 
     private static ComputingAppliance createNode(String name) {
@@ -146,11 +145,11 @@ public class ResourceAgentCombinationGenerationTest {
         List<ComponentPlacement> placements = List.of(components).stream()
                 .map(component -> new ComponentPlacement(component, capacity))
                 .toList();
-        return new LocalOffer(agent, placements, new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+        return new LocalOffer(agent, placements, new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
     }
 
     private static void invokeReserveLocalOffers(ResourceAgent owner, List<LocalOffer> localOffers) throws Exception {
-        Method method = ResourceAgent.class.getDeclaredMethod("reserveLocalOffers", List.class);
+        Method method = ResourceAgent.class.getDeclaredMethod("reserveAtomicLocalOffers", List.class);
         method.setAccessible(true);
         method.invoke(owner, localOffers);
     }
@@ -159,7 +158,7 @@ public class ResourceAgentCombinationGenerationTest {
                                                                 List<LocalOffer> localOffers,
                                                                 AgentApplication app)
             throws Exception {
-        Method method = ResourceAgent.class.getDeclaredMethod("generateNonAtomicOfferCombinations", List.class, AgentApplication.class);
+        Method method = ResourceAgent.class.getDeclaredMethod("generateBacktrackingOfferCombinations", List.class, AgentApplication.class);
         method.setAccessible(true);
         method.invoke(owner, localOffers, app);
     }
@@ -168,9 +167,19 @@ public class ResourceAgentCombinationGenerationTest {
                                                                  AgentApplication app,
                                                                  AtomicCoverageState winningState)
             throws Exception {
-        Method method = ResourceAgent.class.getDeclaredMethod("materializeWinningAtomicReservations", AgentApplication.class, AtomicCoverageState.class);
+        java.util.Map<ResourceAgent, Set<Component>> agentComponents = new java.util.LinkedHashMap<>();
+        List<ComponentPlacement> placements = new ArrayList<>();
+        for (LocalOffer localOffer : winningState.selectedOffers) {
+            agentComponents.computeIfAbsent(localOffer.agent, ignored -> new java.util.LinkedHashSet<>()).addAll(
+                    localOffer.placements.stream().map(placement -> placement.component).toList());
+            placements.addAll(localOffer.placements);
+        }
+        Offer winningOffer = new Offer(agentComponents, 0);
+        winningOffer.selectedPlacements.addAll(placements);
+
+        Method method = ResourceAgent.class.getDeclaredMethod("materializeWinningAtomicReservations", AgentApplication.class, Offer.class);
         method.setAccessible(true);
-        method.invoke(owner, app, winningState);
+        method.invoke(owner, app, winningOffer);
     }
 
     private static void invokeFreeReservedResources(ResourceAgent owner,

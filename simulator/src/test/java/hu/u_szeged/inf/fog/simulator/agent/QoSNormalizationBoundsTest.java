@@ -71,10 +71,8 @@ class QoSNormalizationBoundsTest {
 
         PhysicalMachine machineA = capA.node.iaas.machines.get(0);
         PhysicalMachine machineB = capB.node.iaas.machines.get(0);
-        double expectedMinimumEnergy = Math.min(
-                machineA.getCurrentPowerBehavior().getMinConsumption(),
-                machineB.getCurrentPowerBehavior().getMinConsumption());
-        double expectedMaximumEnergy = maxPower(machineA) + maxPower(machineB);
+        double expectedMinimumEnergy = 12.25;
+        double expectedMaximumEnergy = 14.0;
 
         assertEquals(expectedMinimumCost, bounds.minimumCost, EPSILON);
         assertEquals(expectedMaximumCost, bounds.maximumCost, EPSILON);
@@ -162,16 +160,16 @@ class QoSNormalizationBoundsTest {
         ResourceAgent agentB = createAgent("AgentB", 15.0);
 
         ComputingAppliance sharedNode = createNode("SharedNode", 10.0, 100L, 1000L, 1500L, 25, 10.0, 20.0, 40.0);
-        agentA.capacities.put("sharedA", new Capacity(sharedNode, 5.0, 50L, 500L));
-        agentB.capacities.put("sharedB", new Capacity(sharedNode, 5.0, 50L, 500L));
+        agentA.capacities.put("sharedA", new Capacity(sharedNode, 5.0, 50L, 500L, 1.0));
+        agentB.capacities.put("sharedB", new Capacity(sharedNode, 5.0, 50L, 500L, 1.0));
 
         QoSNormalizationBounds bounds = QoSNormalizationBounds.calculateForComponents(
                 List.of(component("C1", 1.0, 1L, 1L)));
 
         PhysicalMachine machine = sharedNode.iaas.machines.get(0);
         Repository repository = sharedNode.iaas.repositories.get(0);
-        double expectedMinEnergy = machine.getCurrentPowerBehavior().getMinConsumption();
-        double expectedMaxEnergy = maxPower(machine);
+        double expectedMinEnergy = 2.0;
+        double expectedMaxEnergy = 2.0;
         double expectedLatency = repository.getLatencies().get(repository.getName());
         double expectedBandwidth = (repository.getInputbw() + repository.getOutputbw()) / 2.0;
 
@@ -200,16 +198,14 @@ class QoSNormalizationBoundsTest {
 
         QoSNormalizationBounds bounds = QoSNormalizationBounds.calculateForComponents(components);
 
-        double maxA = maxPower(capA.node.iaas.machines.get(0));
-        double maxB = maxPower(capB.node.iaas.machines.get(0));
-        double expectedMaximumEnergy = maxA + maxB;
+        double expectedMaximumEnergy = 15.0;
 
         assertEquals(expectedMaximumEnergy, bounds.maximumEnergy, EPSILON);
     }
 
     private static double calculateComponentCost(ResourceAgent agent, Component component) {
         double demandShare = agent.calculateDemandShare(
-                MappingStrategy.requiredCpu(component),
+                MappingStrategy.requiredVirtualCpu(component),
                 MappingStrategy.requiredMemory(component),
                 MappingStrategy.requiredStorage(component));
 
@@ -237,7 +233,7 @@ class QoSNormalizationBoundsTest {
             double maxPower) {
         Map<String, Integer> latencyMap = new HashMap<>();
         ComputingAppliance node = createNode(nodeName, cpu, memory, storage, bandwidth, latency, minPower, idlePower, maxPower);
-        return new Capacity(node, cpu, memory, storage);
+        return new Capacity(node, cpu, memory, storage, 1.0);
     }
 
     private static ComputingAppliance createNode(

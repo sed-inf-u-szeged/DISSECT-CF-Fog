@@ -231,7 +231,7 @@ public class ExhaustiveMappingStrategyTest {
     void preferenceFiltering_matchingProvider_returnsOffer() {
         ResourceAgent agent = createAgent("Agent1");
         ComputingAppliance node = createNode("Node1", "AWS", "us-east", false);
-        agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L));
+        agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L, 1.0));
 
         Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.provider = "AWS";
@@ -247,7 +247,7 @@ public class ExhaustiveMappingStrategyTest {
     void preferenceFiltering_nonMatchingProvider_returnsEmptyList() {
         ResourceAgent agent = createAgent("Agent1");
         ComputingAppliance node = createNode("Node1", "Azure", "eu-west", false);
-        agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L));
+        agent.capacities.put("Node1", new Capacity(node, 10.0, 10L, 10L, 1.0));
 
         Component c = component("C1", 1.0, 1L, 1L);
         c.requirements.provider = "AWS";
@@ -264,8 +264,8 @@ public class ExhaustiveMappingStrategyTest {
         ResourceAgent agent = createAgent("Agent1");
         ComputingAppliance awsNode = createNode("AwsNode", "AWS", "us-east", false);
         ComputingAppliance azureNode = createNode("AzureNode", "Azure", "eu-west", false);
-        Capacity awsCap = new Capacity(awsNode, 10.0, 10L, 10L);
-        Capacity azureCap = new Capacity(azureNode, 10.0, 10L, 10L);
+        Capacity awsCap = new Capacity(awsNode, 10.0, 10L, 10L, 1.0);
+        Capacity azureCap = new Capacity(azureNode, 10.0, 10L, 10L, 1.0);
         agent.capacities.put("AwsNode", awsCap);
         agent.capacities.put("AzureNode", azureCap);
 
@@ -285,8 +285,8 @@ public class ExhaustiveMappingStrategyTest {
         ResourceAgent agent = createAgent("Agent1");
         ComputingAppliance edgeNode = createNode("EdgeNode", "X", "X", true);
         ComputingAppliance cloudNode = createNode("CloudNode", "X", "X", false);
-        Capacity edgeCap = new Capacity(edgeNode, 10.0, 10L, 10L);
-        Capacity cloudCap = new Capacity(cloudNode, 10.0, 10L, 10L);
+        Capacity edgeCap = new Capacity(edgeNode, 10.0, 10L, 10L, 1.0);
+        Capacity cloudCap = new Capacity(cloudNode, 10.0, 10L, 10L, 1.0);
         agent.capacities.put("EdgeNode", edgeCap);
         agent.capacities.put("CloudNode", cloudCap);
 
@@ -306,8 +306,8 @@ public class ExhaustiveMappingStrategyTest {
         ResourceAgent agent = createAgent("Agent1");
         ComputingAppliance euNode = createNode("EuNode", "X", "eu-west", false);
         ComputingAppliance usNode = createNode("UsNode", "X", "us-east", false);
-        Capacity euCap = new Capacity(euNode, 10.0, 10L, 10L);
-        Capacity usCap = new Capacity(usNode, 10.0, 10L, 10L);
+        Capacity euCap = new Capacity(euNode, 10.0, 10L, 10L, 1.0);
+        Capacity usCap = new Capacity(usNode, 10.0, 10L, 10L, 1.0);
         agent.capacities.put("EuNode", euCap);
         agent.capacities.put("UsNode", usCap);
 
@@ -327,7 +327,7 @@ public class ExhaustiveMappingStrategyTest {
     }
 
     private static Capacity capacity(String nodeName, double cpu, long memory, long storage) {
-        return new Capacity(createNode(nodeName, "X", "X", false), cpu, memory, storage);
+        return new Capacity(createNode(nodeName, "X", "X", false), cpu, memory, storage, 1.0);
     }
 
     private static AgentApplication application(Component... components) {

@@ -55,14 +55,14 @@ public class ResourceAgentCapacityValidationTest {
 
         ResourceAgent agentA = new ResourceAgent("AgentA", 1, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         agentA.initResourceAgent(resourceAgentVa, resourceAgentArc,
-                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node2, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE));
+                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE, 1.0),
+                new Capacity(node2, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE, 1.0));
 
         ResourceAgent agentB = new ResourceAgent("AgentB", 1, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
 
         assertThrows(IllegalStateException.class, () -> agentB.initResourceAgent(
                 resourceAgentVa, resourceAgentArc,
-                new Capacity(node2, 10, 10 * ScenarioBase.GB_IN_BYTE, 10 * ScenarioBase.GB_IN_BYTE)
+                new Capacity(node2, 10, 10 * ScenarioBase.GB_IN_BYTE, 10 * ScenarioBase.GB_IN_BYTE, 1.0)
         ));
     }
 
@@ -83,14 +83,14 @@ public class ResourceAgentCapacityValidationTest {
 
         ResourceAgent agentA = new ResourceAgent("AgentA", 1, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
         agentA.initResourceAgent(resourceAgentVa, resourceAgentArc,
-                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node2, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE));
+                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE, 1.0),
+                new Capacity(node2, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE, 1.0));
 
         ResourceAgent agentB = new ResourceAgent("AgentB", 1, new FirstFitMappingStrategy(true), new FloodingMessagingStrategy());
 
         assertDoesNotThrow(() -> agentB.initResourceAgent(
                 resourceAgentVa, resourceAgentArc,
-                new Capacity(node2, 8, 8 * ScenarioBase.GB_IN_BYTE, 8 * ScenarioBase.GB_IN_BYTE)
+                new Capacity(node2, 8, 8 * ScenarioBase.GB_IN_BYTE, 8 * ScenarioBase.GB_IN_BYTE, 1.0)
         ));
     }
 
@@ -113,9 +113,9 @@ public class ResourceAgentCapacityValidationTest {
 
         assertThrows(IllegalStateException.class, () -> agentA.initResourceAgent(
                 resourceAgentVa, resourceAgentArc,
-                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node2, 5, 5 * ScenarioBase.GB_IN_BYTE, 5 * ScenarioBase.GB_IN_BYTE),
-                new Capacity(node2, 5, 5 * ScenarioBase.GB_IN_BYTE, 5 * ScenarioBase.GB_IN_BYTE)
+                new Capacity(node1, 2, 2 * ScenarioBase.GB_IN_BYTE, 2 * ScenarioBase.GB_IN_BYTE, 1.0),
+                new Capacity(node2, 5, 5 * ScenarioBase.GB_IN_BYTE, 5 * ScenarioBase.GB_IN_BYTE, 1.0),
+                new Capacity(node2, 5, 5 * ScenarioBase.GB_IN_BYTE, 5 * ScenarioBase.GB_IN_BYTE, 1.0)
         ));
     }
 }

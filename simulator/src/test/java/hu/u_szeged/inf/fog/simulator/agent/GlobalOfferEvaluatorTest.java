@@ -12,6 +12,7 @@ import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.offer.LocalOffer.Loc
 import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.pareto.ExhaustiveMappingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.message.FloodingMessagingStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferEvaluator;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.BacktrackingOfferSelectionStrategy;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.GlobalOfferMetrics;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.QoSNormalizationBounds;
 import hu.u_szeged.inf.fog.simulator.agent.strategy.selection.sa.AtomicCoverageState;
@@ -26,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import hu.u_szeged.inf.fog.simulator.agent.strategy.mapping.MappingStrategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -122,7 +124,7 @@ class GlobalOfferEvaluatorTest {
                 18.0,
                 5.0,
                 25.0,
-                80.0);
+                80.0, 0.0);
 
         double violation = new GlobalOfferEvaluator().calculateHardRequirementViolation(app, metrics);
 
@@ -141,7 +143,7 @@ class GlobalOfferEvaluatorTest {
         app.maxLatency = 50.0;
         app.minBandwidth = 100.0;
 
-        GlobalOfferMetrics metrics = new GlobalOfferMetrics(2, 10.0, 25.0, 30.0, 200.0);
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(2, 10.0, 25.0, 30.0, 200.0, 0.0);
 
         double expected = (
                 app.price * (metrics.cost / app.maxCost)
@@ -164,7 +166,7 @@ class GlobalOfferEvaluatorTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> new GlobalOfferEvaluator().calculateQosUtility(app, new GlobalOfferMetrics(1, 10.0, 5.0, 10.0, 50.0)));
+                () -> new GlobalOfferEvaluator().calculateQosUtility(app, new GlobalOfferMetrics(1, 10.0, 5.0, 10.0, 50.0, 0.0)));
 
         assertTrue(exception.getMessage().contains("maxCost must be positive"));
     }
@@ -180,9 +182,9 @@ class GlobalOfferEvaluatorTest {
                 10.0, 20.0,
                 30.0, 50.0,
                 100.0, 200.0,
-                1000.0, 2000.0);
+                1000.0, 2000.0, 0.0, 0.0);
 
-        GlobalOfferMetrics metrics = new GlobalOfferMetrics(2, 5.0, 40.0, 250.0, 2500.0);
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(2, 5.0, 40.0, 250.0, 2500.0, 0.0);
 
         double expected = (0.0 + 0.5 + 1.0 + 0.0) / 4.0;
 
@@ -200,9 +202,9 @@ class GlobalOfferEvaluatorTest {
                 10.0, 10.0,
                 0.0, 1.0,
                 0.0, 1.0,
-                0.0, 1.0);
+                0.0, 1.0, 0.0, 0.0);
 
-        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 15.0, 0.0, 0.0, 0.0);
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 15.0, 0.0, 0.0, 0.0, 0.0);
 
         assertEquals(0.0, new GlobalOfferEvaluator().calculateQosUtility(app, metrics), EPSILON);
     }
@@ -214,11 +216,105 @@ class GlobalOfferEvaluatorTest {
         app.energy = 0.0;
         app.latency = 0.0;
         app.bandwidth = 0.0;
-        app.qosNormalizationBounds = new QoSNormalizationBounds(0, 1, 0, 1, 0, 1, 0, 1);
+        app.qosNormalizationBounds = new QoSNormalizationBounds(0, 1, 0, 1, 0, 1, 0, 1, 0.0, 0.0);
 
-        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 5.0, 5.0, 5.0, 5.0);
+        GlobalOfferMetrics metrics = new GlobalOfferMetrics(1, 5.0, 5.0, 5.0, 5.0, 0.0);
 
         assertEquals(0.0, new GlobalOfferEvaluator().calculateQosUtility(app, metrics), EPSILON);
+    }
+
+    @Test
+    void generatedGlobalOffers_areOrderedByDistinctQoSUtility() {
+        AgentApplication app = new AgentApplication();
+        app.name = "ProductionRanking";
+        app.components = List.of(component("C1", 1.0, 1L, 1L));
+        app.price = 1.0;
+        app.qosNormalizationBounds = new QoSNormalizationBounds(
+                0.0, 1.0, 0.0, 1.0, 0.0, 100.0,
+                0.0, 200.0, 0.0, 30.0);
+
+        Capacity expensiveCapacity = capacity("NodeA", 10.0, 100L, 1000L, 1000L, 10);
+        Capacity optimalCapacity = capacity("NodeB", 10.0, 100L, 1000L, 1000L, 10);
+
+        MappingStrategy expensiveMapping = new MappingStrategy() {
+            @Override
+            public List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application) {
+                ComponentPlacement placement = new ComponentPlacement(application.components.get(0), expensiveCapacity);
+                LocalMetrics metrics = new LocalMetrics(0.0, 0.0, 0.0, 0.0,
+                        20.0, 50.0, 200.0, 1000.0, 10.0);
+                return List.of(new LocalOffer(agent, List.of(placement), metrics));
+            }
+        };
+        MappingStrategy optimalMapping = new MappingStrategy() {
+            @Override
+            public List<LocalOffer> generateLocalOffers(ResourceAgent agent, AgentApplication application) {
+                ComponentPlacement placement = new ComponentPlacement(application.components.get(0), optimalCapacity);
+                LocalMetrics metrics = new LocalMetrics(0.0, 0.0, 0.0, 0.0,
+                        10.0, 30.0, 100.0, 2000.0, 30.0);
+                return List.of(new LocalOffer(agent, List.of(placement), metrics));
+            }
+        };
+
+        ResourceAgent expensiveAgent = new ResourceAgent("AgentA", 20.0, expensiveMapping, new FloodingMessagingStrategy());
+        ResourceAgent optimalAgent = new ResourceAgent("AgentB", 10.0, optimalMapping, new FloodingMessagingStrategy());
+        expensiveAgent.hostNode = expensiveCapacity.node;
+        optimalAgent.hostNode = optimalCapacity.node;
+        expensiveAgent.capacities.put(expensiveCapacity.node.name, expensiveCapacity);
+        optimalAgent.capacities.put(optimalCapacity.node.name, optimalCapacity);
+
+        app.offerGeneratingAgents = new java.util.LinkedHashSet<>(List.of(expensiveAgent, optimalAgent));
+        app.offers = new java.util.ArrayList<>();
+
+        List<LocalOffer> expensiveLocalOffers = expensiveMapping.generateLocalOffers(expensiveAgent, app);
+        List<LocalOffer> optimalLocalOffers = optimalMapping.generateLocalOffers(optimalAgent, app);
+
+        BacktrackingOfferSelectionStrategy selection =
+                new BacktrackingOfferSelectionStrategy(false);
+        List<Offer> globalOffers = selection.selectOffers(
+                List.of(expensiveLocalOffers.get(0), optimalLocalOffers.get(0)), app);
+
+        assertEquals(2, globalOffers.size(), "Both one-provider coverages must be generated");
+
+        GlobalOfferEvaluator evaluator = new GlobalOfferEvaluator();
+        Offer expensiveOffer = globalOffers.stream()
+                .filter(offer -> offer.agentComponentsMap.keySet().stream()
+                        .anyMatch(agent -> agent.name.equals("AgentA")))
+                .findFirst().orElseThrow();
+        Offer optimalOffer = globalOffers.stream()
+                .filter(offer -> offer.agentComponentsMap.keySet().stream()
+                        .anyMatch(agent -> agent.name.equals("AgentB")))
+                .findFirst().orElseThrow();
+
+        expensiveOffer.metrics = evaluator.evaluate(expensiveOffer);
+        optimalOffer.metrics = evaluator.evaluate(optimalOffer);
+
+        double generatedExpensiveScore = evaluator.calculateQosUtility(app, expensiveOffer.metrics);
+        double generatedOptimalScore = evaluator.calculateQosUtility(app, optimalOffer.metrics);
+        assertTrue(generatedExpensiveScore > generatedOptimalScore,
+                "The generated AgentB offer must have a lower QoS objective");
+        assertTrue(Math.abs(generatedExpensiveScore - generatedOptimalScore) > EPSILON,
+                "The generated candidates must have distinct QoS objective values");
+
+    }
+
+    @Test
+    void calculateQosUtility_normalizesPerformanceForNativeRanking() {
+        AgentApplication app = new AgentApplication();
+        app.performance = 1.0;
+        app.qosNormalizationBounds = new QoSNormalizationBounds(
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 10.0, 30.0);
+
+        GlobalOfferEvaluator evaluator = new GlobalOfferEvaluator();
+
+        assertEquals(1.0,
+                evaluator.calculateQosUtility(app,
+                        new GlobalOfferMetrics(1, 0.0, 0.0, 0.0, 0.0, 10.0)),
+                EPSILON);
+        assertEquals(0.0,
+                evaluator.calculateQosUtility(app,
+                        new GlobalOfferMetrics(1, 0.0, 0.0, 0.0, 0.0, 30.0)),
+                EPSILON);
     }
 
     @Test
@@ -257,11 +353,11 @@ class GlobalOfferEvaluatorTest {
                 List.of(
                         new ComponentPlacement(c1, capA),
                         new ComponentPlacement(c2, capA)),
-                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 6.0, 11.0, 12.0, 900.0));
+                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 6.0, 11.0, 12.0, 900.0, 0.0));
         LocalOffer offerB = new LocalOffer(
                 agentB,
                 List.of(new ComponentPlacement(c3, capB)),
-                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 4.0, 9.0, 30.0, 1500.0));
+                new LocalMetrics(0.0, 0.0, 0.0, 0.0, 4.0, 9.0, 30.0, 1500.0, 0.0));
 
         AtomicCoverageState state = new AtomicCoverageState(List.of(c1, c2, c3), List.of(offerA, offerB));
         GlobalOfferMetrics metrics = new GlobalOfferEvaluator().evaluate(state);
@@ -297,7 +393,7 @@ class GlobalOfferEvaluatorTest {
         ComputingAppliance node = new ComputingAppliance(
                 Config.createNode(nodeName, cpu, memory, storage, 10, 20, 50, bandwidth, latency, latencyMap),
                 new GeoLocation(0, 0), "x", "x", false);
-        return new Capacity(node, cpu, memory, storage);
+        return new Capacity(node, cpu, memory, storage, 1.0);
     }
 
     private static Component component(String id, Double cpu, Long memory, Long storage) {

@@ -109,9 +109,9 @@ public class Config {
                     //Map.entry("rankingPython", "D:\\Documents\\git-projects\\swarm-deployment-ranking\\.venv\\Scripts\\python"),
 
                     // Algorithm 1: Random First Fit + all hard-valid coverages + ranking
-                    Map.entry("mappingStrategy", new RandomFirstFitMappingStrategy()),
-                    Map.entry("onlyFirstOffer", false),
-                    Map.entry("rankingMethod", "qos"),
+                    //Map.entry("mappingStrategy", new RandomFirstFitMappingStrategy()),
+                    //Map.entry("onlyFirstOffer", false),
+                    //Map.entry("rankingMethod", "qos"),
 
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
@@ -122,7 +122,10 @@ public class Config {
                     //Map.entry("onlyFirstOffer", false),
                     //Map.entry("rankingMethod", "sa"),
 
-                    // TODO: Compare Global SA against exhaustive Backtracking + QoS ranking using the same Pareto-filtered local offers to evaluate solution quality, optimality gap, and scalability.
+                    // Algorithm 4: exhaustive Pareto LocalOffers + exact global selection
+                    Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
+                    Map.entry("onlyFirstOffer", false),
+                    Map.entry("rankingMethod", "qos"),
 
                     //Shared Local and Global SA parameters
                     Map.entry("saNeighborAttempts", 20), // maximum attempts to generate a valid neighbor

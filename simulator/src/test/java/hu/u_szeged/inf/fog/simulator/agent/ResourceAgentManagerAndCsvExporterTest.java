@@ -195,6 +195,6 @@ class ResourceAgentManagerAndCsvExporterTest {
                 "x",
                 "x",
                 false);
-        return new Capacity(node, cpu, memory, storage);
+        return new Capacity(node, cpu, memory, storage, 1.0);
     }
 }

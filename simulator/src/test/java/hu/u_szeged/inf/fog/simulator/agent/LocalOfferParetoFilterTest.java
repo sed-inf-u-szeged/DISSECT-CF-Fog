@@ -147,6 +147,6 @@ class LocalOfferParetoFilterTest {
     private static LocalMetrics metrics(double balance, double utilisation, double fragmentation,
                                         double compactness, double cost, double energy,
                                         double latency, double bandwidth) {
-        return new LocalMetrics(balance, utilisation, fragmentation, compactness, cost, energy, latency, bandwidth);
+        return new LocalMetrics(balance, utilisation, fragmentation, compactness, cost, energy, latency, bandwidth, 0.0);
     }
 }

@@ -79,9 +79,9 @@ class BacktrackingOfferSelectionStrategyTest {
 
         List<Offer> offers = new BacktrackingOfferSelectionStrategy(false).selectOffers(localOffers, app);
 
-        assertEquals(4, offers.size());
-        assertEquals(4L, app.globalCoverageEvaluationCount);
-        assertEquals(4, offers.stream().map(this::offerSignature).collect(Collectors.toSet()).size());
+        assertEquals(2, offers.size());
+        assertEquals(2L, app.globalCoverageEvaluationCount);
+        assertEquals(2, offers.stream().map(this::offerSignature).collect(Collectors.toSet()).size());
     }
 
     @Test
@@ -107,7 +107,7 @@ class BacktrackingOfferSelectionStrategyTest {
         List<Offer> offers = new BacktrackingOfferSelectionStrategy(false).selectOffers(localOffers, app);
 
         assertEquals(2, offers.size());
-        assertEquals(4L, app.globalCoverageEvaluationCount);
+        assertEquals(2L, app.globalCoverageEvaluationCount);
         assertTrue(offers.stream().allMatch(offer -> offer.metrics.providerCount == 1));
     }
 
@@ -141,7 +141,7 @@ class BacktrackingOfferSelectionStrategyTest {
             double cpu,
             long memory,
             long storage) {
-        return new Capacity(createNode(nodeName, provider, location, edge), cpu, memory, storage);
+        return new Capacity(createNode(nodeName, provider, location, edge), cpu, memory, storage, 1.0);
     }
 
     private static ComputingAppliance createNode(String name, String provider, String location, boolean edge) {
@@ -155,7 +155,7 @@ class BacktrackingOfferSelectionStrategyTest {
         List<ComponentPlacement> placements = List.of(components).stream()
                 .map(component -> new ComponentPlacement(component, capacity))
                 .toList();
-        return new LocalOffer(agent, placements, new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+        return new LocalOffer(agent, placements, new LocalMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
     }
 
     private static AgentApplication application(Component... components) {
