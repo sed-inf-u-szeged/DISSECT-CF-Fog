@@ -28,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 
 public class    DummyAppDemo {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
-        SimLogger.setLogging(1, true);
+        SimLogger.setLogging(2, true);
         SeedSyncer.setSeed(Config.RANDOM_SEED);
 
         Map<String, Integer> sharedLatencyMap = new HashMap<>();
@@ -69,19 +69,21 @@ public class    DummyAppDemo {
                             .toList();
         }
 
-        if (appDescriptionFiles.size() != submissionDelays.size()) {
-            SimLogger.logError("Application configuration mismatch: " + appDescriptionFiles.size() + " JSON files, but " + submissionDelays.size() + " submission delays. Simulation aborted.");
+        if (appDescriptionFiles.size() < submissionDelays.size()) {
+            SimLogger.logError("Application configuration mismatch: "
+                    + appDescriptionFiles.size() + " JSON files, but "
+                    + submissionDelays.size() + " submission delays. Simulation aborted.");
+        } else if (appDescriptionFiles.size() > submissionDelays.size()) {
+            SimLogger.logRes("WARNING: " + appDescriptionFiles.size()
+                    + " JSON files, but only " + submissionDelays.size()
+                    + " submission delays. Extra JSON files will be ignored.");
         }
 
-        for (int applicationIndex = 0;
-             applicationIndex < appDescriptionFiles.size();
-             applicationIndex++) {
+        for (int applicationIndex = 0; applicationIndex < submissionDelays.size(); applicationIndex++) {
 
-            Path file =
-                    appDescriptionFiles.get(applicationIndex);
+            Path file = appDescriptionFiles.get(applicationIndex);
 
-            int submissionDelay =
-                    submissionDelays.get(applicationIndex);
+            int submissionDelay = submissionDelays.get(applicationIndex);
 
             new DeferredEvent(
                     submissionDelay

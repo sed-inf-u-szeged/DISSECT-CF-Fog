@@ -62,7 +62,7 @@ public class Config {
                             new ResourceAgentTopology(3, 1, 2)
                     )),
 
-                    Map.entry("submissionDelay", createSubmissionDelays(5, 1)),
+                    Map.entry("submissionDelay", createSubmissionDelays(15, 1)),
 
                     Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen1")),
                     //Map.entry("inputDir", Paths.get(ScenarioBase.RESOURCE_PATH + "AGENT_examples/scen2-energy")),
@@ -116,6 +116,7 @@ public class Config {
                     // Algorithm 2: Local SA + first hard-valid coverage
                     //Map.entry("mappingStrategy", new SimulatedAnnealingStrategy()),
                     //Map.entry("onlyFirstOffer", true),
+                    //Map.entry("rankingMethod", "random"),
 
                     // Algorithm 3: exhaustive Pareto LocalOffers + Global SA
                     //Map.entry("mappingStrategy", new ExhaustiveMappingStrategy()),
